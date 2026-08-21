@@ -41,6 +41,7 @@ TYPES = {
     "grass_dark": lambda: M.ground_grass(dark=True),
     "rock":       lambda: M.rough_stone(),
     "cliff":      lambda: M.ground_cliff(),
+    "marsh":      lambda: M.ground_marsh(),
 }
 
 

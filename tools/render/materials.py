@@ -508,6 +508,66 @@ def ground_cliff(name="GroundCliff"):
     return mat
 
 
+def ground_marsh(name="GroundMarsh"):
+    """
+    Pitch marsh: wet, grey-green bog with tar seeping through it.
+
+    Two things it has to do at 45 px. It must read as GROUND you would not want
+    to walk through -- so dark, mottled and cold against the warm sand, never
+    tidy. And it must read as valuable, because it is the only place a pitch rig
+    can stand, so black tar pools show through the sludge.
+
+    Deliberately the coldest, darkest tile in the set. Every other ground here
+    lives in the same warm sandstone family, and a hazard the player has to plan
+    routes around needs to be identifiable at a glance from any zoom.
+    """
+    mat, nt, bsdf = _new(name)
+    pos = _pos(nt, 1.0)
+
+    # broad wet/dry mottling
+    base = _noise(nt, pos, scale=9.0, detail=8.0, roughness=0.62, distortion=1.2)
+    # Pushed grey rather than green. First pass sat only six points cooler than
+    # grass_dark, and a hazard the player is expected to route AROUND has to be
+    # identifiable in one glance at full zoom-out, not on close inspection.
+    base_ramp = _ramp(nt, [
+        (0.28, (0.14, 0.16, 0.16, 1.0)),
+        (0.50, (0.24, 0.27, 0.26, 1.0)),
+        (0.72, (0.33, 0.36, 0.35, 1.0)),
+        (0.92, (0.41, 0.43, 0.42, 1.0)),
+    ], base.outputs["Fac"])
+
+    # tar seeps: small, very dark, high-contrast blotches
+    tar = _noise(nt, pos, scale=17.0, detail=6.0, roughness=0.75, distortion=2.0)
+    tar_ramp = _ramp(nt, [
+        (0.40, (0.13, 0.13, 0.12, 1.0)),
+        (0.52, (0.62, 0.64, 0.60, 1.0)),
+        (0.66, (1.00, 1.00, 1.00, 1.0)),
+    ], tar.outputs["Fac"])
+
+    # fine silt, so a big expanse is not flat colour
+    silt = _noise(nt, pos, scale=46.0, detail=7.0, roughness=0.65)
+    silt_ramp = _ramp(nt, [
+        (0.36, (0.84, 0.86, 0.84, 1.0)),
+        (0.58, (1.00, 1.00, 1.00, 1.0)),
+        (0.80, (1.14, 1.15, 1.12, 1.0)),
+    ], silt.outputs["Fac"])
+
+    tone = _mulcol(nt, base_ramp.outputs["Color"], tar_ramp.outputs["Color"])
+    nt.links.new(_mulcol(nt, tone, silt_ramp.outputs["Color"]), bsdf.inputs["Base Color"])
+
+    # Wet ground is glossier than dry. Roughness driven by the tar mask so the
+    # seeps catch light and the drier sludge does not.
+    rough = _ramp(nt, [
+        (0.40, (0.34, 0.34, 0.34, 1.0)),
+        (0.66, (0.88, 0.88, 0.88, 1.0)),
+    ], tar.outputs["Fac"])
+    nt.links.new(rough.outputs["Color"], bsdf.inputs["Roughness"])
+
+    h = _add(nt, _mul(nt, base.outputs["Fac"], 0.5), _mul(nt, silt.outputs["Fac"], 0.5))
+    _bump(nt, bsdf, h, strength=0.8, distance=0.03)
+    return mat
+
+
 def ground_scrub(name="GroundScrub"):
     """The patchy green-over-sand transition ground from the landscape shot."""
     mat, nt, bsdf = _new(name)

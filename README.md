@@ -878,6 +878,48 @@ the melee swings use 6: a draw is slow and then sudden, and six evenly spaced
 samples land almost all of them on the slow part and miss the loose entirely.
 `SOLDIERS[body].attack_frames` overrides the count per body.
 
+## Pitch marsh: ground as a weapon
+
+A sixth ground type. Boggy grey-green land where tar seeps up, seeded INSIDE
+the fertile belt rather than out in dead sand — sitting on the good land it
+costs something to own, which is the point.
+
+It does three things:
+
+* **It is the only place a pitch rig will stand.** The rig used to sit on any
+  open sand; now pitch has a home and a location decision.
+* **Nothing else can be built on it.** Not a hovel, not a wall.
+* **It halves movement, and all but stops siege.** Foot at 0.48, wheels at
+  0.26. Measured over six tiles: spearman 5.95 dry against 3.27 in the bog,
+  catapult 1.80 against 0.47. A marsh across the approach means siege goes the
+  long way round or does not come at all.
+
+Speed is sampled per step from the tile underfoot, not fixed when the order is
+given, so a column slows entering the bog and recovers leaving it — which is
+what makes the ground readable and worth routing around. Peasants wade too: a
+marsh between a woodcutter and the stockpile is an economic cost as well as a
+military one.
+
+### It has to be visible to matter
+
+First render sat only six points cooler than `grass_dark` and read as just more
+dark grass. A hazard the player is expected to route AROUND has to be
+identifiable in one glance at full zoom-out. Pushed grey, the gap doubled —
+warmth (R−B) of +5.7 against grass_dark's +18.2 and sand's +59.8, the coldest
+tile in the set by a distance.
+
+### A guard in the wrong place
+
+The marsh rule went into `terrainAllows`, which looked right and did nothing:
+`check()` only called that function when `def.terrain !== 'any'`, so hovels,
+markets, walls and most of the game skipped the ground rules entirely and could
+be built straight over a bog. The terrain test now runs for every building —
+`'any'` means any DRY ground, and `terrainAllows` is what knows that.
+
+**Still open:** nothing consumes pitch. In the original it is poured on the
+ground and set alight in front of a gate, which would give the marsh a second
+reason to exist.
+
 ## Wildlife and the hunter
 
 Gazelle graze the open land in fifteen herds of three to six, seeded

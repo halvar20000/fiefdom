@@ -29,7 +29,8 @@ function makeNoise(seed: number) {
   };
 }
 
-export const GROUND_TYPES = ['sand', 'scrub', 'grass', 'grass_dark', 'rock'] as const;
+export const GROUND_TYPES =
+  ['sand', 'scrub', 'grass', 'grass_dark', 'rock', 'marsh'] as const;
 export type GroundType = typeof GROUND_TYPES[number];
 
 export interface GeneratedMap {
@@ -97,9 +98,19 @@ export function generateMap(
       // mutually exclusive, so neither building could ever be placed.
       const outcrop = noise(x + 3100, z + 1700, 3, 0.05);
 
+      // Pitch marsh: boggy ground where tar seeps to the surface.
+      //
+      // Seeded INSIDE the fertile belt on purpose. Putting it out in the dead
+      // sand would make it free real estate; sitting on the good land it costs
+      // the player something to own, and because troops wade through it at half
+      // pace it also shapes where an attack can sensibly come from.
+      const bog = noise(x + 7700, z + 2300, 3, 0.06);
+
       let type: GroundType;
       if (slope >= 2 || (hi >= 4 && patch > 0.55) || (flat && outcrop > 0.63)) {
         type = 'rock';
+      } else if (flat && moisture > 0.47 && bog > 0.60) {
+        type = 'marsh';
       // Green bands widened deliberately. Measured on the original thresholds,
       // a starting position had exactly ONE legal wheat-farm site within 15
       // tiles, which reads as the game being broken rather than as the desert
@@ -123,7 +134,8 @@ export function generateMap(
       // face is what made cliffs read as pale grey ribbons.
       terrain.layer[t] = layerOf(slope >= 2 ? 'cliff' : type, variant);
       groundType[t] = GROUND_TYPES.indexOf(type as GroundType);
-      if (flat && type !== 'rock') flatTiles.push({ x, z });
+      // marsh takes no buildings but a pitch rig, so it is not a build site
+      if (flat && type !== 'rock' && type !== 'marsh') flatTiles.push({ x, z });
     }
   }
 

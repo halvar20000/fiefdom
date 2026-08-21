@@ -68,6 +68,14 @@ export interface SiegeTarget {
 export interface ArmyWorld {
   findPath(fromX: number, fromZ: number, toX: number, toZ: number): PathNode[] | null;
   blocked(x: number, z: number): boolean;
+  /**
+   * Pace multiplier for the ground under a point, 1 on firm going.
+   *
+   * Sampled per step rather than per order, so a column slows as it enters a
+   * marsh and speeds up as it leaves -- which is what lets the player read the
+   * ground and route around it.
+   */
+  groundSpeed?(x: number, z: number, siege: boolean): number;
   /** Nearest building of the OTHER side that this engine could break. */
   siegeTarget?(s: Soldier): SiegeTarget | null;
 }
@@ -392,7 +400,8 @@ export class Army {
 
     for (const s of this.soldiers) {
       if (s.hp <= 0 || !s.moving || engaged.has(s.id) || s.garrison) continue;
-      let budget = s.def.speed * dt;
+      const going = this.world.groundSpeed?.(s.x, s.z, !!s.def.siege) ?? 1;
+      let budget = s.def.speed * going * dt;
       while (budget > 0) {
         const wp = s.path.length ? s.path[0] : { x: s.tx, z: s.tz };
         const dx = wp.x - s.x, dz = wp.z - s.z;

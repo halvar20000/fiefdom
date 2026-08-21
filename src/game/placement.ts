@@ -18,9 +18,15 @@ export interface PlacementCheck {
 
 const TERRAIN_LABEL: Record<TerrainNeed, string> = {
   any: '', green: 'green land', rock: 'rock', sand: 'open ground',
+  marsh: 'a pitch marsh',
 };
 
 function terrainAllows(need: TerrainNeed, ground: string): boolean {
+  // Nothing but a pitch rig stands in a bog. 'any' means any DRY ground --
+  // otherwise marsh would quietly become ordinary buildable land and the
+  // player could pave over the one hazard the map gives them.
+  if (ground === 'marsh') return need === 'marsh';
+  if (need === 'marsh') return false;
   switch (need) {
     case 'any': return true;
     case 'green': return ground === 'grass' || ground === 'grass_dark';
@@ -85,12 +91,22 @@ export class Placement {
       }
     }
 
-    if (def.terrain !== 'any') {
-      for (let dz = 0; dz < d; dz++) {
-        for (let dx = 0; dx < w; dx++) {
-          if (!terrainAllows(def.terrain, this.world.groundAt(x + dx, z + dz))) {
-            return { ok: false, reason: `Must be built on ${TERRAIN_LABEL[def.terrain]}` };
-          }
+    // Run this for EVERY building, including terrain: 'any'.
+    //
+    // It used to be skipped for 'any', which quietly exempted hovels, markets,
+    // walls and most of the game from the ground rules -- so a marsh could be
+    // paved over with housing and stopped being a hazard at all. 'any' means
+    // any DRY ground, and terrainAllows is what knows that.
+    for (let dz = 0; dz < d; dz++) {
+      for (let dx = 0; dx < w; dx++) {
+        const ground = this.world.groundAt(x + dx, z + dz);
+        if (!terrainAllows(def.terrain, ground)) {
+          return {
+            ok: false,
+            reason: ground === 'marsh' && def.terrain !== 'marsh'
+              ? 'The ground is too boggy to build on'
+              : `Must be built on ${TERRAIN_LABEL[def.terrain]}`,
+          };
         }
       }
     }

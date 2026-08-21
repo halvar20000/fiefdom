@@ -60,6 +60,8 @@ export interface WorkerWorld {
   harvest(b: PlacedBuilding, w: Worker): void;
   /** Route around buildings. Null means no route exists. */
   findPath(fromX: number, fromZ: number, toX: number, toZ: number): PathNode[] | null;
+  /** Pace multiplier for the ground under a point, 1 on firm going. */
+  groundSpeed?(x: number, z: number, siege: boolean): number;
   /**
    * Where to stand when visiting a building.
    *
@@ -166,7 +168,9 @@ export class WorkerPool {
    * which is what keeps them out of the buildings they used to walk through.
    */
   private arrive(w: Worker, dt: number): boolean {
-    let budget = w.speed * dt;
+    // Peasants wade too. A marsh across the route to a woodcutter is a real
+    // economic cost, not only a military one.
+    let budget = w.speed * (this.world.groundSpeed?.(w.x, w.z, false) ?? 1) * dt;
     w.phase += dt;
 
     while (budget > 0) {

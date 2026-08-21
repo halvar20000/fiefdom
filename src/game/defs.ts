@@ -36,7 +36,7 @@ export type Category = 'castle' | 'industry' | 'farm' | 'food' | 'town';
  * it is what forces you to build outward from the keep instead of stacking
  * everything in one tidy square.
  */
-export type TerrainNeed = 'any' | 'green' | 'rock' | 'sand';
+export type TerrainNeed = 'any' | 'green' | 'rock' | 'sand' | 'marsh';
 
 export interface Production {
   /** What comes out, one unit per completed cycle. */
@@ -199,9 +199,9 @@ export const BUILDINGS: Record<string, BuildingDef> = {
   },
   pitch_rig: {
     name: 'pitch_rig', label: 'Pitch Rig', category: 'industry',
-    footprint: [2, 2], cost: { wood: 20 }, workers: 1, terrain: 'sand',
+    footprint: [2, 2], cost: { wood: 20 }, workers: 1, terrain: 'marsh',
     produces: { output: 'pitch', amount: 1, seconds: 16, to: 'stockpile' },
-    description: 'Draws pitch from the seep. Must be built on open ground.',
+    description: 'Draws tar from a pitch marsh. Only stands on boggy ground.',
     workClip: 'dig',
   },
 
@@ -469,6 +469,16 @@ export const RANGED_THRESHOLD = 3.0;
 export function canGarrison(name: string): boolean {
   return GARRISON_HEIGHT[name] !== undefined;
 }
+
+/**
+ * How fast a unit crosses a pitch marsh, as a fraction of its normal pace.
+ *
+ * Wheels fare far worse than boots: a catapult dragged into a bog is close to
+ * stuck, which is the whole strategic point. A marsh across your approach means
+ * siege has to go the long way round, or you take the ground you are given.
+ */
+export const MARSH_SPEED_FOOT = 0.48;
+export const MARSH_SPEED_SIEGE = 0.26;
 
 export function buildingHp(def: BuildingDef): number {
   if (def.hp !== undefined) return def.hp;

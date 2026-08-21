@@ -19,7 +19,7 @@ import { Placement, type PlacementWorld } from './game/placement';
 import { Hud } from './ui/hud';
 import {
   BUILDINGS, STORE_SPRITES, SOLDIER_TYPES, buildingHp, canGarrison,
-  GARRISON_HEIGHT, type Store,
+  GARRISON_HEIGHT, MARSH_SPEED_FOOT, MARSH_SPEED_SIEGE, type Store,
 } from './game/defs';
 
 /** Both stores, for the loops that must treat them identically. */
@@ -261,11 +261,22 @@ async function main() {
   const enemyBuildings: EnemyBuilding[] = [];
   let enemyKeep: { x: number; z: number } | null = null;
 
+  const MARSH = GROUND_TYPES.indexOf('marsh');
+
+  /** How fast the ground under a point lets a unit move. */
+  function groundSpeed(x: number, z: number, siege: boolean): number {
+    const tx = Math.floor(x), tz = Math.floor(z);
+    if (tx < 0 || tz < 0 || tx >= MAP_W || tz >= MAP_H) return 1;
+    if (groundType[tz * MAP_W + tx] !== MARSH) return 1;
+    return siege ? MARSH_SPEED_SIEGE : MARSH_SPEED_FOOT;
+  }
+
   /** The player's soldiers. */
   const army = new Army({
     findPath: (fx, fz, tx, tz) => paths.find(Math.floor(fx), Math.floor(fz),
                                              Math.floor(tx), Math.floor(tz)),
     blocked: (x, z) => paths.isBlocked(Math.floor(x), Math.floor(z)),
+    groundSpeed,
     siegeTarget: (s) => {
       // Whose stone this engine is here to break.
       let best: { x: number; z: number; dist: number; hit(n: number): void } | null = null;
@@ -402,6 +413,7 @@ async function main() {
 
   const workerWorld: WorkerWorld = {
     heightAt: (x, z) => terrain.heightAt(x, z),
+    groundSpeed,
     nearestStore(kind, x, z) {
       let best: PlacedBuilding | null = null;
       let bestD = Infinity;
