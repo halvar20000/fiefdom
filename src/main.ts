@@ -17,6 +17,8 @@ import { Lord } from './game/lord';
 import { WorkerPool, type WorkerWorld } from './game/workers';
 import { Placement, type PlacementWorld } from './game/placement';
 import { Hud } from './ui/hud';
+import { showMenu } from './ui/menu';
+import type { MapDef } from './game/maps';
 import {
   BUILDINGS, STORE_SPRITES, SOLDIER_TYPES, buildingHp, canGarrison,
   GARRISON_HEIGHT, MARSH_SPEED_FOOT, MARSH_SPEED_SIEGE,
@@ -70,7 +72,7 @@ function hash2(x: number, y: number): number {
   return ((h ^ (h >>> 16)) >>> 0) / 4294967295;
 }
 
-async function main() {
+async function main(chosen: MapDef) {
   const app = document.getElementById('app')!;
   const legacyHud = document.getElementById('hud')!;
   const loading = document.getElementById('loading')!;
@@ -95,7 +97,7 @@ async function main() {
 
   const terrain = new Terrain({ width: MAP_W, height: MAP_H, layers: 20 }, tiles.texture);
   scene.add(terrain.mesh);
-  const { flatTiles, groundType } = generateMap(terrain, tiles.layerOf, 20260818);
+  const { flatTiles, groundType } = generateMap(terrain, tiles.layerOf, chosen);
 
   // ONE batch for the whole scene. Everything is drawn in a single
   // back-to-front stream so people, buildings and trees interleave correctly.
@@ -322,17 +324,20 @@ async function main() {
     const g = groundType[idx];
     const r = hash2(t.x * 3 + 11, t.z * 5 + 7);
     let name: string | null = null;
+    // Density scales with the map's timber rating, so a wooded valley and a
+    // bare drought are the same generator with a different multiplier.
+    const T = chosen.trees;
     if (g === DARK) {
-      if (r < 0.20) name = 'palm';
-      else if (r < 0.30) name = 'olive_tree';
-      else if (r < 0.40) name = 'bush';
+      if (r < 0.20 * T) name = 'palm';
+      else if (r < 0.30 * T) name = 'olive_tree';
+      else if (r < 0.40 * T) name = 'bush';
     } else if (g === GRASS) {
-      if (r < 0.10) name = 'palm';
-      else if (r < 0.19) name = 'olive_tree';
-      else if (r < 0.30) name = 'bush';
+      if (r < 0.10 * T) name = 'palm';
+      else if (r < 0.19 * T) name = 'olive_tree';
+      else if (r < 0.30 * T) name = 'bush';
     } else if (g === SCRUB) {
-      if (r < 0.07) name = 'bush';
-      else if (r < 0.075) name = 'dead_tree';
+      if (r < 0.07 * T) name = 'bush';
+      else if (r < 0.075 * T) name = 'dead_tree';
     } else if (g === SAND) {
       if (r < 0.003) name = 'dead_tree';
       else if (r < 0.010) name = 'bush';
@@ -701,6 +706,10 @@ async function main() {
   let enemyGate: [number, number] | null = null;
 
   (function raiseEnemyCastle(): void {
+    if (chosen.lords < 1) {
+      console.log('[lord] this map has no opposition');
+      return;
+    }
     const dirs: [number, number][] = [
       [1, 1], [-1, -1], [1, -1], [-1, 1], [1, 0], [0, 1], [-1, 0], [0, -1],
     ];
@@ -1264,6 +1273,9 @@ async function main() {
   }
 
   /** The enemy lord, raising troops at his own castle. */
+  // A map with no lord still builds one, then leaves him defeated from the
+  // start -- cheaper and far less error-prone than making every call site
+  // handle a null lord.
   const lord = new Lord(army, {
     buildings: () => enemyBuildings,
     build: (name: string) => lordBuild(name),
@@ -1300,6 +1312,8 @@ async function main() {
     },
     notify: (t: string) => state.notify(t, 'warn'),
   });
+
+  if (chosen.lords < 1) lord.defeated = true;
 
   /** Relayout both stores. Returns whether anything DRAWN changed. */
   function syncStores(): boolean {
@@ -1978,7 +1992,13 @@ async function main() {
   frame();
 }
 
-main().catch(err => {
+showMenu()
+  .then(map => {
+    document.getElementById('loading')!.textContent =
+      `building ${map.name.toLowerCase()}…`;
+    return main(map);
+  })
+  .catch(err => {
   document.getElementById('loading')!.textContent = `error: ${err.message}`;
   console.error(err);
 });

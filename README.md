@@ -4,6 +4,44 @@ An isometric castle-builder in the spirit of Stronghold Crusader, running in
 the browser. Named for what the game is actually about: holding land, working
 it, and defending what it produces.
 
+## Start menu and map choice
+
+The game opens on a title screen listing six maps. Nothing is generated until
+you pick one, so the choice shapes the terrain rather than being applied to a
+world that already exists.
+
+A map is a set of BIASES on the one generator, not hand-drawn terrain:
+
+```ts
+{ seed, green, rock, marsh, trees, lords, difficulty }
+```
+
+A Crusader map is characterised by what it is short of — one is green and
+wooded, another bare rock, another half bog — and biasing thresholds says that
+in a few numbers where hand-drawn terrain would say it in a megabyte. `green`
+shifts the moisture cut-offs, `rock` the outcrop threshold, `marsh` the bog
+threshold, `trees` multiplies vegetation density.
+
+Verified that the choice is real, not decoration:
+
+| | The Tar Pits | The Quiet Valley |
+|---|---|---|
+| marsh | 22.8% | 8.2% |
+| green | 28.7% | 32.7% |
+| trees | 3,642 | 7,295 |
+| opposition | lord active | 0 buildings, 0 soldiers after 400s |
+
+**The pip ratings are derived from the generator numbers**, never typed in by
+hand, so a card cannot promise a map something the generator will not produce.
+
+`lords: 0` gives a pure builder's game. Rather than making every call site
+handle a null lord, the map still constructs one and marks him defeated from
+the start — cheaper and far less error-prone.
+
+The menu appears instantly, before any sprite loads. That matters: the atlas is
+1300-odd PNGs and on a cold cache the wait is real, so the player gets
+something to read and a decision to make while it happens.
+
 ## The approach, in one paragraph
 
 Terrain is real 3D geometry; everything standing on it — buildings, trees,

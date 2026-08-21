@@ -1,4 +1,5 @@
 import { Terrain } from '../engine/terrain';
+import type { MapSettings } from './maps';
 
 /** Deterministic value noise -- no dependencies, same map every reload. */
 function makeNoise(seed: number) {
@@ -50,8 +51,9 @@ export interface GeneratedMap {
 export function generateMap(
   terrain: Terrain,
   layerOf: (type: string, variant: number) => number,
-  seed = 1337,
+  settings: MapSettings = { seed: 1337, green: 0, rock: 0, marsh: 0, trees: 1 },
 ): GeneratedMap {
+  const { seed, green, rock, marsh } = settings;
   const noise = makeNoise(seed);
   const { width, height } = terrain;
 
@@ -107,20 +109,21 @@ export function generateMap(
       const bog = noise(x + 7700, z + 2300, 3, 0.06);
 
       let type: GroundType;
-      if (slope >= 2 || (hi >= 4 && patch > 0.55) || (flat && outcrop > 0.63)) {
+      if (slope >= 2 || (hi >= 4 && patch > 0.55 - rock)
+          || (flat && outcrop > 0.63 - rock)) {
         type = 'rock';
-      } else if (flat && moisture > 0.47 && bog > 0.60) {
+      } else if (flat && moisture > 0.47 - green && bog > 0.60 - marsh) {
         type = 'marsh';
       // Green bands widened deliberately. Measured on the original thresholds,
       // a starting position had exactly ONE legal wheat-farm site within 15
       // tiles, which reads as the game being broken rather than as the desert
       // being harsh. Scarce fertile land is the point of a Crusader map, but it
       // has to be findable.
-      } else if (moisture > 0.575) {
+      } else if (moisture > 0.575 - green) {
         type = 'grass_dark';
-      } else if (moisture > 0.495) {
+      } else if (moisture > 0.495 - green) {
         type = 'grass';
-      } else if (moisture > 0.425) {
+      } else if (moisture > 0.425 - green) {
         type = 'scrub';
       } else {
         type = 'sand';
