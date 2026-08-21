@@ -788,6 +788,26 @@ long enough for several waves to spawn and swarm the lone test subject. The
 combat bug turned out to be real and underneath it — but the number that
 revealed it was wrong for a completely different reason first.
 
+## The siege camp had no art at all
+
+Surfaced by giving the build menu sprite icons: the siege camp was placeable,
+cost 40 wood and 10 stone, and was the only source of rams and catapults --
+and it had no builder in `buildings.py` and no frames in the atlas, so
+`rebuildStatic`'s `push()` found no key and drew nothing. You could buy it and
+then never see it.
+
+It is modelled as an open workshop yard rather than a shed: a pitched shelter
+across the back over a workbench and stacked timber, a catapult on the stocks
+with its arm cocked, a sawing trestle and a pile of shot. Open on three sides
+deliberately -- a closed shed reads as one more barn at 96px, and the point of
+the building is that you can watch a machine being built in it.
+
+Two pipeline checks worth keeping: the manifest went 296 to 300 entries rather
+than being replaced, which is what a partial `--only` render must do; and the
+four rotations frame to 240x174, 270x174, 240x202 and 270x186. Four *different*
+sizes is the tell that framing happened in camera space. Identical sizes across
+all four would mean `frame_object` read a stale `matrix_world`.
+
 ## The build menu, and how much screen a HUD is allowed
 
 Every building was listed at once down the left edge. That wanted 729px of
