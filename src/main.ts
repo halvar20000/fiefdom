@@ -14,7 +14,7 @@ import { PathGrid } from './game/pathfind';
 import { Herd, HUNT_RADIUS } from './game/wildlife';
 import { Army, PLAYER } from './game/army';
 import { Lord } from './game/lord';
-import { WorkerPool, type WorkerWorld } from './game/workers';
+import { WorkerPool, totalHeld, type WorkerWorld } from './game/workers';
 import { Placement, type PlacementWorld } from './game/placement';
 import { Hud } from './ui/hud';
 import { showMenu } from './ui/menu';
@@ -496,6 +496,30 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
       let bestD = Infinity;
       for (const b of state.buildings) {
         if (b.def.storeFor !== kind) continue;
+        const d = (b.x - x) ** 2 + (b.z - z) ** 2;
+        if (d < bestD) { bestD = d; best = b; }
+      }
+      return best;
+    },
+
+    /**
+     * The nearest place a load can be dropped: a real store square, or a
+     * storehouse if one is closer and has room.
+     *
+     * A FULL storehouse is skipped rather than preferred-and-refused, so a shed
+     * whose carrier has fallen behind quietly stops attracting deliveries
+     * instead of becoming a place loads go to be lost.
+     */
+    nearestDrop(kind, x, z) {
+      let best = this.nearestStore(kind, x, z);
+      let bestD = best ? (best.x - x) ** 2 + (best.z - z) ** 2 : Infinity;
+      // Nothing goes to a storehouse unless the real store exists: otherwise a
+      // shed becomes a way to "store" goods the town can never actually reach.
+      if (!best) return null;
+      for (const b of state.buildings) {
+        const cap = b.def.relay;
+        if (!cap) continue;
+        if (totalHeld(b) >= cap) continue;
         const d = (b.x - x) ** 2 + (b.z - z) ** 2;
         if (d < bestD) { bestD = d; best = b; }
       }

@@ -1196,6 +1196,58 @@
     "scale": 2
   },
   {
+    "name": "depot",
+    "rotation": 0,
+    "width": 176,
+    "height": 142,
+    "anchor_x": 36.57,
+    "anchor_y": 101.7,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "depot",
+    "rotation": 1,
+    "width": 206,
+    "height": 142,
+    "anchor_x": 73.69,
+    "anchor_y": 68.66,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "depot",
+    "rotation": 2,
+    "width": 176,
+    "height": 170,
+    "anchor_x": 139.43,
+    "anchor_y": 100.52,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "depot",
+    "rotation": 3,
+    "width": 206,
+    "height": 156,
+    "anchor_x": 132.31,
+    "anchor_y": 133.89,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
     "name": "fishery",
     "rotation": 0,
     "width": 136,

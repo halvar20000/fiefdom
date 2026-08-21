@@ -49,6 +49,20 @@ export type TerrainNeed = 'any' | 'green' | 'rock' | 'sand' | 'marsh';
  */
 export const WATER_REACH = 3;
 
+/**
+ * The storehouse.
+ *
+ * Capacity is all goods together, not per kind: it is a shed, not a set of
+ * bins, and a per-kind allowance would let one full good hide the fact that
+ * the shed is otherwise empty.
+ *
+ * The carrier moves a bigger load than a producer does, which is the entire
+ * point -- one long walk replaces several, so a distant workings keeps
+ * producing while a single man does the hauling.
+ */
+export const DEPOT_CAPACITY = 48;
+export const DEPOT_BATCH = 12;
+
 export interface Production {
   /** What comes out, one unit per completed cycle. */
   output: Resource;
@@ -87,6 +101,11 @@ export interface BuildingDef {
   needsHauler?: boolean;
   /** Must stand within WATER_REACH tiles of water. See the fishery. */
   needsWater?: boolean;
+  /**
+   * Marks a relay: a local drop-off that forwards to the real store.
+   * The number is how many goods it can hold at once, all kinds together.
+   */
+  relay?: number;
   /**
    * The tool stays in hand after placing one.
    *
@@ -271,6 +290,13 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     workClip: 'chop',
     description: 'Hunts gazelle on the open land. Needs no green ground.',
   },
+  depot: {
+    name: 'depot', label: 'Storehouse', category: 'industry',
+    footprint: [2, 2], cost: { wood: 15 }, workers: 1, terrain: 'any',
+    relay: DEPOT_CAPACITY,
+    description: 'A drop-off out at the workings. Producers unload here and go '
+               + 'straight back to work; its carrier takes the load on.',
+  },
   fishery: {
     name: 'fishery', label: "Fisherman's Hut", category: 'farm',
     footprint: [2, 2], cost: { wood: 20 }, workers: 1, terrain: 'any',
@@ -330,7 +356,8 @@ export const BUILD_MENU: { category: Category; label: string; items: string[] }[
   { category: 'castle', label: 'Castle', items: ['wall', 'gatehouse', 'tower', 'pitch_ditch', 'barracks', 'siege_camp'] },
   { category: 'castle', label: 'Stores', items: ['stockpile', 'granary'] },
   { category: 'town', label: 'Town', items: ['hovel', 'market'] },
-  { category: 'industry', label: 'Industry', items: ['woodcutter', 'quarry', 'ox_tether', 'iron_mine', 'pitch_rig'] },
+  { category: 'industry', label: 'Industry',
+    items: ['woodcutter', 'quarry', 'ox_tether', 'iron_mine', 'pitch_rig', 'depot'] },
   { category: 'farm', label: 'Farms',
     items: ['wheat_farm', 'apple_orchard', 'dairy_farm', 'pig_farm', 'hunter',
             'fishery', 'hops_farm'] },

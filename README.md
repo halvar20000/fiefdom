@@ -858,6 +858,44 @@ Both fields are optional, so maps painted before the tool existed still load
 and fall back to the automatic siting rather than being rejected. A version
 bump would have thrown away every map already saved.
 
+## The storehouse
+
+A distant workings is slow for one reason: the producer walks its own load
+home. A **Storehouse** (2x2, 15 wood, one worker) breaks that. Producers
+deliver to whichever is nearer, the real store or a storehouse, and the
+storehouse's own carrier takes the load on in batches of twelve.
+
+It does not remove the walking. It **parallelises** it — one man does the long
+haul while the workings keeps producing, instead of the workings stopping for
+every trip.
+
+Measured on the same fishery, 74 tiles from its granary, over 600 seconds:
+
+| | Fish delivered |
+|---|---|
+| Fishery alone | **10** |
+| Fishery + storehouse | **58** |
+
+Some deliberate choices in it:
+
+- **Capacity is all goods together**, not per kind. It is a shed, not a set of
+  bins, and a per-kind allowance would let one full good hide that the shed is
+  otherwise empty.
+- **A full storehouse stops attracting deliveries** rather than accepting and
+  refusing them, so a shed whose carrier has fallen behind quietly drops out of
+  the routing instead of becoming a place loads go to be lost.
+- **The carrier does not wait for a full load.** A shed beside a lone
+  woodcutter would otherwise sit on four logs forever, which looks exactly like
+  a bug.
+- **A load the store has no room for goes back in the shed.** The carrier is
+  the one part of the chain that can turn round and bring it home; a producer
+  standing on a full yard cannot.
+- **Nothing routes to a storehouse unless the real store exists.** Otherwise a
+  shed becomes a way to "store" goods the town can never reach.
+
+With no storehouse on the map the routing is byte-for-byte the old behaviour:
+the loop that considers relays has nothing to iterate.
+
 ## Fish, and the fisherman's hut
 
 Water earns its keep: a **Fisherman's Hut** (2x2, 20 wood, one worker) lands

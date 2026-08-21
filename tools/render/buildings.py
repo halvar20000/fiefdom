@@ -967,9 +967,58 @@ def fishery():
     return geom.join(parts, "fishery"), (2, 2)
 
 
+def depot():
+    """
+    Storehouse: an open-fronted shed with goods stacked under it.
+
+    Open at the front on purpose. Every other 2x2 in the game is a closed hut,
+    and the one thing the player needs to read here is that this is a place
+    things are PUT -- so the load is visible from the road, and a barrow stands
+    outside it.
+    """
+    plaster = M.plaster(tint=(0.78, 0.72, 0.58))
+    roof = M.timber("DepotRoof", dark=True)
+    timber_l = M.timber("DepotTimber")
+    timber_d = M.timber("DepotTimberDark", dark=True)
+    sack = M.cloth("DepotSack", colour=(0.58, 0.52, 0.36))
+    stone = M.rough_stone("DepotFooting")
+
+    parts = []
+    parts.append(geom.box("dp_pad", (0.06, 0.06, 0.0), (1.88, 1.88, 0.08), stone))
+    # back and side walls; the front stands on posts
+    parts.append(geom.box("dp_back", (0.10, 1.62, 0.08), (1.80, 0.24, 0.86), plaster))
+    parts.append(geom.box("dp_left", (0.10, 0.72, 0.08), (0.22, 0.92, 0.80), plaster))
+    for i, x in enumerate((1.62, 1.62)):
+        parts.append(geom.box(f"dp_post_{i}", (x, 0.30 + i * 0.0, 0.08), (0.16, 0.16, 0.86),
+                              timber_d))
+    parts.append(geom.box("dp_post_l", (0.16, 0.30, 0.08), (0.16, 0.16, 0.86), timber_d))
+    parts.append(geom.box("dp_lintel", (0.10, 0.28, 0.94), (1.80, 0.20, 0.12), timber_d))
+    parts.append(geom.gable("dp_roof", (0.10, 0.28, 1.02), (1.80, 1.58, 0.52),
+                            roof, overhang=0.20))
+
+    # the load: crates and sacks under the open front
+    for i, (x, y, w_, d_, h) in enumerate([
+        (0.34, 0.60, 0.40, 0.36, 0.34), (0.80, 0.56, 0.34, 0.32, 0.28),
+        (0.36, 1.02, 0.36, 0.34, 0.26), (1.16, 0.62, 0.36, 0.34, 0.30),
+    ]):
+        parts.append(geom.box(f"dp_crate_{i}", (x, y, 0.08), (w_, d_, h), timber_l,
+                              rot_z=0.10 * (i % 3)))
+    for i, (x, y) in enumerate(((0.86, 1.04), (1.20, 1.06))):
+        parts.append(geom.cylinder(f"dp_sack_{i}", (x, y, 0.08), 0.15, 0.30, sack,
+                                   segments=8))
+
+    # a barrow outside, so it reads as a place things move through
+    parts.append(geom.box("dp_barrow", (1.30, 0.10, 0.16), (0.44, 0.30, 0.14), timber_l))
+    parts.append(geom.cylinder("dp_wheel", (1.34, 0.10, 0.10), 0.10, 0.05, timber_d,
+                               segments=10))
+    parts[-1].rotation_euler = (0.0, math.pi / 2.0, 0.0)
+    return geom.join(parts, "depot"), (2, 2)
+
+
 REGISTRY.update({
     "barracks": barracks,
     "fishery": fishery,
+    "depot": depot,
     "siege_camp": siege_camp,
     "pig_farm": pig_farm,
     "slaughterhouse": slaughterhouse,

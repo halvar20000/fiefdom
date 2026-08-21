@@ -1,5 +1,5 @@
 import type { GameState, PlacedBuilding } from './state';
-import { isFood, type Resource } from './defs';
+import { isFood, DEPOT_BATCH, type Resource } from './defs';
 import type { PathNode } from './pathfind';
 
 export type WorkerState =
@@ -40,6 +40,22 @@ export interface Worker {
   prey: number | null;
   /** Remaining waypoints to the current destination. */
   path: PathNode[];
+  /**
+   * Where this load is being taken.
+   *
+   * Needed because a producer's output no longer has one destination: it goes
+   * to the real store, or to a storehouse if one is nearer, and the arrival
+   * handler has to know which -- one adds to the town's stock, the other to a
+   * building's own pile.
+   */
+  dropAt: PlacedBuilding | null;
+}
+
+/** Everything a relay is holding, all kinds together. */
+export function totalHeld(b: PlacedBuilding): number {
+  let n = 0;
+  for (const v of Object.values(b.held)) n += v ?? 0;
+  return n;
 }
 
 export interface WorkerWorld {
@@ -56,6 +72,13 @@ export interface WorkerWorld {
   workSpot(b: PlacedBuilding, w: Worker): { x: number; z: number } | null;
   /** Is there an ox tether close enough to haul for this building? */
   haulerNear(b: PlacedBuilding): boolean;
+  /**
+   * Where a load of this good should be taken from here: the real store, or a
+   * storehouse if one is nearer and has room.
+   */
+  nearestDrop(
+    kind: 'stockpile' | 'granary', x: number, z: number,
+  ): PlacedBuilding | null;
   /** A production cycle finished -- consume whatever was being worked. */
   harvest(b: PlacedBuilding, w: Worker): void;
   /** Route around buildings. Null means no route exists. */
@@ -122,7 +145,7 @@ export class WorkerPool {
           speed: 1.55 + Math.random() * 0.4,
           building: b, state: 'idle', timer: 0.5 + Math.random(),
           tx: c.x, tz: c.z, carrying: null, carryAmount: 0, slot: have,
-          claim: null, prey: null, path: [],
+          claim: null, prey: null, path: [], dropAt: null,
         });
         have++;
       }
@@ -202,6 +225,10 @@ export class WorkerPool {
     for (const w of this.workers) {
       const b = w.building;
       if (!b) { w.state = 'idle'; continue; }
+      if (b.def.relay) {
+        this.updateRelay(w, b, dt);
+        continue;
+      }
       if (b.def.stocks && !b.def.produces) {
         this.updateStocker(w, b, b.def.stocks, dt);
         continue;
@@ -331,7 +358,7 @@ export class WorkerPool {
           w.carrying = prod.output;
           w.carryAmount = prod.amount;
           const kind = isFood(prod.output) ? 'granary' : 'stockpile';
-          const store = this.world.nearestStore(kind, w.x, w.z);
+          const store = this.world.nearestDrop(kind, w.x, w.z);
           if (!store) {
             this.state.notify(
               kind === 'granary'
@@ -342,6 +369,7 @@ export class WorkerPool {
             w.timer = 3;
             break;
           }
+          w.dropAt = store;
           const c = this.world.approach(store, w.x, w.z);
           this.goTo(w, c.x, c.z, 'toStore');
           break;
@@ -350,9 +378,20 @@ export class WorkerPool {
         case 'toStore': {
           if (!this.arrive(w, dt)) break;
           if (w.carrying) {
-            this.state.deposit(w.carrying, w.carryAmount);
+            const relay = w.dropAt?.def.relay;
+            if (relay) {
+              // Into the shed's own pile, not the town's stock. It only
+              // counts as stored once the carrier has walked it in.
+              const t = w.dropAt!;
+              const room = relay - totalHeld(t);
+              const put = Math.min(w.carryAmount, room);
+              if (put > 0) t.held[w.carrying] = (t.held[w.carrying] ?? 0) + put;
+            } else {
+              this.state.deposit(w.carrying, w.carryAmount);
+            }
             w.carrying = null;
             w.carryAmount = 0;
+            w.dropAt = null;
           }
           const c = this.world.approach(b, w.x, w.z);
           this.goTo(w, c.x, c.z, 'returning');
@@ -418,6 +457,78 @@ export class WorkerPool {
           w.carrying = null;
           w.carryAmount = 0;
         }
+        w.state = 'idle';
+        w.timer = 0.4;
+        return;
+      }
+
+      default:
+        w.state = 'idle';
+        w.timer = 0.4;
+    }
+  }
+
+  /**
+   * The storehouse carrier.
+   *
+   * Waits until there is something worth a trip, then takes the largest single
+   * kind -- one good per journey, because a man carries one thing, and because
+   * mixing kinds would mean deciding what to do when the stockpile has room
+   * for the stone but not the wood.
+   *
+   * It does NOT wait for a full load. A shed by a lone woodcutter would then
+   * sit on four logs forever, which looks exactly like a bug.
+   */
+  private updateRelay(w: Worker, b: PlacedBuilding, dt: number): void {
+    switch (w.state) {
+      case 'idle': {
+        w.timer -= dt;
+        if (w.timer > 0) return;
+
+        let best: Resource | null = null, most = 0;
+        for (const [r, n] of Object.entries(b.held)) {
+          if ((n ?? 0) > most) { most = n ?? 0; best = r as Resource; }
+        }
+        if (!best || most <= 0) { w.timer = 2; return; }
+
+        const kind = isFood(best) ? 'granary' : 'stockpile';
+        const store = this.world.nearestStore(kind, w.x, w.z);
+        if (!store) {
+          w.timer = 4;
+          this.state.notify(
+            kind === 'granary'
+              ? 'The storehouse has no granary to deliver to'
+              : 'The storehouse has no stockpile to deliver to', 'warn');
+          return;
+        }
+        const take = Math.min(DEPOT_BATCH, most);
+        b.held[best] = most - take;
+        w.carrying = best;
+        w.carryAmount = take;
+
+        const c = this.world.approach(store, w.x, w.z);
+        this.goTo(w, c.x, c.z, 'toStore');
+        return;
+      }
+
+      case 'toStore': {
+        if (!this.arrive(w, dt)) return;
+        if (w.carrying) {
+          // Anything the store had no room for goes back in the shed rather
+          // than being spilled: the carrier is the one part of the chain that
+          // can simply turn round and bring it home.
+          const put = this.state.deposit(w.carrying, w.carryAmount);
+          if (!put) b.held[w.carrying] = (b.held[w.carrying] ?? 0) + w.carryAmount;
+          w.carrying = null;
+          w.carryAmount = 0;
+        }
+        const home = this.world.approach(b, w.x, w.z);
+        this.goTo(w, home.x, home.z, 'returning');
+        return;
+      }
+
+      case 'returning': {
+        if (!this.arrive(w, dt)) return;
         w.state = 'idle';
         w.timer = 0.4;
         return;
