@@ -1,0 +1,3642 @@
+[
+  {
+    "name": "apple_orchard",
+    "rotation": 0,
+    "width": 204,
+    "height": 140,
+    "anchor_x": 13.03,
+    "anchor_y": 93.94,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
+    "name": "apple_orchard",
+    "rotation": 1,
+    "width": 224,
+    "height": 140,
+    "anchor_x": 85.79,
+    "anchor_y": 41.3,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
+    "name": "apple_orchard",
+    "rotation": 2,
+    "width": 204,
+    "height": 160,
+    "anchor_x": 190.97,
+    "anchor_y": 87.28,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
+    "name": "apple_orchard",
+    "rotation": 3,
+    "width": 224,
+    "height": 150,
+    "anchor_x": 138.21,
+    "anchor_y": 139.87,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
+    "name": "bakery",
+    "rotation": 0,
+    "width": 160,
+    "height": 130,
+    "anchor_x": 25.67,
+    "anchor_y": 91.39,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "bakery",
+    "rotation": 1,
+    "width": 188,
+    "height": 130,
+    "anchor_x": 70.81,
+    "anchor_y": 59.39,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "bakery",
+    "rotation": 2,
+    "width": 160,
+    "height": 156,
+    "anchor_x": 134.33,
+    "anchor_y": 94.23,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "bakery",
+    "rotation": 3,
+    "width": 188,
+    "height": 142,
+    "anchor_x": 117.19,
+    "anchor_y": 125.99,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "barracks",
+    "rotation": 0,
+    "width": 234,
+    "height": 174,
+    "anchor_x": 33.26,
+    "anchor_y": 120.26,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
+    "name": "barracks",
+    "rotation": 1,
+    "width": 266,
+    "height": 174,
+    "anchor_x": 100.65,
+    "anchor_y": 70.02,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
+    "name": "barracks",
+    "rotation": 2,
+    "width": 234,
+    "height": 204,
+    "anchor_x": 200.74,
+    "anchor_y": 117.96,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
+    "name": "barracks",
+    "rotation": 3,
+    "width": 266,
+    "height": 188,
+    "anchor_x": 165.35,
+    "anchor_y": 168.01,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
+    "name": "bin_apples_1",
+    "rotation": 0,
+    "width": 80,
+    "height": 56,
+    "anchor_x": 11.09,
+    "anchor_y": 34.86,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "bin_apples_1",
+    "rotation": 1,
+    "width": 86,
+    "height": 56,
+    "anchor_x": 36.58,
+    "anchor_y": 18.86,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "bin_apples_1",
+    "rotation": 2,
+    "width": 80,
+    "height": 64,
+    "anchor_x": 68.91,
+    "anchor_y": 35.65,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "bin_apples_1",
+    "rotation": 3,
+    "width": 86,
+    "height": 60,
+    "anchor_x": 49.42,
+    "anchor_y": 51.31,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "bin_apples_2",
+    "rotation": 0,
+    "width": 80,
+    "height": 56,
+    "anchor_x": 11.09,
+    "anchor_y": 34.86,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "bin_apples_2",
+    "rotation": 1,
+    "width": 86,
+    "height": 56,
+    "anchor_x": 36.58,
+    "anchor_y": 18.86,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "bin_apples_2",
+    "rotation": 2,
+    "width": 80,
+    "height": 64,
+    "anchor_x": 68.91,
+    "anchor_y": 35.65,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "bin_apples_2",
+    "rotation": 3,
+    "width": 86,
+    "height": 60,
+    "anchor_x": 49.42,
+    "anchor_y": 51.31,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "bin_apples_3",
+    "rotation": 0,
+    "width": 80,
+    "height": 58,
+    "anchor_x": 11.24,
+    "anchor_y": 36.18,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "bin_apples_3",
+    "rotation": 1,
+    "width": 86,
+    "height": 58,
+    "anchor_x": 36.28,
+    "anchor_y": 20.18,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "bin_apples_3",
+    "rotation": 2,
+    "width": 80,
+    "height": 64,
+    "anchor_x": 68.76,
+    "anchor_y": 35.81,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "bin_apples_3",
+    "rotation": 3,
+    "width": 86,
+    "height": 60,
+    "anchor_x": 49.72,
+    "anchor_y": 51.56,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "bin_bread_1",
+    "rotation": 0,
+    "width": 80,
+    "height": 56,
+    "anchor_x": 11.09,
+    "anchor_y": 34.86,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "bin_bread_1",
+    "rotation": 1,
+    "width": 86,
+    "height": 56,
+    "anchor_x": 36.58,
+    "anchor_y": 18.86,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "bin_bread_1",
+    "rotation": 2,
+    "width": 80,
+    "height": 64,
+    "anchor_x": 68.91,
+    "anchor_y": 35.65,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "bin_bread_1",
+    "rotation": 3,
+    "width": 86,
+    "height": 60,
+    "anchor_x": 49.42,
+    "anchor_y": 51.31,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "bin_bread_2",
+    "rotation": 0,
+    "width": 80,
+    "height": 56,
+    "anchor_x": 11.09,
+    "anchor_y": 34.86,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "bin_bread_2",
+    "rotation": 1,
+    "width": 86,
+    "height": 56,
+    "anchor_x": 36.58,
+    "anchor_y": 18.86,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "bin_bread_2",
+    "rotation": 2,
+    "width": 80,
+    "height": 64,
+    "anchor_x": 68.91,
+    "anchor_y": 35.65,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "bin_bread_2",
+    "rotation": 3,
+    "width": 86,
+    "height": 60,
+    "anchor_x": 49.42,
+    "anchor_y": 51.31,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "bin_bread_3",
+    "rotation": 0,
+    "width": 80,
+    "height": 60,
+    "anchor_x": 11.89,
+    "anchor_y": 38.62,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "bin_bread_3",
+    "rotation": 1,
+    "width": 90,
+    "height": 60,
+    "anchor_x": 36.92,
+    "anchor_y": 22.62,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "bin_bread_3",
+    "rotation": 2,
+    "width": 80,
+    "height": 68,
+    "anchor_x": 68.11,
+    "anchor_y": 38.58,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "bin_bread_3",
+    "rotation": 3,
+    "width": 90,
+    "height": 64,
+    "anchor_x": 53.08,
+    "anchor_y": 54.68,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "bin_cheese_1",
+    "rotation": 0,
+    "width": 80,
+    "height": 56,
+    "anchor_x": 11.09,
+    "anchor_y": 34.86,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "bin_cheese_1",
+    "rotation": 1,
+    "width": 86,
+    "height": 56,
+    "anchor_x": 36.58,
+    "anchor_y": 18.86,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "bin_cheese_1",
+    "rotation": 2,
+    "width": 80,
+    "height": 64,
+    "anchor_x": 68.91,
+    "anchor_y": 35.65,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "bin_cheese_1",
+    "rotation": 3,
+    "width": 86,
+    "height": 60,
+    "anchor_x": 49.42,
+    "anchor_y": 51.31,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "bin_cheese_2",
+    "rotation": 0,
+    "width": 80,
+    "height": 56,
+    "anchor_x": 11.09,
+    "anchor_y": 34.86,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "bin_cheese_2",
+    "rotation": 1,
+    "width": 86,
+    "height": 56,
+    "anchor_x": 36.58,
+    "anchor_y": 18.86,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "bin_cheese_2",
+    "rotation": 2,
+    "width": 80,
+    "height": 64,
+    "anchor_x": 68.91,
+    "anchor_y": 35.65,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "bin_cheese_2",
+    "rotation": 3,
+    "width": 86,
+    "height": 60,
+    "anchor_x": 49.42,
+    "anchor_y": 51.31,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "bin_cheese_3",
+    "rotation": 0,
+    "width": 80,
+    "height": 56,
+    "anchor_x": 11.09,
+    "anchor_y": 34.86,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "bin_cheese_3",
+    "rotation": 1,
+    "width": 86,
+    "height": 56,
+    "anchor_x": 36.58,
+    "anchor_y": 18.86,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "bin_cheese_3",
+    "rotation": 2,
+    "width": 80,
+    "height": 64,
+    "anchor_x": 68.91,
+    "anchor_y": 35.65,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "bin_cheese_3",
+    "rotation": 3,
+    "width": 86,
+    "height": 60,
+    "anchor_x": 49.42,
+    "anchor_y": 51.31,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "bin_meat_1",
+    "rotation": 0,
+    "width": 80,
+    "height": 56,
+    "anchor_x": 11.09,
+    "anchor_y": 34.86,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "bin_meat_1",
+    "rotation": 1,
+    "width": 86,
+    "height": 56,
+    "anchor_x": 36.58,
+    "anchor_y": 18.86,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "bin_meat_1",
+    "rotation": 2,
+    "width": 80,
+    "height": 64,
+    "anchor_x": 68.91,
+    "anchor_y": 35.65,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "bin_meat_1",
+    "rotation": 3,
+    "width": 86,
+    "height": 60,
+    "anchor_x": 49.42,
+    "anchor_y": 51.31,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "bin_meat_2",
+    "rotation": 0,
+    "width": 80,
+    "height": 56,
+    "anchor_x": 11.09,
+    "anchor_y": 34.86,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "bin_meat_2",
+    "rotation": 1,
+    "width": 86,
+    "height": 56,
+    "anchor_x": 36.58,
+    "anchor_y": 18.86,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "bin_meat_2",
+    "rotation": 2,
+    "width": 80,
+    "height": 64,
+    "anchor_x": 68.91,
+    "anchor_y": 35.65,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "bin_meat_2",
+    "rotation": 3,
+    "width": 86,
+    "height": 60,
+    "anchor_x": 49.42,
+    "anchor_y": 51.31,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "bin_meat_3",
+    "rotation": 0,
+    "width": 80,
+    "height": 58,
+    "anchor_x": 11.58,
+    "anchor_y": 36.94,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "bin_meat_3",
+    "rotation": 1,
+    "width": 88,
+    "height": 58,
+    "anchor_x": 36.57,
+    "anchor_y": 20.94,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "bin_meat_3",
+    "rotation": 2,
+    "width": 80,
+    "height": 66,
+    "anchor_x": 68.42,
+    "anchor_y": 37.22,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "bin_meat_3",
+    "rotation": 3,
+    "width": 88,
+    "height": 62,
+    "anchor_x": 51.43,
+    "anchor_y": 53.15,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "brewery",
+    "rotation": 0,
+    "width": 210,
+    "height": 162,
+    "anchor_x": 35.07,
+    "anchor_y": 114.55,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
+    "name": "brewery",
+    "rotation": 1,
+    "width": 242,
+    "height": 162,
+    "anchor_x": 89.31,
+    "anchor_y": 71.83,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
+    "name": "brewery",
+    "rotation": 2,
+    "width": 210,
+    "height": 194,
+    "anchor_x": 174.93,
+    "anchor_y": 114.47,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
+    "name": "brewery",
+    "rotation": 3,
+    "width": 242,
+    "height": 178,
+    "anchor_x": 152.69,
+    "anchor_y": 157.28,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
+    "name": "bush",
+    "rotation": 0,
+    "width": 56,
+    "height": 46,
+    "anchor_x": -0.38,
+    "anchor_y": 31.17,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "bush",
+    "rotation": 1,
+    "width": 64,
+    "height": 46,
+    "anchor_x": 24.17,
+    "anchor_y": 15.01,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "bush",
+    "rotation": 2,
+    "width": 56,
+    "height": 54,
+    "anchor_x": 56.38,
+    "anchor_y": 31.09,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "bush",
+    "rotation": 3,
+    "width": 64,
+    "height": 50,
+    "anchor_x": 39.83,
+    "anchor_y": 47.2,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "campfire",
+    "rotation": 0,
+    "width": 62,
+    "height": 48,
+    "anchor_x": 3.61,
+    "anchor_y": 30.17,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "campfire",
+    "rotation": 1,
+    "width": 68,
+    "height": 48,
+    "anchor_x": 27.92,
+    "anchor_y": 14.86,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "campfire",
+    "rotation": 2,
+    "width": 62,
+    "height": 52,
+    "anchor_x": 58.39,
+    "anchor_y": 28.84,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "campfire",
+    "rotation": 3,
+    "width": 68,
+    "height": 50,
+    "anchor_x": 40.08,
+    "anchor_y": 44.57,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "dairy_farm",
+    "rotation": 0,
+    "width": 212,
+    "height": 148,
+    "anchor_x": 18.33,
+    "anchor_y": 99.29,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
+    "name": "dairy_farm",
+    "rotation": 1,
+    "width": 234,
+    "height": 148,
+    "anchor_x": 90.59,
+    "anchor_y": 47.77,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
+    "name": "dairy_farm",
+    "rotation": 2,
+    "width": 212,
+    "height": 170,
+    "anchor_x": 193.67,
+    "anchor_y": 94.52,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
+    "name": "dairy_farm",
+    "rotation": 3,
+    "width": 234,
+    "height": 158,
+    "anchor_x": 143.41,
+    "anchor_y": 145.56,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
+    "name": "dead_tree",
+    "rotation": 0,
+    "width": 84,
+    "height": 92,
+    "anchor_x": 21.62,
+    "anchor_y": 75.04,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "dead_tree",
+    "rotation": 1,
+    "width": 112,
+    "height": 92,
+    "anchor_x": 28.13,
+    "anchor_y": 57.81,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "dead_tree",
+    "rotation": 2,
+    "width": 84,
+    "height": 120,
+    "anchor_x": 62.38,
+    "anchor_y": 74.48,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "dead_tree",
+    "rotation": 3,
+    "width": 112,
+    "height": 106,
+    "anchor_x": 83.87,
+    "anchor_y": 91.61,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "gatehouse",
+    "rotation": 0,
+    "width": 182,
+    "height": 148,
+    "anchor_x": 41.58,
+    "anchor_y": 106.33,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "gatehouse",
+    "rotation": 1,
+    "width": 214,
+    "height": 148,
+    "anchor_x": 76.71,
+    "anchor_y": 74.33,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "gatehouse",
+    "rotation": 2,
+    "width": 182,
+    "height": 178,
+    "anchor_x": 140.42,
+    "anchor_y": 106.19,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "gatehouse",
+    "rotation": 3,
+    "width": 214,
+    "height": 162,
+    "anchor_x": 137.29,
+    "anchor_y": 138.04,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "granary_bin",
+    "rotation": 0,
+    "width": 80,
+    "height": 56,
+    "anchor_x": 11.09,
+    "anchor_y": 34.86,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "granary_bin",
+    "rotation": 1,
+    "width": 86,
+    "height": 56,
+    "anchor_x": 36.58,
+    "anchor_y": 18.86,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "granary_bin",
+    "rotation": 2,
+    "width": 80,
+    "height": 64,
+    "anchor_x": 68.91,
+    "anchor_y": 35.65,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "granary_bin",
+    "rotation": 3,
+    "width": 86,
+    "height": 60,
+    "anchor_x": 49.42,
+    "anchor_y": 51.31,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "hops_farm",
+    "rotation": 0,
+    "width": 198,
+    "height": 142,
+    "anchor_x": 21.14,
+    "anchor_y": 101.07,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
+    "name": "hops_farm",
+    "rotation": 1,
+    "width": 222,
+    "height": 142,
+    "anchor_x": 76.28,
+    "anchor_y": 50.59,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
+    "name": "hops_farm",
+    "rotation": 2,
+    "width": 198,
+    "height": 166,
+    "anchor_x": 176.86,
+    "anchor_y": 89.55,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
+    "name": "hops_farm",
+    "rotation": 3,
+    "width": 222,
+    "height": 154,
+    "anchor_x": 145.72,
+    "anchor_y": 139.84,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
+    "name": "hovel",
+    "rotation": 0,
+    "width": 156,
+    "height": 126,
+    "anchor_x": 28.9,
+    "anchor_y": 88.53,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "hovel",
+    "rotation": 1,
+    "width": 182,
+    "height": 126,
+    "anchor_x": 68.27,
+    "anchor_y": 59.09,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "hovel",
+    "rotation": 2,
+    "width": 156,
+    "height": 150,
+    "anchor_x": 127.1,
+    "anchor_y": 90.29,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "hovel",
+    "rotation": 3,
+    "width": 182,
+    "height": 138,
+    "anchor_x": 113.73,
+    "anchor_y": 120.2,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "hunter",
+    "rotation": 0,
+    "width": 124,
+    "height": 96,
+    "anchor_x": 12.96,
+    "anchor_y": 69.61,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "hunter",
+    "rotation": 1,
+    "width": 142,
+    "height": 96,
+    "anchor_x": 46.08,
+    "anchor_y": 36.81,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "hunter",
+    "rotation": 2,
+    "width": 124,
+    "height": 112,
+    "anchor_x": 111.04,
+    "anchor_y": 60.75,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "hunter",
+    "rotation": 3,
+    "width": 142,
+    "height": 104,
+    "anchor_x": 95.92,
+    "anchor_y": 93.73,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "inn",
+    "rotation": 0,
+    "width": 230,
+    "height": 174,
+    "anchor_x": 30.47,
+    "anchor_y": 121.69,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
+    "name": "inn",
+    "rotation": 1,
+    "width": 262,
+    "height": 174,
+    "anchor_x": 98.08,
+    "anchor_y": 71.29,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
+    "name": "inn",
+    "rotation": 2,
+    "width": 230,
+    "height": 206,
+    "anchor_x": 199.53,
+    "anchor_y": 120.83,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
+    "name": "inn",
+    "rotation": 3,
+    "width": 262,
+    "height": 190,
+    "anchor_x": 163.92,
+    "anchor_y": 171.56,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
+    "name": "iron_mine",
+    "rotation": 0,
+    "width": 208,
+    "height": 148,
+    "anchor_x": 18.78,
+    "anchor_y": 97.91,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
+    "name": "iron_mine",
+    "rotation": 1,
+    "width": 230,
+    "height": 148,
+    "anchor_x": 92.6,
+    "anchor_y": 49.91,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
+    "name": "iron_mine",
+    "rotation": 2,
+    "width": 208,
+    "height": 170,
+    "anchor_x": 189.22,
+    "anchor_y": 97.71,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
+    "name": "iron_mine",
+    "rotation": 3,
+    "width": 230,
+    "height": 158,
+    "anchor_x": 137.4,
+    "anchor_y": 145.52,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
+    "name": "keep",
+    "rotation": 0,
+    "width": 282,
+    "height": 248,
+    "anchor_x": 79.64,
+    "anchor_y": 187.21,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
+    "name": "keep",
+    "rotation": 1,
+    "width": 346,
+    "height": 248,
+    "anchor_x": 116.17,
+    "anchor_y": 144.01,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
+    "name": "keep",
+    "rotation": 2,
+    "width": 282,
+    "height": 310,
+    "anchor_x": 202.36,
+    "anchor_y": 192.03,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
+    "name": "keep",
+    "rotation": 3,
+    "width": 346,
+    "height": 278,
+    "anchor_x": 229.83,
+    "anchor_y": 235.13,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
+    "name": "market",
+    "rotation": 0,
+    "width": 192,
+    "height": 140,
+    "anchor_x": 17.98,
+    "anchor_y": 91.91,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
+    "name": "market",
+    "rotation": 1,
+    "width": 216,
+    "height": 140,
+    "anchor_x": 89.6,
+    "anchor_y": 49.51,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
+    "name": "market",
+    "rotation": 2,
+    "width": 192,
+    "height": 162,
+    "anchor_x": 174.02,
+    "anchor_y": 95.71,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
+    "name": "market",
+    "rotation": 3,
+    "width": 216,
+    "height": 150,
+    "anchor_x": 126.4,
+    "anchor_y": 137.92,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
+    "name": "mill",
+    "rotation": 0,
+    "width": 162,
+    "height": 158,
+    "anchor_x": 9.11,
+    "anchor_y": 122.89,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
+    "name": "mill",
+    "rotation": 1,
+    "width": 206,
+    "height": 158,
+    "anchor_x": 63.75,
+    "anchor_y": 78.42,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
+    "name": "mill",
+    "rotation": 2,
+    "width": 162,
+    "height": 202,
+    "anchor_x": 152.89,
+    "anchor_y": 127.03,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
+    "name": "mill",
+    "rotation": 3,
+    "width": 206,
+    "height": 178,
+    "anchor_x": 142.25,
+    "anchor_y": 170.6,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
+    "name": "olive_tree",
+    "rotation": 0,
+    "width": 94,
+    "height": 92,
+    "anchor_x": 25.47,
+    "anchor_y": 71.49,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "olive_tree",
+    "rotation": 1,
+    "width": 120,
+    "height": 92,
+    "anchor_x": 35.95,
+    "anchor_y": 54.85,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "olive_tree",
+    "rotation": 2,
+    "width": 94,
+    "height": 116,
+    "anchor_x": 68.52,
+    "anchor_y": 71.29,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "olive_tree",
+    "rotation": 3,
+    "width": 120,
+    "height": 104,
+    "anchor_x": 84.05,
+    "anchor_y": 88.08,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "ox_tether",
+    "rotation": 0,
+    "width": 88,
+    "height": 72,
+    "anchor_x": -9.81,
+    "anchor_y": 50.12,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "ox_tether",
+    "rotation": 1,
+    "width": 102,
+    "height": 72,
+    "anchor_x": 37.35,
+    "anchor_y": 19.72,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "ox_tether",
+    "rotation": 2,
+    "width": 88,
+    "height": 84,
+    "anchor_x": 97.81,
+    "anchor_y": 48.89,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "ox_tether",
+    "rotation": 3,
+    "width": 102,
+    "height": 78,
+    "anchor_x": 64.65,
+    "anchor_y": 79.62,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "palm",
+    "rotation": 0,
+    "width": 190,
+    "height": 178,
+    "anchor_x": 78.61,
+    "anchor_y": 137.54,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "palm",
+    "rotation": 1,
+    "width": 238,
+    "height": 178,
+    "anchor_x": 74.42,
+    "anchor_y": 119.04,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "palm",
+    "rotation": 2,
+    "width": 190,
+    "height": 224,
+    "anchor_x": 111.39,
+    "anchor_y": 139.08,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "palm",
+    "rotation": 3,
+    "width": 238,
+    "height": 200,
+    "anchor_x": 163.58,
+    "anchor_y": 157.56,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pig_farm",
+    "rotation": 0,
+    "width": 204,
+    "height": 140,
+    "anchor_x": 15.37,
+    "anchor_y": 94.29,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pig_farm",
+    "rotation": 1,
+    "width": 224,
+    "height": 140,
+    "anchor_x": 85.5,
+    "anchor_y": 42.77,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pig_farm",
+    "rotation": 2,
+    "width": 204,
+    "height": 160,
+    "anchor_x": 188.63,
+    "anchor_y": 87.52,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pig_farm",
+    "rotation": 3,
+    "width": 224,
+    "height": 150,
+    "anchor_x": 138.5,
+    "anchor_y": 139.09,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_ale_1",
+    "rotation": 0,
+    "width": 80,
+    "height": 58,
+    "anchor_x": 11.54,
+    "anchor_y": 36.84,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_ale_1",
+    "rotation": 1,
+    "width": 88,
+    "height": 58,
+    "anchor_x": 36.66,
+    "anchor_y": 20.84,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_ale_1",
+    "rotation": 2,
+    "width": 80,
+    "height": 66,
+    "anchor_x": 68.46,
+    "anchor_y": 37.17,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_ale_1",
+    "rotation": 3,
+    "width": 88,
+    "height": 62,
+    "anchor_x": 51.34,
+    "anchor_y": 53.07,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_ale_2",
+    "rotation": 0,
+    "width": 80,
+    "height": 58,
+    "anchor_x": 11.54,
+    "anchor_y": 36.84,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_ale_2",
+    "rotation": 1,
+    "width": 88,
+    "height": 58,
+    "anchor_x": 36.66,
+    "anchor_y": 20.84,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_ale_2",
+    "rotation": 2,
+    "width": 80,
+    "height": 66,
+    "anchor_x": 68.46,
+    "anchor_y": 37.17,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_ale_2",
+    "rotation": 3,
+    "width": 88,
+    "height": 62,
+    "anchor_x": 51.34,
+    "anchor_y": 53.07,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_ale_3",
+    "rotation": 0,
+    "width": 80,
+    "height": 58,
+    "anchor_x": 11.54,
+    "anchor_y": 36.84,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_ale_3",
+    "rotation": 1,
+    "width": 88,
+    "height": 58,
+    "anchor_x": 36.66,
+    "anchor_y": 20.84,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_ale_3",
+    "rotation": 2,
+    "width": 80,
+    "height": 66,
+    "anchor_x": 68.46,
+    "anchor_y": 37.17,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_ale_3",
+    "rotation": 3,
+    "width": 88,
+    "height": 62,
+    "anchor_x": 51.34,
+    "anchor_y": 53.07,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_flour_1",
+    "rotation": 0,
+    "width": 80,
+    "height": 54,
+    "anchor_x": 10.41,
+    "anchor_y": 32.75,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_flour_1",
+    "rotation": 1,
+    "width": 84,
+    "height": 54,
+    "anchor_x": 36.12,
+    "anchor_y": 16.31,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_flour_1",
+    "rotation": 2,
+    "width": 80,
+    "height": 60,
+    "anchor_x": 69.59,
+    "anchor_y": 32.35,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_flour_1",
+    "rotation": 3,
+    "width": 84,
+    "height": 56,
+    "anchor_x": 47.88,
+    "anchor_y": 48.08,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_flour_2",
+    "rotation": 0,
+    "width": 84,
+    "height": 62,
+    "anchor_x": 14.09,
+    "anchor_y": 40.48,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_flour_2",
+    "rotation": 1,
+    "width": 92,
+    "height": 62,
+    "anchor_x": 36.63,
+    "anchor_y": 24.03,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_flour_2",
+    "rotation": 2,
+    "width": 84,
+    "height": 70,
+    "anchor_x": 69.91,
+    "anchor_y": 39.33,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_flour_2",
+    "rotation": 3,
+    "width": 92,
+    "height": 66,
+    "anchor_x": 55.37,
+    "anchor_y": 55.97,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_flour_3",
+    "rotation": 0,
+    "width": 86,
+    "height": 70,
+    "anchor_x": 16.77,
+    "anchor_y": 48.2,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_flour_3",
+    "rotation": 1,
+    "width": 98,
+    "height": 70,
+    "anchor_x": 36.14,
+    "anchor_y": 31.75,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_flour_3",
+    "rotation": 2,
+    "width": 86,
+    "height": 82,
+    "anchor_x": 69.23,
+    "anchor_y": 47.31,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_flour_3",
+    "rotation": 3,
+    "width": 98,
+    "height": 76,
+    "anchor_x": 61.86,
+    "anchor_y": 63.85,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_hops_1",
+    "rotation": 0,
+    "width": 80,
+    "height": 58,
+    "anchor_x": 11.54,
+    "anchor_y": 36.84,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_hops_1",
+    "rotation": 1,
+    "width": 88,
+    "height": 58,
+    "anchor_x": 36.66,
+    "anchor_y": 20.84,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_hops_1",
+    "rotation": 2,
+    "width": 80,
+    "height": 66,
+    "anchor_x": 68.46,
+    "anchor_y": 37.17,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_hops_1",
+    "rotation": 3,
+    "width": 88,
+    "height": 62,
+    "anchor_x": 51.34,
+    "anchor_y": 53.07,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_hops_2",
+    "rotation": 0,
+    "width": 80,
+    "height": 58,
+    "anchor_x": 11.54,
+    "anchor_y": 36.84,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_hops_2",
+    "rotation": 1,
+    "width": 88,
+    "height": 58,
+    "anchor_x": 36.66,
+    "anchor_y": 20.84,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_hops_2",
+    "rotation": 2,
+    "width": 80,
+    "height": 66,
+    "anchor_x": 68.46,
+    "anchor_y": 37.17,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_hops_2",
+    "rotation": 3,
+    "width": 88,
+    "height": 62,
+    "anchor_x": 51.34,
+    "anchor_y": 53.07,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_hops_3",
+    "rotation": 0,
+    "width": 80,
+    "height": 58,
+    "anchor_x": 11.54,
+    "anchor_y": 36.84,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_hops_3",
+    "rotation": 1,
+    "width": 88,
+    "height": 58,
+    "anchor_x": 36.66,
+    "anchor_y": 20.84,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_hops_3",
+    "rotation": 2,
+    "width": 80,
+    "height": 66,
+    "anchor_x": 68.46,
+    "anchor_y": 37.17,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_hops_3",
+    "rotation": 3,
+    "width": 88,
+    "height": 62,
+    "anchor_x": 51.34,
+    "anchor_y": 53.07,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_iron_1",
+    "rotation": 0,
+    "width": 78,
+    "height": 52,
+    "anchor_x": 9.07,
+    "anchor_y": 30.59,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_iron_1",
+    "rotation": 1,
+    "width": 82,
+    "height": 52,
+    "anchor_x": 36.7,
+    "anchor_y": 14.59,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_iron_1",
+    "rotation": 2,
+    "width": 78,
+    "height": 56,
+    "anchor_x": 68.93,
+    "anchor_y": 30.44,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_iron_1",
+    "rotation": 3,
+    "width": 82,
+    "height": 54,
+    "anchor_x": 45.3,
+    "anchor_y": 46.55,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_iron_2",
+    "rotation": 0,
+    "width": 78,
+    "height": 52,
+    "anchor_x": 9.07,
+    "anchor_y": 30.59,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_iron_2",
+    "rotation": 1,
+    "width": 82,
+    "height": 52,
+    "anchor_x": 36.7,
+    "anchor_y": 14.59,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_iron_2",
+    "rotation": 2,
+    "width": 78,
+    "height": 56,
+    "anchor_x": 68.93,
+    "anchor_y": 30.44,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_iron_2",
+    "rotation": 3,
+    "width": 82,
+    "height": 54,
+    "anchor_x": 45.3,
+    "anchor_y": 46.55,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_iron_3",
+    "rotation": 0,
+    "width": 78,
+    "height": 52,
+    "anchor_x": 9.07,
+    "anchor_y": 30.59,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_iron_3",
+    "rotation": 1,
+    "width": 82,
+    "height": 52,
+    "anchor_x": 36.7,
+    "anchor_y": 14.59,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_iron_3",
+    "rotation": 2,
+    "width": 78,
+    "height": 56,
+    "anchor_x": 68.93,
+    "anchor_y": 30.44,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_iron_3",
+    "rotation": 3,
+    "width": 82,
+    "height": 54,
+    "anchor_x": 45.3,
+    "anchor_y": 46.55,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_pigs_1",
+    "rotation": 0,
+    "width": 78,
+    "height": 54,
+    "anchor_x": 9.47,
+    "anchor_y": 32.49,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_pigs_1",
+    "rotation": 1,
+    "width": 84,
+    "height": 54,
+    "anchor_x": 36.86,
+    "anchor_y": 16.49,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_pigs_1",
+    "rotation": 2,
+    "width": 78,
+    "height": 60,
+    "anchor_x": 68.53,
+    "anchor_y": 32.92,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_pigs_1",
+    "rotation": 3,
+    "width": 84,
+    "height": 56,
+    "anchor_x": 47.14,
+    "anchor_y": 48.25,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_pigs_2",
+    "rotation": 0,
+    "width": 78,
+    "height": 54,
+    "anchor_x": 9.47,
+    "anchor_y": 32.49,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_pigs_2",
+    "rotation": 1,
+    "width": 84,
+    "height": 54,
+    "anchor_x": 36.86,
+    "anchor_y": 16.49,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_pigs_2",
+    "rotation": 2,
+    "width": 78,
+    "height": 60,
+    "anchor_x": 68.53,
+    "anchor_y": 32.92,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_pigs_2",
+    "rotation": 3,
+    "width": 84,
+    "height": 56,
+    "anchor_x": 47.14,
+    "anchor_y": 48.25,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_pigs_3",
+    "rotation": 0,
+    "width": 78,
+    "height": 54,
+    "anchor_x": 9.47,
+    "anchor_y": 32.49,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_pigs_3",
+    "rotation": 1,
+    "width": 84,
+    "height": 54,
+    "anchor_x": 36.86,
+    "anchor_y": 16.49,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_pigs_3",
+    "rotation": 2,
+    "width": 78,
+    "height": 60,
+    "anchor_x": 68.53,
+    "anchor_y": 32.92,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_pigs_3",
+    "rotation": 3,
+    "width": 84,
+    "height": 56,
+    "anchor_x": 47.14,
+    "anchor_y": 48.25,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_pitch_1",
+    "rotation": 0,
+    "width": 80,
+    "height": 58,
+    "anchor_x": 11.36,
+    "anchor_y": 36.45,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_pitch_1",
+    "rotation": 1,
+    "width": 88,
+    "height": 58,
+    "anchor_x": 37.02,
+    "anchor_y": 20.45,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_pitch_1",
+    "rotation": 2,
+    "width": 80,
+    "height": 64,
+    "anchor_x": 68.64,
+    "anchor_y": 35.96,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_pitch_1",
+    "rotation": 3,
+    "width": 88,
+    "height": 62,
+    "anchor_x": 50.98,
+    "anchor_y": 52.77,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_pitch_2",
+    "rotation": 0,
+    "width": 80,
+    "height": 58,
+    "anchor_x": 11.36,
+    "anchor_y": 36.45,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_pitch_2",
+    "rotation": 1,
+    "width": 88,
+    "height": 58,
+    "anchor_x": 37.02,
+    "anchor_y": 20.45,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_pitch_2",
+    "rotation": 2,
+    "width": 80,
+    "height": 64,
+    "anchor_x": 68.64,
+    "anchor_y": 35.96,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_pitch_2",
+    "rotation": 3,
+    "width": 88,
+    "height": 62,
+    "anchor_x": 50.98,
+    "anchor_y": 52.77,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_pitch_3",
+    "rotation": 0,
+    "width": 80,
+    "height": 58,
+    "anchor_x": 11.36,
+    "anchor_y": 36.45,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_pitch_3",
+    "rotation": 1,
+    "width": 88,
+    "height": 58,
+    "anchor_x": 37.02,
+    "anchor_y": 20.45,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_pitch_3",
+    "rotation": 2,
+    "width": 80,
+    "height": 64,
+    "anchor_x": 68.64,
+    "anchor_y": 35.96,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_pitch_3",
+    "rotation": 3,
+    "width": 88,
+    "height": 62,
+    "anchor_x": 50.98,
+    "anchor_y": 52.77,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_stone_1",
+    "rotation": 0,
+    "width": 76,
+    "height": 52,
+    "anchor_x": 7.9,
+    "anchor_y": 30.21,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_stone_1",
+    "rotation": 1,
+    "width": 82,
+    "height": 52,
+    "anchor_x": 37.05,
+    "anchor_y": 14.21,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_stone_1",
+    "rotation": 2,
+    "width": 76,
+    "height": 56,
+    "anchor_x": 68.1,
+    "anchor_y": 30.24,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_stone_1",
+    "rotation": 3,
+    "width": 82,
+    "height": 54,
+    "anchor_x": 44.95,
+    "anchor_y": 46.26,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_stone_2",
+    "rotation": 0,
+    "width": 80,
+    "height": 56,
+    "anchor_x": 11.09,
+    "anchor_y": 34.86,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_stone_2",
+    "rotation": 1,
+    "width": 86,
+    "height": 56,
+    "anchor_x": 36.58,
+    "anchor_y": 18.86,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_stone_2",
+    "rotation": 2,
+    "width": 80,
+    "height": 64,
+    "anchor_x": 68.91,
+    "anchor_y": 35.65,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_stone_2",
+    "rotation": 3,
+    "width": 86,
+    "height": 60,
+    "anchor_x": 49.42,
+    "anchor_y": 51.31,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_stone_3",
+    "rotation": 0,
+    "width": 82,
+    "height": 62,
+    "anchor_x": 13.29,
+    "anchor_y": 40.5,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_stone_3",
+    "rotation": 1,
+    "width": 90,
+    "height": 62,
+    "anchor_x": 36.1,
+    "anchor_y": 24.5,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_stone_3",
+    "rotation": 2,
+    "width": 82,
+    "height": 70,
+    "anchor_x": 68.71,
+    "anchor_y": 40.05,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_stone_3",
+    "rotation": 3,
+    "width": 90,
+    "height": 66,
+    "anchor_x": 53.9,
+    "anchor_y": 56.36,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_wheat_1",
+    "rotation": 0,
+    "width": 84,
+    "height": 66,
+    "anchor_x": 15.26,
+    "anchor_y": 44.66,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_wheat_1",
+    "rotation": 1,
+    "width": 96,
+    "height": 66,
+    "anchor_x": 37.08,
+    "anchor_y": 28.66,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_wheat_1",
+    "rotation": 2,
+    "width": 84,
+    "height": 78,
+    "anchor_x": 68.74,
+    "anchor_y": 45.2,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_wheat_1",
+    "rotation": 3,
+    "width": 96,
+    "height": 72,
+    "anchor_x": 58.92,
+    "anchor_y": 61.03,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_wheat_2",
+    "rotation": 0,
+    "width": 84,
+    "height": 66,
+    "anchor_x": 15.26,
+    "anchor_y": 44.66,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_wheat_2",
+    "rotation": 1,
+    "width": 96,
+    "height": 66,
+    "anchor_x": 37.08,
+    "anchor_y": 28.66,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_wheat_2",
+    "rotation": 2,
+    "width": 84,
+    "height": 78,
+    "anchor_x": 68.74,
+    "anchor_y": 45.2,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_wheat_2",
+    "rotation": 3,
+    "width": 96,
+    "height": 72,
+    "anchor_x": 58.92,
+    "anchor_y": 61.03,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_wheat_3",
+    "rotation": 0,
+    "width": 84,
+    "height": 66,
+    "anchor_x": 15.26,
+    "anchor_y": 44.66,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_wheat_3",
+    "rotation": 1,
+    "width": 96,
+    "height": 66,
+    "anchor_x": 37.08,
+    "anchor_y": 28.66,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_wheat_3",
+    "rotation": 2,
+    "width": 84,
+    "height": 78,
+    "anchor_x": 68.74,
+    "anchor_y": 45.2,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_wheat_3",
+    "rotation": 3,
+    "width": 96,
+    "height": 72,
+    "anchor_x": 58.92,
+    "anchor_y": 61.03,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_wood_1",
+    "rotation": 0,
+    "width": 78,
+    "height": 52,
+    "anchor_x": 9.56,
+    "anchor_y": 30.29,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_wood_1",
+    "rotation": 1,
+    "width": 82,
+    "height": 52,
+    "anchor_x": 37.25,
+    "anchor_y": 14.81,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_wood_1",
+    "rotation": 2,
+    "width": 78,
+    "height": 56,
+    "anchor_x": 68.44,
+    "anchor_y": 30.67,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_wood_1",
+    "rotation": 3,
+    "width": 82,
+    "height": 54,
+    "anchor_x": 44.75,
+    "anchor_y": 46.27,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_wood_2",
+    "rotation": 0,
+    "width": 80,
+    "height": 58,
+    "anchor_x": 11.75,
+    "anchor_y": 35.92,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_wood_2",
+    "rotation": 1,
+    "width": 88,
+    "height": 58,
+    "anchor_x": 37.79,
+    "anchor_y": 20.43,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_wood_2",
+    "rotation": 2,
+    "width": 80,
+    "height": 64,
+    "anchor_x": 68.25,
+    "anchor_y": 36.07,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_wood_2",
+    "rotation": 3,
+    "width": 88,
+    "height": 62,
+    "anchor_x": 50.21,
+    "anchor_y": 52.3,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_wood_3",
+    "rotation": 0,
+    "width": 84,
+    "height": 64,
+    "anchor_x": 14.94,
+    "anchor_y": 41.55,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_wood_3",
+    "rotation": 1,
+    "width": 92,
+    "height": 64,
+    "anchor_x": 37.32,
+    "anchor_y": 26.06,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_wood_3",
+    "rotation": 2,
+    "width": 84,
+    "height": 72,
+    "anchor_x": 69.06,
+    "anchor_y": 41.47,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pile_wood_3",
+    "rotation": 3,
+    "width": 92,
+    "height": 68,
+    "anchor_x": 54.68,
+    "anchor_y": 57.34,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pitch_rig",
+    "rotation": 0,
+    "width": 124,
+    "height": 80,
+    "anchor_x": -0.22,
+    "anchor_y": 47.76,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pitch_rig",
+    "rotation": 1,
+    "width": 132,
+    "height": 80,
+    "anchor_x": 58.82,
+    "anchor_y": 14.96,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pitch_rig",
+    "rotation": 2,
+    "width": 124,
+    "height": 88,
+    "anchor_x": 124.22,
+    "anchor_y": 48.25,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pitch_rig",
+    "rotation": 3,
+    "width": 132,
+    "height": 84,
+    "anchor_x": 73.18,
+    "anchor_y": 80.95,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "quarry",
+    "rotation": 0,
+    "width": 222,
+    "height": 160,
+    "anchor_x": 20.55,
+    "anchor_y": 110.32,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
+    "name": "quarry",
+    "rotation": 1,
+    "width": 248,
+    "height": 160,
+    "anchor_x": 92.73,
+    "anchor_y": 56.17,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
+    "name": "quarry",
+    "rotation": 2,
+    "width": 222,
+    "height": 186,
+    "anchor_x": 201.45,
+    "anchor_y": 105.0,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
+    "name": "quarry",
+    "rotation": 3,
+    "width": 248,
+    "height": 172,
+    "anchor_x": 155.27,
+    "anchor_y": 158.86,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
+    "name": "rock",
+    "rotation": 0,
+    "width": 64,
+    "height": 50,
+    "anchor_x": 4.04,
+    "anchor_y": 31.63,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "rock",
+    "rotation": 1,
+    "width": 72,
+    "height": 48,
+    "anchor_x": 28.98,
+    "anchor_y": 14.57,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "rock",
+    "rotation": 2,
+    "width": 64,
+    "height": 54,
+    "anchor_x": 59.96,
+    "anchor_y": 29.37,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "rock",
+    "rotation": 3,
+    "width": 72,
+    "height": 50,
+    "anchor_x": 43.02,
+    "anchor_y": 44.86,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "slaughterhouse",
+    "rotation": 0,
+    "width": 174,
+    "height": 140,
+    "anchor_x": 23.14,
+    "anchor_y": 104.19,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "slaughterhouse",
+    "rotation": 1,
+    "width": 204,
+    "height": 140,
+    "anchor_x": 64.86,
+    "anchor_y": 60.83,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "slaughterhouse",
+    "rotation": 2,
+    "width": 174,
+    "height": 166,
+    "anchor_x": 150.86,
+    "anchor_y": 93.83,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "slaughterhouse",
+    "rotation": 3,
+    "width": 204,
+    "height": 152,
+    "anchor_x": 139.14,
+    "anchor_y": 137.32,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "stockpile_deck",
+    "rotation": 0,
+    "width": 74,
+    "height": 46,
+    "anchor_x": 5.71,
+    "anchor_y": 24.57,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "stockpile_deck",
+    "rotation": 1,
+    "width": 76,
+    "height": 46,
+    "anchor_x": 36.53,
+    "anchor_y": 8.57,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "stockpile_deck",
+    "rotation": 2,
+    "width": 74,
+    "height": 48,
+    "anchor_x": 68.29,
+    "anchor_y": 24.83,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "stockpile_deck",
+    "rotation": 3,
+    "width": 76,
+    "height": 46,
+    "anchor_x": 39.47,
+    "anchor_y": 40.21,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "tower",
+    "rotation": 0,
+    "width": 186,
+    "height": 158,
+    "anchor_x": 45.88,
+    "anchor_y": 116.43,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "tower",
+    "rotation": 1,
+    "width": 222,
+    "height": 158,
+    "anchor_x": 75.94,
+    "anchor_y": 84.43,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "tower",
+    "rotation": 2,
+    "width": 186,
+    "height": 192,
+    "anchor_x": 140.12,
+    "anchor_y": 115.9,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "tower",
+    "rotation": 3,
+    "width": 222,
+    "height": 174,
+    "anchor_x": 146.06,
+    "anchor_y": 147.99,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "wall",
+    "rotation": 0,
+    "width": 100,
+    "height": 90,
+    "anchor_x": 27.9,
+    "anchor_y": 66.95,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "wall",
+    "rotation": 1,
+    "width": 122,
+    "height": 90,
+    "anchor_x": 40.44,
+    "anchor_y": 50.95,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "wall",
+    "rotation": 2,
+    "width": 100,
+    "height": 112,
+    "anchor_x": 72.1,
+    "anchor_y": 67.67,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "wall",
+    "rotation": 3,
+    "width": 122,
+    "height": 100,
+    "anchor_x": 81.56,
+    "anchor_y": 83.0,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "wheat_farm",
+    "rotation": 0,
+    "width": 216,
+    "height": 152,
+    "anchor_x": 21.62,
+    "anchor_y": 103.45,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
+    "name": "wheat_farm",
+    "rotation": 1,
+    "width": 240,
+    "height": 152,
+    "anchor_x": 91.57,
+    "anchor_y": 52.09,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
+    "name": "wheat_farm",
+    "rotation": 2,
+    "width": 216,
+    "height": 176,
+    "anchor_x": 194.38,
+    "anchor_y": 98.67,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
+    "name": "wheat_farm",
+    "rotation": 3,
+    "width": 240,
+    "height": 164,
+    "anchor_x": 148.43,
+    "anchor_y": 150.07,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
+    "name": "woodcutter",
+    "rotation": 0,
+    "width": 156,
+    "height": 124,
+    "anchor_x": 37.19,
+    "anchor_y": 82.75,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "woodcutter",
+    "rotation": 1,
+    "width": 182,
+    "height": 124,
+    "anchor_x": 77.01,
+    "anchor_y": 61.63,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "woodcutter",
+    "rotation": 2,
+    "width": 156,
+    "height": 150,
+    "anchor_x": 118.81,
+    "anchor_y": 93.87,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "woodcutter",
+    "rotation": 3,
+    "width": 182,
+    "height": 136,
+    "anchor_x": 104.99,
+    "anchor_y": 114.27,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  }
+]

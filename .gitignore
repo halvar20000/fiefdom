@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.DS_Store
+assets/source/**/*.fbx
+assets/source/**/*.zip
+tools/render/_tmp/
+__pycache__/
+tools/render/_tmp/
+
+# Screenshots of the original Stronghold Crusader, kept locally as visual
+# reference. Firefly Studios' copyright -- not ours to redistribute, and 57 MB
+# of material nobody cloning this needs.
+reference/

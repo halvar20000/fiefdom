@@ -1,0 +1,12 @@
+{
+  "tilePx": 128,
+  "variants": 4,
+  "types": [
+    "sand",
+    "scrub",
+    "grass",
+    "grass_dark",
+    "rock",
+    "cliff"
+  ]
+}
