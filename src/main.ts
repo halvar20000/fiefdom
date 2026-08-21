@@ -19,7 +19,8 @@ import { Placement, type PlacementWorld } from './game/placement';
 import { Hud } from './ui/hud';
 import {
   BUILDINGS, STORE_SPRITES, SOLDIER_TYPES, buildingHp, canGarrison,
-  GARRISON_HEIGHT, MARSH_SPEED_FOOT, MARSH_SPEED_SIEGE, type Store,
+  GARRISON_HEIGHT, MARSH_SPEED_FOOT, MARSH_SPEED_SIEGE,
+  BURN_SECONDS, BURN_RADIUS, BURN_DPS, IGNITE_RADIUS, type Store,
 } from './game/defs';
 
 /** Both stores, for the loops that must treat them identically. */
@@ -1106,6 +1107,89 @@ async function main() {
 
   let lordDefeated = false;
 
+  /** A tile of pitch currently alight. */
+  interface Fire { x: number; z: number; until: number; seed: number }
+  const fires: Fire[] = [];
+
+  /**
+   * Light every ditch the enemy is standing in, and let it run.
+   *
+   * Fire spreads through the connected ditch network rather than burning only
+   * the tile that was lit. That is what makes laying a LINE of them worth the
+   * pitch: the enemy steps on one end of it and the whole trench goes up.
+   *
+   * Returns how many tiles caught.
+   */
+  function lightPitch(): number {
+    const ditches = state.buildings.filter(b => b.name === 'pitch_ditch');
+    if (!ditches.length) return 0;
+    const at = new Map<string, PlacedBuilding>();
+    for (const b of ditches) at.set(`${b.x},${b.z}`, b);
+
+    // seeds: ditches with an enemy close enough to be worth the pitch
+    const queue: PlacedBuilding[] = ditches.filter(b =>
+      army.enemies.some(e =>
+        Math.hypot(e.x - (b.x + 0.5), e.z - (b.z + 0.5)) <= IGNITE_RADIUS));
+    if (!queue.length) return 0;
+
+    const seen = new Set<string>();
+    const caught: PlacedBuilding[] = [];
+    while (queue.length) {
+      const b = queue.shift()!;
+      const key = `${b.x},${b.z}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      caught.push(b);
+      for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as [number, number][]) {
+        const n = at.get(`${b.x + dx},${b.z + dz}`);
+        if (n && !seen.has(`${n.x},${n.z}`)) queue.push(n);
+      }
+    }
+
+    for (const b of caught) {
+      fires.push({
+        x: b.x, z: b.z, until: state.elapsed + BURN_SECONDS,
+        seed: (b.x * 7 + b.z * 13) & 7,
+      });
+      state.removeBuilding(b);
+      markArea(b.x, b.z, 1, 1, 0);
+    }
+    staticDirty = true;
+    state.notify(`The pitch is alight — ${caught.length} burning!`, 'info');
+    return caught.length;
+  }
+
+  /**
+   * Burn whatever is standing in it.
+   *
+   * Friend and foe alike. Fire does not check banners, and a player who has to
+   * pull his own men clear is making a real decision rather than pressing a
+   * free win button.
+   */
+  function updateFires(dt: number): void {
+    if (!fires.length) return;
+    for (let i = fires.length - 1; i >= 0; i--) {
+      if (state.elapsed >= fires[i].until) fires.splice(i, 1);
+    }
+    if (!fires.length) return;
+
+    // Burn each man ONCE per tick, however many fires he is standing in.
+    //
+    // Summing per fire made a line of ditches wildly disproportionate: the
+    // radii overlap, so a man in the middle of a trench took triple damage and
+    // five spearmen died in under four seconds. A longer line should buy a
+    // bigger AREA to deny, not a hotter fire on the same square foot.
+    const burning = new Set<number>();
+    for (const f of fires) {
+      const cx = f.x + 0.5, cz = f.z + 0.5;
+      for (const u of army.soldiers) {
+        if (u.hp <= 0 || burning.has(u.id)) continue;
+        if (Math.hypot(u.x - cx, u.z - cz) <= BURN_RADIUS) burning.add(u.id);
+      }
+    }
+    for (const u of army.soldiers) if (burning.has(u.id)) u.hp -= BURN_DPS * dt;
+  }
+
   /** Distance from a point to the nearest edge of a footprint. */
   function distToFootprint(px: number, pz: number,
                            bx: number, bz: number, w: number, d: number): number {
@@ -1454,6 +1538,13 @@ async function main() {
     if (k === '+' || k === '=') iso.zoomBy(1);
     if (k === '-') iso.zoomBy(-1);
     if (k === 'escape') { placement.cancel(); refreshOverlay(); }
+    if (k === 'f') {
+      const n = lightPitch();
+      if (!n) {
+        state.notify(state.buildings.some(b => b.name === 'pitch_ditch')
+          ? 'No enemy in the pitch yet' : 'You have no pitch ditches', 'warn');
+      }
+    }
     if (k === 'm') hud.toggleMarket();
     if (k === 't') hud.toggleStats();
     if (k === 'g') {
@@ -1652,6 +1743,7 @@ async function main() {
     herd.update(dt, state.elapsed);
     army.update(dt);
     updateRaids(dt);
+    updateFires(dt);
 
     // Store sprites are part of the static list, so a pile changing level has to
     // invalidate it. sync() returns true only when what is DRAWN moved, not on
@@ -1734,6 +1826,21 @@ async function main() {
       });
     }
 
+    // Flames flicker by cycling three rendered variants. They live in the
+    // per-frame figure stream rather than the static list precisely because
+    // they change every fifth of a second.
+    for (const f of fires) {
+      const v = 1 + ((Math.floor(state.elapsed * 7) + f.seed) % 3);
+      const key = `pitch_fire_${v}_${rot}`;
+      if (!atlas.frames[key]) continue;
+      const [fx, fz] = spriteAnchor(f.x, f.z, 1);
+      figures.push({
+        key, x: fx, z: fz, y: terrain.heightAt(f.x, f.z),
+        bias: footprintDepthBias(1, 1, rot),
+        depth: depthKey(f.x + 0.5, f.z + 0.5, rot),
+      });
+    }
+
     for (const a of herd.animals) {
       if (!a.alive) continue;
       // A standing herd with every head down looks like a row of lawnmowers.
@@ -1803,6 +1910,7 @@ async function main() {
       herd.update(dt, state.elapsed);
       army.update(dt);
     updateRaids(dt);
+    updateFires(dt);
       sync += dt;
       if (sync > 1) {
         sync = 0; state.assignWorkers(); workers.sync(); rescueStuckWorkers();
@@ -1819,7 +1927,7 @@ async function main() {
       drawScene();
     },
     decorations, workerWorld, groundType, regrowing, paths, wanderers, hud, herd, army,
-    recruit, atlas, spawnRaid, lord, enemyBuildings,
+    recruit, atlas, spawnRaid, lord, enemyBuildings, fires, lightPitch,
     lordStatus: () => lord.status(),
     lordAttack: () => lord.attackNow(),
     /** Hold off the next raid. `setNextRaid(Infinity)` disables them. */

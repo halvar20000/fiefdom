@@ -422,7 +422,8 @@ export class Hud {
       'Esc cancels building &nbsp; M market &nbsp; T hide panel<br>' +
       '<b>Troops:</b> click select &nbsp; <b>shift-drag</b> box<br>' +
       'double-click all of a kind &nbsp; right-click move<br>' +
-      'right-click your <b>wall or tower</b> to man it';
+      'right-click your <b>wall or tower</b> to man it<br>' +
+      '<b>F</b> lights your pitch ditches';
   }
 
   /**

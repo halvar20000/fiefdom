@@ -280,10 +280,91 @@ def campfire():
     return geom.join(parts, "campfire"), (1, 1)
 
 
+def _emissive(name, colour, strength):
+    mat = bpy.data.materials.new(name)
+    mat.use_nodes = True
+    nt = mat.node_tree
+    nt.nodes.clear()
+    e = nt.nodes.new("ShaderNodeEmission")
+    e.inputs["Color"].default_value = (*colour, 1.0)
+    e.inputs["Strength"].default_value = strength
+    out = nt.nodes.new("ShaderNodeOutputMaterial")
+    nt.links.new(e.outputs["Emission"], out.inputs["Surface"])
+    return mat
+
+
+def pitch_ditch():
+    """
+    A shallow trench of tar, waiting for a light.
+
+    Kept deliberately low and dark: it has to read as something laid ON the
+    ground rather than built on it, because troops walk straight over it and
+    the whole trick is that the enemy does not think twice about the crossing.
+    """
+    tar, nt, bsdf = M._new("DitchTar")
+    M._set(bsdf, "Base Color", (0.045, 0.042, 0.038, 1.0))
+    M._set(bsdf, "Roughness", 0.18)      # wet, catches the light
+    earth = M.timber("DitchEarth", dark=True)
+
+    parts = []
+    # spoil heaped round the lip, so the trench reads as dug
+    for i, (x, y, w, d) in enumerate([
+        (0.02, 0.02, 0.96, 0.10), (0.02, 0.88, 0.96, 0.10),
+        (0.02, 0.10, 0.10, 0.78), (0.88, 0.10, 0.10, 0.78),
+    ]):
+        parts.append(geom.box(f"pd_lip_{i}", (x, y, 0.0), (w, d, 0.055), earth))
+    parts.append(geom.box("pd_tar", (0.10, 0.10, 0.0), (0.80, 0.80, 0.035), tar))
+    return geom.join(parts, "pitch_ditch"), (1, 1)
+
+
+def _pitch_fire(variant):
+    """
+    Burning pitch. Three variants, cycled to flicker.
+
+    Emissive rather than lit, like the campfire: at this size a flame reads as
+    a light source or it does not read at all.
+    """
+    import random
+    rnd = random.Random(1000 + variant)
+    char = M.timber("BurntEarth", dark=True)
+    # Emission kept low. At 11-19 the tone mapper clipped every tongue to flat
+    # white and the fire lost its colour entirely -- it read as a pale blob
+    # rather than a flame. These still glow but keep their orange.
+    low = _emissive("PitchFlameLow", (1.0, 0.30, 0.05), 3.2)
+    mid = _emissive("PitchFlameMid", (1.0, 0.48, 0.10), 4.6)
+    hot = _emissive("PitchFlameHot", (1.0, 0.68, 0.26), 6.0)
+
+    parts = []
+    parts.append(geom.box("pf_bed", (0.06, 0.06, 0.0), (0.88, 0.88, 0.035), char))
+
+    # a cluster of tapered tongues at varying heights
+    for i in range(7):
+        a = rnd.random() * math.tau
+        r = rnd.uniform(0.0, 0.30)
+        x, y = 0.5 + math.cos(a) * r, 0.5 + math.sin(a) * r
+        h = rnd.uniform(0.22, 0.48)
+        mat = hot if h > 0.40 else mid if h > 0.30 else low
+        parts.append(geom.cone(f"pf_flame_{i}", (x, y, 0.02), rnd.uniform(0.09, 0.15),
+                               h, mat, segments=7))
+    # a couple of low sheets so the ground itself looks alight
+    for i in range(3):
+        a = rnd.random() * math.tau
+        x, y = 0.5 + math.cos(a) * 0.3, 0.5 + math.sin(a) * 0.3
+        parts.append(geom.cone(f"pf_lick_{i}", (x, y, 0.01), 0.16, 0.14, low, segments=6))
+    # No smoke plume. A solid grey cone above the flames read as a spike or an
+    # arrowhead, not smoke -- geometry is the wrong tool for it, and the fire
+    # says everything it needs to on its own.
+    return geom.join(parts, f"pitch_fire_{variant}"), (1, 1)
+
+
 REGISTRY = {
     "campfire": campfire,
     "palm": palm,
     "bush": scrub_bush,
     "dead_tree": dead_tree,
     "olive_tree": olive_tree,
+    "pitch_ditch": pitch_ditch,
+    "pitch_fire_1": lambda: _pitch_fire(1),
+    "pitch_fire_2": lambda: _pitch_fire(2),
+    "pitch_fire_3": lambda: _pitch_fire(3),
 }

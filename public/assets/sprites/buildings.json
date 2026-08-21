@@ -3172,6 +3172,214 @@
     "scale": 2
   },
   {
+    "name": "pitch_ditch",
+    "rotation": 0,
+    "width": 76,
+    "height": 46,
+    "anchor_x": 6.49,
+    "anchor_y": 24.08,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pitch_ditch",
+    "rotation": 1,
+    "width": 76,
+    "height": 46,
+    "anchor_x": 36.99,
+    "anchor_y": 8.08,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pitch_ditch",
+    "rotation": 2,
+    "width": 76,
+    "height": 46,
+    "anchor_x": 69.51,
+    "anchor_y": 23.57,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pitch_ditch",
+    "rotation": 3,
+    "width": 76,
+    "height": 46,
+    "anchor_x": 39.01,
+    "anchor_y": 39.83,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pitch_fire_1",
+    "rotation": 0,
+    "width": 78,
+    "height": 60,
+    "anchor_x": 11.18,
+    "anchor_y": 39.26,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pitch_fire_1",
+    "rotation": 1,
+    "width": 86,
+    "height": 60,
+    "anchor_x": 34.32,
+    "anchor_y": 23.26,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pitch_fire_1",
+    "rotation": 2,
+    "width": 78,
+    "height": 68,
+    "anchor_x": 66.82,
+    "anchor_y": 38.92,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pitch_fire_1",
+    "rotation": 3,
+    "width": 86,
+    "height": 64,
+    "anchor_x": 51.68,
+    "anchor_y": 55.17,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pitch_fire_2",
+    "rotation": 0,
+    "width": 78,
+    "height": 60,
+    "anchor_x": 11.07,
+    "anchor_y": 39.03,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pitch_fire_2",
+    "rotation": 1,
+    "width": 86,
+    "height": 60,
+    "anchor_x": 34.54,
+    "anchor_y": 23.03,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pitch_fire_2",
+    "rotation": 2,
+    "width": 78,
+    "height": 68,
+    "anchor_x": 66.93,
+    "anchor_y": 38.8,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pitch_fire_2",
+    "rotation": 3,
+    "width": 86,
+    "height": 64,
+    "anchor_x": 51.46,
+    "anchor_y": 54.99,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pitch_fire_3",
+    "rotation": 0,
+    "width": 78,
+    "height": 60,
+    "anchor_x": 11.19,
+    "anchor_y": 39.28,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pitch_fire_3",
+    "rotation": 1,
+    "width": 86,
+    "height": 60,
+    "anchor_x": 34.31,
+    "anchor_y": 23.28,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pitch_fire_3",
+    "rotation": 2,
+    "width": 78,
+    "height": 68,
+    "anchor_x": 66.81,
+    "anchor_y": 38.93,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pitch_fire_3",
+    "rotation": 3,
+    "width": 86,
+    "height": 64,
+    "anchor_x": 51.69,
+    "anchor_y": 55.19,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
     "name": "pitch_rig",
     "rotation": 0,
     "width": 124,

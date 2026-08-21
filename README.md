@@ -916,9 +916,29 @@ markets, walls and most of the game skipped the ground rules entirely and could
 be built straight over a bog. The terrain test now runs for every building —
 `'any'` means any DRY ground, and `terrainAllows` is what knows that.
 
-**Still open:** nothing consumes pitch. In the original it is poured on the
-ground and set alight in front of a gate, which would give the marsh a second
-reason to exist.
+### What pitch is for
+
+**Pitch ditches.** 4 pitch each, laid like wall segments, walkable — and that
+is the trick: the enemy crosses without a thought. Press **F** and every ditch
+with an enemy standing in it catches, then the fire **spreads through the
+connected trench**, which is what makes laying a line worth the pitch rather
+than dotting single tiles about.
+
+Burning pitch does 14 a second for 12 seconds: a spearman dies in three, a
+swordsman in seven. Verified tick by tick — 95, 81, 67, 53, 39, 25, 11, 0.
+
+It burns **friend and foe alike**. Fire does not check banners, and a player
+who has to pull his own men clear is making a decision rather than pressing a
+free win button.
+
+#### Damage must not stack across overlapping fires
+
+Burn radius is 1.6 tiles and ditches sit one tile apart, so the radii overlap
+heavily. Applying damage per fire meant a man in the middle of a trench took
+triple damage and five spearmen died in under four seconds — a line of ditches
+was not a longer trap, it was a hotter one. Each man now burns once per tick
+however many fires he stands in, so a longer line buys a bigger AREA to deny,
+which is the trade that should be on offer.
 
 ## Wildlife and the hunter
 

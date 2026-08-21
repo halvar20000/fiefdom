@@ -143,6 +143,13 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     walkable: true,
     description: 'A way through your wall. Your people pass; the wall holds.',
   },
+  pitch_ditch: {
+    name: 'pitch_ditch', label: 'Pitch Ditch', category: 'castle',
+    footprint: [1, 1], cost: { pitch: 4 }, workers: 0, terrain: 'any',
+    // Walkable, and that is the trick: the enemy crosses it without a thought.
+    walkable: true, paintable: true, hp: 40,
+    description: 'A trench of tar. Lay a line of them, then light it (F).',
+  },
   siege_camp: {
     name: 'siege_camp', label: 'Siege Camp', category: 'castle',
     footprint: [3, 3], cost: { wood: 40, stone: 10 }, workers: 0, terrain: 'any',
@@ -299,7 +306,7 @@ export const BUILDINGS: Record<string, BuildingDef> = {
 
 /** Buildings offered in the build menu, in the order they appear. */
 export const BUILD_MENU: { category: Category; label: string; items: string[] }[] = [
-  { category: 'castle', label: 'Castle', items: ['wall', 'gatehouse', 'tower', 'barracks', 'siege_camp'] },
+  { category: 'castle', label: 'Castle', items: ['wall', 'gatehouse', 'tower', 'pitch_ditch', 'barracks', 'siege_camp'] },
   { category: 'castle', label: 'Stores', items: ['stockpile', 'granary'] },
   { category: 'town', label: 'Town', items: ['hovel', 'market'] },
   { category: 'industry', label: 'Industry', items: ['woodcutter', 'quarry', 'ox_tether', 'iron_mine', 'pitch_rig'] },
@@ -477,6 +484,20 @@ export function canGarrison(name: string): boolean {
  * stuck, which is the whole strategic point. A marsh across your approach means
  * siege has to go the long way round, or you take the ground you are given.
  */
+/**
+ * Burning pitch.
+ *
+ * Lethal but escapable: 14 a second kills a spearman in three and a swordsman
+ * in seven, so a column caught in it dies unless it keeps moving -- which is
+ * the decision the mechanic is there to create. It burns friend and foe alike;
+ * fire does not check banners, and knowing that is what makes the timing hard.
+ */
+export const BURN_SECONDS = 12;
+export const BURN_RADIUS = 1.6;
+export const BURN_DPS = 14;
+/** How close an enemy must be to a ditch before lighting it is worth doing. */
+export const IGNITE_RADIUS = 1.3;
+
 export const MARSH_SPEED_FOOT = 0.48;
 export const MARSH_SPEED_SIEGE = 0.26;
 
