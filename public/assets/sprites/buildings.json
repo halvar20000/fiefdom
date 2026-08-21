@@ -3536,6 +3536,58 @@
     "scale": 2
   },
   {
+    "name": "siege_camp",
+    "rotation": 0,
+    "width": 240,
+    "height": 174,
+    "anchor_x": 33.29,
+    "anchor_y": 119.98,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
+    "name": "siege_camp",
+    "rotation": 1,
+    "width": 270,
+    "height": 174,
+    "anchor_x": 101.13,
+    "anchor_y": 67.02,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
+    "name": "siege_camp",
+    "rotation": 2,
+    "width": 240,
+    "height": 202,
+    "anchor_x": 206.71,
+    "anchor_y": 114.24,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
+    "name": "siege_camp",
+    "rotation": 3,
+    "width": 270,
+    "height": 186,
+    "anchor_x": 168.87,
+    "anchor_y": 166.53,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
     "name": "slaughterhouse",
     "rotation": 0,
     "width": 174,

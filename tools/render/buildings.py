@@ -823,8 +823,109 @@ def barracks():
     return geom.join(parts, "barracks"), (3, 3)
 
 
+def _upright_wheel(name, centre, radius, width, mat, segments=12):
+    """A wheel standing on its rim, axle along X."""
+    o = geom.cylinder(name, (0.0, 0.0, 0.0), radius, width, mat, segments=segments)
+    o.rotation_euler = (0.0, math.pi / 2.0, 0.0)
+    cx, cy, cz = centre
+    o.location = (cx - width / 2.0, cy, cz)
+    return o
+
+
+def _beam_y(name, centre, length, radius, mat, segments=8):
+    """A log lying along Y, centred on `centre`."""
+    o = geom.cylinder(name, (0.0, 0.0, 0.0), radius, length, mat, segments=segments)
+    o.rotation_euler = (-math.pi / 2.0, 0.0, 0.0)
+    cx, cy, cz = centre
+    o.location = (cx, cy + length / 2.0, cz)
+    return o
+
+
+def siege_camp():
+    """Siege camp: an open workshop yard where rams and catapults are built.
+
+    Open on three sides on purpose. A closed shed reads as one more barn at
+    this size, and the point of the building is that you can see a machine
+    on the stocks.
+    """
+    rough = M.rough_stone("SiegeFooting")
+    timber_l = M.timber("SiegeTimber")
+    timber_d = M.timber("SiegeTimberDark", dark=True)
+    roof = M.timber("SiegeRoof", dark=True)
+    steel = M.iron()
+    shot = M.castle_stone()
+
+    parts = []
+
+    # trampled working yard
+    parts.append(geom.box("sc_yard", (0.06, 0.06, 0.0), (2.88, 2.88, 0.06), rough))
+
+    # open shelter across the back: posts, wall plates and a pitched roof
+    for i, x in enumerate((0.26, 1.46, 2.66)):
+        for j, y in enumerate((1.74, 2.76)):
+            parts.append(geom.box(f"sc_post_{i}_{j}", (x - 0.07, y - 0.07, 0.06),
+                                  (0.14, 0.14, 0.94), timber_d))
+    parts.append(geom.box("sc_plate_f", (0.12, 1.67, 1.00), (2.72, 0.14, 0.10), timber_d))
+    parts.append(geom.box("sc_plate_b", (0.12, 2.69, 1.00), (2.72, 0.14, 0.10), timber_d))
+    parts.append(geom.gable("sc_roof", (0.12, 1.67, 1.10), (2.72, 1.16, 0.44),
+                            roof, overhang=0.17))
+    # planked back wall, so the shelter has a mass to read against
+    for i in range(5):
+        parts.append(geom.box(f"sc_plank_{i}", (0.14, 2.78, 0.10 + i * 0.19),
+                              (2.68, 0.06, 0.16), timber_l))
+
+    # timber stock under the shelter, cut to length and stacked
+    for i in range(3):
+        parts.append(_beam_y(f"sc_log_{i}", (0.52 + i * 0.15, 1.92, 0.14), 0.86, 0.065, timber_l))
+    for i in range(2):
+        parts.append(_beam_y(f"sc_log2_{i}", (0.60 + i * 0.15, 1.96, 0.27), 0.86, 0.065, timber_d))
+
+    # workbench with a hewn beam clamped on it
+    parts.append(geom.box("sc_bench", (1.86, 2.14, 0.06), (0.92, 0.34, 0.52), timber_d))
+    parts.append(geom.box("sc_benchtop", (1.80, 2.08, 0.58), (1.04, 0.46, 0.07), timber_l))
+    parts.append(geom.box("sc_workpiece", (1.92, 2.18, 0.65), (0.72, 0.16, 0.11), timber_l))
+    parts.append(geom.box("sc_saw", (2.40, 2.02, 0.65), (0.05, 0.44, 0.14), steel))
+
+    # a catapult on the stocks, arm cocked back -- the machine being built
+    cx, cy = 0.92, 0.72
+    parts.append(geom.box("sc_cat_deck", (cx - 0.30, cy - 0.48, 0.22), (0.60, 0.96, 0.08), timber_d))
+    for i, (sx, sy) in enumerate([(-1, -1), (1, -1), (-1, 1), (1, 1)]):
+        parts.append(_upright_wheel(f"sc_cat_wheel_{i}",
+                                    (cx + sx * 0.33, cy + sy * 0.31, 0.19),
+                                    0.19, 0.07, timber_d))
+        parts.append(_upright_wheel(f"sc_cat_hub_{i}",
+                                    (cx + sx * 0.33, cy + sy * 0.31, 0.19),
+                                    0.055, 0.08, steel, segments=8))
+    # A-frame the throwing arm swings in
+    for i, sx in enumerate((-1, 1)):
+        parts.append(geom.box(f"sc_cat_leg_{i}", (cx + sx * 0.22 - 0.05, cy - 0.06, 0.30),
+                              (0.10, 0.10, 0.54), timber_d))
+    parts.append(geom.box("sc_cat_axle", (cx - 0.34, cy - 0.04, 0.82), (0.68, 0.07, 0.07), steel))
+    arm = geom.box("sc_cat_arm", (cx - 0.05, cy - 0.02, 0.84), (0.10, 1.02, 0.09), timber_l)
+    arm.rotation_euler = (0.62, 0.0, 0.0)
+    parts.append(arm)
+    bucket = geom.box("sc_cat_bucket", (cx - 0.11, cy + 0.92, 0.86), (0.22, 0.20, 0.16), timber_d)
+    bucket.rotation_euler = (0.62, 0.0, 0.0)
+    parts.append(bucket)
+
+    # sawing trestle with a beam across it, front right
+    for i, y in enumerate((0.42, 1.06)):
+        parts.append(geom.box(f"sc_trestle_{i}", (2.06, y - 0.06, 0.06), (0.52, 0.12, 0.40), timber_d))
+        parts.append(geom.box(f"sc_trestle_x{i}", (2.16, y - 0.05, 0.20), (0.32, 0.10, 0.08), timber_d))
+    parts.append(_beam_y("sc_trestle_beam", (2.32, 0.30, 0.50), 0.94, 0.085, timber_l))
+
+    # stone shot, stacked where the crew can reach it
+    for i, (dx, dy, dz) in enumerate([(0.0, 0.0, 0.0), (0.24, 0.05, 0.0), (0.12, 0.26, 0.0),
+                                      (0.12, 0.10, 0.19)]):
+        parts.append(geom.cylinder(f"sc_shot_{i}", (2.52 + dx, 1.44 + dy, 0.06 + dz),
+                                   0.115, 0.19, shot, segments=8))
+
+    return geom.join(parts, "siege_camp"), (3, 3)
+
+
 REGISTRY.update({
     "barracks": barracks,
+    "siege_camp": siege_camp,
     "pig_farm": pig_farm,
     "slaughterhouse": slaughterhouse,
     "hunter": hunter,
