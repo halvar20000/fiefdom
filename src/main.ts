@@ -18,7 +18,9 @@ import { WorkerPool, type WorkerWorld } from './game/workers';
 import { Placement, type PlacementWorld } from './game/placement';
 import { Hud } from './ui/hud';
 import { showMenu } from './ui/menu';
+import { showPause } from './ui/pause';
 import type { MapDef } from './game/maps';
+import { SAVE_VERSION, takeBootIntent, readSlot, type SaveGame } from './game/save';
 import {
   BUILDINGS, STORE_SPRITES, SOLDIER_TYPES, buildingHp, canGarrison,
   GARRISON_HEIGHT, MARSH_SPEED_FOOT, MARSH_SPEED_SIEGE,
@@ -72,7 +74,7 @@ function hash2(x: number, y: number): number {
   return ((h ^ (h >>> 16)) >>> 0) / 4294967295;
 }
 
-async function main(chosen: MapDef) {
+async function main(chosen: MapDef, restore: SaveGame | null = null) {
   const app = document.getElementById('app')!;
   const legacyHud = document.getElementById('hud')!;
   const loading = document.getElementById('loading')!;
@@ -1551,7 +1553,12 @@ async function main(chosen: MapDef) {
     if (k === 'e') { iso.rotateBy(-1); }
     if (k === '+' || k === '=') iso.zoomBy(1);
     if (k === '-') iso.zoomBy(-1);
-    if (k === 'escape') { placement.cancel(); refreshOverlay(); }
+    if (k === 'escape') {
+      // Esc means "back out of what I am doing". With a building in hand that
+      // is the building; otherwise it is the game itself.
+      if (placement.selected) { placement.cancel(); refreshOverlay(); }
+      else openPause();
+    }
     if (k === 'f') {
       const n = lightPitch();
       if (!n) {
@@ -1727,13 +1734,22 @@ async function main(chosen: MapDef) {
   }
 
   // --- loop ---------------------------------------------------------------
+  let paused = false;
   let last = performance.now();
   let syncClock = 0;
 
   function frame() {
     const now = performance.now();
-    const dt = Math.min(0.1, (now - last) / 1000);
+    // Clamp AND discard while paused, so a menu left open for two minutes does
+    // not resume by fast-forwarding the settlement through two minutes of
+    // starvation the moment it closes.
+    const dt = paused ? 0 : Math.min(0.1, (now - last) / 1000);
     last = now;
+    if (paused) {
+      drawScene();
+      requestAnimationFrame(frame);
+      return;
+    }
 
     const pan = 420 * dt;
     if (keys.has('arrowleft') || keys.has('a')) iso.panByPixels(-pan, 0);
@@ -1932,6 +1948,185 @@ async function main(chosen: MapDef) {
     }
   }
 
+  // --- saving and loading -------------------------------------------------
+
+  /**
+   * Snapshot the game as a diff against a freshly generated world.
+   *
+   * Workers are deliberately NOT saved. Their in-flight state is a tangle of
+   * paths, claims and half-finished production cycles, and all of it is
+   * recoverable: on load `assignWorkers` and `workers.sync` put a man back in
+   * every staffed building and he begins his cycle again. The cost is losing
+   * one trip's worth of progress; the alternative is a fragile serialisation of
+   * the most mutable structure in the game.
+   */
+  function snapshot(): SaveGame {
+    return {
+      version: SAVE_VERSION,
+      savedAt: Date.now(),
+      elapsed: state.elapsed,
+      map: chosen,
+
+      gold: state.gold,
+      stock: { ...state.stock },
+      population: state.population,
+      idle: state.idle,
+      popularity: state.popularity,
+      rations: state.rations,
+      taxLevel: state.taxLevel,
+      trade: JSON.parse(JSON.stringify(state.trade)),
+
+      buildings: state.buildings.map(b => ({
+        n: b.name, x: b.x, z: b.z, staff: b.staff, hp: b.hp,
+        held: { ...b.held } as Record<string, number>,
+      })),
+      enemyBuildings: enemyBuildings.map(b => ({
+        n: b.name, x: b.x, z: b.z, staff: b.staff, hp: b.hp, held: {},
+      })),
+      felled: decorations
+        .map((d, i) => [i, d] as const)
+        .filter(([, d]) => !d.alive)
+        .map(([i, d]) => [i, d.regrowAt] as [number, number]),
+      soldiers: army.soldiers.map(u => ({
+        t: u.type, side: u.side, x: u.x, z: u.z, hp: u.hp,
+        ...(u.garrison
+          ? { g: [u.garrison.x, u.garrison.z, u.garrison.sx, u.garrison.sz] as
+                 [number, number, number, number] }
+          : {}),
+      })),
+      animals: herd.animals.map(a => ({
+        x: a.x, z: a.z, hx: a.hx, hz: a.hz, alive: a.alive, respawnAt: a.respawnAt,
+      })),
+      fires: fires.map(f => [f.x, f.z, f.until] as [number, number, number]),
+
+      lord: {
+        gold: lord.gold, stock: { ...lord.stock },
+        population: lord.population, idle: lord.idle, elapsed: lord.elapsed,
+        recruited: lord.recruited, built: lord.built, wavesSent: lord.wavesSent,
+        defeated: lord.defeated,
+      },
+    };
+  }
+
+  /** Put a snapshot back on top of the freshly generated world. */
+  function applySave(sv: SaveGame): void {
+    // Clear what the fresh start put down, then rebuild from the save.
+    for (const b of [...state.buildings]) {
+      const [w, d] = b.def.footprint;
+      state.removeBuilding(b);
+      markArea(b.x, b.z, w, d, 0);
+      markSolid(b.x, b.z, w, d, false);
+    }
+    for (const b of [...enemyBuildings]) {
+      const [w, d] = BUILDINGS[b.name].footprint;
+      markArea(b.x, b.z, w, d, 0);
+      markSolid(b.x, b.z, w, d, false);
+    }
+    enemyBuildings.length = 0;
+    army.soldiers.length = 0;
+    fires.length = 0;
+    // Clear the worker pool outright.
+    //
+    // sync() drops workers whose building has gone, but KEEPS any that are
+    // idle -- correct during play, wrong here: they are orphans of a world
+    // that no longer exists, and sync then staffs the restored buildings on
+    // top of them. Measured 4 workers going in and 8 coming out.
+    workers.workers.length = 0;
+
+    for (const sb of sv.buildings) {
+      const def = BUILDINGS[sb.n];
+      if (!def) continue;
+      const [w, d] = def.footprint;
+      const b = state.addBuilding(sb.n, sb.x, sb.z);
+      // Restore staffing from the save rather than recomputing it. The saved
+      // `idle` count ALREADY excludes these men, so calling assignWorkers here
+      // deducted them a second time and every load quietly lost peasants --
+      // measured 25 idle going in, 21 coming out.
+      b.staff = sb.staff;
+      b.hp = sb.hp;
+      b.held = { ...sb.held } as typeof b.held;
+      markArea(sb.x, sb.z, w, d);
+      if (!def.walkable) markSolid(sb.x, sb.z, w, d);
+    }
+    for (const sb of sv.enemyBuildings) {
+      const def = BUILDINGS[sb.n];
+      if (!def) continue;
+      const [w, d] = def.footprint;
+      enemyBuildings.push({ name: sb.n, x: sb.x, z: sb.z, hp: sb.hp, staff: sb.staff });
+      markArea(sb.x, sb.z, w, d);
+      if (!def.walkable) markSolid(sb.x, sb.z, w, d);
+    }
+    const ek = enemyBuildings.find(b => b.name === 'keep');
+    enemyKeep = ek ? { x: ek.x + 1, z: ek.z + 1 } : enemyKeep;
+
+    // trees: everything regrows fresh, so re-fell the ones that were down
+    for (const [i, regrowAt] of sv.felled) {
+      const d = decorations[i];
+      if (!d) continue;
+      d.alive = false;
+      d.regrowAt = regrowAt;
+      d.claimedBy = null;
+      occupied[d.z * MAP_W + d.x] = 0;
+      regrowing.push(i);
+    }
+
+    for (const su of sv.soldiers) {
+      const u = army.recruit(su.t, su.x, su.z, su.side);
+      if (!u) continue;
+      u.hp = su.hp;
+      if (su.g) u.garrison = { x: su.g[0], z: su.g[1], sx: su.g[2], sz: su.g[3] };
+    }
+
+    herd.animals.length = 0;
+    for (const sa of sv.animals) {
+      const a = herd.add(sa.x, sa.z);
+      a.hx = sa.hx; a.hz = sa.hz;
+      a.alive = sa.alive; a.respawnAt = sa.respawnAt;
+    }
+
+    for (const [x, z, until] of sv.fires) {
+      fires.push({ x, z, until, seed: (x * 7 + z * 13) & 7 });
+    }
+
+    state.gold = sv.gold;
+    for (const [r, n] of Object.entries(sv.stock)) {
+      (state.stock as Record<string, number>)[r] = n;
+    }
+    state.population = sv.population;
+    state.idle = sv.idle;
+    state.popularity = sv.popularity;
+    state.rations = sv.rations as typeof state.rations;
+    state.taxLevel = sv.taxLevel;
+    Object.assign(state.trade, sv.trade);
+    state.elapsed = sv.elapsed;
+
+    lord.gold = sv.lord.gold;
+    Object.assign(lord.stock, sv.lord.stock);
+    lord.population = sv.lord.population;
+    lord.idle = sv.lord.idle;
+    lord.elapsed = sv.lord.elapsed;
+    lord.recruited = sv.lord.recruited;
+    lord.built = sv.lord.built;
+    lord.wavesSent = sv.lord.wavesSent;
+    lord.defeated = sv.lord.defeated;
+
+    // sync() alone: it creates exactly one worker per staffed slot, which is
+    // what the save recorded. assignWorkers would re-derive it and drift.
+    workers.sync();
+    rebuildFirePosts();
+    staticDirty = true;
+    state.notify('Game loaded', 'info');
+  }
+
+  function openPause(): void {
+    if (paused) return;
+    paused = true;
+    placement.cancel();
+    showPause({ snapshot, onResume: () => { paused = false; last = performance.now(); } });
+  }
+
+  if (restore) applySave(restore);
+
   // Debug handle: lets the sim be inspected and driven from the console
   // without threading test hooks through the game code.
   (window as unknown as Record<string, unknown>).__game = {
@@ -1942,6 +2137,8 @@ async function main(chosen: MapDef) {
     },
     decorations, workerWorld, groundType, regrowing, paths, wanderers, hud, herd, army,
     recruit, atlas, spawnRaid, lord, enemyBuildings, fires, lightPitch,
+    snapshot, applySave, openPause,
+    isPaused: () => paused,
     lordStatus: () => lord.status(),
     lordAttack: () => lord.attackNow(),
     /** Hold off the next raid. `setNextRaid(Infinity)` disables them. */
@@ -1992,12 +2189,32 @@ async function main(chosen: MapDef) {
   frame();
 }
 
-showMenu()
-  .then(map => {
-    document.getElementById('loading')!.textContent =
-      `building ${map.name.toLowerCase()}…`;
-    return main(map);
-  })
+/**
+ * Boot.
+ *
+ * A "load" intent skips the menu entirely: the slot already records which map
+ * it was played on, so asking again would only be a chance to pick the wrong
+ * one and get a world the save does not fit.
+ */
+(async () => {
+  const intent = takeBootIntent();
+  const loading = document.getElementById('loading')!;
+
+  if (intent?.kind === 'load') {
+    const info = readSlot(intent.slot);
+    if (info.save) {
+      loading.textContent = `loading ${info.save.map.name.toLowerCase()}…`;
+      return main(info.save.map, info.save);
+    }
+    // The slot went missing between clicking Load and reloading. Fall through
+    // to the menu rather than booting a blank world with no explanation.
+    console.warn('[save] slot', intent.slot, 'could not be read:', info.error);
+  }
+
+  const map = await showMenu();
+  loading.textContent = `building ${map.name.toLowerCase()}…`;
+  return main(map);
+})()
   .catch(err => {
   document.getElementById('loading')!.textContent = `error: ${err.message}`;
   console.error(err);

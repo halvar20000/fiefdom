@@ -1,4 +1,5 @@
 import { MAPS, ratings, type MapDef } from '../game/maps';
+import { listSlots, setBootIntent, playTime, savedWhen } from '../game/save';
 
 /**
  * The title screen: pick a map, then play.
@@ -58,6 +59,18 @@ const CSS = `
 }
 #menu .go:hover { background: #ffdc86; }
 #menu .go:disabled { opacity: .35; cursor: default; }
+#menu .saves { width: 100%; max-width: 900px; margin-top: 24px; }
+#menu .saves h4 { font-size: 10px; letter-spacing: 2px; opacity: .5;
+                  text-transform: uppercase; margin-bottom: 8px; text-align: center; }
+#menu .slot { display: grid; grid-template-columns: 1fr auto; gap: 10px;
+              align-items: center; padding: 9px 13px; margin-bottom: 6px; font-size: 11.5px;
+              background: rgba(24,19,12,.8); border: 1px solid rgba(196,162,96,.2);
+              border-radius: 5px; }
+#menu .slot .when { font-size: 9.5px; opacity: .5; }
+#menu .slot button { padding: 6px 16px; font: inherit; font-size: 11px; cursor: pointer;
+                     color: #10100e; background: #c8a55f; border: none; border-radius: 4px;
+                     font-weight: 600; }
+#menu .slot button:hover { background: #f0c869; }
 #menu .note { margin-top: 16px; font-size: 10.5px; opacity: .45; max-width: 620px;
               text-align: center; line-height: 1.6; }
 `;
@@ -147,9 +160,37 @@ export function showMenu(): Promise<MapDef> {
     };
     root.appendChild(go);
 
+    // Saved games, if there are any. Hidden entirely when there are none --
+    // an empty "Saved games" heading on a first run is just noise.
+    const saved = listSlots().filter(i => i.save);
+    if (saved.length) {
+      const wrap = document.createElement('div');
+      wrap.className = 'saves';
+      const h4 = document.createElement('h4');
+      h4.textContent = 'Or continue a saved game';
+      wrap.appendChild(h4);
+      for (const info of saved) {
+        const row = document.createElement('div');
+        row.className = 'slot';
+        const who = document.createElement('div');
+        who.innerHTML = `<b>${info.slot}.</b> ${info.save!.map.name}` +
+          ` — ${playTime(info.save!.elapsed)}` +
+          `<div class="when">${savedWhen(info.save!.savedAt)}</div>`;
+        const btn = document.createElement('button');
+        btn.textContent = 'Load';
+        btn.onclick = () => {
+          setBootIntent({ kind: 'load', slot: info.slot });
+          location.reload();
+        };
+        row.append(who, btn);
+        wrap.appendChild(row);
+      }
+      root.appendChild(wrap);
+    }
+
     const note = document.createElement('div');
     note.className = 'note';
-    note.textContent = 'There is no save yet — a reload starts a new game. '
+    note.textContent = 'Esc in game to pause, save, load or leave. '
                      + 'The first load takes a moment while the sprites are read.';
     root.appendChild(note);
   });

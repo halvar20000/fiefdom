@@ -42,6 +42,62 @@ The menu appears instantly, before any sprite loads. That matters: the atlas is
 1300-odd PNGs and on a cold cache the wait is real, so the player gets
 something to read and a decision to make while it happens.
 
+## Saving, loading and the pause menu
+
+**Esc** pauses and opens the in-game menu: resume, save or load one of three
+slots, delete a slot, or quit to the title screen. With a building in hand Esc
+cancels the building instead — it means "back out of what I am doing", and
+that is the building before it is the game.
+
+### A save is a diff, not a dump
+
+The terrain, the ground types and even the scatter of trees are deterministic
+functions of the map seed — vegetation is hashed from tile position. Storing
+them would mean writing down forty thousand tiles the game can recompute in a
+second. A save therefore records only what changed: buildings, units, animals,
+stores, the lord's economy, and which trees have been felled. **10.5 KB** for a
+developed settlement.
+
+Loading regenerates the world from the seed and lays the diff back on top.
+
+### Workers are deliberately not saved
+
+Their in-flight state is a tangle of paths, claims and half-finished production
+cycles, and every bit of it is recoverable: `workers.sync()` puts a man back in
+each staffed building and he starts his cycle again. The cost is one trip's
+progress. The alternative is serialising the most mutable structure in the game
+and getting it subtly wrong.
+
+### Reload rather than rebuild in place
+
+Loading a save and quitting to the menu both go out through `location.reload()`
+with an intent in `sessionStorage`. Rebuilding takes about a second on a local
+disk; unwinding three.js buffers, listeners, timers and the sprite atlas by hand
+is a reliable source of leaks nobody notices until the fifth load.
+
+### Two bugs the round-trip test caught
+
+* **Peasants vanished on every load.** The saved `idle` count already excludes
+  staffed workers, and the restore called `assignWorkers` on top — deducting
+  them a second time. 25 idle in, 21 out. Staffing is now restored from the
+  save rather than recomputed.
+* **Workers doubled.** `sync()` drops workers whose building is gone but keeps
+  any that are idle — correct during play, wrong on load, where they are
+  orphans of a world that no longer exists. It then staffed the restored
+  buildings on top of them: 4 workers in, 8 out. The pool is now cleared first.
+
+A full in-memory round trip now matches on all fourteen tracked fields —
+gold, stores, buildings, staffing, worker count, soldiers, felled trees, live
+animals and the lord's economy.
+
+### A measurement that proved nothing
+
+I first "verified" that pausing stops the simulation by checking `elapsed` did
+not advance while the menu was open. It did not — but neither did it advance
+after resuming, because the Claude browser pane freezes `requestAnimationFrame`
+when hidden. Both readings were measuring a stopped frame loop, not the pause
+flag. The flag is now exposed and tested directly.
+
 ## The approach, in one paragraph
 
 Terrain is real 3D geometry; everything standing on it — buildings, trees,
