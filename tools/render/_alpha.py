@@ -1,6 +1,10 @@
-import bpy, numpy as np
+import bpy, numpy as np, os
+
+# Relative to this file, so moving the project cannot break it.
+SPRITES = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                       "..", "..", "public", "assets", "sprites")
 for name in ("keep_0.png", "keep_2.png", "hovel_2.png"):
-    im = bpy.data.images.load(f"/Volumes/AI/Projects/Stronghold_New/public/assets/sprites/{name}")
+    im = bpy.data.images.load(os.path.join(SPRITES, name))
     w, h = im.size
     a = np.array(im.pixels[:], dtype=np.float32).reshape(h, w, 4)
     alpha = a[:, :, 3]

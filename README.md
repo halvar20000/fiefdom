@@ -1,6 +1,8 @@
-# Stronghold (working title)
+# Fiefdom
 
-A Stronghold Crusader-style isometric castle-builder that runs in the browser.
+An isometric castle-builder in the spirit of Stronghold Crusader, running in
+the browser. Named for what the game is actually about: holding land, working
+it, and defending what it produces.
 
 ## The approach, in one paragraph
 

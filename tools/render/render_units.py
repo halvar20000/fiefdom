@@ -38,7 +38,9 @@ import rig
 import materials as M
 import peasant as PEASANT
 
-SRC = "/Volumes/AI/Projects/Stronghold_New/assets/source/mixamo"
+# Relative to this file, so moving the project cannot break it.
+SRC = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                   "..", "..", "assets", "source", "mixamo")
 CHARACTER = os.path.join(SRC, "YBot_TPose.fbx")
 BONE_PREFIX_RE = re.compile(r'mixamorig\d*:')
 
