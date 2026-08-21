@@ -67,6 +67,6 @@ plain HTTP — so any reverse proxy will do.
 
 ## Server load
 
-Essentially none. The simulation, the pathfinding, the AI lord and the
+Essentially none. The simulation, the pathfinding, the rival lords and the
 rendering all happen in the visitor's browser. The container is nginx serving
 files and will sit near zero CPU.

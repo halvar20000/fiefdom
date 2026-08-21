@@ -1,15 +1,15 @@
 <?xml version="1.0"?>
 <CommunityApplications>
   <Profile>
-**Fiefdom** is an isometric castle-builder in the spirit of Stronghold Crusader, played in the browser. Raise a settlement in the desert, feed it, and hold it against a rival lord who has to build his economy under exactly the same rules you do.
+**Fiefdom** is an isometric castle-builder in the spirit of Stronghold Crusader, played in the browser. Raise a settlement in the desert, feed it, and hold it against rival lords who have to build their economies under exactly the same rules you do.
 
 **Highlights**
 - Full production chains: timber, stone, iron and pitch; wheat to flour to bread; hops to ale and the inn; pigs and hunted game to meat.
 - Painted stockpile and granary yards whose squares show what is actually stored on them, and fill up if you do not expand.
 - Curtain walls, gatehouses and towers you can post archers on for extra reach — and where melee cannot touch them.
 - Siege engines that are the only thing able to break stone, and pitch marshes you can trench, then set alight under an advancing column.
-- An enemy lord who builds a woodcutter before a barracks, starves if he over-houses, and can be beaten by knocking down his keep.
-- Six maps of different character, from a wooded valley with no opposition to bare rock with a lord next door.
+- Up to three rival lords, each building a woodcutter before a barracks and starving if he over-houses. They fight each other before they fight you, and any of them can be beaten by knocking down his keep.
+- Six maps of different character, from a wooded valley with no opposition at all to a drought with three lords already dividing what little there is.
 
 **Nothing to configure.** No database, no API keys, no accounts — set a port, start it, open the WebUI.
 
