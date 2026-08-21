@@ -3,7 +3,16 @@ import {
 } from './defs';
 import type { PathNode } from './pathfind';
 
-export type Side = 'player' | 'enemy';
+/**
+ * Which faction a unit belongs to. 0 is the player, 1.. are rival lords.
+ *
+ * A number rather than a union because the count is now a property of the map.
+ * It also means rivals are hostile to EACH OTHER for free: every check that
+ * matters asks whether two sides differ, not whether one of them is the player.
+ */
+export type Side = number;
+export const PLAYER: Side = 0;
+export const isPlayer = (s: Side) => s === PLAYER;
 
 /** A post on a wall or tower: which building, and where on it to stand. */
 export interface GarrisonPost {
@@ -106,7 +115,7 @@ export class Army {
 
   constructor(private world: ArmyWorld) {}
 
-  recruit(type: string, x: number, z: number, side: Side = 'player'): Soldier | null {
+  recruit(type: string, x: number, z: number, side: Side = PLAYER): Soldier | null {
     const def = SOLDIER_TYPES[type];
     if (!def) return null;
     const s: Soldier = {
@@ -121,10 +130,12 @@ export class Army {
     return s;
   }
 
-  get mine(): Soldier[] { return this.soldiers.filter(s => s.side === 'player'); }
-  get enemies(): Soldier[] { return this.soldiers.filter(s => s.side === 'enemy'); }
+  get mine(): Soldier[] { return this.soldiers.filter(s => s.side === PLAYER); }
+  get enemies(): Soldier[] { return this.soldiers.filter(s => s.side !== PLAYER); }
+  /** Everyone belonging to one faction. */
+  of(side: Side): Soldier[] { return this.soldiers.filter(s => s.side === side); }
   get selected(): Soldier[] {
-    return this.soldiers.filter(s => s.selected && s.side === 'player');
+    return this.soldiers.filter(s => s.selected && isPlayer(s.side));
   }
 
   clearSelection(): void {
@@ -140,7 +151,7 @@ export class Army {
     let best: Soldier | null = null;
     let bestD = PICK_RADIUS * PICK_RADIUS;
     for (const s of this.soldiers) {
-      if (s.side !== 'player') continue;
+      if (!isPlayer(s.side)) continue;
       const d = (s.x - x) ** 2 + (s.z - z) ** 2;
       if (d < bestD) { bestD = d; best = s; }
     }
@@ -164,7 +175,7 @@ export class Army {
     if (!add) this.clearSelection();
     let n = 0;
     for (const s of this.soldiers) {
-      if (s.side !== 'player') continue;
+      if (!isPlayer(s.side)) continue;
       if (test(s)) { s.selected = true; n++; }
     }
     return n;

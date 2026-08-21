@@ -12,7 +12,7 @@ import {
 import { GameState, type PlacedBuilding } from './game/state';
 import { PathGrid } from './game/pathfind';
 import { Herd, HUNT_RADIUS } from './game/wildlife';
-import { Army } from './game/army';
+import { Army, PLAYER } from './game/army';
 import { Lord } from './game/lord';
 import { WorkerPool, type WorkerWorld } from './game/workers';
 import { Placement, type PlacementWorld } from './game/placement';
@@ -237,8 +237,23 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
    * screen, and the same heavy tint over that much stone stops looking like a
    * banner colour and starts looking like a broken render.
    */
-  const ENEMY_TINT: [number, number, number] = [1.5, 0.62, 0.55];
-  const ENEMY_BUILDING_TINT: [number, number, number] = [1.26, 0.80, 0.74];
+  /**
+   * One colour per rival, troops strong and stone soft.
+   *
+   * A soldier is twenty-odd pixels and must read as hostile at a glance; a
+   * castle covers a third of the screen and the same strength over that much
+   * stone reads as a broken render rather than a banner colour.
+   */
+  const FACTION_COLOURS: {
+    name: string; unit: [number, number, number]; stone: [number, number, number];
+  }[] = [
+    // Red needs the least push: warming warm sandstone reads immediately.
+    // Cooling it only neutralises, so blue and violet are pushed harder to
+    // land at the same apparent distance from the player's own stone.
+    { name: 'the Red Lord',    unit: [1.50, 0.62, 0.55], stone: [1.30, 0.78, 0.70] },
+    { name: 'the Blue Lord',   unit: [0.55, 0.80, 1.60], stone: [0.62, 0.86, 1.48] },
+    { name: 'the Violet Lord', unit: [1.22, 0.56, 1.50], stone: [1.14, 0.72, 1.36] },
+  ];
 
   /** Gap between off-map raids, once they are switched on at all. */
   const RAID_EVERY = 300;
@@ -263,8 +278,27 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
     /** Workers the lord has put in it. He manages this; we just store it. */
     staff: number;
   }
-  const enemyBuildings: EnemyBuilding[] = [];
-  let enemyKeep: { x: number; z: number } | null = null;
+
+  /** Everything one rival lord owns. */
+  interface Faction {
+    id: number;
+    name: string;
+    unitTint: [number, number, number];
+    stoneTint: [number, number, number];
+    buildings: EnemyBuilding[];
+    keep: { x: number; z: number } | null;
+    /** Wall-ring positions and the slot reserved for his gate. */
+    ring: [number, number][];
+    gate: [number, number] | null;
+    lord: Lord;
+    defeated: boolean;
+  }
+  const factions: Faction[] = [];
+
+  /** Every building on the map that is not the player's. */
+  const allEnemyBuildings = () => factions.flatMap(f => f.buildings);
+  const factionOf = (side: number): Faction | undefined =>
+    factions.find(f => f.id === side);
 
   const MARSH = GROUND_TYPES.indexOf('marsh');
 
@@ -295,15 +329,19 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
           dist, hit,
         };
       };
-      if (s.side === 'player') {
-        for (const b of enemyBuildings) {
-          const [w, d] = BUILDINGS[b.name].footprint;
-          consider(b.x, b.z, w, d, (n) => damageEnemyBuilding(b, n));
-        }
-      } else {
+      // Anything not on this engine's own side is a target -- which is what
+      // lets two rival lords wreck each other's castles without a special case.
+      if (s.side !== PLAYER) {
         for (const b of state.buildings) {
           const [w, d] = b.def.footprint;
           consider(b.x, b.z, w, d, (n) => damagePlayerBuilding(b, n));
+        }
+      }
+      for (const f of factions) {
+        if (f.id === s.side) continue;
+        for (const b of f.buildings) {
+          const [w, d] = BUILDINGS[b.name].footprint;
+          consider(b.x, b.z, w, d, (n) => damageEnemyBuilding(f, b, n));
         }
       }
       return best;
@@ -682,7 +720,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
     return true;
   };
 
-  const placeEnemyAt = (name: string, x: number, z: number): boolean => {
+  const placeEnemyAt = (f: Faction, name: string, x: number, z: number): boolean => {
     const [w, d] = BUILDINGS[name].footprint;
     if (x < 1 || z < 1 || x + w >= MAP_W - 1 || z + d >= MAP_H - 1) return false;
     if (!isBuildable(terrain, x, z, w, d)) return false;
@@ -690,67 +728,78 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
     for (let dz = 0; dz < d; dz++) {
       for (let dx = 0; dx < w; dx++) if (occupied[(z + dz) * MAP_W + (x + dx)]) return false;
     }
-    enemyBuildings.push({ name, x, z, hp: buildingHp(BUILDINGS[name]), staff: 0 });
+    f.buildings.push({ name, x, z, hp: buildingHp(BUILDINGS[name]), staff: 0 });
     markArea(x, z, w, d);
     if (!BUILDINGS[name].walkable) markSolid(x, z, w, d);
     return true;
   };
 
-  const placeEnemyNear = (name: string, nx: number, nz: number, radius = 18) => {
+  const placeEnemyNear = (f: Faction, name: string, nx: number, nz: number, radius = 18) => {
     const [w, d] = BUILDINGS[name].footprint;
     const site = findSite(terrain, w, d, nx, nz, radius);
     if (!site) return null;
-    return placeEnemyAt(name, site.x, site.z) ? site : null;
+    return placeEnemyAt(f, name, site.x, site.z) ? site : null;
   };
 
-  /** Ring positions for his curtain wall, and which slot the gate takes. */
-  let enemyRing: [number, number][] = [];
-  let enemyGate: [number, number] | null = null;
+  /**
+   * Raise one castle per rival the map asks for.
+   *
+   * Each starts as a keep and a single hovel; everything after that the lord
+   * builds and pays for himself. Rivals are pushed apart as well as away from
+   * the player -- two castles within siege range of each other would have them
+   * grinding each other down before the player had laid a wall.
+   */
+  (function raiseCastles(): void {
+    const want = Math.min(chosen.lords, FACTION_COLOURS.length);
+    if (want < 1) { console.log('[lords] this map has no opposition'); return; }
 
-  (function raiseEnemyCastle(): void {
-    if (chosen.lords < 1) {
-      console.log('[lord] this map has no opposition');
-      return;
-    }
     const dirs: [number, number][] = [
       [1, 1], [-1, -1], [1, -1], [-1, 1], [1, 0], [0, 1], [-1, 0], [0, -1],
     ];
-    for (const [dx, dz] of dirs) {
-      const cx = Math.max(14, Math.min(MAP_W - 15, kx + dx * 72));
-      const cz = Math.max(14, Math.min(MAP_H - 15, kz + dz * 72));
-      const keepSite = placeEnemyNear('keep', cx, cz, 28);
-      if (!keepSite) continue;
+    const placedKeeps: { x: number; z: number }[] = [];
 
-      const c = { x: keepSite.x + 1, z: keepSite.z + 1 };
-      enemyKeep = c;
+    for (let i = 0; i < want; i++) {
+      const colour = FACTION_COLOURS[i];
+      const f: Faction = {
+        id: i + 1, name: colour.name,
+        unitTint: colour.unit, stoneTint: colour.stone,
+        buildings: [], keep: null, ring: [], gate: null,
+        lord: null as unknown as Lord, defeated: false,
+      };
 
-      // He STARTS with a keep and one hovel and nothing else. Everything after
-      // that -- timber, storage, food, stone, the barracks, the walls -- he has
-      // to build and pay for, which is the whole point of giving him an
-      // economy rather than a spawn timer.
-      placeEnemyNear('hovel', keepSite.x - 5, keepSite.z + 3, 10);
+      let sited = false;
+      for (const [dx, dz] of dirs) {
+        const cx = Math.max(14, Math.min(MAP_W - 15, kx + dx * 72));
+        const cz = Math.max(14, Math.min(MAP_H - 15, kz + dz * 72));
+        // keep rivals well apart from one another, not just from the player
+        if (placedKeeps.some(k => Math.hypot(k.x - cx, k.z - cz) < 55)) continue;
+        const keepSite = placeEnemyNear(f, 'keep', cx, cz, 28);
+        if (!keepSite) continue;
 
-      // The wall ring is laid out now but not built. The gate slot is the
-      // position closest to the player that will take a 2x2, chosen before any
-      // wall goes down so the wall can be built around it later.
-      const R = 7;
-      const ring: [number, number][] = [];
-      for (let i = -R; i <= R - 1; i++) {
-        ring.push([c.x + i, c.z - R], [c.x + i, c.z + R],
-                  [c.x - R, c.z + i], [c.x + R, c.z + i]);
+        const c = { x: keepSite.x + 1, z: keepSite.z + 1 };
+        f.keep = c;
+        placedKeeps.push(c);
+        placeEnemyNear(f, 'hovel', keepSite.x - 5, keepSite.z + 3, 10);
+
+        const R = 7;
+        const ring: [number, number][] = [];
+        for (let k = -R; k <= R - 1; k++) {
+          ring.push([c.x + k, c.z - R], [c.x + k, c.z + R],
+                    [c.x - R, c.z + k], [c.x + R, c.z + k]);
+        }
+        f.ring = ring;
+        f.gate = [...ring]
+          .sort((a, b) => Math.hypot(a[0] - kx, a[1] - kz) - Math.hypot(b[0] - kx, b[1] - kz))
+          .find(([wx, wz]) => isBuildable(terrain, wx, wz, 2, 2)) ?? null;
+
+        sited = true;
+        console.log(`[lords] ${f.name} at ${c.x},${c.z} — ` +
+                    `${Math.round(Math.hypot(c.x - kx, c.z - kz))} tiles from you`);
+        break;
       }
-      enemyRing = ring;
-      const byNearest = [...ring].sort(
-        (a, b) => Math.hypot(a[0] - kx, a[1] - kz) - Math.hypot(b[0] - kx, b[1] - kz));
-      enemyGate = byNearest.find(([wx, wz]) =>
-        isBuildable(terrain, wx, wz, 2, 2)) ?? null;
-
-      console.log(`[lord] keep at ${c.x},${c.z} — ` +
-                  `${Math.round(Math.hypot(c.x - kx, c.z - kz))} tiles away, ` +
-                  `he builds the rest himself`);
-      return;
+      if (!sited) { console.warn(`[lords] nowhere to seat rival ${i + 1}`); continue; }
+      factions.push(f);
     }
-    console.warn('[lord] found nowhere to build a castle');
   })();
 
   /**
@@ -760,11 +809,11 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
    * only checks that the ground is level -- a farm also needs green land, and
    * the first level patch is very often the wrong sort of ground.
    */
-  function findEnemySite(name: string, maxR = 26,
+  function findEnemySite(f: Faction, name: string, maxR = 26,
                         anchor?: { x: number; z: number }): [number, number] | null {
-    if (!enemyKeep) return null;
+    if (!f.keep) return null;
     const [w, d] = BUILDINGS[name].footprint;
-    const c = anchor ?? enemyKeep;
+    const c = anchor ?? f.keep;
     for (let r = 2; r <= maxR; r++) {
       for (let a = 0; a < r * 8; a++) {
         const ang = (a / (r * 8)) * Math.PI * 2;
@@ -786,31 +835,31 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
   }
 
   /** Build one thing for the lord. Returns false if there is nowhere to put it. */
-  function lordBuild(name: string): boolean {
+  function lordBuild(f: Faction, name: string): boolean {
     if (name === 'wall') {
-      for (const [wx, wz] of enemyRing) {
+      for (const [wx, wz] of f.ring) {
         // keep the gate's 2x2 and a tile of clearance either side of it free
-        if (enemyGate && Math.abs(wx - enemyGate[0]) <= 2
-                      && Math.abs(wz - enemyGate[1]) <= 2) continue;
+        if (f.gate && Math.abs(wx - f.gate[0]) <= 2
+                   && Math.abs(wz - f.gate[1]) <= 2) continue;
         if (occupied[wz * MAP_W + wx]) continue;
-        if (placeEnemyAt('wall', wx, wz)) { staticDirty = true; return true; }
+        if (placeEnemyAt(f, 'wall', wx, wz)) { staticDirty = true; return true; }
       }
       return false;
     }
     if (name === 'tower') {
       // A tower belongs ON the wall line, at a corner if one is free.
-      const corners = enemyRing.filter(([wx, wz]) =>
-        enemyKeep && Math.abs(wx - enemyKeep.x) === 7 && Math.abs(wz - enemyKeep.z) === 7);
-      for (const [wx, wz] of [...corners, ...enemyRing]) {
-        if (enemyGate && Math.abs(wx - enemyGate[0]) <= 3
-                      && Math.abs(wz - enemyGate[1]) <= 3) continue;
-        if (placeEnemyAt('tower', wx, wz)) { staticDirty = true; return true; }
+      const corners = f.ring.filter(([wx, wz]) =>
+        f.keep && Math.abs(wx - f.keep.x) === 7 && Math.abs(wz - f.keep.z) === 7);
+      for (const [wx, wz] of [...corners, ...f.ring]) {
+        if (f.gate && Math.abs(wx - f.gate[0]) <= 3
+                   && Math.abs(wz - f.gate[1]) <= 3) continue;
+        if (placeEnemyAt(f, 'tower', wx, wz)) { staticDirty = true; return true; }
       }
       return false;
     }
     if (name === 'gatehouse') {
-      if (!enemyGate) return false;
-      const ok = placeEnemyAt('gatehouse', enemyGate[0], enemyGate[1]);
+      if (!f.gate) return false;
+      const ok = placeEnemyAt(f, 'gatehouse', f.gate[0], f.gate[1]);
       if (ok) staticDirty = true;
       return ok;
     }
@@ -823,14 +872,14 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
     // nine segments and the siege camp never affordable.
     let anchor: { x: number; z: number } | undefined;
     if (name === 'ox_tether') {
-      const orphan = enemyBuildings.find(q => q.name === 'quarry'
-        && !enemyBuildings.some(o => o.name === 'ox_tether'
+      const orphan = f.buildings.find(q => q.name === 'quarry'
+        && !f.buildings.some(o => o.name === 'ox_tether'
           && Math.abs(o.x - q.x) < 14 && Math.abs(o.z - q.z) < 14));
       if (orphan) anchor = { x: orphan.x, z: orphan.z };
     }
-    const site = findEnemySite(name, 26, anchor);
+    const site = findEnemySite(f, name, 26, anchor);
     if (!site) return false;
-    const ok = placeEnemyAt(name, site[0], site[1]);
+    const ok = placeEnemyAt(f, name, site[0], site[1]);
     if (ok) staticDirty = true;
     return ok;
   }
@@ -1062,7 +1111,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
       const roll = Math.random();
       const type = raidNumber <= 2 ? 'spearman'
         : roll < 0.5 ? 'spearman' : roll < 0.8 ? 'archer' : 'swordsman';
-      const e = army.recruit(type, spot.x, spot.z, 'enemy');
+      const e = army.recruit(type, spot.x, spot.z, factions[0]?.id ?? 1);
       if (!e) continue;
       // Head for the keep; if walls make that impossible, make for the nearest
       // of the player's soldiers instead so they do not just stand at the edge.
@@ -1088,13 +1137,13 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
     // The lord is the source of attacks now. The edge-spawn raid stays behind
     // `spawnRaid()` as a testing tool -- troops appearing out of empty desert
     // was always a placeholder for an opponent who actually lives somewhere.
-    lord.update(dt);
+    for (const f of factions) f.lord.update(dt);
     if (nextRaid !== Infinity && state.elapsed >= nextRaid) {
       spawnRaid();
       nextRaid = state.elapsed + RAID_EVERY;
     }
     for (const f of army.lastFallen) {
-      if (f.side === 'player') {
+      if (f.side === PLAYER) {
         state.notify(`Your ${f.def.label.toLowerCase()} has fallen`, 'warn');
       }
     }
@@ -1116,7 +1165,6 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
     }
   }
 
-  let lordDefeated = false;
 
   /** A tile of pitch currently alight. */
   interface Fire { x: number; z: number; until: number; seed: number }
@@ -1217,7 +1265,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
       const [w, d] = b.def.footprint;
       if (x >= b.x && x < b.x + w && z >= b.z && z < b.z + d) return b.name;
     }
-    for (const b of enemyBuildings) {
+    for (const b of allEnemyBuildings()) {
       const [w, d] = BUILDINGS[b.name].footprint;
       if (x >= b.x && x < b.x + w && z >= b.z && z < b.z + d) return b.name;
     }
@@ -1245,21 +1293,24 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
     staticDirty = true;
   }
 
-  function damageEnemyBuilding(b: EnemyBuilding, amount: number): void {
+  function damageEnemyBuilding(f: Faction, b: EnemyBuilding, amount: number): void {
     b.hp -= amount;
     if (b.hp > 0) return;
     const [w, d] = BUILDINGS[b.name].footprint;
-    const i = enemyBuildings.indexOf(b);
-    if (i >= 0) enemyBuildings.splice(i, 1);
+    const i = f.buildings.indexOf(b);
+    if (i >= 0) f.buildings.splice(i, 1);
     evictGarrison(b.x, b.z);
     razeTiles(b.x, b.z, w, d);
     if (b.name === 'barracks') {
-      state.notify("The enemy lord's barracks is destroyed — no more troops!", 'info');
+      state.notify(`${f.name}'s barracks is destroyed — no more troops!`, 'info');
     }
-    if (b.name === 'keep' && !lordDefeated) {
-      lordDefeated = true;
-      lord.defeated = true;
-      state.notify("The enemy lord's keep has fallen. The field is yours!", 'info');
+    if (b.name === 'keep' && !f.defeated) {
+      f.defeated = true;
+      f.lord.defeated = true;
+      const left = factions.filter(o => !o.defeated).length;
+      state.notify(left
+        ? `${f.name}'s keep has fallen. ${left} rival${left === 1 ? '' : 's'} left.`
+        : `${f.name}'s keep has fallen. The field is yours!`, 'info');
     }
   }
 
@@ -1274,48 +1325,82 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
     workers.sync();
   }
 
-  /** The enemy lord, raising troops at his own castle. */
-  // A map with no lord still builds one, then leaves him defeated from the
-  // start -- cheaper and far less error-prone than making every call site
-  // handle a null lord.
-  const lord = new Lord(army, {
-    buildings: () => enemyBuildings,
-    build: (name: string) => lordBuild(name),
-    // No barracks, no recruits -- and the barracks is found LIVE, because he
-    // builds it himself partway through the game and may lose it later.
-    muster: () => {
-      const bar = enemyBuildings.find(b => b.name === 'barracks');
-      return bar ? { x: bar.x + 1, z: bar.z + 4 } : null;
-    },
-    home: () => enemyKeep ?? { x: kx, z: kz },
-    target: () => {
-      const k = state.buildings.find(b => b.name === 'keep');
-      return k ? { x: k.x + 1, z: k.z + 1 } : null;
-    },
-    garrisonPost: () => {
-      // Prefer a tower, then the gatehouse, then any wall he has not manned.
-      const rank = (n: string) => n === 'tower' ? 0 : n === 'gatehouse' ? 1 : 2;
-      const posts = enemyBuildings
-        .filter(b => canGarrison(b.name))
-        .sort((a, b) => rank(a.name) - rank(b.name));
-      for (const b of posts) {
-        const [w, d] = BUILDINGS[b.name].footprint;
-        // Spread them along the battlements. A generous cap put the whole
-        // garrison on one gatehouse and left the rest of the wall bare.
-        const cap = b.name === 'wall' ? 1 : 3;
-        // Count men still walking to it, or a whole garrison gets assigned to
-        // the same post in one tick before any of them has arrived.
-        const inbound = army.soldiers.filter(u => u.mountAt
-          && u.mountAt.x === b.x && u.mountAt.z === b.z).length;
-        if (army.garrisonOf(b.x, b.z).length + inbound >= cap) continue;
-        return { x: b.x, z: b.z, cx: b.x + w / 2, cz: b.z + d / 2 };
-      }
-      return null;
-    },
-    notify: (t: string) => state.notify(t, 'warn'),
-  });
+  /**
+   * Give every rival his own Lord, each closed over his own castle.
+   *
+   * A lord's target is the NEAREST keep that is not his, so rivals march on
+   * each other as readily as on the player. That is the whole reason to have
+   * more than one: the map becomes a three-cornered war the player can let
+   * burn for a while rather than two armies pointed at each other.
+   */
+  for (const f of factions) {
+    f.lord = new Lord(army, {
+      buildings: () => f.buildings,
+      build: (name: string) => lordBuild(f, name),
+      // Found LIVE: he builds his barracks partway through and may lose it.
+      muster: () => {
+        const bar = f.buildings.find(b => b.name === 'barracks');
+        return bar ? { x: bar.x + 1, z: bar.z + 4 } : null;
+      },
+      home: () => f.keep ?? { x: kx, z: kz },
+      /**
+       * Who this lord marches on.
+       *
+       * Nearest-keep alone does not work. The player starts near the middle
+       * and the rivals ring the map, so the player is nearest to ALL of them --
+       * measured on a three-lord map, 104 against 145/110, 42 against 145/92,
+       * 81 against 110/92. Three lords all beelining the player is just one
+       * lord tripled, and strictly worse for the player than having one.
+       *
+       * So the player's distance is weighted UP, heavily at first and less as
+       * the game goes on. Early the rivals carve each other up while the
+       * player builds; late they turn on him. That arc is the whole reason to
+       * put more than one lord on a map.
+       */
+      target: () => {
+        const from = f.keep;
+        if (!from) return null;
+        const t = Math.min(1, f.lord.elapsed / 1800);
+        const aversion = 2.6 - 1.6 * t;      // 2.6 early, 1.0 by 30 minutes
 
-  if (chosen.lords < 1) lord.defeated = true;
+        let best: { x: number; z: number } | null = null;
+        let bestScore = Infinity;
+        const weigh = (p: { x: number; z: number }, factor: number) => {
+          const score = Math.hypot(p.x - from.x, p.z - from.z) * factor;
+          if (score < bestScore) { bestScore = score; best = p; }
+        };
+
+        const mine = state.buildings.find(b => b.name === 'keep');
+        if (mine) weigh({ x: mine.x + 1, z: mine.z + 1 }, aversion);
+        for (const o of factions) {
+          if (o.id === f.id || o.defeated || !o.keep) continue;
+          weigh(o.keep, 1);
+        }
+        return best;
+      },
+      garrisonPost: () => {
+        // Prefer a tower, then the gatehouse, then any wall he has not manned.
+        const rank = (n: string) => n === 'tower' ? 0 : n === 'gatehouse' ? 1 : 2;
+        const posts = f.buildings
+          .filter(b => canGarrison(b.name))
+          .sort((a, b) => rank(a.name) - rank(b.name));
+        for (const b of posts) {
+          const [w, d] = BUILDINGS[b.name].footprint;
+          // Spread them along the battlements: a generous cap put the whole
+          // garrison on one gatehouse and left the rest of the wall bare.
+          const cap = b.name === 'wall' ? 1 : 3;
+          // Count men still walking there, or a whole garrison is assigned to
+          // the same post in one tick before any of them has arrived.
+          const inbound = army.soldiers.filter(u => u.mountAt
+            && u.mountAt.x === b.x && u.mountAt.z === b.z).length;
+          if (army.garrisonOf(b.x, b.z).length + inbound >= cap) continue;
+          return { x: b.x, z: b.z, cx: b.x + w / 2, cz: b.z + d / 2 };
+        }
+        return null;
+      },
+      notify: (t: string) => state.notify(`${f.name}: ${t}`, 'warn'),
+    }, f.id);
+  }
 
   /** Relayout both stores. Returns whether anything DRAWN changed. */
   function syncStores(): boolean {
@@ -1369,10 +1454,12 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
       push(b.name, b.x, b.z, w, d);
     }
 
-    // The lord's castle, under the same red cast as his troops.
-    for (const b of enemyBuildings) {
-      const [w, d] = BUILDINGS[b.name].footprint;
-      push(b.name, b.x, b.z, w, d, ENEMY_BUILDING_TINT);
+    // Each rival's castle, under his own colour.
+    for (const f of factions) {
+      for (const b of f.buildings) {
+        const [w, d] = BUILDINGS[b.name].footprint;
+        push(b.name, b.x, b.z, w, d, f.stoneTint);
+      }
     }
     items.sort((a, b) => a.depth - b.depth);
     staticSorted = items;
@@ -1851,7 +1938,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
         // Enemies are the same three bodies under a red cast rather than three
         // more palettes: 288 more sprites to say "not yours" is a poor trade,
         // and side reads faster from colour than from costume anyway.
-        tint: sd.side === 'enemy' ? ENEMY_TINT
+        tint: sd.side !== PLAYER ? (factionOf(sd.side)?.unitTint ?? [1.5, 0.62, 0.55])
             : sd.selected ? [1.45, 1.45, 1.15] : undefined,
       });
     }
@@ -1980,8 +2067,15 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
         n: b.name, x: b.x, z: b.z, staff: b.staff, hp: b.hp,
         held: { ...b.held } as Record<string, number>,
       })),
-      enemyBuildings: enemyBuildings.map(b => ({
-        n: b.name, x: b.x, z: b.z, staff: b.staff, hp: b.hp, held: {},
+      factions: factions.map(f => ({
+        id: f.id,
+        buildings: f.buildings.map(b => ({
+          n: b.name, x: b.x, z: b.z, staff: b.staff, hp: b.hp, held: {},
+        })),
+        defeated: f.defeated,
+        gold: f.lord.gold, stock: { ...f.lord.stock },
+        population: f.lord.population, idle: f.lord.idle, elapsed: f.lord.elapsed,
+        recruited: f.lord.recruited, built: f.lord.built, wavesSent: f.lord.wavesSent,
       })),
       felled: decorations
         .map((d, i) => [i, d] as const)
@@ -1999,12 +2093,6 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
       })),
       fires: fires.map(f => [f.x, f.z, f.until] as [number, number, number]),
 
-      lord: {
-        gold: lord.gold, stock: { ...lord.stock },
-        population: lord.population, idle: lord.idle, elapsed: lord.elapsed,
-        recruited: lord.recruited, built: lord.built, wavesSent: lord.wavesSent,
-        defeated: lord.defeated,
-      },
     };
   }
 
@@ -2017,12 +2105,12 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
       markArea(b.x, b.z, w, d, 0);
       markSolid(b.x, b.z, w, d, false);
     }
-    for (const b of [...enemyBuildings]) {
+    for (const b of allEnemyBuildings()) {
       const [w, d] = BUILDINGS[b.name].footprint;
       markArea(b.x, b.z, w, d, 0);
       markSolid(b.x, b.z, w, d, false);
     }
-    enemyBuildings.length = 0;
+    for (const f of factions) f.buildings.length = 0;
     army.soldiers.length = 0;
     fires.length = 0;
     // Clear the worker pool outright.
@@ -2048,16 +2136,30 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
       markArea(sb.x, sb.z, w, d);
       if (!def.walkable) markSolid(sb.x, sb.z, w, d);
     }
-    for (const sb of sv.enemyBuildings) {
-      const def = BUILDINGS[sb.n];
-      if (!def) continue;
-      const [w, d] = def.footprint;
-      enemyBuildings.push({ name: sb.n, x: sb.x, z: sb.z, hp: sb.hp, staff: sb.staff });
-      markArea(sb.x, sb.z, w, d);
-      if (!def.walkable) markSolid(sb.x, sb.z, w, d);
+    for (const sf of sv.factions) {
+      const f = factionOf(sf.id);
+      if (!f) continue;                    // map now has fewer rivals
+      for (const sb of sf.buildings) {
+        const def = BUILDINGS[sb.n];
+        if (!def) continue;
+        const [w, d] = def.footprint;
+        f.buildings.push({ name: sb.n, x: sb.x, z: sb.z, hp: sb.hp, staff: sb.staff });
+        markArea(sb.x, sb.z, w, d);
+        if (!def.walkable) markSolid(sb.x, sb.z, w, d);
+      }
+      const ek = f.buildings.find(b => b.name === 'keep');
+      if (ek) f.keep = { x: ek.x + 1, z: ek.z + 1 };
+      f.defeated = sf.defeated;
+      f.lord.defeated = sf.defeated;
+      f.lord.gold = sf.gold;
+      Object.assign(f.lord.stock, sf.stock);
+      f.lord.population = sf.population;
+      f.lord.idle = sf.idle;
+      f.lord.elapsed = sf.elapsed;
+      f.lord.recruited = sf.recruited;
+      f.lord.built = sf.built;
+      f.lord.wavesSent = sf.wavesSent;
     }
-    const ek = enemyBuildings.find(b => b.name === 'keep');
-    enemyKeep = ek ? { x: ek.x + 1, z: ek.z + 1 } : enemyKeep;
 
     // trees: everything regrows fresh, so re-fell the ones that were down
     for (const [i, regrowAt] of sv.felled) {
@@ -2100,16 +2202,6 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
     Object.assign(state.trade, sv.trade);
     state.elapsed = sv.elapsed;
 
-    lord.gold = sv.lord.gold;
-    Object.assign(lord.stock, sv.lord.stock);
-    lord.population = sv.lord.population;
-    lord.idle = sv.lord.idle;
-    lord.elapsed = sv.lord.elapsed;
-    lord.recruited = sv.lord.recruited;
-    lord.built = sv.lord.built;
-    lord.wavesSent = sv.lord.wavesSent;
-    lord.defeated = sv.lord.defeated;
-
     // sync() alone: it creates exactly one worker per staffed slot, which is
     // what the save recorded. assignWorkers would re-derive it and drift.
     workers.sync();
@@ -2136,11 +2228,17 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
       drawScene();
     },
     decorations, workerWorld, groundType, regrowing, paths, wanderers, hud, herd, army,
-    recruit, atlas, spawnRaid, lord, enemyBuildings, fires, lightPitch,
+    recruit, atlas, spawnRaid, factions, fires, lightPitch,
     snapshot, applySave, openPause,
     isPaused: () => paused,
-    lordStatus: () => lord.status(),
-    lordAttack: () => lord.attackNow(),
+    // Kept singular-friendly for the console: no argument means the first
+    // rival, which is the common case while poking at a game.
+    lord: (i = 0) => factions[i]?.lord,
+    enemyBuildings: () => allEnemyBuildings(),
+    lordStatus: (i?: number) => i === undefined
+      ? factions.map(f => ({ who: f.name, ...f.lord.status() }))
+      : factions[i]?.lord.status(),
+    lordAttack: (i = 0) => factions[i]?.lord.attackNow() ?? 0,
     /** Hold off the next raid. `setNextRaid(Infinity)` disables them. */
     setNextRaid: (t: number) => { nextRaid = t; },
     raidState: () => ({ nextRaid, raidNumber, elapsed: state.elapsed }),

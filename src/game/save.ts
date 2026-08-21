@@ -12,7 +12,7 @@ import type { MapDef } from './maps';
  * trees have been felled.
  */
 
-export const SAVE_VERSION = 3;
+export const SAVE_VERSION = 4;
 export const SLOTS = 3;
 
 const KEY = (slot: number) => `fiefdom.save.${slot}`;
@@ -24,13 +24,24 @@ export interface SavedBuilding {
 }
 
 export interface SavedSoldier {
-  t: string; side: 'player' | 'enemy'; x: number; z: number; hp: number;
+  /** Faction id: 0 is the player, 1.. are rival lords. */
+  t: string; side: number; x: number; z: number; hp: number;
   /** Post being manned: building tile plus the exact stand point. */
   g?: [number, number, number, number];
 }
 
 export interface SavedAnimal {
   x: number; z: number; hx: number; hz: number; alive: boolean; respawnAt: number;
+}
+
+/** A rival lord: his castle and his economy. */
+export interface SavedFaction {
+  id: number;
+  buildings: SavedBuilding[];
+  defeated: boolean;
+  gold: number; stock: Record<string, number>;
+  population: number; idle: number; elapsed: number;
+  recruited: number; built: number; wavesSent: number;
 }
 
 export interface SaveGame {
@@ -50,18 +61,14 @@ export interface SaveGame {
   trade: Record<string, { buyOn: boolean; buyLevel: number; sellOn: boolean; sellLevel: number }>;
 
   buildings: SavedBuilding[];
-  enemyBuildings: SavedBuilding[];
+  /** One entry per rival lord, in faction-id order. */
+  factions: SavedFaction[];
   /** Decoration indices that are currently felled, with their regrow time. */
   felled: [number, number][];
   soldiers: SavedSoldier[];
   animals: SavedAnimal[];
   fires: [number, number, number][];
 
-  lord: {
-    gold: number; stock: Record<string, number>;
-    population: number; idle: number; elapsed: number;
-    recruited: number; built: number; wavesSent: number; defeated: boolean;
-  };
 }
 
 export interface SlotInfo {

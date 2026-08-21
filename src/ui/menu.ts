@@ -136,9 +136,11 @@ export function showMenu(): Promise<MapDef> {
 
       const foe = document.createElement('div');
       foe.className = 'foe' + (m.lords ? '' : ' none');
-      foe.innerHTML = m.lords
-        ? `Opposition: <b>${m.lords} enemy lord</b>`
-        : 'Opposition: <b>none</b> — build in peace';
+      foe.innerHTML = m.lords === 0
+        ? 'Opposition: <b>none</b> — build in peace'
+        : m.lords === 1
+          ? 'Opposition: <b>1 rival lord</b>'
+          : `Opposition: <b>${m.lords} rival lords</b> — and they fight each other`;
       card.appendChild(foe);
 
       card.onclick = () => {

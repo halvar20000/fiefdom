@@ -149,13 +149,14 @@ export class Lord {
   /** Set while he cannot feed his people, for the status readout. */
   starving = false;
 
-  constructor(private army: Army, private world: LordWorld) {
+  constructor(private army: Army, private world: LordWorld, readonly side = 1) {
     this.stock.wood = 40;
     this.stock.stone = 20;
     this.stock.bread = 30;
   }
 
-  get troops(): Soldier[] { return this.army.enemies; }
+  /** His own men only -- `army.enemies` would sweep in the other rivals too. */
+  get troops(): Soldier[] { return this.army.of(this.side); }
   get mustering(): Soldier[] {
     return this.troops.filter(s => !this.garrisonIds.has(s.id) && !this.sentIds.has(s.id));
   }
@@ -402,7 +403,7 @@ export class Lord {
         this.spend(d.cost);
         this.idle -= 1;
         const s = this.army.recruit(type,
-          at.x + (Math.random() - 0.5) * 2.4, at.z + (Math.random() - 0.5) * 2.4, 'enemy');
+          at.x + (Math.random() - 0.5) * 2.4, at.z + (Math.random() - 0.5) * 2.4, this.side);
         if (s) {
           this.recruited++;
           if (this.garrisonIds.size < LORD.garrison) {

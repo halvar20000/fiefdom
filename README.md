@@ -788,6 +788,50 @@ long enough for several waves to spawn and swarm the lone test subject. The
 combat bug turned out to be real and underneath it — but the number that
 revealed it was wrong for a completely different reason first.
 
+## Rival lords, and why they must not all march on you
+
+A map now carries 0-3 rival lords. `Side` stopped being `'player' | 'enemy'`
+and became a **faction number** — 0 is the player, 1.. are rivals. That one
+change is what makes rivals hostile to each other for free: every check that
+matters asks whether two sides *differ*, not whether one of them is the player.
+Each faction owns its own buildings, keep, wall ring, gate, colour and `Lord`.
+
+### Nearest-keep targeting is wrong, and not subtly
+
+The player starts near the middle and rivals ring the map, so the player is
+nearest to **all** of them. Measured on a three-lord map: 104 against 145 and
+110, 42 against 145 and 92, 81 against 110 and 92. Three lords all beelining
+the player is one lord tripled — strictly worse for the player than having a
+single opponent, and none of the three-cornered war that is the entire reason
+to want more than one.
+
+So the player's distance is weighted **up**, heavily at first and decaying:
+×2.6 at the start, ×1.0 by thirty minutes. The resulting arc, verified:
+
+| | Red | Blue | Violet |
+|---|---|---|---|
+| at start | → Violet | → Violet | → Blue |
+| at 10 min | → Violet | → **player** | → Blue |
+| at 30 min | → player | → player | → player |
+
+Early they carve each other up while you build; late they turn on you.
+Confirmed in simulation with the player holding **zero soldiers**, so every
+casualty had to be rival-on-rival: **26 deaths** (Red 12, Violet 14) and 79,246
+ticks of rivals targeting rivals, with all 28 player buildings untouched.
+
+### Colour has to be pushed unevenly
+
+Sandstone is warm, so warming it further reads instantly but cooling it only
+neutralises. The blue rival at the same numeric distance from neutral as the red
+one came out as grey, not blue. Blue and violet are pushed harder to land at the
+same *apparent* distance from the player's own stone.
+
+### Save format
+
+Bumped to v4: `enemyBuildings` became a `factions` array. Saves from v3 are
+rejected with "from an older build" rather than loaded into a world whose
+shape no longer matches them.
+
 ## M2, part four: the enemy lord
 
 A second castle stands across the map — keep, barracks, hovels and a walled

@@ -27,7 +27,7 @@ export interface MapDef extends MapSettings {
   id: string;
   name: string;
   blurb: string;
-  /** Enemy lords on the map. 0 makes it a pure builder's game. */
+  /** Rival lords on the map, 0-3. They fight each other as well as you. */
   lords: number;
   difficulty: Difficulty;
 }
@@ -78,25 +78,25 @@ export const MAPS: MapDef[] = [
     id: 'tarpits',
     name: 'The Tar Pits',
     blurb: 'Half this valley is bog. Pitch enough to burn an army, if you can '
-         + 'march your own around the mire to reach him.',
+         + 'march your own around the mire to reach them.',
     seed: 9273, green: 0.02, rock: -0.01, marsh: 0.085, trees: 0.9,
-    lords: 1, difficulty: 'Fair',
+    lords: 2, difficulty: 'Fair',
   },
   {
     id: 'cedar',
     name: 'Cedar Ridge',
-    blurb: 'Timber and high stone both. Room to build properly, and a lord '
-         + 'close enough that you had better.',
+    blurb: 'Timber and high stone both. Room to build properly — and two '
+         + 'rivals who will bleed each other before they come for you.',
     seed: 33517, green: 0.02, rock: 0.05, marsh: -0.02, trees: 1.9,
-    lords: 1, difficulty: 'Fair',
+    lords: 2, difficulty: 'Harsh',
   },
   {
     id: 'drought',
     name: 'The Long Drought',
-    blurb: 'Sand, and more sand. No wood worth the name and no bog to burn. '
-         + 'Hunt, trade, and hope the caravans keep coming.',
+    blurb: 'Sand, and more sand. No wood worth the name and no bog to burn, '
+         + 'and three lords already dividing what little there is.',
     seed: 60249, green: -0.085, rock: 0.01, marsh: -0.06, trees: 0.15,
-    lords: 1, difficulty: 'Harsh',
+    lords: 3, difficulty: 'Harsh',
   },
 ];
 
