@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>fiefdom</Name>
+  <Repository>ghcr.io/halvar20000/fiefdom:latest</Repository>
+  <Registry>https://github.com/halvar20000/fiefdom/pkgs/container/fiefdom</Registry>
+  <Network>bridge</Network>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/halvar20000/fiefdom/issues</Support>
+  <Project>https://github.com/halvar20000/fiefdom</Project>
+  <Overview>An isometric castle-builder in the spirit of Stronghold Crusader, played in the browser. Build a settlement in the desert, run the food, ale and weapon chains, raise a garrison and hold your ground against an enemy lord who builds his own economy under the same rules you do.&#13;&#10;&#13;&#10;&#9881; Nothing to configure: no database, no API keys, no accounts. Set the port, start it, open the WebUI.&#13;&#10;&#13;&#10;&#9888; Saved games live in YOUR BROWSER (localStorage), not on the server. They do not follow you between devices or browsers, and clearing site data removes them.&#13;&#10;&#13;&#10;Runs entirely client-side: the container only serves static files, so it uses almost no CPU or memory on the server. A WebGL-capable browser is required.</Overview>
+  <Description>An isometric castle-builder in the spirit of Stronghold Crusader, played in the browser. No database, no API keys, no accounts &#8212; set a port and play. Saved games are stored in your browser, not on the server. Every sprite in the game is procedurally generated in Blender.</Description>
+  <Category>GameServers: MediaApp:Other</Category>
+  <WebUI>http://[IP]:[PORT:8080]</WebUI>
+  <TemplateURL>https://raw.githubusercontent.com/halvar20000/fiefdom/main/templates/fiefdom.xml</TemplateURL>
+  <Icon>https://raw.githubusercontent.com/halvar20000/fiefdom/main/icon.png</Icon>
+  <Requires>Nothing. A browser with WebGL support is all that is needed on the client side.</Requires>
+
+  <Config Name="WebUI Port" Target="80" Default="8080" Mode="tcp"
+          Description="Port the game is reached on."
+          Type="Port" Display="always" Required="true" Mask="false">8080</Config>
+</Container>
