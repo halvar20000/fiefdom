@@ -36,7 +36,28 @@ export interface CustomMap {
   /** Vegetation density multiplier, as on a generated map. */
   trees: number;
   savedAt: number;
+  /**
+   * Hand-placed keeps. Both are optional and absent on maps painted before
+   * the tool existed, which fall back to the automatic siting rather than
+   * being rejected -- a version bump here would have thrown away every map
+   * already saved.
+   */
+  start?: { x: number; z: number };
+  keeps?: { x: number; z: number }[];
 }
+
+/**
+ * Marker colours for the editor, mirroring FACTION_COLOURS in main.ts.
+ *
+ * They live here rather than being imported from main.ts because the editor is
+ * reached FROM main.ts; importing back the other way would close a cycle.
+ */
+export const KEEP_COLOURS = [
+  { name: 'You', css: '#f0c869', hex: 0xf0c869 },
+  { name: 'Red Lord', css: '#e2794f', hex: 0xe2794f },
+  { name: 'Blue Lord', css: '#6f9fd8', hex: 0x6f9fd8 },
+  { name: 'Violet Lord', css: '#b07fd0', hex: 0xb07fd0 },
+];
 
 /**
  * Run-length encode small integers.
@@ -89,6 +110,8 @@ export function encodeMap(
   name: string, w: number, h: number,
   corners: ArrayLike<number>, ground: ArrayLike<number>,
   lords: number, trees: number, id?: string,
+  start?: { x: number; z: number } | null,
+  keeps?: { x: number; z: number }[],
 ): CustomMap {
   return {
     id: id ?? `custom-${Math.floor(performance.now())}-${name.length}`,
@@ -96,6 +119,8 @@ export function encodeMap(
     corners: rleEncode(corners),
     ground: rleEncode(ground),
     lords, trees, savedAt: Date.now(),
+    ...(start ? { start } : {}),
+    ...(keeps && keeps.length ? { keeps } : {}),
   };
 }
 

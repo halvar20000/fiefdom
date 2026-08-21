@@ -834,9 +834,32 @@ because a map with nowhere to farm opens on a settlement that can never produce
 anything, and that reads as the game being broken rather than the map being
 harsh. It warns rather than blocks; a cruel map is a legitimate thing to make.
 
-Not in this version: hand-placing individual trees (there is a density
-setting), and choosing where the keeps go -- the start site and the rival
-castles are still sited by the same search the generated maps use.
+### Placing the keeps, and why they used to huddle
+
+Pick **You**, **Red**, **Blue** or **Violet** and click the map. A coloured post
+and pad mark the spot, the rival count follows how many you have seated, and
+saving warns if two keeps are closer than 45 tiles.
+
+The automatic siting that came before this was worse than it looked. Rivals
+were placed at `player ± 72` tiles and then **clamped to the map bounds** -- so
+a start near a corner collapsed the intended separation and both keeps landed
+in the same quadrant, which is how a painted map ended up with the enemy
+castle in plain sight of the player's own. Candidate directions are now tried
+farthest-first. Deliberately a sort and not a minimum-distance filter: a filter
+can empty the list on a cramped map and lose the lord altogether, which is
+worse than a near neighbour.
+
+Hand-placed positions are taken as an instruction, with only ±8 tiles of search
+to find buildable ground under the keep. Placed at the four corners of a
+200x200 map, the game seated them at (35,35), (166,36), (36,166) and (166,166)
+-- asked for 35 and 165, nudged at most one tile.
+
+Both fields are optional, so maps painted before the tool existed still load
+and fall back to the automatic siting rather than being rejected. A version
+bump would have thrown away every map already saved.
+
+Still not in this version: hand-placing individual trees, for which there is a
+density setting instead.
 
 ## The siege camp had no art at all
 

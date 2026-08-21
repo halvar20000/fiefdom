@@ -37,7 +37,9 @@ export interface MapDef extends MapSettings {
    */
   custom?: { id: string; name: string; w: number; h: number;
              corners: string; ground: string; trees: number; lords: number;
-             version: number; savedAt: number };
+             version: number; savedAt: number;
+             start?: { x: number; z: number };
+             keeps?: { x: number; z: number }[] };
 }
 
 /**

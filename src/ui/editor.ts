@@ -4,7 +4,8 @@ import { IsoCamera } from '../engine/camera';
 import { loadTileArray } from '../engine/assets';
 import { GROUND_TYPES } from '../game/worldgen';
 import {
-  encodeMap, saveMap, hashVariant, auditMap, decodeArrays, type CustomMap,
+  encodeMap, saveMap, hashVariant, auditMap, decodeArrays, KEEP_COLOURS,
+  type CustomMap,
 } from '../game/custom';
 
 /**
@@ -71,7 +72,10 @@ const BRUSHES: { g: string; label: string; swatch: string; key: string }[] = [
 const SIZES = [1, 3, 5, 9, 15];
 const MAX_LEVEL = 5;
 
-type Tool = { kind: 'paint'; ground: number } | { kind: 'raise' } | { kind: 'lower' };
+type Tool =
+  | { kind: 'paint'; ground: number }
+  | { kind: 'raise' } | { kind: 'lower' }
+  | { kind: 'keep'; who: number };   // 0 = the player, 1.. = rivals
 
 export function showEditor(
   width: number, height: number, existing?: CustomMap | null,
@@ -132,6 +136,9 @@ async function run(
   let name = existing?.name ?? 'My map';
   let lords = existing?.lords ?? 1;
   let trees = existing?.trees ?? 1;
+  let start: { x: number; z: number } | null = existing?.start ?? null;
+  const keeps: ({ x: number; z: number } | null)[] =
+    [0, 1, 2].map(i => existing?.keeps?.[i] ?? null);
 
   const el = (tag: string, parent: HTMLElement, cls = '', id = '') => {
     const e = document.createElement(tag);
@@ -167,6 +174,28 @@ async function run(
   lower.onclick = () => { tool = { kind: 'lower' }; syncTools(); };
   hSeg.append(raise, lower);
 
+  el('div', tools, 'lbl').textContent = 'Keeps';
+  const kGrid = el('div', tools, 'grid');
+  const kBtns: HTMLButtonElement[] = [];
+  KEEP_COLOURS.forEach((c, i) => {
+    const btn = document.createElement('button');
+    btn.innerHTML = `<span class="sw" style="background:${c.css}"></span>${c.name}`;
+    btn.title = i === 0
+      ? 'Click the map to set where you begin'
+      : `Click the map to seat ${c.name}`;
+    btn.onclick = () => { tool = { kind: 'keep', who: i }; syncTools(); };
+    kBtns.push(btn); kGrid.appendChild(btn);
+  });
+  const clearKeeps = document.createElement('button');
+  clearKeeps.textContent = 'Clear keeps';
+  clearKeeps.style.cssText = 'width:100%;text-align:center;margin-top:4px';
+  clearKeeps.onclick = () => {
+    start = null;
+    keeps.fill(null);
+    syncMarkers(); syncTools();
+  };
+  tools.appendChild(clearKeeps);
+
   el('div', tools, 'lbl').textContent = 'Brush';
   const sSeg = el('div', tools, 'seg');
   const sBtns: HTMLButtonElement[] = [];
@@ -181,7 +210,8 @@ async function run(
     '<b>Arrows / WASD</b> move the view<br>'
     + 'drag to paint &nbsp; right-drag also pans<br>'
     + 'wheel zooms &nbsp; R / E rotate<br>'
-    + '<b>[ ]</b> brush size &nbsp; <b>1-6</b> ground';
+    + '<b>[ ]</b> brush size &nbsp; <b>1-6</b> ground<br>'
+    + 'pick a keep, then click where it goes';
 
   const act = el('div', root, 'panel', 'act');
   el('div', act, 'lbl').textContent = 'Map name';
@@ -221,12 +251,53 @@ async function run(
   act.appendChild(backBtn);
   const warnBox = el('div', act, 'warn');
 
+  /**
+   * Keep markers: a post and a flag at the chosen tile.
+   *
+   * Drawn as plain meshes rather than through the sprite batch, which the
+   * editor does not have -- the point is only to show WHERE, and a coloured
+   * post reads at any zoom without needing the building's art.
+   */
+  const markers = new THREE.Group();
+  scene.add(markers);
+
+  function syncMarkers() {
+    for (const m of [...markers.children]) {
+      markers.remove(m);
+      const mesh = m as THREE.Mesh;
+      mesh.geometry?.dispose();
+      (mesh.material as THREE.Material)?.dispose();
+    }
+    const spots: ({ x: number; z: number } | null)[] = [start, ...keeps];
+    spots.forEach((p, i) => {
+      if (!p) return;
+      const colour = KEEP_COLOURS[i].hex;
+      const y = terrain.heightAt(p.x, p.z);
+      const post = new THREE.Mesh(
+        new THREE.BoxGeometry(0.35, 4.2, 0.35),
+        new THREE.MeshBasicMaterial({ color: colour }));
+      post.position.set(p.x + 0.5, y + 2.1, p.z + 0.5);
+      markers.add(post);
+      const pad = new THREE.Mesh(
+        new THREE.BoxGeometry(3, 0.12, 3),
+        new THREE.MeshBasicMaterial({ color: colour, transparent: true, opacity: 0.55 }));
+      pad.position.set(p.x + 0.5, y + 0.08, p.z + 0.5);
+      markers.add(pad);
+    });
+  }
+  syncMarkers();
+
   function syncTools() {
     gBtns.forEach((b, i) =>
       b.classList.toggle('on', tool.kind === 'paint' && tool.ground === i));
     raise.classList.toggle('on', tool.kind === 'raise');
     lower.classList.toggle('on', tool.kind === 'lower');
     sBtns.forEach((b, i) => b.classList.toggle('on', SIZES[i] === size));
+    kBtns.forEach((b, i) => {
+      b.classList.toggle('on', tool.kind === 'keep' && tool.who === i);
+      const set = i === 0 ? !!start : !!keeps[i - 1];
+      b.style.opacity = set ? '1' : '.62';
+    });
     lBtns.forEach((b, i) => b.classList.toggle('on', i === lords));
     tBtns.forEach((b, i) => b.classList.toggle('on', TREES[i] === trees));
   }
@@ -253,6 +324,18 @@ async function run(
   /** Tiles touched since the last rebuild, so a drag is not 40,000 tiles a frame. */
   const stamp = (cx: number, cz: number) => {
     const r = Math.floor(size / 2);
+    if (tool.kind === 'keep') {
+      const spot = { x: cx, z: cz };
+      if (tool.who === 0) start = spot;
+      else {
+        keeps[tool.who - 1] = spot;
+        // How many lords play follows how many you have seated, so the number
+        // on the card and the flags on the map cannot disagree.
+        lords = Math.max(lords, keeps.filter(Boolean).length);
+      }
+      syncMarkers(); syncTools();
+      return;
+    }
     if (tool.kind === 'paint') {
       for (let z = cz - r; z <= cz + r; z++) {
         for (let x = cx - r; x <= cx + r; x++) {
@@ -280,6 +363,7 @@ async function run(
       // A height change alters which tiles read as cliff, so their textures
       // have to be recomputed too, not only their geometry.
       repaintArea(cx - r - 2, cz - r - 2, size + 4, size + 4);
+      syncMarkers();   // a flag on ground that just moved must move with it
     }
   };
 
@@ -301,6 +385,9 @@ async function run(
    * like a brush.
    */
   const strokeTo = (x: number, z: number) => {
+    // A keep is one spot, not a stroke: interpolating it would drop a flag on
+    // every tile the pointer crossed and leave it wherever the drag ended.
+    if (tool.kind === 'keep') { if (!lastTile) stamp(x, z); lastTile = { x, z }; return; }
     if (!lastTile) { stamp(x, z); lastTile = { x, z }; return; }
     const dx = x - lastTile.x, dz = z - lastTile.z;
     const steps = Math.max(Math.abs(dx), Math.abs(dz));
@@ -387,12 +474,23 @@ async function run(
 
   saveBtn.onclick = () => {
     const audit = auditMap(terrain, ground);
+    const seated = keeps.filter(Boolean) as { x: number; z: number }[];
     const m = encodeMap(name.trim() || 'Untitled', W, H,
-                        terrain.corners, ground, lords, trees, existing?.id);
+                        terrain.corners, ground, lords, trees, existing?.id,
+                        start, seated);
     const err = saveMap(m);
     if (err) { warnBox.textContent = `Not saved: ${err}`; return; }
+    const near: string[] = [];
+    const all = [start, ...seated].filter(Boolean) as { x: number; z: number }[];
+    for (let a = 0; a < all.length; a++) {
+      for (let b = a + 1; b < all.length; b++) {
+        const d = Math.round(Math.hypot(all[a].x - all[b].x, all[a].z - all[b].z));
+        if (d < 45) near.push(`Two keeps are only ${d} tiles apart.`);
+      }
+    }
     warnBox.innerHTML = `Saved as <b>${m.name}</b>.`
-      + (audit.warnings.length ? '<br>' + audit.warnings.join('<br>') : '');
+      + (audit.warnings.length ? '<br>' + audit.warnings.join('<br>') : '')
+      + (near.length ? '<br>' + near.join('<br>') : '');
   };
 
   backBtn.onclick = () => {
@@ -409,7 +507,14 @@ async function run(
     done();
   };
 
-  (window as unknown as Record<string, unknown>).__editor = { iso, terrain, ground, held };
+  (window as unknown as Record<string, unknown>).__editor = {
+    iso, terrain, ground, held,
+    place: (who: number, x: number, z: number) => {
+      tool = { kind: 'keep', who }; stamp(x, z);
+    },
+    keeps: () => ({ start, rivals: keeps }),
+    save: () => saveBtn.click(),
+  };
 
   // --- loop ---------------------------------------------------------------
   let lastFrame = performance.now();

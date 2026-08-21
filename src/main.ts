@@ -360,7 +360,14 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
     inBounds: (x, z) => x >= 1 && z >= 1 && x < MAP_W - 1 && z < MAP_H - 1,
   });
 
-  const start = findStartSite(terrain, groundType);
+  // A hand-placed keep wins over the search. findStartSite scores farmland and
+  // rock, which is the right answer for a generated map and the wrong one when
+  // the player has said in as many words where they want to begin.
+  const placedStart = chosen.custom?.start;
+  const start = placedStart
+    ? { x: Math.max(6, Math.min(MAP_W - 7, placedStart.x)),
+        z: Math.max(6, Math.min(MAP_H - 7, placedStart.z)) }
+    : findStartSite(terrain, groundType);
   const cx = start.x, cz = start.z;
 
   for (const t of flatTiles) {
@@ -774,13 +781,32 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
         lord: null as unknown as Lord, defeated: false,
       };
 
+      // A hand-placed keep is taken as an instruction, with only enough search
+      // room to find buildable ground under it.
+      const wanted = chosen.custom?.keeps?.[i];
+      const candidates: [number, number, number][] = wanted
+        ? [[Math.max(10, Math.min(MAP_W - 11, wanted.x)),
+            Math.max(10, Math.min(MAP_H - 11, wanted.z)), 8]]
+        : dirs.map(([dx, dz]) => [
+            Math.max(14, Math.min(MAP_W - 15, kx + dx * 72)),
+            Math.max(14, Math.min(MAP_H - 15, kz + dz * 72)),
+            28,
+          ] as [number, number, number])
+          // Clamping to the map edge silently collapses the intended 72-tile
+          // separation when the player starts near a corner: both keeps land
+          // in the same quadrant and the war opens on the doorstep. Trying the
+          // farthest surviving direction first fixes that. Deliberately a sort
+          // and not a filter -- a minimum-distance filter can empty the list
+          // on a cramped map and lose the lord altogether, which is worse than
+          // a near neighbour.
+          .sort((a, b) => Math.hypot(b[0] - kx, b[1] - kz)
+                        - Math.hypot(a[0] - kx, a[1] - kz));
+
       let sited = false;
-      for (const [dx, dz] of dirs) {
-        const cx = Math.max(14, Math.min(MAP_W - 15, kx + dx * 72));
-        const cz = Math.max(14, Math.min(MAP_H - 15, kz + dz * 72));
+      for (const [cx, cz, radius] of candidates) {
         // keep rivals well apart from one another, not just from the player
-        if (placedKeeps.some(k => Math.hypot(k.x - cx, k.z - cz) < 55)) continue;
-        const keepSite = placeEnemyNear(f, 'keep', cx, cz, 28);
+        if (!wanted && placedKeeps.some(k => Math.hypot(k.x - cx, k.z - cz) < 55)) continue;
+        const keepSite = placeEnemyNear(f, 'keep', cx, cz, radius);
         if (!keepSite) continue;
 
         const c = { x: keepSite.x + 1, z: keepSite.z + 1 };
