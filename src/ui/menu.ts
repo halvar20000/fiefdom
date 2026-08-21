@@ -1,5 +1,14 @@
 import { MAPS, ratings, type MapDef } from '../game/maps';
 import { listSlots, setBootIntent, playTime, savedWhen } from '../game/save';
+import { listMaps, deleteMap, defOf, type CustomMap } from '../game/custom';
+
+/**
+ * What the player chose. The menu can send you to the editor as well as into
+ * a game, so it cannot just resolve with a map.
+ */
+export type MenuChoice =
+  | { kind: 'play'; map: MapDef }
+  | { kind: 'edit'; edit: CustomMap | null };
 
 /**
  * The title screen: pick a map, then play.
@@ -42,6 +51,19 @@ const CSS = `
 #menu .map .diff.Gentle { color: #8fbf6a; }
 #menu .map .diff.Fair   { color: #f0c869; }
 #menu .map .diff.Harsh  { color: #e2794f; }
+#menu .map .diff.Yours  { color: #9ac0e0; }
+#menu .map.mine { border-color: rgba(154,192,224,.30); }
+#menu .map.mine.on { border-color: #9ac0e0; }
+#menu .own { display: flex; gap: 5px; margin-top: 9px; }
+#menu .own button { flex: 1; padding: 5px 0; font: inherit; font-size: 10px;
+  cursor: pointer; color: #ecdfc2; background: rgba(255,255,255,.06);
+  border: 1px solid rgba(196,162,96,.24); border-radius: 3px; }
+#menu .own button:hover { background: rgba(255,255,255,.13); }
+#menu .own button.danger { color: #10100e; background: #e2794f; border-color: #e2794f; }
+#menu .map.make { display: flex; flex-direction: column; justify-content: center;
+  border-style: dashed; border-color: rgba(196,162,96,.34); min-height: 120px; }
+#menu .map.make h3 { color: #f0c869; }
+#menu .map.make p { margin-bottom: 0; }
 #menu .map p { font-size: 11.5px; line-height: 1.55; opacity: .78; margin: 7px 0 10px; }
 #menu .stat { display: grid; grid-template-columns: 62px 1fr; gap: 8px;
               align-items: center; font-size: 10px; margin-top: 3px; opacity: .85; }
@@ -75,7 +97,7 @@ const CSS = `
               text-align: center; line-height: 1.6; }
 `;
 
-export function showMenu(): Promise<MapDef> {
+export function showMenu(): Promise<MenuChoice> {
   return new Promise(resolve => {
     const style = document.createElement('style');
     style.textContent = CSS;
@@ -152,14 +174,80 @@ export function showMenu(): Promise<MapDef> {
       grid.appendChild(card);
     });
 
+    // Hand-drawn maps sit in the same grid as the shipped ones: they are
+    // played exactly the same way, and a separate list would imply otherwise.
+    const mine = listMaps();
+    for (const m of mine) {
+      const def = defOf(m);
+      const card = document.createElement('div');
+      card.className = 'map mine';
+
+      const head = document.createElement('h3');
+      head.textContent = m.name;
+      card.appendChild(head);
+
+      const diff = document.createElement('div');
+      diff.className = 'diff Yours';
+      diff.textContent = 'Your map';
+      card.appendChild(diff);
+
+      const p = document.createElement('p');
+      p.textContent = `Painted ${savedWhen(m.savedAt)}.`;
+      card.appendChild(p);
+
+      const foe = document.createElement('div');
+      foe.className = 'foe' + (m.lords ? '' : ' none');
+      foe.innerHTML = m.lords === 0
+        ? 'Opposition: <b>none</b>'
+        : `Opposition: <b>${m.lords} rival lord${m.lords > 1 ? 's' : ''}</b>`;
+      card.appendChild(foe);
+
+      const row = document.createElement('div');
+      row.className = 'own';
+      const ed = document.createElement('button');
+      ed.textContent = 'Edit';
+      ed.onclick = e => {
+        e.stopPropagation();
+        root.remove(); style.remove();
+        resolve({ kind: 'edit', edit: m });
+      };
+      const del = document.createElement('button');
+      del.textContent = 'Delete';
+      del.onclick = e => {
+        e.stopPropagation();
+        // Two clicks, because there is no undo and no copy of this anywhere.
+        if (del.dataset.armed) { deleteMap(m.id); card.remove(); return; }
+        del.dataset.armed = '1';
+        del.textContent = 'Really?';
+        del.classList.add('danger');
+      };
+      row.append(ed, del);
+      card.appendChild(row);
+
+      card.onclick = () => {
+        chosen = def;
+        for (const c of cards) c.classList.remove('on');
+        card.classList.add('on');
+      };
+      cards.push(card);
+      grid.appendChild(card);
+    }
+
+    const make = document.createElement('div');
+    make.className = 'map make';
+    make.innerHTML = '<h3>+ Draw your own</h3>'
+      + '<p>Start from bare desert and paint the ground and hills yourself.</p>';
+    make.onclick = () => {
+      root.remove(); style.remove();
+      resolve({ kind: 'edit', edit: null });
+    };
+    grid.appendChild(make);
+
     const go = document.createElement('button');
     go.className = 'go';
     go.textContent = 'BEGIN';
-    go.onclick = () => {
-      root.remove();
-      style.remove();
-      resolve(chosen);
-    };
+    const leave = () => { root.remove(); style.remove(); };
+    go.onclick = () => { leave(); resolve({ kind: 'play', map: chosen }); };
     root.appendChild(go);
 
     // Saved games, if there are any. Hidden entirely when there are none --

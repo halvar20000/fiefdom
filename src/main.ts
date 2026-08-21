@@ -18,6 +18,8 @@ import { WorkerPool, type WorkerWorld } from './game/workers';
 import { Placement, type PlacementWorld } from './game/placement';
 import { Hud } from './ui/hud';
 import { showMenu } from './ui/menu';
+import { showEditor } from './ui/editor';
+import { applyCustomMap, type CustomMap } from './game/custom';
 import { showPause } from './ui/pause';
 import type { MapDef } from './game/maps';
 import { SAVE_VERSION, takeBootIntent, readSlot, type SaveGame } from './game/save';
@@ -99,7 +101,11 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
 
   const terrain = new Terrain({ width: MAP_W, height: MAP_H, layers: 20 }, tiles.texture);
   scene.add(terrain.mesh);
-  const { flatTiles, groundType } = generateMap(terrain, tiles.layerOf, chosen);
+  // A hand-drawn map carries its own tiles; a shipped one is regenerated from
+  // its seed. Both return the same shape, so nothing below cares which it is.
+  const { flatTiles, groundType } = chosen.custom
+    ? applyCustomMap(terrain, tiles.layerOf, chosen.custom as CustomMap)
+    : generateMap(terrain, tiles.layerOf, chosen);
 
   // ONE batch for the whole scene. Everything is drawn in a single
   // back-to-front stream so people, buildings and trees interleave correctly.
@@ -2312,9 +2318,21 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
     console.warn('[save] slot', intent.slot, 'could not be read:', info.error);
   }
 
-  const map = await showMenu();
-  loading.textContent = `building ${map.name.toLowerCase()}…`;
-  return main(map);
+  // The menu loops: opening the editor and coming back should land on the
+  // menu again with the new map listed, not boot a game nobody asked for.
+  for (;;) {
+    const choice = await showMenu();
+    if (choice.kind === 'play') {
+      loading.textContent = `building ${choice.map.name.toLowerCase()}…`;
+      return main(choice.map);
+    }
+    // The loading veil sits above the canvas; the editor draws its own world,
+    // so it has to come down here and go back up before the game boots.
+    loading.textContent = 'opening the editor…';
+    loading.classList.add('done');
+    await showEditor(MAP_W, MAP_H, choice.edit);
+    loading.classList.remove('done');
+  }
 })()
   .catch(err => {
   document.getElementById('loading')!.textContent = `error: ${err.message}`;

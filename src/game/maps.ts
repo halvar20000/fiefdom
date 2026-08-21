@@ -30,6 +30,14 @@ export interface MapDef extends MapSettings {
   /** Rival lords on the map, 0-3. They fight each other as well as you. */
   lords: number;
   difficulty: Difficulty;
+  /**
+   * Present on hand-drawn maps, which carry their own tiles instead of being
+   * regenerated from the seed. Typed loosely to keep maps.ts free of a
+   * dependency on the editor's storage format.
+   */
+  custom?: { id: string; name: string; w: number; h: number;
+             corners: string; ground: string; trees: number; lords: number;
+             version: number; savedAt: number };
 }
 
 /**

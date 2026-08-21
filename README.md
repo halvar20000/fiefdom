@@ -788,6 +788,49 @@ long enough for several waves to spawn and swarm the lone test subject. The
 combat bug turned out to be real and underneath it — but the number that
 revealed it was wrong for a completely different reason first.
 
+## A map editor, and where a painted map has to live
+
+The six shipped maps are generator **biases** -- a seed and four numbers -- and
+a saved game is a diff against the world that seed regenerates. A hand-painted
+map has no seed that would reproduce it, so it is the one thing in the game
+that has to carry its own tiles.
+
+That turns out to be cheap, because the data is enormously repetitive: 40,000
+ground types over six values and 40,401 corner heights over six levels.
+Run-length encoded at three bytes a run, **a worked 200x200 map came out at 550
+bytes** — against the ~5MB localStorage allows. Stored raw it would have been
+80KB before base64; still affordable, but pointless for data this flat.
+
+Painted maps are embedded in the save that uses one, not referenced by id, so
+deleting a map cannot orphan a game you are in the middle of.
+
+### What the editor is, and is not
+
+You start on bare flat desert, exactly as asked, and paint: six ground types,
+raise/lower for hills and cliffs, five brush sizes. Everything writes straight
+into the same `Terrain` the game uses, so the editor is not a preview of the
+map -- it is the map.
+
+Two things fall out of that for free. Raised ground picks up the broken-rock
+cliff texture on its own, because the `slope >= 2` test that chooses it is the
+same line of code in both places. And **vegetation is not painted at all**: the
+scatter is a hash over ground type, so painting a meadow grows palms on it
+without the editor placing a single tree.
+
+The brush interpolates between sampled pointer positions. Without that a quick
+drag delivers a handful of positions metres apart and paints a dotted trail of
+separate blobs rather than a stroke — which is exactly what the first version
+did.
+
+Saving runs an audit and warns about farmland, flat rock and level ground,
+because a map with nowhere to farm opens on a settlement that can never produce
+anything, and that reads as the game being broken rather than the map being
+harsh. It warns rather than blocks; a cruel map is a legitimate thing to make.
+
+Not in this version: hand-placing individual trees (there is a density
+setting), and choosing where the keeps go -- the start site and the rival
+castles are still sited by the same search the generated maps use.
+
 ## The siege camp had no art at all
 
 Surfaced by giving the build menu sprite icons: the siege camp was placeable,
