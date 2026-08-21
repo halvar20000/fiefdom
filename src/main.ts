@@ -602,6 +602,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
   const workers = new WorkerPool(workerWorld, state);
   const placement = new Placement(placementWorld, state);
   const hud = new Hud(state, placement);
+  hud.setIcons(atlas);
   hud.onRecruit = (type: string) => recruit(type);
   hud.enemyCount = () => army.enemies.length;
   hud.armyCounts = () => {
@@ -1653,6 +1654,8 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
           ? 'No enemy in the pitch yet' : 'You have no pitch ditches', 'warn');
       }
     }
+    if (k === 'b') hud.toggleBuild();
+    if (k >= '1' && k <= '6') hud.openCategory(Number(k) - 1);
     if (k === 'm') hud.toggleMarket();
     if (k === 't') hud.toggleStats();
     if (k === 'g') {

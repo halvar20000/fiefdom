@@ -788,6 +788,35 @@ long enough for several waves to spawn and swarm the lone test subject. The
 combat bug turned out to be real and underneath it — but the number that
 revealed it was wrong for a completely different reason first.
 
+## The build menu, and how much screen a HUD is allowed
+
+Every building was listed at once down the left edge. That wanted 729px of
+column — taller than most windows — so it ran up over the stats panel, and the
+four buildings you actually reach for were buried under a scroll.
+
+Now it works the way Crusader's does: a bar of six categories with **one open
+at a time**. Digits `1`-`6` open a category, `B` reopens the last one, and
+clicking the open category closes it. The tallest category is 233px against the
+old 729px, and closed it is a 40px bar.
+
+The icons are the game's own sprites, pulled from the atlas at load. This is
+the point of doing it that way rather than drawing a second set of icons by
+hand: a hand-made icon set silently stops matching the day a building is
+re-rendered. Scaling is contain-but-never-upscale, so a wall reads as smaller
+than a barracks instead of every icon being stretched to a uniform size.
+
+Two stores have no building sprite of their own — they are painted yards
+assembled from pile and bin sprites — so they alias to `stockpile_deck` and
+`granary_bin`. 25 of the 26 menu entries draw a real sprite. The exception is
+the **siege camp, which has no art at all**: it is not in `buildings.py`, so
+the world draw call finds no frame and skips it. The building is invisible on
+the map. That is a pre-existing gap, not something the menu introduced.
+
+The controls hint block folds away too. It is ten lines of key bindings that
+were on screen permanently; it starts open, because box select spent a while
+undiscovered behind a hidden hint, and collapses to reclaim 195px once the keys
+are in your fingers.
+
 ## Rival lords, and why they must not all march on you
 
 A map now carries 0-3 rival lords. `Side` stopped being `'player' | 'enemy'`

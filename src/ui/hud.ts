@@ -62,34 +62,55 @@ const CSS = `
 #stats .bar { height: 5px; background: rgba(255,255,255,.10); border-radius: 3px; margin-top: 5px; overflow: hidden; }
 #stats .bar i { display: block; height: 100%; background: var(--good); transition: width .3s, background .3s; }
 
-/* Sits at the bottom of the column when it fits and scrolls when it does not.
-   The explicit min-height is what lets it shrink at all: a flex item defaults
-   to min-height:auto, which refuses to go below its content and makes the
-   overflow rule dead code. */
-#build { padding: 9px; width: 232px; margin-top: auto;
-  flex: 0 1 auto; min-height: 120px; overflow-y: auto; }
-#build::-webkit-scrollbar { width: 7px; }
-#build::-webkit-scrollbar-thumb { background: rgba(196,162,96,.30); border-radius: 4px; }
-#build::-webkit-scrollbar-track { background: transparent; }
-#build h4 { margin: 7px 0 5px; font-size: 10px; letter-spacing: .09em;
-  text-transform: uppercase; opacity: .58; font-weight: 600; }
-#build h4:first-child { margin-top: 0; }
-#build .items { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
-#build button {
-  pointer-events: auto; text-align: left; cursor: pointer;
+/* The build menu, Stronghold-style: a bar of categories with one open at a
+   time. Every building laid out at once wanted 729px of column -- taller than
+   most windows -- and buried the four you actually use under a scroll. */
+#buildwrap { margin-top: auto; display: flex; flex-direction: column;
+  align-items: flex-start; gap: 6px; min-height: 0; }
+
+#buildbar { padding: 6px; width: 232px; flex: 0 0 auto;
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+#buildbar button { position: relative; pointer-events: auto; cursor: pointer;
   background: rgba(255,255,255,.045); color: var(--ink);
   border: 1px solid rgba(196,162,96,.20); border-radius: 3px;
-  padding: 5px 6px; font-size: 11px; line-height: 1.3;
+  padding: 7px 2px 5px; font-size: 10px; letter-spacing: .02em; }
+#buildbar button:hover { background: rgba(255,255,255,.11); border-color: rgba(196,162,96,.45); }
+#buildbar button.open { background: rgba(240,200,105,.20); border-color: var(--gold); color: #fff; }
+/* The digit shortcut, on the button that uses it. A key nobody can see is a
+   key nobody presses. */
+#buildbar button i { position: absolute; top: 1px; left: 3px;
+  font-style: normal; font-size: 8px; opacity: .42; }
+
+#buildmenu { padding: 8px; width: 232px; flex: 0 1 auto;
+  min-height: 0; overflow-y: auto; }
+#buildmenu.hidden { display: none; }
+#buildmenu .items { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+#buildmenu button {
+  pointer-events: auto; cursor: pointer; text-align: center;
+  display: flex; flex-direction: column; align-items: center; gap: 1px;
+  background: rgba(255,255,255,.045); color: var(--ink);
+  border: 1px solid rgba(196,162,96,.20); border-radius: 3px;
+  padding: 4px 3px 5px; font-size: 10.5px; line-height: 1.25;
 }
-#build button:hover { background: rgba(255,255,255,.11); border-color: rgba(196,162,96,.45); }
-#build button.on { background: rgba(240,200,105,.20); border-color: var(--gold); color: #fff; }
-#build button.poor { opacity: .42; }
-#build button .c { display: block; font-size: 9px; opacity: .66; margin-top: 1px; }
+#buildmenu button:hover { background: rgba(255,255,255,.11); border-color: rgba(196,162,96,.45); }
+#buildmenu button.on { background: rgba(240,200,105,.20); border-color: var(--gold); color: #fff; }
+#buildmenu button.poor { opacity: .42; }
+#buildmenu button canvas { display: block; width: 46px; height: 34px; }
+#buildmenu button .c { font-size: 9px; opacity: .62; }
+#buildmenu::-webkit-scrollbar { width: 7px; }
+#buildmenu::-webkit-scrollbar-thumb { background: rgba(196,162,96,.30); border-radius: 4px; }
+#buildmenu::-webkit-scrollbar-track { background: transparent; }
 
 #controls { padding: 9px 11px; width: 218px; flex: 0 0 auto; margin-top: auto; }
 #controls .lbl { font-size: 10px; text-transform: uppercase; letter-spacing: .08em;
   opacity: .58; margin-bottom: 4px; font-weight: 600; }
 #controls .seg { display: flex; gap: 3px; margin-bottom: 9px; }
+#controls .hintbar { display: flex; justify-content: space-between;
+  cursor: pointer; pointer-events: auto; }
+#controls .hintbar:hover { opacity: .9; }
+#controls .hintbar .tw { font-weight: 400; letter-spacing: 0;
+  text-transform: none; opacity: .7; }
+#controls .hint.hidden { display: none; }
 #controls .seg button {
   flex: 1; pointer-events: auto; cursor: pointer; padding: 4px 0; font-size: 10px;
   background: rgba(255,255,255,.045); color: var(--ink);
@@ -296,8 +317,9 @@ const CSS = `
    they otherwise overlap each other and cover the map. */
 @media (max-width: 1000px) {
   #ui { font-size: 11px; }
-  #build { width: 186px; padding: 7px; }
-  #build button { font-size: 10px; padding: 4px 5px; }
+  #buildbar, #buildmenu { width: 186px; padding: 6px; }
+  #buildmenu button { font-size: 10px; padding: 3px 2px 4px; }
+  #buildmenu button canvas { width: 38px; height: 28px; }
   #controls { width: 178px; padding: 7px 8px; }
   #stats { min-width: 154px; padding: 7px 9px; }
   #topbar { padding: 5px 6px; }
@@ -310,8 +332,8 @@ const CSS = `
   #stats2 { width: 210px; padding: 7px 8px; }
 }
 @media (max-height: 780px) {
-  #build h4 { margin: 5px 0 3px; }
-  #build .items { gap: 3px; }
+  #buildmenu .items { gap: 3px; }
+  #buildmenu button canvas { width: 38px; height: 28px; }
   #controls .seg { margin-bottom: 6px; }
 }
 
@@ -326,6 +348,10 @@ export class Hud {
   private topbar!: HTMLElement;
   private stats!: HTMLElement;
   private buildPanel!: HTMLElement;
+  private buildBar!: HTMLElement;
+  /** Which category is open, and which to reopen when B is pressed. */
+  private openGroup: number | null = null;
+  private lastGroup = 0;
   private controls!: HTMLElement;
   private marketPanel!: HTMLElement;
   private rightPanel!: HTMLElement;
@@ -388,25 +414,102 @@ export class Hud {
   }
 
   private buildBuildPanel(): void {
-    this.buildPanel = this.el('div', this.leftCol, 'panel', 'build');
-    for (const group of BUILD_MENU) {
-      const h = this.el('h4', this.buildPanel);
-      h.textContent = group.label;
+    const wrap = this.el('div', this.leftCol, '', 'buildwrap');
+    this.buildPanel = this.el('div', wrap, 'panel hidden', 'buildmenu');
+    this.buildBar = this.el('div', wrap, 'panel', 'buildbar');
+
+    BUILD_MENU.forEach((group, gi) => {
       const items = this.el('div', this.buildPanel, 'items');
+      items.dataset.group = String(gi);
+      items.style.display = 'none';
+
       for (const name of group.items) {
         const def = BUILDINGS[name];
-        const b = document.createElement('button');
-        b.dataset.name = name;
-        b.title = def.description;
         const cost = Object.entries(def.cost)
           .map(([r, n]) => `${n} ${r}`).join(', ') || 'free';
-        b.innerHTML = `${def.label}<span class="c">${cost}</span>`;
+        const b = document.createElement('button');
+        b.dataset.name = name;
+        b.title = `${def.label} — ${cost}\n${def.description}`;
+        const icon = document.createElement('canvas');
+        icon.dataset.name = name;
+        b.appendChild(icon);
+        b.insertAdjacentHTML('beforeend',
+          `<span>${def.label}</span><span class="c">${cost}</span>`);
         b.onclick = () => {
           this.placement.select(name);
           this.onSelect(this.placement.selected);
         };
         items.appendChild(b);
       }
+
+      const cat = document.createElement('button');
+      cat.dataset.group = String(gi);
+      cat.innerHTML = `<i>${gi + 1}</i>${group.label}`;
+      cat.onclick = () => this.openCategory(gi === this.openGroup ? null : gi);
+      this.buildBar.appendChild(cat);
+    });
+  }
+
+  /** Show one category, or none. Pass the index already open to close it. */
+  openCategory(gi: number | null): void {
+    this.openGroup = gi;
+    if (gi !== null) this.lastGroup = gi;
+    this.buildPanel.classList.toggle('hidden', gi === null);
+    for (const el of Array.from(this.buildPanel.children)) {
+      const d = el as HTMLElement;
+      d.style.display = Number(d.dataset.group) === gi ? '' : 'none';
+    }
+    for (const b of Array.from(this.buildBar.querySelectorAll('button'))) {
+      b.classList.toggle('open', Number((b as HTMLElement).dataset.group) === gi);
+    }
+  }
+
+  /** B: reopen whatever was last open, or the first category on a cold start. */
+  toggleBuild(): void {
+    this.openCategory(this.openGroup === null ? this.lastGroup : null);
+  }
+
+  /**
+   * Draw the real building sprites onto the menu icons.
+   *
+   * Called once the atlas is loaded, because the atlas IS the icon set -- the
+   * alternative is a second set of hand-made icons that silently stops matching
+   * the buildings the day a sprite is re-rendered.
+   *
+   * Scaling is contain-but-never-upscale, so a wall reads as smaller than a
+   * barracks instead of every icon being stretched to the same size.
+   */
+  /**
+   * Buildings whose menu icon is not their own sprite, because they have none.
+   * The stores are painted yards assembled from pile and bin sprites rather
+   * than one building, so the icon borrows the empty deck and a single bin.
+   */
+  private static ICON_ALIAS: Record<string, string> = {
+    stockpile: 'stockpile_deck',
+    granary: 'granary_bin',
+  };
+
+  setIcons(atlas: {
+    frames: Record<string, { x: number; y: number; w: number; h: number }>;
+    texture: { image: unknown };
+  }): void {
+    const src = atlas.texture?.image as CanvasImageSource | undefined;
+    if (!src) return;
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    for (const el of Array.from(this.buildPanel.querySelectorAll('canvas'))) {
+      const cv = el as HTMLCanvasElement;
+      const name = cv.dataset.name!;
+      const f = atlas.frames[`${Hud.ICON_ALIAS[name] ?? name}_0`];
+      if (!f) { cv.style.display = 'none'; continue; }
+      const W = cv.clientWidth || 46, H = cv.clientHeight || 34;
+      cv.width = Math.round(W * dpr);
+      cv.height = Math.round(H * dpr);
+      const ctx = cv.getContext('2d');
+      if (!ctx) return;
+      ctx.scale(dpr, dpr);
+      const k = Math.min(W / f.w, H / f.h, 1);
+      const w = f.w * k, h = f.h * k;
+      ctx.drawImage(src, f.x, f.y, f.w, f.h, (W - w) / 2, (H - h) / 2, w, h);
     }
   }
 
@@ -436,9 +539,18 @@ export class Hud {
 
     // Soldier controls belong here, not only in the Barracks view. Box select
     // sat undiscovered behind a hint in a panel the player had no reason to
-    // have open.
-    this.el('div', this.controls, 'hint').innerHTML =
+    // have open. It starts open for the same reason, and folds away with the
+    // header once the keys are in the player's fingers.
+    const hd = this.el('div', this.controls, 'lbl hintbar');
+    const hint = this.el('div', this.controls, 'hint');
+    hd.innerHTML = '<span>Controls</span><span class="tw">hide</span>';
+    hd.onclick = () => {
+      const off = hint.classList.toggle('hidden');
+      hd.querySelector('.tw')!.textContent = off ? 'show' : 'hide';
+    };
+    hint.innerHTML =
       'R / E rotate &nbsp; wheel zoom &nbsp; drag pan<br>' +
+      '<b>1-6</b> build menu &nbsp; <b>B</b> toggle it<br>' +
       'Esc cancels building &nbsp; M market &nbsp; T hide panel<br>' +
       '<b>Troops:</b> click select &nbsp; <b>shift-drag</b> box<br>' +
       'double-click all of a kind &nbsp; right-click move<br>' +
