@@ -858,6 +858,38 @@ Both fields are optional, so maps painted before the tool existed still load
 and fall back to the automatic siting rather than being rejected. A version
 bump would have thrown away every map already saved.
 
+## The asset cache, and a bug that lied
+
+Reported: painting water produced **sand**, and the fisherman's hut **drew
+nothing at all**. Both on the server build; both fine in development.
+
+One cause. The game's own assets live under `/assets/tiles` and
+`/assets/sprites`, which share a URL prefix with Vite's bundles — and nginx was
+serving that whole prefix as `immutable, 1 year`. Vite's bundles are
+fingerprinted so that is right for them. The game's are **not**: `tiles.json`,
+`buildings.json` and the PNGs beside them keep fixed names and change whenever
+the Blender pipeline runs.
+
+So a browser that had visited before kept last build's manifests forever, and
+both failure paths are silent by design:
+
+- `layerOf()` returns **0** for a ground type it has never heard of, and layer
+  0 is **sand**. Painted water therefore rendered as desert.
+- `rebuildStatic`'s `push()` skips any sprite with no frame in the manifest, so
+  a building the manifest predates simply does not draw.
+
+Neither logs anything. Both look like a broken feature rather than a stale file,
+which is exactly how they were reported.
+
+Two fixes, belt and braces. The client now appends `?v=<build id>` to every
+asset URL, so a new build asks for URLs no cache has seen. And nginx serves
+`/assets/(tiles|sprites)/` with `must-revalidate` instead of `immutable` — one
+conditional request against a failure mode that renders the wrong world in
+silence.
+
+The regex location is placed **before** the PNG rule, because nginx takes the
+first matching regex, not the most specific one.
+
 ## The storehouse
 
 A distant workings is slow for one reason: the producer walks its own load

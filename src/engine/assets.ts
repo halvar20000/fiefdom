@@ -1,4 +1,16 @@
 import * as THREE from 'three';
+
+/**
+ * Cache-buster for every asset URL.
+ *
+ * These files have fixed names and changing contents, so without this a
+ * long-lived cache serves last build's manifest and the game degrades
+ * silently: an unknown ground type falls back to sand, and a sprite missing
+ * from the manifest is skipped rather than drawn.
+ */
+declare const __BUILD_ID__: string;
+const V = typeof __BUILD_ID__ === 'string' ? `?v=${__BUILD_ID__}` : '';
+
 import type { Atlas, Frame } from './sprites';
 
 export function loadImage(url: string): Promise<HTMLImageElement> {
@@ -29,7 +41,7 @@ export async function loadTileArray(base: string): Promise<{
   index: TileIndex;
   layerOf: (type: string, variant: number) => number;
 }> {
-  const index: TileIndex = await fetch(`${base}/tiles.json`).then(r => r.json());
+  const index: TileIndex = await fetch(`${base}/tiles.json${V}`).then(r => r.json());
   const { tilePx, variants, types } = index;
   const depth = types.length * variants;
 
@@ -41,7 +53,7 @@ export async function loadTileArray(base: string): Promise<{
 
   for (let t = 0; t < types.length; t++) {
     for (let v = 0; v < variants; v++) {
-      const img = await loadImage(`${base}/${types[t]}_${v}.png`);
+      const img = await loadImage(`${base}/${types[t]}_${v}.png${V}`);
       ctx.clearRect(0, 0, tilePx, tilePx);
       ctx.drawImage(img, 0, 0, tilePx, tilePx);
       const px = ctx.getImageData(0, 0, tilePx, tilePx).data;
@@ -111,7 +123,7 @@ async function packFrames(
   base: string, entries: PackEntry[], scale: number, padding = 2, maxW = 2048,
 ): Promise<PackedAtlas> {
   const loaded = await Promise.all(entries.map(async e => ({
-    e, img: await loadImage(`${base}/${e.file}`),
+    e, img: await loadImage(`${base}/${e.file}${V}`),
   })));
 
   loaded.sort((a, b) => b.e.height - a.e.height);   // shelf pack, tallest first
@@ -153,7 +165,7 @@ async function packFrames(
 export async function buildSpriteAtlas(
   base: string, metaFile: string,
 ): Promise<BuildingAtlas> {
-  const meta: SpriteMetaEntry[] = await fetch(`${base}/${metaFile}`).then(r => r.json());
+  const meta: SpriteMetaEntry[] = await fetch(`${base}/${metaFile}${V}`).then(r => r.json());
   const footprints: Record<string, [number, number]> = {};
   const entries: PackEntry[] = meta.map(m => {
     footprints[m.name] = m.footprint;
@@ -182,8 +194,8 @@ export interface CombinedAtlas extends PackedAtlas {
  */
 export async function buildCombinedAtlas(base: string): Promise<CombinedAtlas> {
   const [bMeta, uMeta] = await Promise.all([
-    fetch(`${base}/buildings.json`).then(r => r.json()) as Promise<SpriteMetaEntry[]>,
-    fetch(`${base}/units.json`).then(r => r.json()) as Promise<{
+    fetch(`${base}/buildings.json${V}`).then(r => r.json()) as Promise<SpriteMetaEntry[]>,
+    fetch(`${base}/units.json${V}`).then(r => r.json()) as Promise<{
       directions: number;
       clips: Record<string, { frames: number }>;
       sprites: UnitMetaEntry[];
@@ -219,7 +231,7 @@ export async function buildUnitAtlas(base: string, metaFile = 'units.json'): Pro
     directions: number;
     clips: Record<string, { frames: number }>;
     sprites: UnitMetaEntry[];
-  } = await fetch(`${base}/${metaFile}`).then(r => r.json());
+  } = await fetch(`${base}/${metaFile}${V}`).then(r => r.json());
 
   const entries: PackEntry[] = meta.sprites.map(m => ({
     key: `${m.clip}_${m.direction}_${m.frame}`, file: `${m.name}.png`,
