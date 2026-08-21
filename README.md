@@ -822,6 +822,13 @@ drag delivers a handful of positions metres apart and paints a dotted trail of
 separate blobs rather than a stroke — which is exactly what the first version
 did.
 
+The view moves on **arrows or WASD**, the same keys the game uses, with
+right-drag as a second way. The first cut shipped with neither: only right-drag
+panned, and the drag had its Y inverted against the game's convention. On a
+200-tile map showing perhaps thirty tiles at a time, that meant you could only
+ever paint the middle — reported as "the view is static", which is exactly what
+it was.
+
 Saving runs an audit and warns about farmland, flat rock and level ground,
 because a map with nowhere to farm opens on a settlement that can never produce
 anything, and that reads as the game being broken rather than the map being

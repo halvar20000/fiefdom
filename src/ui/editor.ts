@@ -163,7 +163,7 @@ async function run(
   raise.textContent = 'Raise  (Q)';
   raise.onclick = () => { tool = { kind: 'raise' }; syncTools(); };
   const lower = document.createElement('button');
-  lower.textContent = 'Lower  (W)';
+  lower.textContent = 'Lower  (Z)';
   lower.onclick = () => { tool = { kind: 'lower' }; syncTools(); };
   hSeg.append(raise, lower);
 
@@ -178,7 +178,9 @@ async function run(
   });
 
   el('div', tools, 'hint').innerHTML =
-    'Drag to paint &nbsp; right-drag pans<br>wheel zooms &nbsp; R / E rotate<br>'
+    '<b>Arrows / WASD</b> move the view<br>'
+    + 'drag to paint &nbsp; right-drag also pans<br>'
+    + 'wheel zooms &nbsp; R / E rotate<br>'
     + '<b>[ ]</b> brush size &nbsp; <b>1-6</b> ground';
 
   const act = el('div', root, 'panel', 'act');
@@ -328,32 +330,55 @@ async function run(
     const p = pick(e.clientX, e.clientY);
     if (p) strokeTo(p.x, p.z);
   });
-  window.addEventListener('pointermove', e => {
+  const onMove = (e: PointerEvent) => {
     if (panning) {
-      iso.panByPixels(lastX - e.clientX, lastY - e.clientY);
+      // Same signs as the game's drag-pan; this had Y inverted, so a
+      // right-drag moved the view the wrong way vertically.
+      iso.panByPixels(-(e.clientX - lastX), e.clientY - lastY);
       lastX = e.clientX; lastY = e.clientY;
       return;
     }
     if (!painting) return;
     const p = pick(e.clientX, e.clientY);
     if (p) strokeTo(p.x, p.z);
-  });
-  window.addEventListener('pointerup', () => {
+  };
+  window.addEventListener('pointermove', onMove);
+  const onUp = () => {
     if (painting) updateStat();
     painting = false; panning = false; lastTile = null;
-  });
+  };
+  window.addEventListener('pointerup', onUp);
   canvas.addEventListener('wheel', e => {
     e.preventDefault();
     iso.zoomBy(e.deltaY < 0 ? 1 : -1);
   }, { passive: false });
 
+  /**
+   * Held keys, polled in the frame loop.
+   *
+   * The map is 200 tiles across and the window shows perhaps thirty of them,
+   * so without this the editor can only ever paint the middle of the map --
+   * which is precisely what it did on the first cut. Panning is on the same
+   * arrows and WASD the game uses, so it needs no learning.
+   */
+  const held = new Set<string>();
+  const onKeyUp = (e: KeyboardEvent) => held.delete(e.key.toLowerCase());
+  window.addEventListener('keyup', onKeyUp);
+  // Losing focus mid-key never delivers the keyup, and the view would then
+  // scroll to the edge of the map on its own and stay there.
+  const onBlur = () => held.clear();
+  window.addEventListener('blur', onBlur);
+
   const onKey = (e: KeyboardEvent) => {
     if (document.activeElement === nameIn) return;
     const k = e.key.toLowerCase();
+    held.add(k);
+    // Arrows scroll the page otherwise, which drags the whole editor about.
+    if (k.startsWith('arrow')) e.preventDefault();
     if (k === 'r') iso.rotateBy(1);
     if (k === 'e') iso.rotateBy(-1);
     if (k === 'q') { tool = { kind: 'raise' }; syncTools(); }
-    if (k === 'w') { tool = { kind: 'lower' }; syncTools(); }
+    if (k === 'z') { tool = { kind: 'lower' }; syncTools(); }
     if (k >= '1' && k <= '6') { tool = { kind: 'paint', ground: Number(k) - 1 }; syncTools(); }
     if (k === '[') { size = SIZES[Math.max(0, SIZES.indexOf(size) - 1)]; syncTools(); }
     if (k === ']') { size = SIZES[Math.min(SIZES.length - 1, SIZES.indexOf(size) + 1)]; syncTools(); }
@@ -372,6 +397,10 @@ async function run(
 
   backBtn.onclick = () => {
     window.removeEventListener('keydown', onKey);
+    window.removeEventListener('keyup', onKeyUp);
+    window.removeEventListener('blur', onBlur);
+    window.removeEventListener('pointermove', onMove);
+    window.removeEventListener('pointerup', onUp);
     window.removeEventListener('resize', resize);
     renderer.dispose();
     canvas.remove();
@@ -380,8 +409,21 @@ async function run(
     done();
   };
 
+  (window as unknown as Record<string, unknown>).__editor = { iso, terrain, ground, held };
+
   // --- loop ---------------------------------------------------------------
+  let lastFrame = performance.now();
   const frame = () => {
+    const now = performance.now();
+    const dt = Math.min(0.1, (now - lastFrame) / 1000);
+    lastFrame = now;
+
+    const pan = 900 * dt;
+    if (held.has('arrowleft') || held.has('a')) iso.panByPixels(-pan, 0);
+    if (held.has('arrowright') || held.has('d')) iso.panByPixels(pan, 0);
+    if (held.has('arrowup') || held.has('w')) iso.panByPixels(0, -pan);
+    if (held.has('arrowdown') || held.has('s')) iso.panByPixels(0, pan);
+
     if (dirty) { terrain.rebuild(); dirty = false; }
     iso.apply();
     renderer.render(scene, iso.camera);
