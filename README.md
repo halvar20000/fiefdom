@@ -4,6 +4,28 @@ An isometric castle-builder in the spirit of Stronghold Crusader, running in
 the browser. Named for what the game is actually about: holding land, working
 it, and defending what it produces.
 
+## Licence and where the assets come from
+
+**AGPL-3.0-only** — see [LICENSE](LICENSE).
+
+Worth being precise about the art, since this repository is public:
+
+* **Every sprite is generated**, not sourced. The buildings, ground, cliffs,
+  vegetation, goods piles, siege engines and the gazelle are all built from
+  procedural geometry by the scripts in `tools/render` and rendered through one
+  shared Blender rig. Nothing is downloaded from an asset pack.
+* **The human and animal motion comes from Mixamo clips** applied to a
+  procedural body. The `.fbx` source files are **not** redistributed — they are
+  gitignored — and only the rendered 2D output is committed, which is what
+  Adobe's terms allow.
+* **Screenshots of the original Stronghold Crusader** live in `reference/` as
+  visual reference and are gitignored. They are Firefly Studios' copyright and
+  are not ours to redistribute.
+
+The name is Fiefdom, not Stronghold, for the same reason: Stronghold is Firefly
+Studios' mark for a game in exactly this genre. Where the README and the code
+comments name it, they are describing an influence.
+
 ## Running it on a server
 
 Packaged as a container and an Unraid Community Applications template — see
