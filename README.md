@@ -4,6 +4,36 @@ An isometric castle-builder in the spirit of Stronghold Crusader, running in
 the browser. Named for what the game is actually about: holding land, working
 it, and defending what it produces.
 
+## Running it on a server
+
+Packaged as a container and an Unraid Community Applications template — see
+[docs/INSTALL.md](docs/INSTALL.md).
+
+```bash
+docker run -d --name fiefdom -p 8080:80 ghcr.io/halvar20000/fiefdom:latest
+```
+
+The image is only nginx serving `dist/`: the simulation, the pathfinding, the
+AI lord and the rendering all happen in the visitor's browser, so the server
+sits near zero CPU. No database, no API keys, no accounts, and **no volume** —
+there is nothing server-side to persist.
+
+Two details that matter:
+
+* **`index.html` is served uncacheable while the sprites are cached hard.** The
+  atlas is ~1300 PNGs and wants aggressive caching, but if `index.html` is
+  cached too, a browser goes on loading the previous build's fingerprinted
+  script after the container is updated and the game silently stays on the old
+  version.
+* **Saves live in the visitor's browser**, not on the server. They do not
+  follow you between devices, and clearing site data deletes them. That is the
+  one thing about this container likely to surprise a self-hoster, so
+  INSTALL.md says it plainly. Server-side saves would need a save API, which
+  does not exist.
+
+CI publishes amd64 **and** arm64 — plenty of home servers are ARM, and an
+x86-only image fails at install time with a message nobody can act on.
+
 ## Start menu and map choice
 
 The game opens on a title screen listing six maps. Nothing is generated until
