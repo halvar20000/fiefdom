@@ -858,6 +858,40 @@ Both fields are optional, so maps painted before the tool existed still load
 and fall back to the automatic siting rather than being rejected. A version
 bump would have thrown away every map already saved.
 
+## Water
+
+A seventh ground type, and the only one that is impassable in itself. Marsh
+merely slows a column down; nothing in this game swims.
+
+**Getting the colour right needed measuring, not judging.** The first render
+came back at luma 163 against sand's 168 — as bright as the desert it is meant
+to sit in, so it read as pale ice rather than water. The ground rig's lighting
+lifts the material values a long way. Set low enough to land at **119**, beside
+marsh's 117, it now carries the same visual weight as the other dark tile while
+being the only genuinely blue thing in the set. That distinction matters at
+zoom-out: a player must never have to work out which dark patch is bog he can
+trench and which is water he cannot touch.
+
+Water marks itself in **both** occupancy grids at load, before any building
+exists — `occupied` so nothing is ever scattered onto it, `paths` so nothing
+walks across it. That ordering has one consequence worth knowing: water reaches
+the "something is in the way" test before the ground rules, so it needed its
+own message, or a lake would report itself as a tree.
+
+`GROUND_TYPES` is now append-only by contract. A painted map stores the ground
+*index*, not the name, so reordering that array would silently rewrite every
+map already saved.
+
+Verified on an imported lake of 5,436 tiles: every sampled tile blocked, zero
+decorations scattered on it, all four building kinds refused with "You cannot
+build on water" — including the pitch rig, which is the one thing a bog accepts
+— and a path requested straight across the lake routed around it instead.
+
+**The six shipped maps deliberately have no water.** Their terrain is
+regenerated from a seed and a save is a diff against that world, so adding
+water to the generator would change the ground under every existing save.
+Water is available to painted maps, where it costs nothing already saved.
+
 ### Reading a map out of a picture
 
 **Import image…** fits a picture inside the map preserving its aspect ratio and

@@ -25,6 +25,10 @@ function terrainAllows(need: TerrainNeed, ground: string): boolean {
   // Nothing but a pitch rig stands in a bog. 'any' means any DRY ground --
   // otherwise marsh would quietly become ordinary buildable land and the
   // player could pave over the one hazard the map gives them.
+  // Water takes nothing at all -- not even the pitch rig that a bog takes.
+  // It is checked before marsh so that 'marsh' cannot be read as "any wet
+  // ground" and let a rig be floated out onto a lake.
+  if (ground === 'water') return false;
   if (ground === 'marsh') return need === 'marsh';
   if (need === 'marsh') return false;
   switch (need) {
@@ -69,9 +73,16 @@ export class Placement {
 
     for (let dz = 0; dz < d; dz++) {
       for (let dx = 0; dx < w; dx++) {
-        if (this.world.isOccupied(x + dx, z + dz)) {
-          return { ok: false, reason: 'Something is in the way' };
-        }
+        if (!this.world.isOccupied(x + dx, z + dz)) continue;
+        // Water marks itself occupied so that nothing is ever scattered or
+        // pathed onto it, which means it reaches this test before the ground
+        // rules below and would otherwise be reported as a tree in the way.
+        return {
+          ok: false,
+          reason: this.world.groundAt(x + dx, z + dz) === 'water'
+            ? 'You cannot build on water'
+            : 'Something is in the way',
+        };
       }
     }
 

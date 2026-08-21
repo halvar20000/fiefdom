@@ -568,6 +568,63 @@ def ground_marsh(name="GroundMarsh"):
     return mat
 
 
+def ground_water(name="GroundWater"):
+    """
+    Standing water: river, lake and shallow sea.
+
+    The tile is rendered flat like every other ground, so the illusion has to
+    come entirely from colour and specular. Two rules it must obey at 45 px.
+
+    It has to be the only BLUE thing in the set, and unambiguously so. Marsh is
+    already the dark cold tile, and a player glancing at a zoomed-out map must
+    never have to decide which dark patch is bog he can trench and which is
+    water he cannot touch -- so this is pushed properly blue rather than
+    blue-grey, and lighter than marsh rather than darker.
+
+    And it must not tile visibly. Water has no landmarks to hide a repeat
+    behind, unlike rock or scrub, so the ripple runs at two scales that do not
+    share a period and the highlight sits on the finer of the two.
+    """
+    mat, nt, bsdf = _new(name)
+    pos = _pos(nt, 1.0)
+
+    # depth mottling: shallows toward the pale end, open water toward the dark
+    deep = _noise(nt, pos, scale=6.0, detail=6.0, roughness=0.55, distortion=0.6)
+    # Measured, not guessed. The first pass came back at luma 163 against
+    # sand's 168 -- as bright as the desert it is supposed to sit in, so it
+    # read as pale ice. The rig's lighting lifts these values a long way, so
+    # they are set low enough to land near marsh at 117.
+    deep_ramp = _ramp(nt, [
+        (0.30, (0.035, 0.105, 0.185, 1.0)),
+        (0.52, (0.055, 0.150, 0.245, 1.0)),
+        (0.74, (0.080, 0.200, 0.300, 1.0)),
+        (0.94, (0.115, 0.260, 0.360, 1.0)),
+    ], deep.outputs["Fac"])
+
+    # ripple, deliberately at a scale that does not divide the depth noise
+    ripple = _noise(nt, pos, scale=23.0, detail=7.0, roughness=0.70, distortion=1.6)
+    ripple_ramp = _ramp(nt, [
+        (0.42, (0.84, 0.88, 0.93, 1.0)),
+        (0.60, (0.98, 1.00, 1.03, 1.0)),
+        (0.78, (1.10, 1.13, 1.17, 1.0)),
+    ], ripple.outputs["Fac"])
+
+    nt.links.new(_mulcol(nt, deep_ramp.outputs["Color"], ripple_ramp.outputs["Color"]),
+                 bsdf.inputs["Base Color"])
+
+    # Glossy, but not a mirror: a uniform low roughness over a flat plane comes
+    # back as one flat specular sheet with no shape in it at all.
+    rough = _ramp(nt, [
+        (0.35, (0.08, 0.08, 0.08, 1.0)),
+        (0.70, (0.30, 0.30, 0.30, 1.0)),
+    ], ripple.outputs["Fac"])
+    nt.links.new(rough.outputs["Color"], bsdf.inputs["Roughness"])
+
+    h = _add(nt, _mul(nt, ripple.outputs["Fac"], 0.7), _mul(nt, deep.outputs["Fac"], 0.3))
+    _bump(nt, bsdf, h, strength=0.55, distance=0.02)
+    return mat
+
+
 def ground_scrub(name="GroundScrub"):
     """The patchy green-over-sand transition ground from the landscape shot."""
     mat, nt, bsdf = _new(name)

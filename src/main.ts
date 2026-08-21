@@ -124,6 +124,24 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
   const occupied = new Uint8Array(MAP_W * MAP_H);
   const paths = new PathGrid(MAP_W, MAP_H);
 
+  // Water blocks both grids from the outset, before a single building exists.
+  // It is the one ground that is impassable in itself: marsh only slows a
+  // column down, but nothing in this game swims, and a lake nobody had marked
+  // would be crossed by every unit as though it were sand.
+  {
+    const WATER = GROUND_TYPES.indexOf('water');
+    let n = 0;
+    for (let z = 0; z < MAP_H; z++) {
+      for (let x = 0; x < MAP_W; x++) {
+        if (groundType[z * MAP_W + x] !== WATER) continue;
+        occupied[z * MAP_W + x] = 1;
+        paths.setBlocked(x, z, true);
+        n++;
+      }
+    }
+    if (n) console.log(`[map] ${n} tiles of water, impassable`);
+  }
+
   const markArea = (x: number, z: number, w: number, d: number, v = 1) => {
     for (let dz = 0; dz < d; dz++)
       for (let dx = 0; dx < w; dx++) {

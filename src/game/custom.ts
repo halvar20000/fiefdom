@@ -143,9 +143,9 @@ export function defOf(m: CustomMap): MapDef {
  * colour with green weighted up, because green channel is what actually
  * separates fertile ground from sand and rock in these images.
  *
- * Water has no entry because the game has no water: the closest thing it owns
- * is marsh, and silently turning a lake into buildable ground would be worse
- * than turning it into bog you cannot build on.
+ * Water has three entries rather than one because it is the colour that varies
+ * most between sources: a shallow river and open sea are far apart in a
+ * thumbnail, and one reference blue put half a coastline into marsh.
  */
 const PALETTE: { g: number; rgb: [number, number, number] }[] = [
   { g: 0, rgb: [201, 169, 120] },   // sand
@@ -157,7 +157,9 @@ const PALETTE: { g: number; rgb: [number, number, number] }[] = [
   { g: 4, rgb: [142, 139, 131] },   // rock
   { g: 4, rgb: [104, 100, 94] },    // dark rock
   { g: 5, rgb: [74, 68, 56] },      // pitch marsh
-  { g: 5, rgb: [48, 62, 84] },      // water reads as bog, see above
+  { g: 6, rgb: [48, 76, 112] },     // water
+  { g: 6, rgb: [72, 116, 150] },    // shallows
+  { g: 6, rgb: [30, 52, 84] },      // deep water
 ];
 
 /**
@@ -291,7 +293,7 @@ export function applyCustomMap(
       const variant = hashVariant(x, z);
       terrain.layer[t] = layerOf(slope >= 2 ? 'cliff' : type, variant);
       groundType[t] = g;
-      if (flat && type !== 'rock' && type !== 'marsh') flatTiles.push({ x, z });
+      if (flat && type !== 'rock' && type !== 'marsh' && type !== 'water') flatTiles.push({ x, z });
     }
   }
 
@@ -319,11 +321,14 @@ export function auditMap(
   const GRASS = GROUND_TYPES.indexOf('grass');
   const DARK = GROUND_TYPES.indexOf('grass_dark');
   const ROCK = GROUND_TYPES.indexOf('rock');
+  const WATER = GROUND_TYPES.indexOf('water');
+  const MARSH = GROUND_TYPES.indexOf('marsh');
   let green = 0, rock = 0, buildable = 0;
 
   for (let z = 0; z < terrain.height; z += 2) {
     for (let x = 0; x < terrain.width; x += 2) {
       const g = groundType[z * terrain.width + x];
+      if (g === WATER || g === MARSH) continue;   // level, but nothing goes on it
       if (!isBuildable(terrain, x, z, 3, 3)) continue;
       buildable++;
       if (g === GRASS || g === DARK) green++;

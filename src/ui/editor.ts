@@ -67,6 +67,7 @@ const BRUSHES: { g: string; label: string; swatch: string; key: string }[] = [
   { g: 'grass_dark', label: 'Lush', swatch: '#557436', key: '4' },
   { g: 'rock', label: 'Rock', swatch: '#8e8b83', key: '5' },
   { g: 'marsh', label: 'Pitch marsh', swatch: '#4a4438', key: '6' },
+  { g: 'water', label: 'Water', swatch: '#5e7d92', key: '7' },
 ];
 
 const SIZES = [1, 3, 5, 9, 15];
@@ -210,7 +211,7 @@ async function run(
     '<b>Arrows / WASD</b> move the view<br>'
     + 'drag to paint &nbsp; right-drag also pans<br>'
     + 'wheel zooms &nbsp; R / E rotate<br>'
-    + '<b>[ ]</b> brush size &nbsp; <b>1-6</b> ground<br>'
+    + '<b>[ ]</b> brush size &nbsp; <b>1-7</b> ground<br>'
     + 'pick a keep, then click where it goes';
 
   const act = el('div', root, 'panel', 'act');
@@ -508,7 +509,7 @@ async function run(
     if (k === 'e') iso.rotateBy(-1);
     if (k === 'q') { tool = { kind: 'raise' }; syncTools(); }
     if (k === 'z') { tool = { kind: 'lower' }; syncTools(); }
-    if (k >= '1' && k <= '6') { tool = { kind: 'paint', ground: Number(k) - 1 }; syncTools(); }
+    if (k >= '1' && k <= '7') { tool = { kind: 'paint', ground: Number(k) - 1 }; syncTools(); }
     if (k === '[') { size = SIZES[Math.max(0, SIZES.indexOf(size) - 1)]; syncTools(); }
     if (k === ']') { size = SIZES[Math.min(SIZES.length - 1, SIZES.indexOf(size) + 1)]; syncTools(); }
   };

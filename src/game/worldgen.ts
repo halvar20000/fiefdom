@@ -30,8 +30,13 @@ function makeNoise(seed: number) {
   };
 }
 
+/**
+ * Ground kinds, in the order their indices are stored in saves and painted
+ * maps. APPEND ONLY -- reordering these silently rewrites every map already
+ * saved, because a painted map stores the index and not the name.
+ */
 export const GROUND_TYPES =
-  ['sand', 'scrub', 'grass', 'grass_dark', 'rock', 'marsh'] as const;
+  ['sand', 'scrub', 'grass', 'grass_dark', 'rock', 'marsh', 'water'] as const;
 export type GroundType = typeof GROUND_TYPES[number];
 
 export interface GeneratedMap {

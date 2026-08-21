@@ -42,6 +42,7 @@ TYPES = {
     "rock":       lambda: M.rough_stone(),
     "cliff":      lambda: M.ground_cliff(),
     "marsh":      lambda: M.ground_marsh(),
+    "water":      lambda: M.ground_water(),
 }
 
 
