@@ -135,6 +135,76 @@ export function defOf(m: CustomMap): MapDef {
   };
 }
 
+/**
+ * Reference colours for reading a map out of a picture.
+ *
+ * These are what the six ground types look like from directly above, which is
+ * what a minimap or a map-preview thumbnail shows. Classification is nearest
+ * colour with green weighted up, because green channel is what actually
+ * separates fertile ground from sand and rock in these images.
+ *
+ * Water has no entry because the game has no water: the closest thing it owns
+ * is marsh, and silently turning a lake into buildable ground would be worse
+ * than turning it into bog you cannot build on.
+ */
+const PALETTE: { g: number; rgb: [number, number, number] }[] = [
+  { g: 0, rgb: [201, 169, 120] },   // sand
+  { g: 0, rgb: [222, 196, 152] },   // pale sand
+  { g: 1, rgb: [157, 154, 94] },    // scrub
+  { g: 2, rgb: [127, 156, 78] },    // grass
+  { g: 3, rgb: [85, 116, 54] },     // lush
+  { g: 3, rgb: [58, 84, 38] },      // deep green / tree cover
+  { g: 4, rgb: [142, 139, 131] },   // rock
+  { g: 4, rgb: [104, 100, 94] },    // dark rock
+  { g: 5, rgb: [74, 68, 56] },      // pitch marsh
+  { g: 5, rgb: [48, 62, 84] },      // water reads as bog, see above
+];
+
+/**
+ * Classify one pixel to a ground type index.
+ *
+ * Exported so the import can be tested without a canvas or a file picker.
+ */
+export function classifyPixel(r: number, g: number, b: number): number {
+  let best = 0, bestD = Infinity;
+  for (const p of PALETTE) {
+    const dr = r - p.rgb[0], dg = g - p.rgb[1], db = b - p.rgb[2];
+    const d = dr * dr + dg * dg * 2 + db * db;
+    if (d < bestD) { bestD = d; best = p.g; }
+  }
+  return best;
+}
+
+/**
+ * Read an image into a ground array.
+ *
+ * The picture is fitted INSIDE the map preserving its aspect ratio, with the
+ * margins left as sand. Stretching a wide screenshot to a square map would
+ * distort every feature on it, and the whole point of importing is to keep the
+ * shapes.
+ */
+export function groundFromImage(
+  img: CanvasImageSource, w: number, h: number,
+  iw: number, ih: number,
+): Uint8Array {
+  const cv = document.createElement('canvas');
+  cv.width = w; cv.height = h;
+  const ctx = cv.getContext('2d', { willReadFrequently: true })!;
+  ctx.fillStyle = 'rgb(201,169,120)';
+  ctx.fillRect(0, 0, w, h);
+
+  const k = Math.min(w / iw, h / ih);
+  const dw = Math.round(iw * k), dh = Math.round(ih * k);
+  ctx.drawImage(img, Math.round((w - dw) / 2), Math.round((h - dh) / 2), dw, dh);
+
+  const px = ctx.getImageData(0, 0, w, h).data;
+  const out = new Uint8Array(w * h);
+  for (let i = 0; i < out.length; i++) {
+    out[i] = classifyPixel(px[i * 4], px[i * 4 + 1], px[i * 4 + 2]);
+  }
+  return out;
+}
+
 // --- storage --------------------------------------------------------------
 
 export function listMaps(): CustomMap[] {

@@ -5,7 +5,7 @@ import { loadTileArray } from '../engine/assets';
 import { GROUND_TYPES } from '../game/worldgen';
 import {
   encodeMap, saveMap, hashVariant, auditMap, decodeArrays, KEEP_COLOURS,
-  type CustomMap,
+  groundFromImage, type CustomMap,
 } from '../game/custom';
 
 /**
@@ -240,6 +240,48 @@ async function run(
     btn.onclick = () => { trees = TREES[i]; syncTools(); };
     tBtns.push(btn); tSeg.appendChild(btn);
   });
+
+  el('div', act, 'lbl').textContent = 'From a picture';
+  const fileIn = document.createElement('input');
+  fileIn.type = 'file';
+  fileIn.accept = 'image/*';
+  fileIn.style.display = 'none';
+  act.appendChild(fileIn);
+  const importBtn = document.createElement('button');
+  importBtn.textContent = 'Import image…';
+  importBtn.onclick = () => fileIn.click();
+  act.appendChild(importBtn);
+  el('div', act, 'hint').textContent =
+    'Best from a top-down minimap. Ground only — hills stay yours to paint.';
+
+  const importImage = async (src: Blob | string) => {
+    const img = new Image();
+    const url = typeof src === 'string' ? src : URL.createObjectURL(src);
+    try {
+      await new Promise<void>((ok, fail) => {
+        img.onload = () => ok();
+        img.onerror = () => fail(new Error('that file could not be read as an image'));
+        img.src = url;
+      });
+      const g = groundFromImage(img, W, H, img.naturalWidth, img.naturalHeight);
+      ground.set(g);
+      repaintAll(terrain, ground, W, H, tiles.layerOf);
+      dirty = true;
+      updateStat();
+      warnBox.textContent =
+        `Read ${img.naturalWidth}x${img.naturalHeight} into the ground. `
+        + 'Paint over anything it got wrong.';
+    } catch (e) {
+      warnBox.textContent = e instanceof Error ? e.message : 'could not read that image';
+    } finally {
+      if (typeof src !== 'string') URL.revokeObjectURL(url);
+    }
+  };
+  fileIn.onchange = () => {
+    const f = fileIn.files?.[0];
+    if (f) void importImage(f);
+    fileIn.value = '';
+  };
 
   el('div', act, 'lbl').textContent = 'Map';
   const saveBtn = document.createElement('button');
@@ -514,6 +556,7 @@ async function run(
     },
     keeps: () => ({ start, rivals: keeps }),
     save: () => saveBtn.click(),
+    importImage,
   };
 
   // --- loop ---------------------------------------------------------------

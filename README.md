@@ -858,6 +858,26 @@ Both fields are optional, so maps painted before the tool existed still load
 and fall back to the automatic siting rather than being rejected. A version
 bump would have thrown away every map already saved.
 
+### Reading a map out of a picture
+
+**Import image…** fits a picture inside the map preserving its aspect ratio and
+classifies every tile by nearest colour, with green weighted up because the
+green channel is what actually separates fertile ground from sand and rock in a
+top-down view. The margins are left as sand; stretching a wide image to a square
+map would distort every feature on it, which defeats the point of importing.
+
+It reads **ground only**. Elevation cannot be inferred from colour with any
+confidence, so hills stay yours to paint, and the import is a starting point to
+paint over rather than a finished map.
+
+Water has no entry in the palette because the game has no water. The nearest
+thing it owns is marsh, so lakes and sea import as bog — impassable-ish and
+unbuildable, which is a better lie than turning a lake into open ground.
+
+Verified against a synthetic 200x200 of known colours: 10,000 sand, 9,200 grass,
+9,200 rock and 11,600 marsh, with a deliberate water stripe landing in the marsh
+count exactly as intended.
+
 Still not in this version: hand-placing individual trees, for which there is a
 density setting instead.
 
