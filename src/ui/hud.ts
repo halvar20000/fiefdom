@@ -47,13 +47,30 @@ const CSS = `
 #topbar .res .n { color: var(--gold); font-weight: 600; font-variant-numeric: tabular-nums; }
 #topbar .res .k { opacity: .62; font-size: 10px; text-transform: uppercase; letter-spacing: .04em; }
 
-#stats { position: absolute; top: 10px; left: 12px; padding: 9px 11px; min-width: 190px; }
+/* Left-hand column, same reasoning as the right: both panels live in flow, so
+   the build menu growing can never land on top of the stats panel. It used to
+   be anchored to the bottom with no top bound, and once the castle and siege
+   groups were added it was taller than the window and ran up over the food
+   and popularity rows. */
+#leftcol { position: absolute; left: 12px; top: 10px; bottom: 12px;
+  display: flex; flex-direction: column; align-items: flex-start; gap: 8px;
+  pointer-events: none; }
+#leftcol > * { pointer-events: auto; }
+#stats { padding: 9px 11px; min-width: 190px; flex: 0 0 auto; }
 #stats .row { display: flex; justify-content: space-between; gap: 14px; line-height: 1.65; }
 #stats .row b { color: var(--gold); font-weight: 600; font-variant-numeric: tabular-nums; }
 #stats .bar { height: 5px; background: rgba(255,255,255,.10); border-radius: 3px; margin-top: 5px; overflow: hidden; }
 #stats .bar i { display: block; height: 100%; background: var(--good); transition: width .3s, background .3s; }
 
-#build { position: absolute; left: 12px; bottom: 12px; padding: 9px; width: 232px; }
+/* Sits at the bottom of the column when it fits and scrolls when it does not.
+   The explicit min-height is what lets it shrink at all: a flex item defaults
+   to min-height:auto, which refuses to go below its content and makes the
+   overflow rule dead code. */
+#build { padding: 9px; width: 232px; margin-top: auto;
+  flex: 0 1 auto; min-height: 120px; overflow-y: auto; }
+#build::-webkit-scrollbar { width: 7px; }
+#build::-webkit-scrollbar-thumb { background: rgba(196,162,96,.30); border-radius: 4px; }
+#build::-webkit-scrollbar-track { background: transparent; }
 #build h4 { margin: 7px 0 5px; font-size: 10px; letter-spacing: .09em;
   text-transform: uppercase; opacity: .58; font-weight: 600; }
 #build h4:first-child { margin-top: 0; }
@@ -288,6 +305,7 @@ const CSS = `
   #topbar .res .k { display: none; }
   /* the trade table needs its columns; never squeeze it below this */
   #rightcol { right: 6px; }
+  #leftcol { left: 6px; }
   #market { width: 330px; }
   #stats2 { width: 210px; padding: 7px 8px; }
 }
@@ -314,6 +332,7 @@ export class Hud {
   private viewSelect!: HTMLSelectElement;
   private views: Record<string, HTMLElement> = {};
   private view: ViewName = 'food';
+  private leftCol!: HTMLElement;
   private rightCol!: HTMLElement;
   private notices!: HTMLElement;
   private ghost!: HTMLElement;
@@ -336,6 +355,7 @@ export class Hud {
     document.body.appendChild(this.root);
 
     this.buildTopbar();
+    this.leftCol = this.el('div', this.root, '', 'leftcol');
     this.buildStats();
     this.buildBuildPanel();
     this.rightCol = this.el('div', this.root, '', 'rightcol');
@@ -364,11 +384,11 @@ export class Hud {
   }
 
   private buildStats(): void {
-    this.stats = this.el('div', this.root, 'panel', 'stats');
+    this.stats = this.el('div', this.leftCol, 'panel', 'stats');
   }
 
   private buildBuildPanel(): void {
-    this.buildPanel = this.el('div', this.root, 'panel', 'build');
+    this.buildPanel = this.el('div', this.leftCol, 'panel', 'build');
     for (const group of BUILD_MENU) {
       const h = this.el('h4', this.buildPanel);
       h.textContent = group.label;
