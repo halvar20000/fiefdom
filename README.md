@@ -881,6 +881,27 @@ both failure paths are silent by design:
 Neither logs anything. Both look like a broken feature rather than a stale file,
 which is exactly how they were reported.
 
+### The half of the fix that never shipped
+
+The cache fix went out and the bug stayed. The server was provably right —
+`tiles.json` listed `water`, and the headers said `must-revalidate` — and water
+still drew as sand.
+
+The Dockerfile copies files by name, and `vite.config.ts` was not on the list.
+It was added for the build id and never added there. Vite then ran with
+defaults, `__BUILD_ID__` was never defined, and every asset URL shipped
+**unversioned**. The build did not fail; nothing warned.
+
+That is what made it survive the fix. A browser holding `tiles.json` under
+`immutable, max-age=31536000` **does not re-ask for a year**, so the server's
+new `must-revalidate` header never reaches it. Only a changed URL gets through —
+and the changed URL was the half that did not ship.
+
+Reproduced rather than assumed: building with `vite.config.ts` puts `?v=<sha>`
+in the bundle and eliminates the warning branch as dead code; building without
+it yields no versioned URL and leaves the warning in. Asset URLs now log an
+error if the define is missing, so this cannot ship quietly again.
+
 A third fix matters more than either: the game now **says so**. On load it
 compares `GROUND_TYPES` against the tile manifest and the building list against
 the atlas, and if the manifests are behind the code it puts a banner on screen

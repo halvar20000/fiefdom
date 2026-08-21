@@ -9,7 +9,16 @@ import * as THREE from 'three';
  * from the manifest is skipped rather than drawn.
  */
 declare const __BUILD_ID__: string;
-const V = typeof __BUILD_ID__ === 'string' ? `?v=${__BUILD_ID__}` : '';
+const V = (() => {
+  if (typeof __BUILD_ID__ === 'string') return `?v=${__BUILD_ID__}`;
+  // Reaching here means the bundle was built without vite.config.ts, so asset
+  // URLs are unversioned and any browser holding an older copy will keep it.
+  // Silent last time; loud now.
+  console.error(
+    '[assets] built without __BUILD_ID__ — asset URLs are not versioned, so a '
+    + 'stale cache cannot be busted. Check vite.config.ts reached the build.');
+  return '';
+})();
 
 import type { Atlas, Frame } from './sprites';
 

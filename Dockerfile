@@ -8,7 +8,13 @@ FROM node:20-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN npm ci || npm install
-COPY tsconfig.json index.html ./
+# vite.config.ts is load-bearing, not optional: it defines __BUILD_ID__, which
+# stamps ?v=<id> onto every asset URL. Left out of this list once already, and
+# the build did not fail -- Vite simply ran with defaults, the define never
+# happened, and the asset URLs shipped unversioned. A browser holding an
+# `immutable` copy of tiles.json from an older image then never re-asks for it,
+# so water renders as sand no matter what the server sends.
+COPY tsconfig.json vite.config.ts index.html ./
 COPY src ./src
 COPY public ./public
 # `npm run build` typechecks first, so a broken build never ships as an image.
