@@ -3,6 +3,7 @@ import { IsoCamera } from './engine/camera';
 import { Terrain } from './engine/terrain';
 import { SpriteBatch } from './engine/sprites';
 import { loadTileArray, buildCombinedAtlas, type CombinedAtlas } from './engine/assets';
+import { reportStaleAssets, missingTiles, missingSprites } from './engine/freshness';
 import {
   generateMap, findSite, isBuildable, findStartSite, GROUND_TYPES,
 } from './game/worldgen';
@@ -98,6 +99,16 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
     loadTileArray('/assets/tiles'),
     buildCombinedAtlas('/assets/sprites'),
   ]) as [Awaited<ReturnType<typeof loadTileArray>>, CombinedAtlas];
+
+  // Say so loudly if the manifests predate the code. Both failure modes are
+  // silent: an unknown ground type falls back to sand, and a sprite with no
+  // frame is skipped, so the game renders a plausible wrong world in silence.
+  reportStaleAssets([
+    ...missingTiles(GROUND_TYPES, tiles.index.types),
+    ...missingSprites(
+      Object.keys(BUILDINGS).filter(n => n !== 'stockpile' && n !== 'granary'),
+      atlas.frames),
+  ]);
 
   const terrain = new Terrain({ width: MAP_W, height: MAP_H, layers: 20 }, tiles.texture);
   scene.add(terrain.mesh);

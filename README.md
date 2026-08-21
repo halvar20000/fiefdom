@@ -881,7 +881,13 @@ both failure paths are silent by design:
 Neither logs anything. Both look like a broken feature rather than a stale file,
 which is exactly how they were reported.
 
-Two fixes, belt and braces. The client now appends `?v=<build id>` to every
+A third fix matters more than either: the game now **says so**. On load it
+compares `GROUND_TYPES` against the tile manifest and the building list against
+the atlas, and if the manifests are behind the code it puts a banner on screen
+naming what is missing and telling the player to hard-refresh. A deployment
+problem should never present as a broken feature.
+
+Two more fixes, belt and braces. The client now appends `?v=<build id>` to every
 asset URL, so a new build asks for URLs no cache has seen. And nginx serves
 `/assets/(tiles|sprites)/` with `must-revalidate` instead of `immutable` — one
 conditional request against a failure mode that renders the wrong world in

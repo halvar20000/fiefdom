@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { Terrain } from '../engine/terrain';
 import { IsoCamera } from '../engine/camera';
 import { loadTileArray } from '../engine/assets';
+import { reportStaleAssets, missingTiles } from '../engine/freshness';
 import { GROUND_TYPES } from '../game/worldgen';
 import {
   encodeMap, saveMap, hashVariant, auditMap, decodeArrays, KEEP_COLOURS,
@@ -103,6 +104,10 @@ async function run(
   scene.background = new THREE.Color(0x10100e);
 
   const tiles = await loadTileArray('/assets/tiles');
+  // The editor paints ground types straight into the terrain, so a tile
+  // manifest older than GROUND_TYPES shows up here first -- as water that
+  // paints itself sand.
+  reportStaleAssets(missingTiles(GROUND_TYPES, tiles.index.types));
   const terrain = new Terrain({ width: W, height: H, layers: 20 }, tiles.texture);
   scene.add(terrain.mesh);
 
