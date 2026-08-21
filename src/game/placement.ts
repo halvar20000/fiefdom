@@ -1,4 +1,4 @@
-import { BUILDINGS, type TerrainNeed } from './defs';
+import { WATER_REACH, BUILDINGS, type TerrainNeed } from './defs';
 import type { GameState } from './state';
 
 export interface PlacementWorld {
@@ -126,6 +126,14 @@ export class Placement {
       return { ok: false, reason: 'The ground is not level' };
     }
 
+    // Checked after the ground and level tests on purpose: "must be built on a
+    // shore" is only useful advice once the spot is otherwise legal, and a
+    // player dragging a hut across open desert should be told the ordinary
+    // reason first.
+    if (def.needsWater && !this.nearWater(x, z, w, d)) {
+      return { ok: false, reason: 'Must be built on a shore' };
+    }
+
     if (!this.state.canAfford(def.cost)) {
       const missing = Object.entries(def.cost)
         .filter(([r, n]) => this.state.stock[r as never] < (n ?? 0))
@@ -134,6 +142,17 @@ export class Placement {
     }
 
     return { ok: true, reason: '' };
+  }
+
+  /** Is there open water within reach of this footprint's edge? */
+  private nearWater(x: number, z: number, w: number, d: number): boolean {
+    const r = WATER_REACH;
+    for (let tz = z - r; tz < z + d + r; tz++) {
+      for (let tx = x - r; tx < x + w + r; tx++) {
+        if (this.world.groundAt(tx, tz) === 'water') return true;
+      }
+    }
+    return false;
   }
 
   /** Update the hovered tile. Returns whether it is a legal spot. */

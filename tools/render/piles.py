@@ -432,6 +432,42 @@ def _meat(level):
     return parts
 
 
+def _fish(level):
+    """
+    Fish laid out on the slab.
+
+    Two things had to be corrected by measurement rather than eye. The first
+    pass used apple-sized lumps and came back with 1% of the bin's pixels
+    reading blue at all -- at 45 px the fish simply were not there. And the
+    warm sun neutralises a naturalistic silver: the colour has to be pushed
+    hard toward blue in the material to arrive as blue on screen, exactly as
+    the water tile did.
+
+    Built from paired cones nose to nose, so each fish tapers at both ends. A
+    fish that reads as a box is indistinguishable from the cheese.
+    """
+    parts = []
+    top = _bin(parts)
+    slab = M.timber("FishSlab", dark=True)
+    scale = M.cloth("FishScale", colour=(0.30, 0.52, 0.80))
+    dark = M.cloth("FishBack", colour=(0.12, 0.26, 0.52))
+
+    rows = {1: [2], 2: [3, 2], 3: [3, 3, 2]}[level]
+    for ri, count in enumerate(rows):
+        z = top + ri * 0.13
+        parts.append(geom.box(f"gf_slab_{ri}", (0.11, 0.13, z), (0.78, 0.74, 0.022), slab))
+        for i, (x, y) in enumerate(_grid(count, 2, 0.26, 0.28, 0.34, 0.34)):
+            body = dark if (i + ri) % 2 else scale
+            zz = z + 0.022 + 0.10
+            # head and tail: two cones meeting at the middle, laid on their side
+            head = geom.cone(f"gf_h_{ri}_{i}", (x - 0.02, y, zz), 0.10, 0.20, body, segments=7)
+            head.rotation_euler = (0.0, math.pi / 2.0, 0.30 * (i % 3))
+            tail = geom.cone(f"gf_t_{ri}_{i}", (x - 0.02, y, zz), 0.10, 0.16, body, segments=7)
+            tail.rotation_euler = (0.0, -math.pi / 2.0, 0.30 * (i % 3))
+            parts += [head, tail]
+    return parts
+
+
 def granary_bin():
     parts = []
     _bin(parts)
@@ -440,7 +476,8 @@ def granary_bin():
 
 REGISTRY["granary_bin"] = granary_bin
 
-_FOODS = {"bread": _bread, "cheese": _cheese, "apples": _apples, "meat": _meat}
+_FOODS = {"bread": _bread, "cheese": _cheese, "apples": _apples,
+          "meat": _meat, "fish": _fish}
 
 
 def _make_bin(good, builder, level):

@@ -7,7 +7,7 @@
 
 export const RAW_RESOURCES =
   ['wood', 'stone', 'iron', 'pitch', 'wheat', 'flour', 'hops', 'ale', 'pigs'] as const;
-export const FOOD_RESOURCES = ['bread', 'cheese', 'apples', 'meat'] as const;
+export const FOOD_RESOURCES = ['bread', 'cheese', 'apples', 'meat', 'fish'] as const;
 
 export type RawResource = typeof RAW_RESOURCES[number];
 export type FoodResource = typeof FOOD_RESOURCES[number];
@@ -22,7 +22,7 @@ export function isFood(r: Resource): r is FoodResource {
 export const RESOURCE_LABELS: Record<Resource, string> = {
   wood: 'Wood', stone: 'Stone', iron: 'Iron', pitch: 'Pitch',
   wheat: 'Wheat', flour: 'Flour', hops: 'Hops', ale: 'Ale', pigs: 'Pigs',
-  bread: 'Bread', cheese: 'Cheese', apples: 'Apples', meat: 'Meat',
+  bread: 'Bread', cheese: 'Cheese', apples: 'Apples', meat: 'Meat', fish: 'Fish',
 };
 
 /** Where a produced good is delivered. */
@@ -37,6 +37,17 @@ export type Category = 'castle' | 'industry' | 'farm' | 'food' | 'town';
  * everything in one tidy square.
  */
 export type TerrainNeed = 'any' | 'green' | 'rock' | 'sand' | 'marsh';
+
+/**
+ * How close water must be for a building that works it.
+ *
+ * Measured from the footprint's edge, not its centre, so a 2x2 hut sited with
+ * its back to the bank counts the same as one facing it. Three tiles rather
+ * than one: demanding the footprint actually touch the water makes siting on a
+ * ragged imported coastline a pixel-hunt, and a jetty three tiles long is not
+ * a thing anyone will quarrel with.
+ */
+export const WATER_REACH = 3;
 
 export interface Production {
   /** What comes out, one unit per completed cycle. */
@@ -74,6 +85,8 @@ export interface BuildingDef {
   storeFor?: Store;
   /** Needs an ox tether nearby to move its output. */
   needsHauler?: boolean;
+  /** Must stand within WATER_REACH tiles of water. See the fishery. */
+  needsWater?: boolean;
   /**
    * The tool stays in hand after placing one.
    *
@@ -258,6 +271,14 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     workClip: 'chop',
     description: 'Hunts gazelle on the open land. Needs no green ground.',
   },
+  fishery: {
+    name: 'fishery', label: "Fisherman's Hut", category: 'farm',
+    footprint: [2, 2], cost: { wood: 20 }, workers: 1, terrain: 'any',
+    needsWater: true,
+    produces: { output: 'fish', amount: 2, seconds: 15, to: 'granary' },
+    workClip: 'chop',
+    description: 'Works the water for fish. Must be built on a shore.',
+  },
   hops_farm: {
     name: 'hops_farm', label: 'Hops Farm', category: 'farm',
     footprint: [3, 3], cost: { wood: 20 }, workers: 1, terrain: 'green',
@@ -311,7 +332,8 @@ export const BUILD_MENU: { category: Category; label: string; items: string[] }[
   { category: 'town', label: 'Town', items: ['hovel', 'market'] },
   { category: 'industry', label: 'Industry', items: ['woodcutter', 'quarry', 'ox_tether', 'iron_mine', 'pitch_rig'] },
   { category: 'farm', label: 'Farms',
-    items: ['wheat_farm', 'apple_orchard', 'dairy_farm', 'pig_farm', 'hunter', 'hops_farm'] },
+    items: ['wheat_farm', 'apple_orchard', 'dairy_farm', 'pig_farm', 'hunter',
+            'fishery', 'hops_farm'] },
   { category: 'food', label: 'Food & Ale',
     items: ['mill', 'bakery', 'slaughterhouse', 'brewery', 'inn'] },
 ];
@@ -382,6 +404,7 @@ export const PRICES: Partial<Record<Resource, [number, number]>> = {
   bread:  [18, 11],
   cheese: [26, 16],
   apples: [17, 10],
+  fish:   [22, 13],
 };
 
 // --- population and popularity --------------------------------------------

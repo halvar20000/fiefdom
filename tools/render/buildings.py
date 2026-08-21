@@ -923,8 +923,53 @@ def siege_camp():
     return geom.join(parts, "siege_camp"), (3, 3)
 
 
+def fishery():
+    """
+    Fisherman's hut: a hut on the bank with a jetty running out from it.
+
+    The jetty is the whole point of the silhouette. A 2x2 hut on a shore is
+    otherwise the same shape as a hovel, and the player needs to see at a
+    glance which of the two small buildings by the water is the one making
+    food. Nets on a drying frame do the rest.
+    """
+    plaster = M.plaster()
+    roof = M.thatch()
+    timber_l = M.timber("FishTimber")
+    timber_d = M.timber("FishTimberDark", dark=True)
+    net = M.cloth("FishNet", colour=(0.58, 0.55, 0.42))
+
+    parts = []
+    parts.append(geom.box("fh_hut", (0.12, 0.98, 0.0), (1.06, 0.88, 0.62), plaster))
+    parts.append(geom.gable("fh_roof", (0.12, 0.98, 0.62), (1.06, 0.88, 0.40),
+                            roof, overhang=0.14))
+    parts.append(geom.box("fh_door", (0.52, 0.92, 0.0), (0.26, 0.08, 0.42), timber_d))
+
+    # jetty running out toward the water, on posts
+    parts.append(geom.box("fh_jetty", (0.62, 0.06, 0.20), (0.46, 0.94, 0.06), timber_l))
+    for i, y in enumerate((0.14, 0.50, 0.86)):
+        for j, x in enumerate((0.66, 1.02)):
+            parts.append(geom.cylinder(f"fh_post_{i}_{j}", (x, y, 0.0), 0.038, 0.22,
+                                       timber_d, segments=6))
+
+    # drying frame with a net slung on it
+    for i, x in enumerate((0.14, 0.52)):
+        parts.append(geom.cylinder(f"fh_frame_{i}", (x, 0.60, 0.0), 0.032, 0.56,
+                                   timber_d, segments=6))
+    parts.append(geom.cylinder("fh_bar", (0.14, 0.60, 0.54), 0.028, 0.40, timber_d,
+                               segments=6))
+    parts[-1].rotation_euler = (0.0, math.pi / 2.0, 0.0)
+    parts.append(geom.box("fh_net", (0.15, 0.58, 0.18), (0.36, 0.04, 0.36), net))
+
+    # a couple of creels by the door
+    for i, (x, y) in enumerate(((0.24, 0.86), (0.40, 0.80))):
+        parts.append(geom.cylinder(f"fh_creel_{i}", (x, y, 0.0), 0.085, 0.13,
+                                   timber_l, segments=8))
+    return geom.join(parts, "fishery"), (2, 2)
+
+
 REGISTRY.update({
     "barracks": barracks,
+    "fishery": fishery,
     "siege_camp": siege_camp,
     "pig_farm": pig_farm,
     "slaughterhouse": slaughterhouse,

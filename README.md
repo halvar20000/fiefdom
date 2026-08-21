@@ -858,6 +858,45 @@ Both fields are optional, so maps painted before the tool existed still load
 and fall back to the automatic siting rather than being rejected. A version
 bump would have thrown away every map already saved.
 
+## Fish, and the fisherman's hut
+
+Water earns its keep: a **Fisherman's Hut** (2x2, 20 wood, one worker) lands
+2 fish every 15 seconds straight into the granary, and **fish** is a food the
+town eats like any other.
+
+It must stand within **three tiles** of water, measured from the footprint's
+edge rather than its centre so a hut with its back to the bank counts the same
+as one facing it. Three rather than one because demanding the footprint
+actually touch the water turns siting on a ragged imported coastline into a
+pixel-hunt, and nobody will quarrel with a jetty three tiles long.
+
+The refusals are separated deliberately. On the lake map's shore: 934 tiles
+legal, 177 refused for trees in the way, 156 refused with "You cannot build on
+water" — three different answers to three different problems, rather than one
+vague "cannot build here".
+
+### Two things measurement caught
+
+**The fish were invisible.** The first bin sprite used apple-sized lumps in a
+naturalistic silver and came back with **1%** of the bin's pixels reading blue
+at all — at 45 px there was simply nothing there. Bigger bodies and a colour
+pushed hard toward blue, exactly as the water tile needed, brought it to
+**13%** against meat's 0%.
+
+**The resource bar is not data-driven.** Fish was produced, delivered, stored,
+painted into granary bins and eaten correctly while being **completely absent
+from the top bar**, because that list is ordered by hand in `hud.ts` so it
+reads raw goods then food. Everything else in the economy is data; that one
+list is not, and a new resource has to be added there too.
+
+### A note on siting
+
+A fishery far from its granary is slow, because the worker walks its catch
+there every cycle — 2 fish per four minutes when the lake is fifty tiles out,
+against a cycle time of fifteen seconds. That is not special to fish; every
+building pays it. The granary is paintable, so the answer is to grow it toward
+the water rather than to expect the hut to carry further.
+
 ## Water
 
 A seventh ground type, and the only one that is impassable in itself. Marsh

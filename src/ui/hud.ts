@@ -806,9 +806,14 @@ export class Hud {
     const s = this.state;
 
     // resource bar
+    // Ordered by hand rather than taken from ALL_RESOURCES: the bar reads
+    // left to right as raw goods then food, which no declaration order gives
+    // for free. The cost is that a new resource must be added HERE as well --
+    // fish was produced, stored and eaten correctly while being invisible in
+    // the bar, because this list had not been told about it.
     const shown: (Resource | 'gold')[] = [
       'gold', 'wood', 'stone', 'iron', 'pitch', 'wheat', 'flour',
-      'bread', 'cheese', 'apples', 'meat', 'hops', 'ale', 'pigs',
+      'bread', 'cheese', 'apples', 'meat', 'fish', 'hops', 'ale', 'pigs',
     ];
     this.topbar.innerHTML = shown.map(r => {
       const n = r === 'gold' ? Math.floor(s.gold) : s.stock[r as Resource];
