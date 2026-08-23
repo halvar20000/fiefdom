@@ -23,6 +23,21 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.5.0',
+    date: '2026-08-21',
+    headline: 'The Fire Ballista.',
+    sections: [
+      {
+        title: 'Added',
+        items: [
+          'Fire Ballista, from the siege camp: 150 gold, 20 wood and 5 iron. It shoots burning bolts nine tiles — further than any archer — and hits far harder.',
+          'It is the first engine that shoots men rather than stone, and it cannot touch a wall at all. That makes it the answer to a column of soldiers or to somebody else\u2019s catapult, not a third way through a gatehouse.',
+          'Like the ram and the catapult it never advances by itself. Put it where you want the ground covered and it holds there.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.4.0',
     date: '2026-08-21',
     headline: 'A minimap, and water on every map.',

@@ -344,6 +344,31 @@ export class Army {
       // Siege engines are machines: they ignore soldiers completely and only
       // ever work on buildings. That is what makes them worth escorting --
       // they will stand there being cut to pieces without swinging back.
+      if (s.def.siege && s.def.targetsUnits) {
+        // An engine that shoots people. Same standing-still rule as the wall
+        // breakers -- it never goes hunting, it holds where you put it and
+        // covers the ground in front of it, which is the whole point of
+        // owning one.
+        const reach = Army.reachOf(s);
+        let foe = s.target !== null ? this.byId(s.target) ?? null : null;
+        if (foe && (foe.hp <= 0 || foe.side === s.side
+                    || Math.hypot(foe.x - s.x, foe.z - s.z) > reach)) foe = null;
+        if (!foe) foe = this.findFoe(s, reach);
+        s.target = foe ? foe.id : null;
+        if (!foe) continue;
+        engaged.add(s.id);
+        s.moving = false;
+        s.path = [];
+        s.heading = Math.atan2(foe.z - s.z, foe.x - s.x);
+        if (s.cooldown <= 0) {
+          const roll = s.def.damage * (0.85 + Math.random() * 0.3);
+          blows.push({ on: foe, amount: Math.max(1, Math.round(roll)) });
+          s.cooldown = s.def.cooldown;
+          s.swing = SWING_TIME;
+        }
+        continue;
+      }
+
       if (s.def.siege) {
         const t = this.world.siegeTarget?.(s) ?? null;
         s.target = null;

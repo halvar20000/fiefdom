@@ -917,6 +917,32 @@ silence.
 The regex location is placed **before** the PNG rule, because nginx takes the
 first matching regex, not the most specific one.
 
+## The Fire Ballista
+
+The ram and the catapult both break stone, so a third wall-breaker would have
+been a price tier rather than a decision. This one shoots **men**, nine tiles
+out — further than any archer, and much harder — and cannot touch a wall at
+all. It answers a column of soldiers or somebody else's catapult.
+
+That needed splitting one flag into two. `siege` meant both "is a wheeled
+engine" (slow, cannot man a wall, never advances on its own) and "attacks
+buildings", which were only ever the same thing by accident. `targetsUnits`
+now says what an engine shoots at, and a ballista is every bit as much an
+engine as a catapult while wanting none of the same targets.
+
+It keeps the standing-still rule: it never goes hunting, it holds where you put
+it and covers the ground in front. That is the whole point of owning one.
+
+**The flame had to be a light source, not a lit surface.** Modelled first with
+an orange cloth material, it came back at 1% fiery pixels against the ram's 1%
+baseline — the fire was not visible at all. Emissive, with tongues larger than
+looked right in the viewport, it reads at 23%. The same lesson the pitch fires
+taught, and one worth writing down twice: at 45 pixels a flame that is the
+right size is three pixels.
+
+Verified: killed a spearman six tiles away, never moved a tile while doing it,
+and left every building's hit points untouched at 2,940.
+
 ## The minimap
 
 A top-down canvas above the controls, at the map's own 200x200 resolution and

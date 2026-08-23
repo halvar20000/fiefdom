@@ -583,6 +583,16 @@ export interface SoldierType {
   /** Seconds between blows. */
   cooldown: number;
   /**
+   * A machine that shoots people rather than walls.
+   *
+   * Split from `siege` rather than folded into it because the two properties
+   * are genuinely separate: `siege` says "this is a wheeled engine" -- slow,
+   * cannot man a wall, never advances on its own -- while this says what it
+   * shoots at. A fire ballista is every bit as much an engine as a catapult
+   * and wants none of the same targets.
+   */
+  targetsUnits?: boolean;
+  /**
    * A machine, not a man.
    *
    * Siege engines ignore enemy soldiers entirely and only ever attack
@@ -633,9 +643,19 @@ export const SIEGE_TYPES: Record<string, SoldierType> = {
     hp: 85, speed: 0.45, damage: 30, range: 7.5, cooldown: 3.4, siege: true,
     description: 'Breaks stone from well out of reach. Fragile — keep men round it.',
   },
+  fire_ballista: {
+    name: 'fire_ballista', from: 'siege_camp', label: 'Fire Ballista', gold: 150,
+    cost: { wood: 20, iron: 5 },
+    // Longer reach than an archer and far harder hitting, but it cannot touch
+    // stone and it cannot defend itself if anything closes.
+    hp: 70, speed: 0.7, damage: 18, range: 9.0, cooldown: 2.2,
+    siege: true, targetsUnits: true,
+    description: 'Shoots burning bolts at men and machines, further than any '
+               + 'archer. Useless against stone.',
+  },
 };
 
 Object.assign(SOLDIER_TYPES, SIEGE_TYPES);
 
 export const SOLDIER_ORDER =
-  ['spearman', 'archer', 'swordsman', 'ram', 'catapult'] as const;
+  ['spearman', 'archer', 'swordsman', 'ram', 'catapult', 'fire_ballista'] as const;
