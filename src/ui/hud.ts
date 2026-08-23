@@ -1231,11 +1231,22 @@ export class Hud {
                `<b class="${colour}">${sign(f.value)}</b></div>`;
       }).join('');
       const now = Math.round(s.popularity);
-      const tgt = Math.round(s.popularityTarget);
-      const drift = tgt === now ? 'steady' : tgt > now ? `rising to ${tgt}` : `falling to ${tgt}`;
+      const rate = s.popularityRate;
+      // The net rate is the number that decides everything, so it is the one
+      // spelled out: not "heading for 51" but "+6 a minute, so this is going
+      // to 100". A player balancing taxes against ale is reading this line.
+      const drift = Math.abs(rate) < 0.05 ? 'steady'
+        : rate > 0 ? (now >= 100 ? 'at its best' : 'rising')
+        : (now <= 0 ? 'at rock bottom' : 'falling');
+      const mins = Math.abs(rate) < 0.05 ? null
+        : rate > 0 ? (100 - s.popularity) / rate : s.popularity / -rate;
+      const eta = mins === null || mins > 90 ? ''
+        : ` — ${mins < 1 ? 'under a minute' : `about ${Math.round(mins)} min`}`;
       this.views.popularity.innerHTML =
         `<h4>Popularity — ${now}, ${drift}</h4>${rows}` +
-        `<div class="pf total"><span>Heading for</span><b>${tgt}</b></div>`;
+        `<div class="pf total"><span>Net per minute</span>` +
+        `<b class="${rate > 0.05 ? 'g' : rate < -0.05 ? 'w' : ''}">${sign(rate)}</b></div>` +
+        (eta ? `<div class="hint">${rate > 0 ? 'Reaching 100' : 'Reaching 0'}${eta}</div>` : '');
     }
 
     if (this.view === 'production' && !this.rightPanel.classList.contains('hidden')) {

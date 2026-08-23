@@ -450,19 +450,27 @@ export const RATION_LEVELS = ['none', 'half', 'normal', 'extra'] as const;
 export type RationLevel = typeof RATION_LEVELS[number];
 
 /** Food eaten per peasant per minute, and what it does to popularity. */
+/**
+ * Popularity numbers are RATES: points per minute, not target offsets.
+ *
+ * This is the whole difference between "fed and untaxed sits at 51 forever"
+ * and Stronghold's "fed and untaxed climbs to 100". A modifier says which way
+ * the town is drifting and how fast, and taxes are paid for by making some
+ * other rate bigger rather than by hitting a number on a dial.
+ */
 export const RATIONS: Record<RationLevel, { rate: number; popularity: number; label: string }> = {
-  none:   { rate: 0.0,  popularity: -32, label: 'No rations' },
-  half:   { rate: 0.25, popularity: -8,  label: 'Half rations' },
-  normal: { rate: 0.5,  popularity: 0,   label: 'Normal rations' },
-  extra:  { rate: 0.75, popularity: 12,  label: 'Extra rations' },
+  none:   { rate: 0.0,  popularity: -40, label: 'No rations' },
+  half:   { rate: 0.25, popularity: -12, label: 'Half rations' },
+  normal: { rate: 0.5,  popularity: 2,   label: 'Normal rations' },
+  extra:  { rate: 0.75, popularity: 10,  label: 'Extra rations' },
 };
 
-/** Tax settings: gold per peasant per minute, and the popularity cost. */
+/** Tax settings: gold per peasant per minute, and popularity per minute. */
 export const TAX_LEVELS = [
-  { label: 'No taxes',   gold: 0.0,  popularity: 1 },
+  { label: 'No taxes',   gold: 0.0,  popularity: 4 },
   { label: 'Low taxes',  gold: 0.30, popularity: -6 },
   { label: 'Fair taxes', gold: 0.60, popularity: -14 },
-  { label: 'High taxes', gold: 1.00, popularity: -26 },
+  { label: 'High taxes', gold: 1.00, popularity: -28 },
 ] as const;
 
 // --- ale ------------------------------------------------------------------
@@ -481,6 +489,7 @@ export const INN_CAPACITY = 20;
  */
 export const ALE_PER_PERSON_PER_MIN = 0.12;
 /** Popularity at full coverage of the population. */
+/** Points per minute at full coverage. */
 export const ALE_POPULARITY_MAX = 10;
 
 /**
@@ -488,7 +497,7 @@ export const ALE_POPULARITY_MAX = 10;
  * Indexed by how many DIFFERENT foods are in the granary, so the array must
  * have an entry for every possible count -- adding meat made four possible.
  */
-export const FOOD_VARIETY_BONUS = [0, 0, 4, 8, 12];
+export const FOOD_VARIETY_BONUS = [0, 0, 3, 6, 9];
 
 /**
  * What you can buy at the barracks.

@@ -23,6 +23,23 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.6.0',
+    date: '2026-08-21',
+    headline: 'Popularity works the way Crusader\u2019s does.',
+    sections: [
+      {
+        title: 'Changed',
+        items: [
+          'Feed your people and take no taxes and you will reach 100. Popularity now ACCUMULATES: the modifiers are a rate per minute, not a score to settle at. It used to add up to 51 and sit there, which is why nothing short of extra rations got you past 70.',
+          'Taxes are now something you pay for. Fair taxes cost 14 a minute; extra rations and three kinds of food more than cover it. That trade is the point of the whole economy.',
+          'The popularity panel shows the net per minute and how long it will take, instead of a target number.',
+          'Overcrowding is a nudge (-2) rather than a wall (-6). At -6 it exactly cancelled a fed, untaxed town, so a full settlement could never pass 67 however well it was run.',
+          'People leave a little over twice as slowly. Popularity now travels the whole scale, so a town dips below 45 on its way somewhere better — and at the old rate a dip emptied eight people in forty seconds.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.5.2',
     date: '2026-08-21',
     headline: 'Two camera fixes: it stops at the map edge, and it stops at all.',

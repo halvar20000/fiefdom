@@ -917,6 +917,42 @@ silence.
 The regex location is placed **before** the PNG rule, because nginx takes the
 first matching regex, not the most specific one.
 
+## Popularity: a rate, not a score
+
+Reported as too hard: feeding the town and charging nothing sat at 51, and
+reaching 70 needed extra rations. That was a **model** problem rather than a
+tuning one.
+
+The modifiers were summed into a target and popularity eased toward it, so
+`50 base + 0 rations + 1 no-tax = 51` and there it stayed forever. Crusader
+accumulates instead: the modifiers say which way the town is drifting and how
+fast, so a positive net climbs all the way to 100.
+
+So they are rates now — points per minute — and the base 50 stopped being a
+listed factor, because 50 is where popularity *begins*, not a force acting on
+it. Measured:
+
+| | Net |
+|---|---|
+| Fed, no taxes, one food | **+6/min** — 50 to 100 in twelve minutes |
+| Fed, no taxes, three foods | +12/min |
+| Fed, low taxes | −4/min |
+| Fed, fair taxes | −12/min |
+| Extra rations, three foods, fair taxes | **+2/min** |
+| No rations | −36/min |
+
+That last-but-one row is the trade the economy exists for: fair taxes cost 14 a
+minute and a well-fed, well-varied town more than earns it back.
+
+Two things fell out of the change. **Overcrowding at −6 exactly cancelled a fed
+and untaxed town's +6**, so a settlement at its housing cap could never pass 67
+however well it was run — it is a −2 nudge now, and the population cap is the
+real pressure to build anyway (Stronghold has no such penalty at all). And
+people leave 2.5× more slowly: popularity now travels the whole scale rather
+than parking, so a town dips below 45 on the way somewhere better, and at the
+old rate a dip to 30 emptied eight people in forty seconds — a death spiral
+rather than a warning.
+
 ## Stopping at the map edge
 
 The clamp kept the camera's *centre* on the map, which is not the same thing as

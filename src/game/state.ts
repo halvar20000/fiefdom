@@ -180,8 +180,11 @@ export class GameState {
   popularityBreakdown(): { label: string; value: number }[] {
     const ration = RATIONS[this.rations];
     const tax = TAX_LEVELS[this.taxLevel];
+    // No "starting goodwill" line any more. 50 is where popularity BEGINS, not
+    // a force acting on it; listing it as a factor was what made the panel read
+    // as "you are at 51 because 50 + 1" instead of "you are rising by 1 a
+    // minute".
     const out: { label: string; value: number }[] = [
-      { label: 'Starting goodwill', value: 50 },
       { label: ration.label, value: ration.popularity },
       { label: tax.label, value: tax.popularity },
     ];
@@ -203,19 +206,36 @@ export class GameState {
     if (this.hunger > 0.02) {
       out.push({
         label: this.hunger > 0.6 ? 'People are starving!' : 'Food running short',
-        value: -40 * this.hunger,
+        value: -45 * this.hunger,
       });
     }
     if (this.population >= this.housing) {
-      out.push({ label: 'Overcrowded', value: -6 });
+      // A nudge to build, not a wall. At -6 it exactly cancelled a fed and
+      // untaxed town's +6, so a full settlement could never pass 67 no matter
+      // what else it did -- and the cap on population is already the real
+      // pressure to build more housing. Stronghold has no such penalty at all.
+      out.push({ label: 'Overcrowded', value: -2 });
     }
     return out;
   }
 
-  /** Where popularity is heading, 0..100. */
+  /**
+   * Points per minute popularity is currently moving.
+   *
+   * Positive and it climbs to 100, negative and it falls to 0 -- as in
+   * Stronghold, where a fed and untaxed town ends up loved rather than parked
+   * at whatever its modifiers happen to add up to. Taxes are then paid for by
+   * out-earning them with food, variety and ale, which is the trade the whole
+   * economy exists to let you make.
+   */
+  get popularityRate(): number {
+    return this.popularityBreakdown().reduce((n, f) => n + f.value, 0);
+  }
+
+  /** Where popularity ends up if nothing changes: one end of the scale. */
   get popularityTarget(): number {
-    const sum = this.popularityBreakdown().reduce((n, f) => n + f.value, 0);
-    return Math.max(0, Math.min(100, sum));
+    const r = this.popularityRate;
+    return r > 0.05 ? 100 : r < -0.05 ? 0 : Math.round(this.popularity);
   }
 
   /** Ale actually sitting in the inns, ready to serve. */
@@ -456,8 +476,9 @@ export class GameState {
     this.hunger += (empty - this.hunger) * Math.min(1, dt * 0.35);
 
     // --- popularity ---
-    const target = this.popularityTarget;
-    this.popularity += (target - this.popularity) * Math.min(1, dt * 0.10);
+    // Accumulates rather than easing to a target: the modifiers are a rate.
+    this.popularity = Math.max(0, Math.min(100,
+      this.popularity + (this.popularityRate * dt) / 60));
 
     // --- population drift ---
     const room = this.housing - this.population;
@@ -467,7 +488,12 @@ export class GameState {
         this.idle += 1;
       }
     } else if (this.popularity < 45 && this.population > 0) {
-      if (Math.random() < dt * (50 - this.popularity) * 0.010) {
+      // Leaving is slower than arriving on purpose. Now that popularity
+      // travels the whole scale rather than parking at a target, a town dips
+      // below 45 on the way to somewhere better -- and at the old rate a dip
+      // to 30 emptied eight people in forty seconds, which is a death spiral
+      // rather than a warning.
+      if (Math.random() < dt * (50 - this.popularity) * 0.004) {
         this.population -= 1;
         if (this.idle > 0) this.idle -= 1;
         else this.layOffOne();
