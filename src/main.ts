@@ -1823,8 +1823,42 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
   });
 
   const keys = new Set<string>();
+
+  /**
+   * Is the player typing into, or steering, a form control?
+   *
+   * Buttons are deliberately NOT in this list: arrow keys mean nothing to a
+   * button, and a HUD button keeps focus after it is clicked, so excluding
+   * them would stop the camera the moment anyone pressed Rations.
+   */
+  const inFormControl = (): boolean => {
+    const el = document.activeElement as HTMLElement | null;
+    if (!el) return false;
+    const tag = el.tagName;
+    return tag === 'SELECT' || tag === 'INPUT' || tag === 'TEXTAREA'
+        || el.isContentEditable;
+  };
+
+  /**
+   * Forget every held key.
+   *
+   * Held keys drive the camera every frame, so one that never gets its keyup
+   * pans the view into a corner and stays there. A native <select> popup eats
+   * the keyup while it is open, and losing window focus mid-key never delivers
+   * one at all -- both left the map scrolling with no way to stop it.
+   */
+  const releaseKeys = () => keys.clear();
+  window.addEventListener('blur', releaseKeys);
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) releaseKeys();
+  });
+
   window.addEventListener('keydown', e => {
     const k = e.key.toLowerCase();
+    // A dropdown or a text box owns the keyboard while it has focus. Adding
+    // the key here as well is what stuck the camera: the control swallows the
+    // keyup, and the game goes on believing the key is still down.
+    if (inFormControl()) { keys.delete(k); return; }
     keys.add(k);
     if (k === 'r') { iso.rotateBy(1); }
     if (k === 'e') { iso.rotateBy(-1); }

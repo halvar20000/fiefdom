@@ -917,6 +917,28 @@ silence.
 The regex location is placed **before** the PNG rule, because nginx takes the
 first matching regex, not the most specific one.
 
+## The camera that would not stop
+
+Reported: pick something from the panel dropdown at the top right, press an
+arrow key, and the view scrolls away forever with no way to steer it back.
+
+Held keys drive the camera every frame, so a key that never gets its `keyup`
+pans the map into a corner and stays there. A native `<select>` popup **eats
+the keyup while it is open** — the keydown reaches the window and is recorded,
+the release never does, and the game goes on believing the key is down for the
+rest of the session.
+
+Three fixes, because there are three ways in. Keys are ignored entirely while a
+`select`, `input` or `textarea` has focus, since that control owns the keyboard
+and the game has no business recording them. The dropdown blurs itself on
+change, so the arrows drive the camera again the moment you have chosen.
+And every held key is dropped on window blur, which covers alt-tabbing away
+mid-key — the same guard the map editor already had and the game did not.
+
+Buttons are deliberately excluded from that list. Arrow keys mean nothing to a
+button, and a HUD button keeps focus after it is clicked, so treating them the
+same way would stop the camera dead the moment anyone pressed Rations.
+
 ## The Fire Ballista
 
 The ram and the catapult both break stone, so a third wall-breaker would have

@@ -962,7 +962,12 @@ export class Hud {
       o.textContent = label;
       sel.appendChild(o);
     }
-    sel.onchange = () => this.setView(sel.value as ViewName);
+    sel.onchange = () => {
+      this.setView(sel.value as ViewName);
+      // Hand the keyboard back. Left focused, the dropdown keeps eating the
+      // arrow keys and the camera cannot be driven until you click the map.
+      sel.blur();
+    };
     head.appendChild(sel);
     this.viewSelect = sel;
 
