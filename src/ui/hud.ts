@@ -350,6 +350,22 @@ const CSS = `
   #controls .seg { margin-bottom: 6px; }
 }
 
+/* Trouble markers floating over the buildings they belong to. */
+#flags { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+#flags .f {
+  position: absolute; transform: translate(-50%, -100%);
+  padding: 2px 7px 3px; border-radius: 9px; white-space: nowrap;
+  font-size: 10px; line-height: 1.35; font-weight: 600; letter-spacing: .02em;
+  background: rgba(30,22,12,.94); border: 1px solid var(--warn); color: #ffc9ab;
+  box-shadow: 0 2px 8px rgba(0,0,0,.55);
+}
+#flags .f::after {
+  content: ''; position: absolute; left: 50%; bottom: -4px; width: 6px; height: 6px;
+  transform: translateX(-50%) rotate(45deg);
+  background: rgba(30,22,12,.94);
+  border-right: 1px solid var(--warn); border-bottom: 1px solid var(--warn);
+}
+
 #ghost { position: absolute; padding: 4px 8px; font-size: 11px; border-radius: 3px;
   background: rgba(24,19,12,.93); border: 1px solid var(--edge);
   transform: translate(-50%, -160%); display: none; white-space: nowrap; }
@@ -362,6 +378,9 @@ export class Hud {
   private stats!: HTMLElement;
   private buildPanel!: HTMLElement;
   private buildBar!: HTMLElement;
+  private flags!: HTMLElement;
+  /** Reused between frames, so a steady state allocates nothing. */
+  private flagPool: HTMLElement[] = [];
   /** Which category is open, and which to reopen when B is pressed. */
   private openGroup: number | null = null;
   private lastGroup = 0;
@@ -409,6 +428,10 @@ export class Hud {
     this.notices = document.createElement('div');
     this.notices.id = 'notices';
     this.root.appendChild(this.notices);
+
+    this.flags = document.createElement('div');
+    this.flags.id = 'flags';
+    this.root.appendChild(this.flags);
 
     this.ghost = document.createElement('div');
     this.ghost.id = 'ghost';
@@ -842,6 +865,33 @@ export class Hud {
     this.ghost.style.top = `${screenY}px`;
     this.ghost.textContent = text;
     this.ghost.classList.toggle('bad', !ok);
+  }
+
+  /**
+   * Place the trouble markers for this frame.
+   *
+   * Takes screen coordinates already worked out by the caller, exactly as the
+   * placement ghost does -- the HUD has no camera and should not grow one.
+   *
+   * Elements are pooled rather than rebuilt. This runs every frame, and
+   * recreating a handful of nodes sixty times a second to say the same thing
+   * is churn the browser has to clean up for no benefit.
+   */
+  setFlags(items: { x: number; y: number; text: string }[]): void {
+    while (this.flagPool.length < items.length) {
+      const el = document.createElement('div');
+      el.className = 'f';
+      this.flags.appendChild(el);
+      this.flagPool.push(el);
+    }
+    this.flagPool.forEach((el, i) => {
+      const it = items[i];
+      if (!it) { el.style.display = 'none'; return; }
+      el.style.display = '';
+      el.style.left = `${Math.round(it.x)}px`;
+      el.style.top = `${Math.round(it.y)}px`;
+      if (el.textContent !== it.text) el.textContent = it.text;
+    });
   }
 
   hideGhost(): void {

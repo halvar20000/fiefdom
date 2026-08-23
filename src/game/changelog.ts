@@ -23,6 +23,20 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.1.0',
+    date: '2026-08-21',
+    headline: 'Buildings say when they have nobody to work them.',
+    sections: [
+      {
+        title: 'Added',
+        items: [
+          'A marker floats over any building that is short of workers — "no worker" when it is empty, "short 2" when it is partly staffed. It stays up for as long as the problem does, rather than flashing past as a notice you can miss.',
+          'At most twelve show at once. If the whole town is unstaffed you have one problem, not forty, and the population figure already says so.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.0.0',
     date: '2026-08-21',
     headline: 'First release. A working castle economy, a war, and a map editor.',

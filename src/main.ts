@@ -1609,6 +1609,16 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
   document.body.appendChild(selBox);
   let boxing = false, boxX = 0, boxY = 0;
 
+  /**
+   * Scratch buffer for the trouble markers, and a cap on them.
+   *
+   * The cap is not for speed -- it is that forty badges at once is a wall of
+   * orange that says nothing. If the whole town is unstaffed the player has one
+   * problem, not forty, and the population figure already tells them so.
+   */
+  const troubleBuf: { x: number; y: number; text: string }[] = [];
+  const MAX_FLAGS = 12;
+
   let dragging = false, dragMoved = false, lastX = 0, lastY = 0;
   let mouseX = 0, mouseY = 0;
   const canvas = renderer.domElement;
@@ -2038,8 +2048,43 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
       hud.hideGhost();
     }
 
+    updateTroubleFlags();
     drawScene();
     requestAnimationFrame(frame);
+  }
+
+  /**
+   * Mark buildings that are standing idle for a reason the player can fix.
+   *
+   * A notice scrolls away in a few seconds and only fires once; a building
+   * that will never work until something changes has to say so for as long as
+   * that is true. Staffing is the case that actually bites -- you lay down an
+   * iron mine, there is nobody left to work it, and nothing on screen ever
+   * tells you which of your forty buildings is the empty one.
+   */
+  function updateTroubleFlags(): void {
+    troubleBuf.length = 0;
+    for (const b of state.buildings) {
+      const want = b.def.workers;
+      if (!want || b.staff >= want) continue;
+
+      const [w, d] = b.def.footprint;
+      const [sx, sy] = iso.worldToScreen(
+        b.x + w / 2, terrain.heightAt(b.x, b.z), b.z + d / 2);
+      // Cull off-screen before doing anything else with it: on a 200-tile map
+      // most buildings are nowhere near the viewport most of the time.
+      if (sx < -80 || sy < -40 || sx > window.innerWidth + 80
+          || sy > window.innerHeight + 40) continue;
+
+      troubleBuf.push({
+        x: sx,
+        // Clear of the building itself rather than sitting on its roof.
+        y: sy - 34,
+        text: want - b.staff === want ? 'no worker' : `short ${want - b.staff}`,
+      });
+      if (troubleBuf.length >= MAX_FLAGS) break;
+    }
+    hud.setFlags(troubleBuf);
   }
 
   /**

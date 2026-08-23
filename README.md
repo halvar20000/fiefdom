@@ -917,6 +917,25 @@ silence.
 The regex location is placed **before** the PNG rule, because nginx takes the
 first matching regex, not the most specific one.
 
+## Saying why a building is idle
+
+Lay down an iron mine with nobody left to work it and, until now, nothing on
+screen told you which of your forty buildings was the empty one. A notice
+flashed once and scrolled away.
+
+A marker now floats over any understaffed building for as long as it stays
+understaffed: **"no worker"** when it is empty, **"short 2"** when it is partly
+crewed. It is a DOM overlay positioned from `worldToScreen`, the same way the
+placement ghost already works — no new sprite to render, and crisp at every
+zoom. Elements are pooled between frames, because recreating a handful of nodes
+sixty times a second to say the same thing is churn for nothing.
+
+Two limits are deliberate. Off-screen buildings are culled before anything else
+is computed, since on a 200-tile map most buildings are nowhere near the
+viewport. And at most twelve markers show at once: if the whole town is
+unstaffed the player has one problem, not forty, and the population figure
+already says so.
+
 ## Versions
 
 `package.json` holds the version number and nothing else does. Vite stamps it
