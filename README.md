@@ -917,6 +917,25 @@ silence.
 The regex location is placed **before** the PNG rule, because nginx takes the
 first matching regex, not the most specific one.
 
+## Naming what the cursor is over
+
+Forty buildings in the same sandstone palette get hard to tell apart at a
+glance. Hovering now names whatever is under the cursor and adds the detail
+that matters for that kind: workers and output for a workshop, what is sitting
+on a store square, how many a hovel houses, and hit points on anything damaged.
+
+Written as **one** function over both sides, so a rival's barracks describes
+itself exactly as yours does. Two code paths for "what is this" would drift
+into two different answers, and a player scouting an enemy castle wants the
+same facts they get at home.
+
+It is kept separate from the placement ghost even though both follow the
+cursor. The ghost answers "may this go here" and this answers "what is that";
+they are never wanted at the same moment, and folding them together would put
+a mode flag inside the one thing whose job is to be glanced at. It does show
+while the wrecking tool is armed — reading "Pull down the Iron Mine", because
+that is the moment the answer is worth most.
+
 ## Saying why a building is idle
 
 Lay down an iron mine with nobody left to work it and, until now, nothing on

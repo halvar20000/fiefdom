@@ -2046,11 +2046,73 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
         ok ? def.label : placement.lastCheck.reason, ok);
     } else {
       hud.hideGhost();
+      // Only when nothing is in hand: during placement the ghost already
+      // occupies the cursor, and two boxes chasing it is worse than either.
+      // Shown while the wrecking tool is armed too, and especially then:
+      // knowing what is about to come down is worth more at that moment than
+      // at any other.
+      const t = pickTile(mouseX, mouseY);
+      const what = describeAt(t.x, t.z);
+      if (what) {
+        hud.showTip(mouseX, mouseY,
+          hud.demolishing && !what.foe ? `Pull down ${what.title}` : what.title,
+          what.sub, what.foe);
+      } else hud.hideTip();
     }
 
     updateTroubleFlags();
     drawScene();
     requestAnimationFrame(frame);
+  }
+
+  /**
+   * What is on this tile, in words.
+   *
+   * Returns null for bare ground. Written as one function over both sides so a
+   * rival's barracks describes itself the same way yours does -- the player
+   * scouting an enemy castle wants the same information, and two code paths
+   * would drift into two different answers.
+   */
+  function describeAt(tx: number, tz: number):
+      { title: string; sub: string; foe: boolean } | null {
+    const mine = buildingAt(tx, tz);
+    if (mine) {
+      const def = mine.def;
+      const bits: string[] = [];
+      if (def.workers) bits.push(`${mine.staff}/${def.workers} worker${def.workers > 1 ? 's' : ''}`);
+      if (def.produces) {
+        const p = def.produces;
+        bits.push(`${p.amount} ${p.output} / ${p.seconds}s`);
+      }
+      if (def.housing) bits.push(`houses ${def.housing}`);
+      if (def.storeFor) {
+        // Store squares hold nothing themselves; what sits on this one comes
+        // from the yard layout, which is what the player can actually see.
+        const pile = state.layoutFor(def.storeFor).piles
+          .find(q => q.x === mine.x && q.z === mine.z);
+        bits.push(pile ? `${pile.count} ${pile.res}` : 'empty');
+      }
+      const held = Object.entries(mine.held).filter(([, n]) => (n ?? 0) > 0);
+      if (def.relay && held.length) {
+        bits.push(held.map(([r, n]) => `${n} ${r}`).join(', '));
+      }
+      const full = buildingHp(def);
+      if (mine.hp < full) bits.push(`${Math.max(0, Math.round(mine.hp))}/${full} hp`);
+      return { title: def.label, sub: bits.join(' · '), foe: false };
+    }
+
+    for (const f of factions) {
+      for (const b of f.buildings) {
+        const [w, d] = BUILDINGS[b.name].footprint;
+        if (tx < b.x || tz < b.z || tx >= b.x + w || tz >= b.z + d) continue;
+        const def = BUILDINGS[b.name];
+        const full = buildingHp(def);
+        const bits = [f.name];
+        if (b.hp < full) bits.push(`${Math.max(0, Math.round(b.hp))}/${full} hp`);
+        return { title: def.label, sub: bits.join(' · '), foe: true };
+      }
+    }
+    return null;
   }
 
   /**

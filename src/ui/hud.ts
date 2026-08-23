@@ -350,6 +350,15 @@ const CSS = `
   #controls .seg { margin-bottom: 6px; }
 }
 
+/* What the cursor is over. */
+#tip { position: absolute; display: none; pointer-events: none; max-width: 260px;
+  padding: 5px 9px 6px; border-radius: 4px; background: rgba(24,19,12,.96);
+  border: 1px solid rgba(196,162,96,.42); box-shadow: 0 3px 12px rgba(0,0,0,.5);
+  transform: translate(14px, 14px); }
+#tip .t { font-size: 11.5px; font-weight: 600; color: var(--gold); }
+#tip .t.foe { color: var(--warn); }
+#tip .s { font-size: 10px; opacity: .72; line-height: 1.5; margin-top: 2px; }
+
 /* Trouble markers floating over the buildings they belong to. */
 #flags { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
 #flags .f {
@@ -379,6 +388,7 @@ export class Hud {
   private buildPanel!: HTMLElement;
   private buildBar!: HTMLElement;
   private flags!: HTMLElement;
+  private tip!: HTMLElement;
   /** Reused between frames, so a steady state allocates nothing. */
   private flagPool: HTMLElement[] = [];
   /** Which category is open, and which to reopen when B is pressed. */
@@ -428,6 +438,10 @@ export class Hud {
     this.notices = document.createElement('div');
     this.notices.id = 'notices';
     this.root.appendChild(this.notices);
+
+    this.tip = document.createElement('div');
+    this.tip.id = 'tip';
+    this.root.appendChild(this.tip);
 
     this.flags = document.createElement('div');
     this.flags.id = 'flags';
@@ -892,6 +906,33 @@ export class Hud {
       el.style.top = `${Math.round(it.y)}px`;
       if (el.textContent !== it.text) el.textContent = it.text;
     });
+  }
+
+  /**
+   * Name what the cursor is over.
+   *
+   * Kept separate from the placement ghost even though both follow the mouse:
+   * the ghost answers "may this go here", this answers "what is that", and
+   * they are never wanted at the same moment. Folding them together would mean
+   * a mode flag inside a thing whose whole job is to be glanced at.
+   */
+  showTip(screenX: number, screenY: number, title: string, sub: string, foe = false): void {
+    // Flip to the other side of the cursor near the right or bottom edge,
+    // rather than letting the box run off the screen.
+    const flipX = screenX > window.innerWidth - 280;
+    const flipY = screenY > window.innerHeight - 90;
+    this.tip.style.display = 'block';
+    this.tip.style.left = `${screenX}px`;
+    this.tip.style.top = `${screenY}px`;
+    this.tip.style.transform =
+      `translate(${flipX ? 'calc(-100% - 14px)' : '14px'}, ${flipY ? 'calc(-100% - 14px)' : '14px'})`;
+    const html = `<div class="t${foe ? ' foe' : ''}">${title}</div>`
+               + (sub ? `<div class="s">${sub}</div>` : '');
+    if (this.tip.innerHTML !== html) this.tip.innerHTML = html;
+  }
+
+  hideTip(): void {
+    if (this.tip.style.display !== 'none') this.tip.style.display = 'none';
   }
 
   hideGhost(): void {

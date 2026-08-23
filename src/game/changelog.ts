@@ -23,6 +23,21 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.2.0',
+    date: '2026-08-21',
+    headline: 'Hover anything to find out what it is.',
+    sections: [
+      {
+        title: 'Added',
+        items: [
+          'A tooltip naming whatever is under the cursor, with the detail that matters for it: workers and output for a workshop, what is on a store square, how many a hovel houses, and damage on anything hurt.',
+          'It reads rival buildings too, so scouting an enemy castle tells you the same things about it as your own.',
+          'It shows while the wrecking tool is armed as well, reading "Pull down the Iron Mine" — knowing what is about to go is worth most at exactly that moment.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.1.0',
     date: '2026-08-21',
     headline: 'Buildings say when they have nobody to work them.',
