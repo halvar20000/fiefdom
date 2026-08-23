@@ -917,6 +917,28 @@ silence.
 The regex location is placed **before** the PNG rule, because nginx takes the
 first matching regex, not the most specific one.
 
+## Stopping at the map edge
+
+The clamp kept the camera's *centre* on the map, which is not the same thing as
+keeping the map on screen: at the border you got half a screen of void.
+
+The fix measures the **four screen corners projected onto the ground** and
+pushes the target back by whatever hangs over the edge. An analytic version
+came first — reach along each world axis from the zoom, rotation and
+foreshortening — and it was arithmetically correct and still left two tiles of
+void at the top corner, because the target is not the centre of what you can
+see: it projects 32px below it. Rather than hunt that offset down and hard-code
+it, the clamp now reads the corners it is actually trying to keep on screen, so
+it cannot disagree with what is drawn.
+
+One correction pass is exact, since moving the target translates the whole view
+by the same amount; the second pass only confirms. When the map is narrower
+than the view there is no legal position at all, so it centres instead of
+pinning to a corner.
+
+Verified at all four corners, all four rotations and all three zoom levels:
+every view box lands exactly on 0 and 200 with no overshoot anywhere.
+
 ## The camera that would not stop
 
 Reported: pick something from the panel dropdown at the top right, press an

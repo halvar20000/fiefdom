@@ -33,10 +33,11 @@ export class IsoCamera {
   setViewport(width: number, height: number): void {
     this.viewW = Math.max(1, width);
     this.viewH = Math.max(1, height);
+    this.clampTarget();
     this.apply();
   }
 
-  /** Keep the centre inside the map so you cannot pan off into the void. */
+  /** Keep the whole VIEW inside the map, not merely its centre. */
   setBounds(minX: number, maxX: number, minZ: number, maxZ: number): void {
     this.bounds = { minX, maxX, minZ, maxZ };
     this.clampTarget();
@@ -44,11 +45,15 @@ export class IsoCamera {
 
   rotateBy(steps: number): void {
     this.rotation = (((this.rotation + steps) % 4) + 4) % 4 as RotationIndex;
+    // Rotating changes the view's footprint on the ground, so a target that
+    // was legal a moment ago may now hang the edge of the map into shot.
+    this.clampTarget();
     this.apply();
   }
 
   zoomBy(steps: number): void {
     this.zoomIndex = Math.min(ZOOM_LEVELS.length - 1, Math.max(0, this.zoomIndex + steps));
+    this.clampTarget();
     this.apply();
   }
 
@@ -75,10 +80,52 @@ export class IsoCamera {
     this.apply();
   }
 
+  /** Ground-space bounding box of what is currently on screen. */
+  private viewBox(): { minX: number; maxX: number; minZ: number; maxZ: number } {
+    const c = [
+      this.screenToGround(0, 0, 0),
+      this.screenToGround(this.viewW, 0, 0),
+      this.screenToGround(this.viewW, this.viewH, 0),
+      this.screenToGround(0, this.viewH, 0),
+    ];
+    return {
+      minX: Math.min(...c.map(p => p.x)), maxX: Math.max(...c.map(p => p.x)),
+      minZ: Math.min(...c.map(p => p.z)), maxZ: Math.max(...c.map(p => p.z)),
+    };
+  }
+
+  /**
+   * Keep the whole view on the map, not merely its centre.
+   *
+   * Measured from the four screen corners rather than worked out from the zoom
+   * and rotation. An analytic reach looked right and left two tiles of void at
+   * the top corner, because the target is not exactly the centre of what you
+   * can see -- it projects 32px below it. Projecting the corners cannot
+   * disagree with what is actually drawn, whatever that offset turns out to be.
+   *
+   * The correction is a single pass because moving the target translates the
+   * whole view by the same amount: the second pass only confirms.
+   */
   private clampTarget(): void {
     const b = this.bounds;
-    this.target.x = Math.min(b.maxX, Math.max(b.minX, this.target.x));
-    this.target.z = Math.min(b.maxZ, Math.max(b.minZ, this.target.z));
+    if (!Number.isFinite(b.minX)) return;   // unbounded, e.g. before setBounds
+
+    for (let pass = 0; pass < 2; pass++) {
+      this.apply();                          // viewBox needs current matrices
+      const v = this.viewBox();
+      // Wider than the map: no legal position exists, so centre it and stop.
+      const dx = (v.maxX - v.minX) >= (b.maxX - b.minX)
+        ? (b.minX + b.maxX) / 2 - (v.minX + v.maxX) / 2
+        : v.minX < b.minX ? b.minX - v.minX
+        : v.maxX > b.maxX ? b.maxX - v.maxX : 0;
+      const dz = (v.maxZ - v.minZ) >= (b.maxZ - b.minZ)
+        ? (b.minZ + b.maxZ) / 2 - (v.minZ + v.maxZ) / 2
+        : v.minZ < b.minZ ? b.minZ - v.minZ
+        : v.maxZ > b.maxZ ? b.maxZ - v.maxZ : 0;
+      if (Math.abs(dx) < 1e-6 && Math.abs(dz) < 1e-6) break;
+      this.target.x += dx;
+      this.target.z += dz;
+    }
   }
 
   apply(): void {

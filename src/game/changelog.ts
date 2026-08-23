@@ -23,13 +23,14 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
-    version: '1.5.1',
+    version: '1.5.2',
     date: '2026-08-21',
-    headline: 'Fixed the view scrolling away and never stopping.',
+    headline: 'Two camera fixes: it stops at the map edge, and it stops at all.',
     sections: [
       {
         title: 'Fixed',
         items: [
+          'The view can no longer be scrolled off the edge of the map. It used to keep the CENTRE on the map, which let half a screen of nothing hang past the border.',
           'Using the panel dropdown at the top right and then pressing an arrow key sent the view scrolling forever, with no way to steer it back. The dropdown swallowed the key-release, so the game went on believing the key was still held.',
           'Keys are now ignored while a dropdown or text box has the keyboard, the dropdown hands focus back as soon as you choose, and every held key is dropped if the window loses focus.',
         ],
