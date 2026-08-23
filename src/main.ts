@@ -409,18 +409,24 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
     let name: string | null = null;
     // Density scales with the map's timber rating, so a wooded valley and a
     // bare drought are the same generator with a different multiplier.
+    //
+    // These were roughly halved. At the old figures lush ground put something
+    // on 40% of its flat tiles and grass on 30%, which is not woodland -- it
+    // is a hedge you cannot see your own buildings through, and it made the
+    // editor's "Few" setting still read as a forest. 18% and 12% leave ground
+    // showing between the trunks, which is what a Crusader map looks like.
     const T = chosen.trees;
     if (g === DARK) {
-      if (r < 0.20 * T) name = 'palm';
-      else if (r < 0.30 * T) name = 'olive_tree';
-      else if (r < 0.40 * T) name = 'bush';
+      if (r < 0.085 * T) name = 'palm';
+      else if (r < 0.130 * T) name = 'olive_tree';
+      else if (r < 0.180 * T) name = 'bush';
     } else if (g === GRASS) {
-      if (r < 0.10 * T) name = 'palm';
-      else if (r < 0.19 * T) name = 'olive_tree';
-      else if (r < 0.30 * T) name = 'bush';
+      if (r < 0.042 * T) name = 'palm';
+      else if (r < 0.080 * T) name = 'olive_tree';
+      else if (r < 0.120 * T) name = 'bush';
     } else if (g === SCRUB) {
-      if (r < 0.07 * T) name = 'bush';
-      else if (r < 0.075 * T) name = 'dead_tree';
+      if (r < 0.032 * T) name = 'bush';
+      else if (r < 0.036 * T) name = 'dead_tree';
     } else if (g === SAND) {
       if (r < 0.003) name = 'dead_tree';
       else if (r < 0.010) name = 'bush';
@@ -2427,6 +2433,29 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
       f.lord.built = sf.built;
       f.lord.wavesSent = sf.wavesSent;
     }
+
+    // Clear anything growing where a restored building now stands.
+    //
+    // The scatter is regenerated from the map, not stored in the save, so a
+    // change to its density moves the trees while the buildings stay put -- and
+    // a save made before such a change can restore a granary onto a tile that
+    // now grows a palm. Cheap to check, and it makes the scatter safe to tune
+    // without invalidating anyone's game.
+    let cleared = 0;
+    for (const d of decorations) {
+      if (!d.alive) continue;
+      if (!occupied[d.z * MAP_W + d.x]) continue;
+      const onBuilding = buildingAt(d.x, d.z)
+        || factions.some(f => f.buildings.some(b => {
+             const [w, h] = BUILDINGS[b.name].footprint;
+             return d.x >= b.x && d.z >= b.z && d.x < b.x + w && d.z < b.z + h;
+           }));
+      if (!onBuilding) continue;
+      d.alive = false;
+      d.claimedBy = null;
+      cleared++;
+    }
+    if (cleared) console.log(`[save] cleared ${cleared} tree(s) under restored buildings`);
 
     // trees: everything regrows fresh, so re-fell the ones that were down
     for (const [i, regrowAt] of sv.felled) {

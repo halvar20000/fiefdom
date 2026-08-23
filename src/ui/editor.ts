@@ -239,7 +239,9 @@ async function run(
   el('div', act, 'lbl').textContent = 'Vegetation';
   const tSeg = el('div', act, 'seg');
   const tBtns: HTMLButtonElement[] = [];
-  const TREES = [0, 0.5, 1, 2];
+  // Re-scaled with the base density. "Few" means visibly sparse, not "half of
+  // a forest", which is what 0.5 of the old figures came out as.
+  const TREES = [0, 0.35, 1, 1.8];
   ['None', 'Few', 'Some', 'Many'].forEach((lab, i) => {
     const btn = document.createElement('button');
     btn.textContent = lab;

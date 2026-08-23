@@ -23,6 +23,26 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.3.0',
+    date: '2026-08-21',
+    headline: 'Far fewer trees. You can see your own town again.',
+    sections: [
+      {
+        title: 'Changed',
+        items: [
+          'Vegetation density roughly halved. Lush ground put something on 40% of its flat tiles and grass on 30% — that is not woodland, it is a hedge you cannot see your buildings through.',
+          'The editor\u2019s Vegetation settings were rescaled to match. "Few" now covers 6% of lush ground where it used to cover 20%, and "Many" covers 32% where it used to cover 80%.',
+        ],
+      },
+      {
+        title: 'Fixed',
+        items: [
+          'Loading a save now clears any tree standing where a restored building goes. The scatter is regenerated from the map rather than stored, so tuning its density used to risk growing a palm through somebody\u2019s granary.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.2.0',
     date: '2026-08-21',
     headline: 'Hover anything to find out what it is.',
