@@ -97,6 +97,19 @@ const CSS = `
 #buildmenu button.poor { opacity: .42; }
 #buildmenu button canvas { display: block; width: 46px; height: 34px; }
 #buildmenu button .c { font-size: 9px; opacity: .62; }
+/* How many you already have, top-right of the tile. */
+#buildmenu button { position: relative; }
+#buildmenu button .n {
+  position: absolute; top: 2px; right: 3px; min-width: 13px; padding: 0 3px;
+  font-size: 9px; line-height: 13px; text-align: center; border-radius: 7px;
+  background: rgba(240,200,105,.22); color: var(--gold); font-weight: 600;
+  font-variant-numeric: tabular-nums; }
+#buildmenu button.on .n { background: rgba(0,0,0,.35); color: #fff; }
+
+#buildbar button.demolish { grid-column: 1 / -1; color: #e8b9a4; }
+#buildbar button.demolish:hover { border-color: rgba(226,121,79,.6); }
+#buildbar button.demolish.on {
+  background: rgba(226,121,79,.26); border-color: var(--warn); color: #fff; }
 #buildmenu::-webkit-scrollbar { width: 7px; }
 #buildmenu::-webkit-scrollbar-thumb { background: rgba(196,162,96,.30); border-radius: 4px; }
 #buildmenu::-webkit-scrollbar-track { background: transparent; }
@@ -352,6 +365,11 @@ export class Hud {
   /** Which category is open, and which to reopen when B is pressed. */
   private openGroup: number | null = null;
   private lastGroup = 0;
+  /** Wrecking tool armed. Read by the click handler in main.ts. */
+  demolishing = false;
+  private demolishBtn!: HTMLButtonElement;
+  /** Fires when the tool is armed or disarmed, so the cursor can follow. */
+  onDemolishChange: (on: boolean) => void = () => {};
   private controls!: HTMLElement;
   private marketPanel!: HTMLElement;
   private rightPanel!: HTMLElement;
@@ -430,12 +448,16 @@ export class Hud {
         const b = document.createElement('button');
         b.dataset.name = name;
         b.title = `${def.label} — ${cost}\n${def.description}`;
+        const tally = document.createElement('span');
+        tally.className = 'n';
+        b.appendChild(tally);
         const icon = document.createElement('canvas');
         icon.dataset.name = name;
         b.appendChild(icon);
         b.insertAdjacentHTML('beforeend',
           `<span>${def.label}</span><span class="c">${cost}</span>`);
         b.onclick = () => {
+          if (this.demolishing) this.setDemolish(false);
           this.placement.select(name);
           this.onSelect(this.placement.selected);
         };
@@ -448,6 +470,29 @@ export class Hud {
       cat.onclick = () => this.openCategory(gi === this.openGroup ? null : gi);
       this.buildBar.appendChild(cat);
     });
+
+    // Demolition sits on the build bar rather than in a category: it is a mode
+    // you enter, not a thing you place, and it belongs next to the tools that
+    // put buildings down rather than buried under one heading of them.
+    const dem = document.createElement('button');
+    dem.className = 'demolish';
+    dem.innerHTML = '<i>X</i>Demolish';
+    dem.title = 'Pull a building down. Half its cost comes back.';
+    dem.onclick = () => this.setDemolish(!this.demolishing);
+    this.demolishBtn = dem;
+    this.buildBar.appendChild(dem);
+  }
+
+  /** Arm or disarm the wrecking tool. Cancels anything in hand. */
+  setDemolish(on: boolean): void {
+    this.demolishing = on;
+    if (on) {
+      this.placement.cancel();
+      this.onSelect(null);
+    }
+    this.demolishBtn.classList.toggle('on', on);
+    document.body.style.cursor = on ? 'crosshair' : '';
+    this.onDemolishChange(on);
   }
 
   /** Show one category, or none. Pass the index already open to close it. */
@@ -551,6 +596,7 @@ export class Hud {
     hint.innerHTML =
       'R / E rotate &nbsp; wheel zoom &nbsp; drag pan<br>' +
       '<b>1-6</b> build menu &nbsp; <b>B</b> toggle it<br>' +
+      '<b>X</b> demolish a building (half cost back)<br>' +
       'Esc cancels building &nbsp; M market &nbsp; T hide panel<br>' +
       '<b>Troops:</b> click select &nbsp; <b>shift-drag</b> box<br>' +
       'double-click all of a kind &nbsp; right-click move<br>' +
@@ -849,12 +895,22 @@ export class Hud {
       (foes ? `<div class="row"><span style="color:var(--warn)">Enemies</span>` +
               `<b style="color:var(--warn)">${foes}</b></div>` : '');
 
-    // build buttons: affordability and selection
+    // build buttons: affordability, selection and how many you already have
+    const built: Record<string, number> = {};
+    for (const b of s.buildings) built[b.name] = (built[b.name] ?? 0) + 1;
     for (const b of Array.from(this.buildPanel.querySelectorAll('button'))) {
       const name = (b as HTMLElement).dataset.name!;
       const def = BUILDINGS[name];
       b.classList.toggle('on', this.placement.selected === name);
       b.classList.toggle('poor', !s.canAfford(def.cost));
+      const tally = b.querySelector('.n') as HTMLElement | null;
+      if (tally) {
+        const n = built[name] ?? 0;
+        // Blank at zero rather than "0". A grid of zeroes is noise, and the
+        // number is only interesting once there is one to count.
+        tally.textContent = n ? String(n) : '';
+        tally.style.display = n ? '' : 'none';
+      }
     }
     for (const b of Array.from(this.controls.querySelectorAll('button'))) {
       const el = b as HTMLElement;

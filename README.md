@@ -917,6 +917,32 @@ silence.
 The regex location is placed **before** the PNG rule, because nginx takes the
 first matching regex, not the most specific one.
 
+## Demolition, and knowing what you already have
+
+Two small things that were conspicuously missing.
+
+**Demolish** (`X`, or the button under the category bar) arms a wrecking tool:
+click a building and it comes down. It stays armed, because clearing a
+misplaced row is several clicks; `Esc` or the button disarms it. The keep is
+refused outright.
+
+It gives back **half** the build cost. Not nothing and not all: nothing
+punishes a misclick harder than the mistake deserves and pushes the player to
+reload rather than adapt, while a full refund turns the build menu into a free
+sketchpad and drains any weight from deciding where things go.
+
+The teardown is deliberately the same code siege destruction uses — evict the
+garrison, free the tiles, resync the workers — because a building removed two
+different ways is a building that ends up half-removed by one of them.
+
+**A count on each build tile** shows how many you already have, top-right. It
+is blank at zero rather than showing "0": a grid of zeroes is noise, and the
+number only starts being interesting once there is one to count.
+
+Checked end to end: pulling down a hovel took the count 4 to 3, returned 3 of
+its 6 wood, dropped the population cap from 40 to 32, freed the tiles for
+movement, and left the badge reading 3.
+
 ## The storehouse
 
 A distant workings is slow for one reason: the producer walks its own load

@@ -60,6 +60,16 @@ export const WATER_REACH = 3;
  * point -- one long walk replaces several, so a distant workings keeps
  * producing while a single man does the hauling.
  */
+/**
+ * What pulling a building down gives back.
+ *
+ * Half, not all and not nothing. Nothing punishes a misclick harder than the
+ * mistake deserves and makes the player reload rather than adapt; all of it
+ * makes the build menu a free sketchpad and removes any weight from choosing
+ * where things go.
+ */
+export const DEMOLISH_REFUND = 0.5;
+
 export const DEPOT_CAPACITY = 48;
 export const DEPOT_BATCH = 12;
 

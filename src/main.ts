@@ -27,7 +27,8 @@ import { SAVE_VERSION, takeBootIntent, readSlot, type SaveGame } from './game/sa
 import {
   BUILDINGS, STORE_SPRITES, SOLDIER_TYPES, buildingHp, canGarrison,
   GARRISON_HEIGHT, MARSH_SPEED_FOOT, MARSH_SPEED_SIEGE,
-  BURN_SECONDS, BURN_RADIUS, BURN_DPS, IGNITE_RADIUS, type Store,
+  BURN_SECONDS, BURN_RADIUS, BURN_DPS, IGNITE_RADIUS, DEMOLISH_REFUND,
+  type Store, type Resource,
 } from './game/defs';
 
 /** Both stores, for the loops that must treat them identically. */
@@ -1400,6 +1401,46 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
     }
   }
 
+  /** The player's building standing on this tile, if any. */
+  function buildingAt(x: number, z: number): PlacedBuilding | null {
+    for (const b of state.buildings) {
+      const [w, d] = b.def.footprint;
+      if (x >= b.x && z >= b.z && x < b.x + w && z < b.z + d) return b;
+    }
+    return null;
+  }
+
+  /**
+   * Pull a building down deliberately.
+   *
+   * Deliberately the same teardown siege uses -- evict the garrison, free the
+   * tiles, resync the workers -- because a building removed two different ways
+   * is a building that gets left half-removed by one of them.
+   */
+  function demolish(b: PlacedBuilding): boolean {
+    if (b.name === 'keep') {
+      state.notify('The keep cannot be pulled down', 'warn');
+      return false;
+    }
+    const [w, d] = b.def.footprint;
+    const back: string[] = [];
+    for (const [r, n] of Object.entries(b.def.cost)) {
+      const give = Math.floor((n ?? 0) * DEMOLISH_REFUND);
+      if (give <= 0) continue;
+      state.stock[r as Resource] += give;
+      back.push(`${give} ${r}`);
+    }
+    state.removeBuilding(b);
+    evictGarrison(b.x, b.z);
+    razeTiles(b.x, b.z, w, d);
+    workers.sync();
+    state.notify(
+      back.length
+        ? `${b.def.label} pulled down — ${back.join(', ')} recovered`
+        : `${b.def.label} pulled down`, 'info');
+    return true;
+  }
+
   function damagePlayerBuilding(b: PlacedBuilding, amount: number): void {
     b.hp -= amount;
     if (b.hp > 0) return;
@@ -1613,6 +1654,23 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
       return;
     }
 
+    // Demolition, when the tool is in hand. Checked before soldier selection,
+    // or a click on a garrisoned tower would pick the man rather than pull the
+    // tower down.
+    if (!dragMoved && hud.demolishing) {
+      const w = pickWorld(e.clientX, e.clientY);
+      const b = buildingAt(Math.floor(w.x), Math.floor(w.z));
+      if (b) {
+        demolish(b);
+        // Stays armed: clearing a misplaced row is several clicks, and Esc or
+        // the button turns it off.
+        if (!e.shiftKey) refreshOverlay(true);
+      } else {
+        state.notify('Nothing there to pull down', 'warn');
+      }
+      return;
+    }
+
     // plain click with nothing being built: pick a soldier
     if (!dragMoved && !placement.selected) {
       const w = pickWorld(e.clientX, e.clientY);
@@ -1728,8 +1786,10 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
     if (k === '-') iso.zoomBy(-1);
     if (k === 'escape') {
       // Esc means "back out of what I am doing". With a building in hand that
-      // is the building; otherwise it is the game itself.
+      // is the building, with the wrecking tool armed it is the tool;
+      // otherwise it is the game itself.
       if (placement.selected) { placement.cancel(); refreshOverlay(); }
+      else if (hud.demolishing) hud.setDemolish(false);
       else openPause();
     }
     if (k === 'f') {
@@ -1740,6 +1800,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
       }
     }
     if (k === 'b') hud.toggleBuild();
+    if (k === 'x' || k === 'delete') hud.setDemolish(!hud.demolishing);
     if (k >= '1' && k <= '6') hud.openCategory(Number(k) - 1);
     if (k === 'm') hud.toggleMarket();
     if (k === 't') hud.toggleStats();
