@@ -19,7 +19,7 @@ That is the whole setup.
 | Field | Value |
 |---|---|
 | Name | `fiefdom` |
-| Repository | `ghcr.io/halvar20000/fiefdom:latest` |
+| Repository | `ghcr.io/halvar20000/fiefdom:latest` (or pin one, e.g. `:1.0.0`) |
 | Network Type | `Bridge` |
 | WebUI | `http://[IP]:[PORT:8080]` |
 | Port | container `80` → host `8080` |

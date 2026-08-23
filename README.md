@@ -917,6 +917,30 @@ silence.
 The regex location is placed **before** the PNG rule, because nginx takes the
 first matching regex, not the most specific one.
 
+## Versions
+
+`package.json` holds the version number and nothing else does. Vite stamps it
+into the bundle alongside the git sha, so the line in the corner of the title
+screen, the number in `package.json` and the tag on the container image cannot
+drift apart.
+
+Both halves of that line earn their place. The version says what feature set
+you have; the **sha says which build**, and two builds of "1.0.0" are otherwise
+indistinguishable — which matters a great deal when the question is "did my
+container actually update", as it has been more than once.
+
+Click it, on the title screen or in the pause menu, for the release notes. A
+gold dot marks a version this browser has not read yet.
+
+`src/game/changelog.ts` is the only copy of those notes. There is deliberately
+no `CHANGELOG.md`: two copies of a changelog are two copies that disagree by
+the third release. It also sits under `src/`, which the Dockerfile copies
+wholesale — a root-level file would need adding to that COPY list by hand, and
+forgetting exactly that shipped a half-broken image once already.
+
+Tagging `v1.0.0` publishes `ghcr.io/halvar20000/fiefdom:1.0.0` and `:1.0`
+beside `:latest`, so a version can be pinned rather than tracked.
+
 ## A soldier stops being a citizen
 
 Recruits used to stay on the population roll: still a mouth to feed, still

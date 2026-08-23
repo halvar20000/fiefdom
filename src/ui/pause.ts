@@ -2,6 +2,7 @@ import {
   listSlots, writeSlot, clearSlot, setBootIntent, playTime, savedWhen,
   type SaveGame,
 } from '../game/save';
+import { versionButton, VERSION_CSS } from './whatsnew';
 
 const CSS = `
 #pause {
@@ -39,6 +40,8 @@ const CSS = `
 #pause .slot button { flex: none; padding: 5px 11px; font-size: 10.5px; }
 #pause .msg { font-size: 11px; margin-top: 12px; min-height: 15px; color: #8fbf6a; }
 #pause .msg.bad { color: #e2794f; }
+#pause .ver { text-align: center; margin-top: 12px; }
+${VERSION_CSS}
 `;
 
 export interface PauseHooks {
@@ -84,6 +87,13 @@ export function showPause(hooks: PauseHooks): void {
   hint.textContent = 'Esc to resume';
   box.appendChild(hint);
 
+  // Reachable mid-game as well as from the title screen: "what am I running"
+  // is a question you ask when something looks wrong, which is rarely while
+  // you are still sitting on the menu.
+  const ver = document.createElement('div');
+  ver.className = 'ver';
+  ver.appendChild(versionButton());
+
   const msg = document.createElement('div');
 
   const top = document.createElement('div');
@@ -109,6 +119,8 @@ export function showPause(hooks: PauseHooks): void {
 
   const slotsWrap = document.createElement('div');
   box.appendChild(slotsWrap);
+
+  box.appendChild(ver);
 
   const say = (text: string, bad = false) => {
     msg.textContent = text;

@@ -1,5 +1,9 @@
 import { defineConfig } from 'vite';
 import { execSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
+
+/** package.json is the one place the version number is written. */
+const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'));
 
 /**
  * A build id, stamped into the bundle and appended to every asset URL.
@@ -30,5 +34,6 @@ function buildId(): string {
 export default defineConfig({
   define: {
     __BUILD_ID__: JSON.stringify(process.env.BUILD_ID || buildId()),
+    __VERSION__: JSON.stringify(pkg.version),
   },
 });

@@ -1,6 +1,7 @@
 import { MAPS, ratings, type MapDef } from '../game/maps';
 import { listSlots, setBootIntent, playTime, savedWhen } from '../game/save';
 import { listMaps, deleteMap, defOf, type CustomMap } from '../game/custom';
+import { versionButton, VERSION_CSS } from './whatsnew';
 
 /**
  * What the player chose. The menu can send you to the editor as well as into
@@ -95,6 +96,8 @@ const CSS = `
 #menu .slot button:hover { background: #f0c869; }
 #menu .note { margin-top: 16px; font-size: 10.5px; opacity: .45; max-width: 620px;
               text-align: center; line-height: 1.6; }
+#menu .ver { margin-top: 10px; }
+${VERSION_CSS}
 `;
 
 export function showMenu(): Promise<MenuChoice> {
@@ -277,6 +280,11 @@ export function showMenu(): Promise<MenuChoice> {
       }
       root.appendChild(wrap);
     }
+
+    const ver = document.createElement('div');
+    ver.className = 'ver';
+    ver.appendChild(versionButton());
+    root.appendChild(ver);
 
     const note = document.createElement('div');
     note.className = 'note';
