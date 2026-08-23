@@ -23,6 +23,28 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.7.0',
+    date: '2026-08-21',
+    headline: 'Sound, and messages read aloud.',
+    sections: [
+      {
+        title: 'Added',
+        items: [
+          'Every message the game puts on screen is now also spoken, using your browser\u2019s own voice. Warnings are read in a lower register than news.',
+          'Sounds for the things you do and the things done to you: timber set down when you build, a collapse when you demolish, a muster call for a recruit, stone coming apart when a building falls, and the pitch catching light.',
+          'A quiet wind under all of it, so a desert reads as quiet rather than as broken.',
+          'Sound controls sit with rations and taxes: Off / Low / Full, and spoken messages on or off. V mutes and unmutes in a hurry. Both settings are remembered.',
+        ],
+      },
+      {
+        title: 'How it is made',
+        items: [
+          'Nothing is sampled. Every sound is synthesised in the browser from three primitives — a struck tone, a band of filtered noise, and an envelope — for the same reasons every sprite comes out of Blender: nothing to licence, nothing added to the download, and one file deciding how the whole game sounds.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.6.0',
     date: '2026-08-21',
     headline: 'Popularity works the way Crusader\u2019s does.',

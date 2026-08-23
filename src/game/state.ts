@@ -110,11 +110,23 @@ export class GameState {
     this.stock.bread = 40;
   }
 
+  /**
+   * Anything the game wants to tell the player.
+   *
+   * Fires `onNotice` as well as queueing the text, which is what lets the same
+   * message be heard as well as read without every caller having to remember
+   * to make a sound. The de-duplication above is doing double duty now: it
+   * already stopped the screen repeating itself, and it stops the voice
+   * repeating itself too.
+   */
+  onNotice: (text: string, kind: Notice['kind']) => void = () => {};
+
   notify(text: string, kind: Notice['kind'] = 'info'): void {
     const last = this.notices[this.notices.length - 1];
     if (last && last.text === text && this.elapsed - last.at < 12) return;
     this.notices.push({ text, at: this.elapsed, kind });
     if (this.notices.length > 6) this.notices.shift();
+    this.onNotice(text, kind);
   }
 
   get housing(): number {

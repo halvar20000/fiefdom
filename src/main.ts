@@ -3,6 +3,7 @@ import { IsoCamera } from './engine/camera';
 import { Terrain } from './engine/terrain';
 import { SpriteBatch } from './engine/sprites';
 import { loadTileArray, buildCombinedAtlas, type CombinedAtlas } from './engine/assets';
+import { Audio } from './engine/audio';
 import { reportStaleAssets, missingTiles, missingSprites } from './engine/freshness';
 import {
   generateMap, findSite, isBuildable, findStartSite, GROUND_TYPES,
@@ -695,6 +696,16 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
   const workers = new WorkerPool(workerWorld, state);
   const placement = new Placement(placementWorld, state);
   const hud = new Hud(state, placement);
+  // --- sound ---------------------------------------------------------------
+  const audio = new Audio();
+  audio.arm();
+  hud.audio = audio;
+  hud.syncSound();
+  state.onNotice = (text, kind) => {
+    audio.play(kind === 'warn' ? 'warn' : 'notice');
+    audio.say(text, kind === 'warn');
+  };
+
   hud.setIcons(atlas);
   buildMinimapGround();
   hud.onMinimapPick = (x, z) => {
@@ -1336,6 +1347,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
       markArea(b.x, b.z, 1, 1, 0);
     }
     staticDirty = true;
+    audio.play('fire');
     state.notify(`The pitch is alight — ${caught.length} burning!`, 'info');
     return caught.length;
   }
@@ -1465,6 +1477,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
       state.stock[r as Resource] += give;
       back.push(`${give} ${r}`);
     }
+    audio.play('demolish');
     state.removeBuilding(b);
     evictGarrison(b.x, b.z);
     razeTiles(b.x, b.z, w, d);
@@ -1480,6 +1493,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
     b.hp -= amount;
     if (b.hp > 0) return;
     const [w, d] = b.def.footprint;
+    audio.play('destroy');
     state.removeBuilding(b);
     evictGarrison(b.x, b.z);
     razeTiles(b.x, b.z, w, d);
@@ -1740,6 +1754,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
       }
       const built = placement.commit();
       if (built) {
+        audio.play('place');
         const b = state.buildings[state.buildings.length - 1];
         const [w, d] = b.def.footprint;
         markArea(b.x, b.z, w, d);
@@ -1882,6 +1897,15 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
     if (k === 'b') hud.toggleBuild();
     if (k === 'x' || k === 'delete') hud.setDemolish(!hud.demolishing);
     if (k === 'n') hud.toggleMinimap();
+    if (k === 'v') {
+      // One key to shut it up, because that is the control anyone reaches for
+      // in a hurry. Restores to Full rather than to whatever it was: a mute
+      // that remembers 'Low' feels like it failed to unmute.
+      audio.setVolume(audio.volume > 0 ? 0 : 0.8);
+      audio.silence();
+      hud.syncSound();
+      state.notify(audio.volume > 0 ? 'Sound on' : 'Sound off');
+    }
     if (k >= '1' && k <= '6') hud.openCategory(Number(k) - 1);
     if (k === 'm') hud.toggleMarket();
     if (k === 't') hud.toggleStats();
@@ -1969,6 +1993,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
     let sx = spot.x + Math.cos(ang) * ring, sz = spot.z + Math.sin(ang) * ring;
     if (paths.isBlocked(Math.floor(sx), Math.floor(sz))) { sx = spot.x; sz = spot.z; }
     army.recruit(type, sx, sz);
+    audio.play('recruit');
     state.notify(`${def.label} recruited`, 'info');
     return 'ok';
   }

@@ -917,6 +917,37 @@ silence.
 The regex location is placed **before** the PNG rule, because nginx takes the
 first matching regex, not the most specific one.
 
+## Sound, synthesised rather than sampled
+
+Every sprite here comes out of Blender rather than an asset pack, and the audio
+follows the same rule for the same reasons: nothing to licence in a public
+repository, nothing added to the download, and one file deciding how the whole
+game sounds.
+
+The vocabulary is three primitives — a struck tone, a band of filtered noise,
+and an envelope — and every effect is those in different proportions. A castle
+is wood, stone and rope hitting each other, which is what those are for. The
+decay is exponential rather than linear throughout: a linear tail reads as a
+synthesiser cutting out, an exponential one as something that was struck.
+
+**Messages are spoken as well as written**, through the browser's own
+synthesiser. That means no audio to ship and no recording session when a new
+message is added — it reads whatever the game writes. Anything already queued
+is dropped rather than queued behind, because notices arrive in bursts and a
+voice still working through the backlog thirty seconds later is describing a
+situation that has already changed. The de-duplication `notify` already did for
+the screen turned out to do the same job for the voice.
+
+A quiet wind runs underneath, because a desert with no sound at all reads as
+broken rather than as quiet.
+
+Audio cannot start before a user gesture, so the context is created on the
+first click, key or scroll rather than at load.
+
+Measured on the master bus, since "it does not throw" is not "it makes a
+sound": the wind bed peaks at 0.005, a recruit at 0.087, a building collapsing
+at 0.132, and muted at 0.004.
+
 ## Popularity: a rate, not a score
 
 Reported as too hard: feeding the town and charging nothing sat at 51, and

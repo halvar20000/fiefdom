@@ -6,6 +6,7 @@ import {
 } from '../game/defs';
 import type { GameState } from '../game/state';
 import type { Placement } from '../game/placement';
+import type { Audio } from '../engine/audio';
 
 /** The views the right-hand panel can show, in dropdown order. */
 const VIEWS = [
@@ -420,9 +421,13 @@ export class Hud {
   private lastGroup = 0;
   /** Wrecking tool armed. Read by the click handler in main.ts. */
   demolishing = false;
+  /** Set by main.ts once the audio engine exists. */
+  audio: Audio | null = null;
   private demolishBtn!: HTMLButtonElement;
   /** Fires when the tool is armed or disarmed, so the cursor can follow. */
   onDemolishChange: (on: boolean) => void = () => {};
+  /** Refreshes the sound buttons once main.ts has attached the engine. */
+  syncSound: () => void = () => {};
   private controls!: HTMLElement;
   private marketPanel!: HTMLElement;
   private rightPanel!: HTMLElement;
@@ -756,6 +761,44 @@ export class Hud {
       ts.appendChild(b);
     });
 
+    // Sound sits with the other standing settings rather than behind a menu:
+    // it is a thing you reach for once and then leave alone, exactly like
+    // rations and taxes.
+    this.el('div', this.controls, 'lbl').textContent = 'Sound';
+    const snd = this.el('div', this.controls, 'seg');
+    const VOLS: [string, number][] = [['Off', 0], ['Low', 0.35], ['Full', 0.8]];
+    const vBtns: HTMLButtonElement[] = [];
+    VOLS.forEach(([label, v]) => {
+      const b = document.createElement('button');
+      b.textContent = label;
+      b.onclick = () => {
+        this.audio?.setVolume(v);
+        // A sample of what was just chosen. Setting a volume and hearing
+        // nothing is indistinguishable from the control not working.
+        if (v > 0) this.audio?.play('notice');
+        syncSound();
+      };
+      vBtns.push(b); snd.appendChild(b);
+    });
+
+    const spk = this.el('div', this.controls, 'seg');
+    const spkBtn = document.createElement('button');
+    spkBtn.onclick = () => {
+      this.audio?.setSpeech(!this.audio.speech);
+      syncSound();
+      if (this.audio?.speech) this.audio.say('Messages will be read aloud');
+    };
+    spk.appendChild(spkBtn);
+
+    const syncSound = () => {
+      const a = this.audio;
+      vBtns.forEach((b, i) => b.classList.toggle('on',
+        a ? Math.abs(a.volume - VOLS[i][1]) < 0.02 : false));
+      spkBtn.textContent = a?.speech ? 'Spoken messages: on' : 'Spoken messages: off';
+      spkBtn.classList.toggle('on', !!a?.speech);
+    };
+    this.syncSound = syncSound;
+
     // Soldier controls belong here, not only in the Barracks view. Box select
     // sat undiscovered behind a hint in a panel the player had no reason to
     // have open. It starts open for the same reason, and folds away with the
@@ -770,6 +813,7 @@ export class Hud {
     hint.innerHTML =
       'R / E rotate &nbsp; wheel zoom &nbsp; drag pan<br>' +
       '<b>1-6</b> build menu &nbsp; <b>B</b> toggle it<br>' +
+      '<b>V</b> mutes and unmutes<br>' +
       '<b>X</b> demolish a building (half cost back)<br>' +
       'Esc cancels building &nbsp; M market &nbsp; T hide panel<br>' +
       '<b>Troops:</b> click select &nbsp; <b>shift-drag</b> box<br>' +
