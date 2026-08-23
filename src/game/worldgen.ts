@@ -59,6 +59,7 @@ export function generateMap(
   settings: MapSettings = { seed: 1337, green: 0, rock: 0, marsh: 0, trees: 1 },
 ): GeneratedMap {
   const { seed, green, rock, marsh } = settings;
+  const river = settings.river ?? 0;
   const noise = makeNoise(seed);
   const { width, height } = terrain;
 
@@ -72,6 +73,11 @@ export function generateMap(
       // carve a wadi across the middle
       const wadi = Math.abs(noise(x, z, 2, 0.012) - 0.5);
       if (wadi < 0.055) level = Math.max(0, level - 2);
+      // The channel floor is flattened to zero rather than merely lowered.
+      // A river has to be continuous to read as one, and a bed that still
+      // steps up and down where it crosses higher ground gives a chain of
+      // ponds instead.
+      if (river > 0 && wadi < river) level = 0;
       terrain.setCorner(x, z, Math.max(0, Math.min(MAX_LEVEL, level)));
     }
   }
@@ -113,10 +119,29 @@ export function generateMap(
       // pace it also shapes where an attack can sensibly come from.
       const bog = noise(x + 7700, z + 2300, 3, 0.06);
 
+      // The wadi again, for the water in the bottom of it and the bog along
+      // its banks. Recomputed rather than carried over from the elevation
+      // pass: one array of 40,000 floats to avoid one cheap noise lookup is
+      // not a trade worth making.
+      const wadi = Math.abs(noise(x, z, 2, 0.012) - 0.5);
+
       let type: GroundType;
-      if (slope >= 2 || (hi >= 4 && patch > 0.55 - rock)
+      if (river > 0 && flat && wadi < river) {
+        // Standing water in the channel. First, so nothing else can claim it.
+        type = 'water';
+      } else if (slope >= 2 || (hi >= 4 && patch > 0.55 - rock)
           || (flat && outcrop > 0.63 - rock)) {
         type = 'rock';
+      } else if (river > 0 && flat && wadi < river * 2.0 && bog > 0.58) {
+        // Tar seeps along the banks.
+        //
+        // Deliberately NOT scaled by the map's marsh bias, unlike the belt
+        // rule below. Pitch used to be a fertile-belt feature only, so the two
+        // driest maps -- which bias marsh down hard, because that is their
+        // character -- had none at all and a pitch rig that could never be
+        // built. A fixed threshold here guarantees every map a usable seam
+        // beside its water while leaving the bias to shape everywhere else.
+        type = 'marsh';
       } else if (flat && moisture > 0.47 - green && bog > 0.60 - marsh) {
         type = 'marsh';
       // Green bands widened deliberately. Measured on the original thresholds,
@@ -143,7 +168,7 @@ export function generateMap(
       terrain.layer[t] = layerOf(slope >= 2 ? 'cliff' : type, variant);
       groundType[t] = GROUND_TYPES.indexOf(type as GroundType);
       // marsh takes no buildings but a pitch rig, so it is not a build site
-      if (flat && type !== 'rock' && type !== 'marsh') flatTiles.push({ x, z });
+      if (flat && type !== 'rock' && type !== 'marsh' && type !== 'water') flatTiles.push({ x, z });
     }
   }
 

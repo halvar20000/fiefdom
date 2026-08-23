@@ -114,7 +114,11 @@ const CSS = `
 #buildmenu::-webkit-scrollbar-thumb { background: rgba(196,162,96,.30); border-radius: 4px; }
 #buildmenu::-webkit-scrollbar-track { background: transparent; }
 
-#controls { padding: 9px 11px; width: 218px; flex: 0 0 auto; margin-top: auto; }
+/* Shrinkable rather than fixed. Rations and taxes are the part that must stay
+   reachable; the key hints below them can scroll, and do on a short window now
+   that the minimap wants a share of the column. */
+#controls { padding: 9px 11px; width: 218px; margin-top: auto;
+  flex: 0 1 auto; min-height: 108px; overflow-y: auto; }
 #controls .lbl { font-size: 10px; text-transform: uppercase; letter-spacing: .08em;
   opacity: .58; margin-bottom: 4px; font-weight: 600; }
 #controls .seg { display: flex; gap: 3px; margin-bottom: 9px; }
@@ -184,8 +188,10 @@ const CSS = `
    squeezed the market down to a single visible row. */
 /* One right-hand panel, one view at a time. Everything used to be on screen
    at once and the two large panels fought over the same column. */
+/* The floor matters: the minimap and the controls below are both fixed-height,
+   and without it a short window squeezed this to 18px of unreadable stub. */
 #rightpanel { width: 268px; display: flex; flex-direction: column;
-  min-height: 0; flex: 1 1 auto; padding: 8px 9px; }
+  min-height: 140px; flex: 1 1 auto; padding: 8px 9px; overflow-y: auto; }
 #rightpanel.wide { width: 392px; }
 #rightpanel.hidden { display: none; }
 #rightpanel .head { display: flex; gap: 6px; align-items: center;
@@ -350,6 +356,15 @@ const CSS = `
   #controls .seg { margin-bottom: 6px; }
 }
 
+/* Minimap. Sits above the controls in the right-hand column. */
+#minimap { padding: 7px; flex: 0 0 auto; }
+/* Square by its own 200x200 intrinsic size, but never so tall on a short
+   window that it starves the panel above it. */
+#minimap canvas { display: block; width: min(100%, 22vh); height: auto;
+  margin: 0 auto; cursor: crosshair; border-radius: 3px;
+  background: #14110c; image-rendering: pixelated; }
+#minimap.hidden { display: none; }
+
 /* What the cursor is over. */
 #tip { position: absolute; display: none; pointer-events: none; max-width: 260px;
   padding: 5px 9px 6px; border-radius: 4px; background: rgba(24,19,12,.96);
@@ -389,6 +404,15 @@ export class Hud {
   private buildBar!: HTMLElement;
   private flags!: HTMLElement;
   private tip!: HTMLElement;
+  private mini!: HTMLElement;
+  private miniCv!: HTMLCanvasElement;
+  private miniCtx: CanvasRenderingContext2D | null = null;
+  /** The ground, rasterised once. Rebuilt only when the ground itself changes. */
+  private miniGround: HTMLCanvasElement | null = null;
+  private miniW = 1;
+  private miniH = 1;
+  /** Where the player clicked, in tiles. Wired up by main.ts. */
+  onMinimapPick: (x: number, z: number) => void = () => {};
   /** Reused between frames, so a steady state allocates nothing. */
   private flagPool: HTMLElement[] = [];
   /** Which category is open, and which to reopen when B is pressed. */
@@ -433,6 +457,7 @@ export class Hud {
     this.buildBuildPanel();
     this.rightCol = this.el('div', this.root, '', 'rightcol');
     this.buildRightPanel();
+    this.buildMinimap();
     this.buildControls();
 
     this.notices = document.createElement('div');
@@ -530,6 +555,118 @@ export class Hud {
     this.demolishBtn.classList.toggle('on', on);
     document.body.style.cursor = on ? 'crosshair' : '';
     this.onDemolishChange(on);
+  }
+
+  /**
+   * The minimap.
+   *
+   * Backed by a canvas rather than the sprite batch: it is a top-down picture
+   * of ground types, which the isometric renderer has no way to produce and no
+   * reason to. Fixed at the map's own resolution and scaled by CSS, so a
+   * 200x200 world is a 200x200 image however large the box is drawn.
+   */
+  private buildMinimap(): void {
+    this.mini = this.el('div', this.rightCol, 'panel', 'minimap');
+    this.miniCv = document.createElement('canvas');
+    this.mini.appendChild(this.miniCv);
+    this.miniCtx = this.miniCv.getContext('2d');
+
+    const pick = (e: PointerEvent) => {
+      const r = this.miniCv.getBoundingClientRect();
+      const mx = ((e.clientX - r.left) / r.width) * this.miniW;
+      const my = ((e.clientY - r.top) / r.height) * this.miniH;
+      const [x, z] = this.miniToWorld(mx, my);
+      this.onMinimapPick(x, z);
+    };
+    this.miniCv.addEventListener('pointerdown', e => {
+      e.stopPropagation();
+      this.miniCv.setPointerCapture(e.pointerId);
+      pick(e);
+    });
+    // Dragging scrubs the view across the map, which is how every minimap
+    // worth using behaves; capture keeps it working past the edge of the box.
+    this.miniCv.addEventListener('pointermove', e => {
+      if (e.buttons & 1) pick(e);
+    });
+  }
+
+  /** Current camera rotation, needed by both the draw and the inverse. */
+  private miniRot = 0;
+
+  private miniToWorld(mx: number, my: number): [number, number] {
+    const a = -this.miniRot * Math.PI / 2;
+    const u = mx / this.miniW - 0.5, v = my / this.miniH - 0.5;
+    const ru = u * Math.cos(a) - v * Math.sin(a);
+    const rv = u * Math.sin(a) + v * Math.cos(a);
+    return [(ru + 0.5) * this.miniW, (rv + 0.5) * this.miniH];
+  }
+
+  private worldToMini(x: number, z: number): [number, number] {
+    const a = this.miniRot * Math.PI / 2;
+    const u = x / this.miniW - 0.5, v = z / this.miniH - 0.5;
+    const ru = u * Math.cos(a) - v * Math.sin(a);
+    const rv = u * Math.sin(a) + v * Math.cos(a);
+    return [(ru + 0.5) * this.miniW, (rv + 0.5) * this.miniH];
+  }
+
+  /** Hand over the rasterised ground. Called once, and again if it changes. */
+  setMinimapGround(w: number, h: number, rgba: Uint8ClampedArray): void {
+    this.miniW = w; this.miniH = h;
+    this.miniCv.width = w; this.miniCv.height = h;
+    const src = document.createElement('canvas');
+    src.width = w; src.height = h;
+    const sctx = src.getContext('2d');
+    if (!sctx) return;
+    const img = sctx.createImageData(w, h);
+    img.data.set(rgba);
+    sctx.putImageData(img, 0, 0);
+    this.miniGround = src;
+  }
+
+  /**
+   * Draw one frame of it.
+   *
+   * The view outline comes in as four world points rather than being worked
+   * out here, because only the caller owns the camera -- and taking the real
+   * screen corners means the outline is right at any zoom or rotation instead
+   * of being an approximation that drifts from what is on screen.
+   */
+  drawMinimap(rotation: number, view: [number, number][],
+              dots: { x: number; z: number; c: string; big?: boolean }[]): void {
+    const ctx = this.miniCtx;
+    if (!ctx || !this.miniGround || this.mini.classList.contains('hidden')) return;
+    this.miniRot = rotation;
+    const w = this.miniW, h = this.miniH;
+
+    ctx.clearRect(0, 0, w, h);
+    ctx.save();
+    ctx.translate(w / 2, h / 2);
+    ctx.rotate(rotation * Math.PI / 2);
+    ctx.drawImage(this.miniGround, -w / 2, -h / 2);
+    ctx.restore();
+
+    for (const d of dots) {
+      const [mx, my] = this.worldToMini(d.x, d.z);
+      ctx.fillStyle = d.c;
+      const r = d.big ? 3 : 1.6;
+      ctx.fillRect(mx - r, my - r, r * 2, r * 2);
+    }
+
+    if (view.length === 4) {
+      ctx.strokeStyle = 'rgba(255,255,255,.85)';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      view.forEach(([x, z], i) => {
+        const [mx, my] = this.worldToMini(x, z);
+        if (i === 0) ctx.moveTo(mx, my); else ctx.lineTo(mx, my);
+      });
+      ctx.closePath();
+      ctx.stroke();
+    }
+  }
+
+  toggleMinimap(): void {
+    this.mini.classList.toggle('hidden');
   }
 
   /** Show one category, or none. Pass the index already open to close it. */

@@ -23,6 +23,33 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.4.0',
+    date: '2026-08-21',
+    headline: 'A minimap, and water on every map.',
+    sections: [
+      {
+        title: 'Added',
+        items: [
+          'A minimap above the controls. Click or drag on it to send the view there. It turns with the camera, and the white outline is your actual screen corners projected onto the ground, so it is right at any zoom or rotation rather than an approximation.',
+          'Keeps show as large dots — yours white, each rival in his own colour — so you can see where everyone sits at a glance. N hides it.',
+          'Every shipped map now has a river running down its wadi, and pitch marsh along the banks.',
+        ],
+      },
+      {
+        title: 'Changed',
+        items: [
+          'Bank pitch is not scaled by a map\u2019s marsh setting. The two driest maps bias marsh down hard — that is their character — and used to end up with none at all and a pitch rig that could never be built. Now they get a usable seam beside the water and stay dry everywhere else.',
+        ],
+      },
+      {
+        title: 'Fixed',
+        items: [
+          'Loading a save drains any water a restored building would be standing in, the same way it already cleared trees. Terrain is regenerated from the map rather than stored, so adding rivers moved the ground under existing saves.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.3.0',
     date: '2026-08-21',
     headline: 'Far fewer trees. You can see your own town again.',

@@ -20,7 +20,7 @@ import { Placement, type PlacementWorld } from './game/placement';
 import { Hud } from './ui/hud';
 import { showMenu } from './ui/menu';
 import { showEditor } from './ui/editor';
-import { applyCustomMap, type CustomMap } from './game/custom';
+import { applyCustomMap, hashVariant, type CustomMap } from './game/custom';
 import { showPause } from './ui/pause';
 import type { MapDef } from './game/maps';
 import { SAVE_VERSION, takeBootIntent, readSlot, type SaveGame } from './game/save';
@@ -30,6 +30,26 @@ import {
   BURN_SECONDS, BURN_RADIUS, BURN_DPS, IGNITE_RADIUS, DEMOLISH_REFUND,
   type Store, type Resource,
 } from './game/defs';
+
+/**
+ * Ground colours for the minimap, one per GROUND_TYPES entry.
+ *
+ * The same swatches the editor's brushes use, so the picture in the corner and
+ * the palette you painted with agree about what grass looks like.
+ *
+ * Module scope, not inside main(): the minimap is rasterised as soon as the
+ * HUD exists, which is long before the block these once sat in had run, and a
+ * const in its temporal dead zone throws rather than reading as undefined.
+ */
+const MINI_COLOURS: [number, number, number][] = [
+  [201, 169, 120],  // sand
+  [157, 154, 94],   // scrub
+  [127, 156, 78],   // grass
+  [85, 116, 54],    // lush
+  [142, 139, 131],  // rock
+  [74, 68, 56],     // marsh
+  [74, 124, 150],   // water
+];
 
 /** Both stores, for the loops that must treat them identically. */
 const STORE_KINDS: readonly Store[] = ['stockpile', 'granary'];
@@ -676,6 +696,15 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
   const placement = new Placement(placementWorld, state);
   const hud = new Hud(state, placement);
   hud.setIcons(atlas);
+  buildMinimapGround();
+  hud.onMinimapPick = (x, z) => {
+    iso.target.x = Math.max(0, Math.min(MAP_W, x));
+    iso.target.z = Math.max(0, Math.min(MAP_H, z));
+    // A zero pan is how the camera's own clamp gets applied from outside;
+    // clampTarget is private, and duplicating it here would be a second copy
+    // of the bounds to keep in step.
+    iso.panByPixels(0, 0);
+  };
   hud.onRecruit = (type: string) => recruit(type);
   hud.enemyCount = () => army.enemies.length;
   hud.armyCounts = () => {
@@ -1623,6 +1652,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
    * problem, not forty, and the population figure already tells them so.
    */
   const troubleBuf: { x: number; y: number; text: string }[] = [];
+  const miniDots: { x: number; z: number; c: string; big?: boolean }[] = [];
   const MAX_FLAGS = 12;
 
   let dragging = false, dragMoved = false, lastX = 0, lastY = 0;
@@ -1817,6 +1847,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
     }
     if (k === 'b') hud.toggleBuild();
     if (k === 'x' || k === 'delete') hud.setDemolish(!hud.demolishing);
+    if (k === 'n') hud.toggleMinimap();
     if (k >= '1' && k <= '6') hud.openCategory(Number(k) - 1);
     if (k === 'm') hud.toggleMarket();
     if (k === 't') hud.toggleStats();
@@ -2067,8 +2098,59 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
     }
 
     updateTroubleFlags();
+    drawMinimap();
     drawScene();
     requestAnimationFrame(frame);
+  }
+
+  /** Rasterise the ground once. Cliffs are shaded from the height, not stored. */
+  function buildMinimapGround(): void {
+    const rgba = new Uint8ClampedArray(MAP_W * MAP_H * 4);
+    for (let z = 0; z < MAP_H; z++) {
+      for (let x = 0; x < MAP_W; x++) {
+        const t = z * MAP_W + x;
+        const c = MINI_COLOURS[groundType[t]] ?? MINI_COLOURS[0];
+        // A flat colour map of a tiered world reads as a paint chart. Shading
+        // by elevation is what makes the plateaus and the wadi legible, which
+        // is most of what anyone looks at a minimap for.
+        const lift = 0.86 + terrain.cornerHeight(x, z) * 0.055;
+        rgba[t * 4] = c[0] * lift;
+        rgba[t * 4 + 1] = c[1] * lift;
+        rgba[t * 4 + 2] = c[2] * lift;
+        rgba[t * 4 + 3] = 255;
+      }
+    }
+    hud.setMinimapGround(MAP_W, MAP_H, rgba);
+  }
+
+  /** One frame of the minimap: the view outline and everyone's buildings. */
+  function drawMinimap(): void {
+    // The real screen corners, projected to ground. An outline derived from
+    // the camera target and zoom would be an approximation that drifts; this
+    // one is exactly what you can see.
+    const view: [number, number][] = [
+      [0, 0], [window.innerWidth, 0],
+      [window.innerWidth, window.innerHeight], [0, window.innerHeight],
+    ].map(([px, py]) => {
+      const g = pickWorld(px, py);
+      return [g.x, g.z] as [number, number];
+    });
+
+    miniDots.length = 0;
+    const keep = state.buildings.find(b => b.name === 'keep');
+    for (const b of state.buildings) {
+      if (b === keep) continue;
+      miniDots.push({ x: b.x, z: b.z, c: '#f0c869' });
+    }
+    for (const f of factions) {
+      const col = f.id === 1 ? '#e2794f' : f.id === 2 ? '#6f9fd8' : '#b07fd0';
+      for (const b of f.buildings) miniDots.push({ x: b.x, z: b.z, c: col });
+      if (f.keep) miniDots.push({ x: f.keep.x, z: f.keep.z, c: col, big: true });
+    }
+    // Keeps last and larger, so they are never buried under their own castle.
+    if (keep) miniDots.push({ x: keep.x, z: keep.z, c: '#ffffff', big: true });
+
+    hud.drawMinimap(iso.rotation, view, miniDots);
   }
 
   /**
@@ -2432,6 +2514,44 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
       f.lord.recruited = sf.recruited;
       f.lord.built = sf.built;
       f.lord.wavesSent = sf.wavesSent;
+    }
+
+    // Drain any water a restored building is standing in.
+    //
+    // Same hazard as the trees below, one degree worse: the terrain is
+    // regenerated from the map settings rather than stored, so adding a river
+    // to a map moves the ground under a save made before it, and water blocks
+    // both movement and building. Rather than reject the save or drown the
+    // granary, the handful of tiles under it go back to sand.
+    const WATER_G = GROUND_TYPES.indexOf('water');
+    let drained = 0;
+    const dryOut = (bx: number, bz: number, w: number, d: number) => {
+      for (let z = bz; z < bz + d; z++) {
+        for (let x = bx; x < bx + w; x++) {
+          if (x < 0 || z < 0 || x >= MAP_W || z >= MAP_H) continue;
+          const t = z * MAP_W + x;
+          if (groundType[t] !== WATER_G) continue;
+          groundType[t] = GROUND_TYPES.indexOf('sand');
+          terrain.layer[t] = tiles.layerOf('sand', hashVariant(x, z));
+          paths.setBlocked(x, z, false);
+          drained++;
+        }
+      }
+    };
+    for (const b of state.buildings) {
+      const [w, d] = b.def.footprint;
+      dryOut(b.x, b.z, w, d);
+    }
+    for (const f of factions) {
+      for (const b of f.buildings) {
+        const [w, d] = BUILDINGS[b.name].footprint;
+        dryOut(b.x, b.z, w, d);
+      }
+    }
+    if (drained) {
+      terrain.rebuild();
+      staticDirty = true;
+      console.log(`[save] drained ${drained} tile(s) under restored buildings`);
     }
 
     // Clear anything growing where a restored building now stands.

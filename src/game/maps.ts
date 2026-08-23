@@ -19,6 +19,12 @@ export interface MapSettings {
   marsh: number;
   /** Multiplies vegetation density, 1 = default. */
   trees: number;
+  /**
+   * Half-width of the river running down the wadi, in noise units. 0 is a dry
+   * wadi. The desert map's wadi is a riverbed; on most of these there is
+   * water still in the bottom of it.
+   */
+  river?: number;
 }
 
 export type Difficulty = 'Gentle' | 'Fair' | 'Harsh';
@@ -56,6 +62,7 @@ export function ratings(m: MapDef): { label: string; value: number }[] {
     { label: 'Stone',    value: clamp(2 + m.rock * 26) },
     { label: 'Timber',   value: clamp(m.trees * 2) },
     { label: 'Marsh',    value: clamp(2 + m.marsh * 26) },
+    { label: 'Water',    value: clamp((m.river ?? 0) * 150) },
   ];
 }
 
@@ -65,7 +72,7 @@ export const MAPS: MapDef[] = [
     name: 'The Green Wadi',
     blurb: 'A river of green through dry country. Enough of everything, and '
          + 'one lord across the sand who wants it.',
-    seed: 20260818, green: 0, rock: 0, marsh: 0, trees: 1,
+    seed: 20260818, green: 0, rock: 0, marsh: 0, trees: 1, river: 0.016,
     lords: 1, difficulty: 'Fair',
   },
   {
@@ -73,7 +80,7 @@ export const MAPS: MapDef[] = [
     name: 'The Quiet Valley',
     blurb: 'Good land, deep woods, and nobody to fight. Build what you like '
          + 'and see how large a town the ground will carry.',
-    seed: 71104, green: 0.055, rock: -0.03, marsh: -0.04, trees: 1.5,
+    seed: 71104, green: 0.055, rock: -0.03, marsh: -0.04, trees: 1.5, river: 0.022,
     lords: 0, difficulty: 'Gentle',
   },
   {
@@ -81,7 +88,7 @@ export const MAPS: MapDef[] = [
     name: 'Dust and Stone',
     blurb: 'Rock in every direction and barely a field to be had. You will '
          + 'have stone for walls long before you have bread to hold them.',
-    seed: 44810, green: -0.055, rock: 0.075, marsh: -0.05, trees: 0.35,
+    seed: 44810, green: -0.055, rock: 0.075, marsh: -0.05, trees: 0.35, river: 0.010,
     lords: 1, difficulty: 'Harsh',
   },
   {
@@ -89,7 +96,7 @@ export const MAPS: MapDef[] = [
     name: 'The Tar Pits',
     blurb: 'Half this valley is bog. Pitch enough to burn an army, if you can '
          + 'march your own around the mire to reach them.',
-    seed: 9273, green: 0.02, rock: -0.01, marsh: 0.085, trees: 0.9,
+    seed: 9273, green: 0.02, rock: -0.01, marsh: 0.085, trees: 0.9, river: 0.026,
     lords: 2, difficulty: 'Fair',
   },
   {
@@ -97,7 +104,7 @@ export const MAPS: MapDef[] = [
     name: 'Cedar Ridge',
     blurb: 'Timber and high stone both. Room to build properly — and two '
          + 'rivals who will bleed each other before they come for you.',
-    seed: 33517, green: 0.02, rock: 0.05, marsh: -0.02, trees: 1.9,
+    seed: 33517, green: 0.02, rock: 0.05, marsh: -0.02, trees: 1.9, river: 0.020,
     lords: 2, difficulty: 'Harsh',
   },
   {
@@ -105,7 +112,7 @@ export const MAPS: MapDef[] = [
     name: 'The Long Drought',
     blurb: 'Sand, and more sand. No wood worth the name and no bog to burn, '
          + 'and three lords already dividing what little there is.',
-    seed: 60249, green: -0.085, rock: 0.01, marsh: -0.06, trees: 0.15,
+    seed: 60249, green: -0.085, rock: 0.01, marsh: -0.06, trees: 0.15, river: 0.008,
     lords: 3, difficulty: 'Harsh',
   },
 ];

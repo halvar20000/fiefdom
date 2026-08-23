@@ -917,6 +917,45 @@ silence.
 The regex location is placed **before** the PNG rule, because nginx takes the
 first matching regex, not the most specific one.
 
+## The minimap
+
+A top-down canvas above the controls, at the map's own 200x200 resolution and
+scaled by CSS, so the picture is one pixel per tile whatever size the box is
+drawn at. Ground colours are the editor's own brush swatches, shaded by
+elevation — a flat colour map of a tiered world reads as a paint chart, and the
+shading is what makes the plateaus and the wadi legible.
+
+**The view outline is the real thing**, not an estimate: the four screen
+corners projected onto the ground. Deriving it from the camera target and zoom
+would have been an approximation that drifts from what is actually visible; a
+diamond, because a screen rectangle *is* a diamond in an isometric world.
+
+It turns with the camera in ninety-degree steps, and click or drag sends the
+view there. The forward and inverse mappings are the same rotation, so where
+you click and what you get cannot disagree.
+
+Two layout consequences, both found by measuring rather than guessing. At
+620px tall the new panel squeezed the right-hand view to an 18px stub, so that
+now has a floor of 140px; the controls beneath it then overflowed the window,
+so they shrink and scroll instead — rations and taxes stay put and the key
+hints scroll.
+
+## Water on every map
+
+Every shipped map now runs a river down its wadi. The wadi was always a dry
+riverbed — a `river` half-width per map puts water back in the bottom of it.
+The channel floor is flattened to zero rather than merely lowered, because a
+bed that still steps up and down where it crosses higher ground gives a chain
+of ponds rather than a river.
+
+Pitch marsh seeps along the banks, and that rule deliberately **ignores the
+map's marsh bias**. Pitch used to be a fertile-belt feature only, so Dust and
+Stone and The Long Drought — which bias marsh down hard, because dryness is
+their character — had none at all, and a pitch rig that could never be built
+anywhere. A fixed threshold at the water guarantees every map a usable seam
+while the bias still shapes everywhere else. The Long Drought now has 747 tiles
+of water and 1,324 of marsh and is still unmistakably a drought.
+
 ## Naming what the cursor is over
 
 Forty buildings in the same sandstone palette get hard to tell apart at a
