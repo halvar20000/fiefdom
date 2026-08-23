@@ -2157,6 +2157,8 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
     }
 
     updateTroubleFlags();
+    updateAmbience(performance.now());
+    audio.tickAmbience();
     drawMinimap();
     drawScene();
     requestAnimationFrame(frame);
@@ -2180,6 +2182,92 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
       }
     }
     hud.setMinimapGround(MAP_W, MAP_H, rgba);
+  }
+
+  /**
+   * Which building makes which noise.
+   *
+   * Several kinds share a voice on purpose: a quarry and an iron mine are both
+   * a pick on rock, and a market and an inn are both a room full of people.
+   * Giving each its own voice would add nodes without adding anything anybody
+   * could name blindfolded.
+   */
+  const AMBIENT_OF: Record<string, string> = {
+    quarry: 'quarry', iron_mine: 'quarry',
+    woodcutter: 'woodcutter',
+    mill: 'mill',
+    brewery: 'brewery', inn: 'crowd', market: 'crowd',
+    pig_farm: 'livestock', dairy_farm: 'livestock', hunter: 'livestock',
+  };
+
+  const ambient = new Map<string, { weight: number; pan: number }>();
+  let ambientAt = 0;
+
+  /**
+   * Work out what is on screen and how loud it should therefore be.
+   *
+   * Runs four times a second, not every frame. The gains are ramped over a
+   * third of a second anyway, so a faster update would be inaudible, and this
+   * walks every building and samples the ground.
+   */
+  function updateAmbience(now: number): void {
+    if (now - ambientAt < 250) return;
+    ambientAt = now;
+    ambient.clear();
+
+    const W = window.innerWidth, H = window.innerHeight;
+    const add = (kind: string, sx: number) => {
+      const e = ambient.get(kind) ?? { weight: 0, pan: 0 };
+      e.weight += 1;
+      e.pan += sx;
+      ambient.set(kind, e);
+    };
+
+    for (const b of state.buildings) {
+      const kind = AMBIENT_OF[b.name];
+      if (!kind) continue;
+      // Only what is actually working: a mill with nobody in it is a still
+      // wheel, and hearing it grind is worse than hearing nothing.
+      if (b.def.workers && b.staff < b.def.workers) continue;
+      const [fw, fd] = b.def.footprint;
+      const [sx, sy] = iso.worldToScreen(
+        b.x + fw / 2, terrain.heightAt(b.x, b.z), b.z + fd / 2);
+      if (sx < 0 || sy < 0 || sx > W || sy > H) continue;
+      add(kind, sx);
+    }
+
+    // Water and fire come from the ground rather than from buildings, so they
+    // are sampled on a coarse screen grid -- 96 probes against 40,000 tiles.
+    const WATER = GROUND_TYPES.indexOf('water');
+    for (let iy = 0; iy < 8; iy++) {
+      for (let ix = 0; ix < 12; ix++) {
+        const px = ((ix + 0.5) / 12) * W, py = ((iy + 0.5) / 8) * H;
+        const t = pickTile(px, py);
+        if (t.x < 0 || t.z < 0 || t.x >= MAP_W || t.z >= MAP_H) continue;
+        if (groundType[t.z * MAP_W + t.x] === WATER) add('water', px);
+      }
+    }
+    for (const f of fires) {
+      const [sx, sy] = iso.worldToScreen(f.x, terrain.heightAt(f.x, f.z), f.z);
+      if (sx < 0 || sy < 0 || sx > W || sy > H) continue;
+      add('burning', sx);
+    }
+
+    // Turn counts into a weight and an average position.
+    //
+    // One building starts at half rather than a third of full. Measured at
+    // n/3, a lone woodcutter peaked at 0.0125 against a wind bed of 0.005 --
+    // present in the mix and inaudible in practice. The curve saturates fast
+    // so a quarry district is busy rather than deafening; the interesting
+    // difference is none-versus-some, not three-versus-eight.
+    for (const [kind, e] of ambient) {
+      const n = e.weight;
+      e.pan = Math.max(-1, Math.min(1, ((e.pan / n) / W) * 2 - 1)) * 0.8;
+      e.weight = kind === 'water'
+        ? Math.min(1, n / 12)
+        : Math.min(1, 0.5 + (n - 1) * 0.25);
+    }
+    audio.setAmbience(ambient);
   }
 
   /** One frame of the minimap: the view outline and everyone's buildings. */

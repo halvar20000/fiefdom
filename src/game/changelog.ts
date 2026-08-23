@@ -23,6 +23,21 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.8.0',
+    date: '2026-08-21',
+    headline: 'The map sounds like what is on it.',
+    sections: [
+      {
+        title: 'Added',
+        items: [
+          'What you can see, you can hear. Scroll to the river and it laps; scroll to a quarry and you hear picks on stone; a woodcutter chops, a mill groans under its own weight, a brewery bubbles, the pens complain, a market murmurs, and pitch that has been lit crackles.',
+          'It follows the camera. Bring something into view and it fades in, scroll off it and it fades out, and it sits left or right depending on which side of the screen it is on.',
+          'Only working buildings are heard. A mill with nobody in it is a still wheel, and hearing it grind would be worse than hearing nothing.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.7.0',
     date: '2026-08-21',
     headline: 'Sound, and messages read aloud.',

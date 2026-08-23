@@ -24,7 +24,7 @@ export class Audio {
   private master: GainNode | null = null;
 
   /** 0 silent, 1 full. Persisted, because nobody wants to set it twice. */
-  volume = Number(localStorage.getItem(MASTER_KEY) ?? '0.7');
+  volume = Number(localStorage.getItem(MASTER_KEY) ?? '0.8');
   speech = (localStorage.getItem(SPEECH_KEY) ?? '1') === '1';
 
   /** Last thing spoken, to stop a repeated warning talking over itself. */
@@ -198,6 +198,186 @@ export class Audio {
         break;
       case 'fire':
         this.hiss(700, 0.5, 0.9, 0.22, 'lowpass');
+        break;
+    }
+  }
+
+  // --- ambience -----------------------------------------------------------
+
+  /**
+   * What each kind of thing sounds like when it is on screen.
+   *
+   * ONE voice per kind, never one per building. Forty hovels and a dozen
+   * quarries would otherwise be fifty oscillators fighting for the same few
+   * hundred hertz, which is noise rather than atmosphere -- and the player
+   * cannot tell four quarries from five by ear anyway. Presence is a weight,
+   * and the weight moves one voice.
+   *
+   * `pulse` kinds are struck at intervals: a quarry is not a drone, it is a
+   * chink every few seconds, and intermittence is most of what makes it read
+   * as work being done. `loop` kinds are continuous beds.
+   */
+  private static AMBIENCE: Record<string, {
+    mode: 'loop' | 'pulse';
+    /** Seconds between strikes, min and max, for pulse kinds. */
+    every?: [number, number];
+    gain: number;
+  }> = {
+    water:      { mode: 'loop',  gain: 0.16 },
+    crowd:      { mode: 'loop',  gain: 0.10 },
+    burning:    { mode: 'loop',  gain: 0.16 },
+    quarry:     { mode: 'pulse', every: [0.9, 2.1], gain: 0.26 },
+    woodcutter: { mode: 'pulse', every: [1.4, 3.0], gain: 0.28 },
+    mill:       { mode: 'pulse', every: [2.2, 3.4], gain: 0.20 },
+    brewery:    { mode: 'pulse', every: [1.6, 3.2], gain: 0.14 },
+    livestock:  { mode: 'pulse', every: [2.6, 5.5], gain: 0.16 },
+  };
+
+  private voices = new Map<string, {
+    gain: GainNode; pan: StereoPannerNode;
+    /** Loops only. */ src?: AudioBufferSourceNode;
+    /** Pulses only: when the next strike is due, in context time. */ next?: number;
+    weight: number;
+  }>();
+
+  /**
+   * Tell the mixer what is on screen.
+   *
+   * Weights are 0..1 and pans are -1..1. Called a few times a second rather
+   * than every frame: gains are ramped, so a slower update is inaudible, and
+   * scanning the map for what is visible is not free.
+   */
+  setAmbience(present: Map<string, { weight: number; pan: number }>): void {
+    if (this.volume <= 0 || !this.ctx || !this.master) return;
+    const ctx = this.ctx, t = ctx.currentTime;
+
+    for (const [kind, spec] of Object.entries(Audio.AMBIENCE)) {
+      const here = present.get(kind);
+      const want = here ? Math.max(0, Math.min(1, here.weight)) : 0;
+      let v = this.voices.get(kind);
+
+      if (!v) {
+        if (want <= 0) continue;             // never built, never allocated
+        const gain = ctx.createGain();
+        // Safari was late to StereoPannerNode; without it everything is
+        // centred, which is a smaller loss than no ambience at all.
+        const pan = typeof ctx.createStereoPanner === 'function'
+          ? ctx.createStereoPanner() : null;
+        gain.gain.value = 0;
+        if (pan) gain.connect(pan).connect(this.master);
+        else gain.connect(this.master);
+        v = { gain, pan: pan as StereoPannerNode, weight: 0 };
+        if (spec.mode === 'loop') v.src = this.startBed(kind, gain);
+        else v.next = t;
+        this.voices.set(kind, v);
+      }
+
+      v.weight = want;
+      // Ramped, not set: a gain that jumps as a building scrolls into view
+      // clicks, and the click is louder than the sound it is introducing.
+      v.gain.gain.setTargetAtTime(want * spec.gain, t, 0.35);
+      if (v.pan && here) v.pan.pan.setTargetAtTime(here.pan, t, 0.35);
+    }
+  }
+
+  /** Fire any pulse voices that are due. Called from the frame loop. */
+  tickAmbience(): void {
+    if (this.volume <= 0 || !this.ctx || !this.master) return;
+    const t = this.ctx.currentTime;
+    for (const [kind, v] of this.voices) {
+      const spec = Audio.AMBIENCE[kind];
+      if (!spec || spec.mode !== 'pulse' || v.next === undefined) continue;
+      if (v.weight <= 0.02) { v.next = t + 1; continue; }
+      if (t < v.next) continue;
+      const [lo, hi] = spec.every ?? [2, 4];
+      // Louder when there is more of it, but nowhere near linearly -- eight
+      // quarries are not eight times the noise, they are a busier hillside.
+      this.strike(kind, v.gain, 0.55 + 0.45 * v.weight);
+      v.next = t + lo + Math.random() * (hi - lo);
+    }
+  }
+
+  /** A continuous bed for one kind, built from filtered noise. */
+  private startBed(kind: string, dest: GainNode): AudioBufferSourceNode {
+    const ctx = this.ctx!;
+    const src = ctx.createBufferSource();
+    src.buffer = this.noiseBuffer(ctx);
+    src.loop = true;
+    const f = ctx.createBiquadFilter();
+
+    if (kind === 'water') {
+      // Lapping: a narrow low band, swelling slowly.
+      f.type = 'bandpass'; f.frequency.value = 520; f.Q.value = 0.7;
+    } else if (kind === 'crowd') {
+      // Voices without words: the band a room full of people sits in.
+      f.type = 'bandpass'; f.frequency.value = 900; f.Q.value = 1.4;
+    } else {
+      // Fire: broad and low, with the top rolled off.
+      f.type = 'lowpass'; f.frequency.value = 1400;
+    }
+
+    const swell = ctx.createGain();
+    swell.gain.value = 0.75;
+    const lfo = ctx.createOscillator();
+    const lfoAmt = ctx.createGain();
+    lfo.frequency.value = kind === 'water' ? 0.22 : 0.13;
+    lfoAmt.gain.value = 0.3;
+    lfo.connect(lfoAmt).connect(swell.gain);
+    lfo.start();
+
+    src.connect(f).connect(swell).connect(dest);
+    src.start();
+    return src;
+  }
+
+  /** One strike of a pulse kind, through that kind's own gain and pan. */
+  private strike(kind: string, dest: GainNode, level: number): void {
+    const ctx = this.ctx!, t = ctx.currentTime;
+    const hit = (freq: number, q: number, dur: number, g: number,
+                 type: BiquadFilterType = 'bandpass') => {
+      const src = ctx.createBufferSource();
+      src.buffer = this.noiseBuffer(ctx);
+      const f = ctx.createBiquadFilter();
+      f.type = type; f.frequency.value = freq; f.Q.value = q;
+      const env = ctx.createGain();
+      env.gain.setValueAtTime(0.0001, t);
+      env.gain.exponentialRampToValueAtTime(g * level, t + 0.005);
+      env.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      src.connect(f).connect(env).connect(dest);
+      src.start(t); src.stop(t + dur + 0.02);
+    };
+    const ring = (freq: number, dur: number, g: number,
+                  type: OscillatorType = 'triangle') => {
+      const o = ctx.createOscillator();
+      const env = ctx.createGain();
+      o.type = type;
+      o.frequency.setValueAtTime(freq, t);
+      o.frequency.exponentialRampToValueAtTime(freq * 0.75, t + dur);
+      env.gain.setValueAtTime(0.0001, t);
+      env.gain.exponentialRampToValueAtTime(g * level, t + 0.006);
+      env.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(env).connect(dest);
+      o.start(t); o.stop(t + dur + 0.02);
+    };
+
+    switch (kind) {
+      case 'quarry':                     // iron on stone
+        hit(2600, 3.0, 0.09, 0.9);
+        ring(880, 0.10, 0.35, 'square');
+        break;
+      case 'woodcutter':                 // axe into a trunk
+        hit(1100, 1.1, 0.13, 1.0);
+        ring(150, 0.13, 0.5, 'triangle');
+        break;
+      case 'mill':                       // a big wheel taking its weight
+        ring(78, 0.55, 0.5, 'sawtooth');
+        hit(320, 0.8, 0.45, 0.30, 'lowpass');
+        break;
+      case 'brewery':                    // something bubbling over
+        hit(480, 2.4, 0.22, 0.5);
+        break;
+      case 'livestock':                  // a low complaint from the pens
+        ring(196, 0.30, 0.35, 'sawtooth');
         break;
     }
   }

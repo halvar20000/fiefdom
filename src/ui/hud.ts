@@ -792,8 +792,15 @@ export class Hud {
 
     const syncSound = () => {
       const a = this.audio;
-      vBtns.forEach((b, i) => b.classList.toggle('on',
-        a ? Math.abs(a.volume - VOLS[i][1]) < 0.02 : false));
+      // Nearest preset, not an exact match. A stored volume from an older
+      // build lit no button at all, which reads as the control being broken.
+      let nearest = 0;
+      if (a) {
+        VOLS.forEach(([, v], i) => {
+          if (Math.abs(a.volume - v) < Math.abs(a.volume - VOLS[nearest][1])) nearest = i;
+        });
+      }
+      vBtns.forEach((b, i) => b.classList.toggle('on', !!a && i === nearest));
       spkBtn.textContent = a?.speech ? 'Spoken messages: on' : 'Spoken messages: off';
       spkBtn.classList.toggle('on', !!a?.speech);
     };

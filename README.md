@@ -917,6 +917,38 @@ silence.
 The regex location is placed **before** the PNG rule, because nginx takes the
 first matching regex, not the most specific one.
 
+## Per-object ambience
+
+What is on screen is what you hear. The river laps, quarries and iron mines
+ring with picks, a woodcutter chops, a mill groans, a brewery bubbles, the pens
+complain, markets and inns murmur, and lit pitch crackles.
+
+**One voice per KIND, never one per building.** Forty hovels and a dozen
+quarries would be fifty oscillators fighting over the same few hundred hertz —
+noise rather than atmosphere — and nobody can hear the difference between four
+quarries and five anyway. Presence is a weight, and the weight moves one voice.
+Several kinds deliberately share one: a quarry and an iron mine are both a pick
+on rock, a market and an inn are both a room full of people.
+
+Continuous kinds are beds; the rest are **struck at intervals**, because a
+quarry is not a drone — it is a chink every couple of seconds, and the
+intermittence is most of what makes it read as work being done. Gains are
+ramped over a third of a second: a gain that jumps as a building scrolls into
+view clicks, and the click is louder than the sound it introduces.
+
+Only staffed buildings are heard. Water and fire come from the ground rather
+than from buildings, so they are sampled on a coarse screen grid — 96 probes
+against 40,000 tiles.
+
+### The weight curve needed measuring
+
+At `n/3`, one woodcutter came out at **0.0125 peak against a wind bed of
+0.005** — present in the mix and inaudible in practice. One building now starts
+at half rather than a third, and the gains went up with it: the same chop now
+peaks at **0.032, eleven times the bed**, four distinct strikes in nine
+seconds. The curve still saturates fast, because the interesting difference is
+none-versus-some rather than three-versus-eight.
+
 ## Sound, synthesised rather than sampled
 
 Every sprite here comes out of Blender rather than an asset pack, and the audio
