@@ -917,6 +917,35 @@ silence.
 The regex location is placed **before** the PNG rule, because nginx takes the
 first matching regex, not the most specific one.
 
+## A soldier stops being a citizen
+
+Recruits used to stay on the population roll: still a mouth to feed, still
+occupying a bed. Crusader does the opposite, and it is the better rule — arming
+a man takes him out of the town.
+
+So a recruit now leaves `population`, not merely the idle pool. Three things
+follow, none of which needed separate code because they all read the same
+number: he eats nothing (`foodDemandPerMin` is `population * rate`), he pays no
+tax, and his bed comes free — so the ordinary growth drift walks a new peasant
+in behind him. That is the "unemployed drops by one and immediately comes
+back" the original is known for.
+
+The replacement is deliberately left to that drift rather than spawned on the
+spot. An instant refill would let an army be raised at any popularity at all,
+and severing recruitment from popularity removes the one cost that keeps the
+economy worth playing.
+
+The same rule applies to the rival lords, in `lord.ts`. The whole point of them
+is that they run the player's economy under the player's constraints.
+
+A **Soldiers** row now sits in the stats panel, shown only when you have some.
+Without it, recruiting reads as people simply vanishing.
+
+Measured: recruiting two archers took population 8 to 6 and idle 8 to 6; a
+minute later at popularity 70 the town had refilled to 10 with the two soldiers
+still standing, and food consumption read 5.0/min for 10 people rather than the
+6.0 twelve would have eaten.
+
 ## Demolition, and knowing what you already have
 
 Two small things that were conspicuously missing.

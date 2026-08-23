@@ -879,11 +879,15 @@ export class Hud {
       return f >= 0.95 ? 'var(--warn)' : f >= 0.8 ? 'var(--gold)' : 'var(--ink)';
     };
     const foes = this.enemyCount();
+    const troops = Object.values(this.armyCounts()).reduce((n, v) => n + v, 0);
     const yardColour = fill(s.stockpileUsed, s.stockpileCapacity);
     const granaryColour = fill(s.totalFood, s.granaryCapacity);
     this.stats.innerHTML =
       `<div class="row"><span>Population</span><b>${pop} / ${s.housing}</b></div>` +
       `<div class="row"><span>Unemployed</span><b>${s.idle}</b></div>` +
+      // Soldiers left the population roll when they took up arms, so without
+      // this line recruiting reads as people simply vanishing.
+      (troops ? `<div class="row"><span>Soldiers</span><b>${troops}</b></div>` : '') +
       `<div class="row"><span>Food stores</span><b style="color:${granaryColour}">` +
         `${s.totalFood} / ${s.granaryCapacity}</b></div>` +
       `<div class="row"><span>Stockpile</span><b style="color:${yardColour}">` +

@@ -401,7 +401,11 @@ export class Lord {
         this.recruitClock = 0;
         this.gold -= d.gold;
         this.spend(d.cost);
+        // Same rule as the player: a recruit leaves the population, so he
+        // stops eating and his hovel takes someone new. The lord's whole point
+        // is that he plays by the player's economy.
         this.idle -= 1;
+        this.population -= 1;
         const s = this.army.recruit(type,
           at.x + (Math.random() - 0.5) * 2.4, at.z + (Math.random() - 0.5) * 2.4, this.side);
         if (s) {

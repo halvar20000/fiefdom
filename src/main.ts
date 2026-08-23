@@ -1866,7 +1866,18 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
     }
     state.gold -= def.gold;
     state.spend(def.cost);
+    // A recruit LEAVES the town, as in Crusader: off the population roll, not
+    // merely off the idle pool. He therefore eats nothing, pays no tax and
+    // frees his bed -- and because the bed is free, the ordinary growth drift
+    // walks a new peasant in behind him, which is the "unemployed drops by one
+    // and immediately comes back" the original is known for.
+    //
+    // Deliberately left to that drift rather than spawning a replacement here:
+    // an instant refill would let an army be raised at any popularity at all,
+    // and severing recruitment from popularity removes the one cost that keeps
+    // the economy worth playing.
     state.idle -= 1;
+    state.population -= 1;
     // Spread recruits round the muster point. Spawning them all on the exact
     // same tile stacks them into one sprite and the player cannot click any of
     // them apart.
