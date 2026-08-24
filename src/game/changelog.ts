@@ -23,6 +23,26 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.17.0',
+    date: '2026-08-24',
+    headline: 'The rival lord’s castle has people in it.',
+    sections: [
+      {
+        title: 'Added',
+        items: [
+          'The rival lords now have visible workers. His economy was always real — his mill needs wheat, his bakery needs flour, and razing either has always stopped his bread — but his labour was an invisible headcount and his castle looked deserted. Now every staffed job has a figure that walks between the workplace and his stores, in his own colour, so you can watch his economy run and see it falter when you break a link in the chain.',
+          'He farms for variety too, not just wheat: apple orchards and dairy and pig farms join his food chain where the ground allows, the same second-tier farms the player has. A one-crop enemy starved the instant his single chain was cut; now his food is spread across bread, apples, cheese and meat.',
+        ],
+      },
+      {
+        title: 'Note',
+        items: [
+          'This is the first step of a larger effort to have the AI lord play the full game the player does. Still to come: the ale, faith and market buildings (which need him to care about popularity, as the player does), and making his haulage physical so blocking a supply route — not only felling a building — can starve him.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.16.1',
     date: '2026-08-24',
     headline: 'Group your troops by touch.',

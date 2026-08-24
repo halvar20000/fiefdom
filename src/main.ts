@@ -19,6 +19,7 @@ import { Herd, HUNT_RADIUS } from './game/wildlife';
 import { Army, PLAYER } from './game/army';
 import { Lord } from './game/lord';
 import { WorkerPool, totalHeld, type WorkerWorld } from './game/workers';
+import { EnemyWorkers } from './game/enemyworkers';
 import { Placement, type PlacementWorld } from './game/placement';
 import { Hud } from './ui/hud';
 import { showMenu } from './ui/menu';
@@ -709,6 +710,15 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
   };
 
   const workers = new WorkerPool(workerWorld, state);
+  // Visible operators for the rival lords. Driven by their real per-building
+  // staff, so his castle looks worked and razing a building turns its people
+  // out. See src/game/enemyworkers.ts.
+  const enemyWorkers = new EnemyWorkers({
+    findPath: (fx, fz, tx, tz) => paths.find(Math.floor(fx), Math.floor(fz),
+                                             Math.floor(tx), Math.floor(tz)),
+    isWalkable: (x, z) => !paths.isBlocked(Math.floor(x), Math.floor(z)),
+    groundSpeed,
+  });
   const placement = new Placement(placementWorld, state);
   const hud = new Hud(state, placement);
   // --- sound ---------------------------------------------------------------
@@ -2217,10 +2227,13 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
       rescueStuckWorkers();
     }
 
+    if (syncClock === 0) enemyWorkers.sync(factions);   // on the same 1s beat
+
     updateWanderers(dt);
     herd.update(dt, state.elapsed);
     army.update(dt);
     updateRaids(dt);
+    enemyWorkers.update(dt, factions);
     updateFires(dt);
     projectiles.update(dt);
 
@@ -2514,6 +2527,22 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
     for (const w of workers.workers) {
       addFigure(w.x, w.z, w.heading, workers.clipFor(w), w.phase);
     }
+    // The rival lords' operators, the same peasant body under his colour so a
+    // glance says whose men are working which castle.
+    for (const w of enemyWorkers.workers) {
+      const dir = (unitDirectionIndex(w.heading, rot) + DIRECTION_OFFSET) & 7;
+      const clip = enemyWorkers.clipFor(w);
+      const n = clipFrames(clip);
+      const f = Math.floor(w.phase * WALK_FPS) % n;
+      const key = atlas.frames[`${clip}_${dir}_${f}`] ? `${clip}_${dir}_${f}` : `idle_${dir}_0`;
+      if (!atlas.frames[key]) continue;
+      figures.push({
+        key, x: w.x, z: w.z, y: terrain.heightAt(w.x, w.z),
+        bias: footprintDepthBias(1, 1, rot),
+        depth: depthKey(w.x, w.z, rot),
+        tint: factionOf(w.side)?.unitTint ?? [1.5, 0.62, 0.55],
+      });
+    }
     for (const sd of army.soldiers) {
       const dir = (unitDirectionIndex(sd.heading, rot) + DIRECTION_OFFSET) & 7;
       let key: string;
@@ -2639,11 +2668,13 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
       herd.update(dt, state.elapsed);
       army.update(dt);
     updateRaids(dt);
+      enemyWorkers.update(dt, factions);
     updateFires(dt);
       projectiles.update(dt);
       sync += dt;
       if (sync > 1) {
         sync = 0; state.assignWorkers(); workers.sync(); rescueStuckWorkers();
+        enemyWorkers.sync(factions);
       }
     }
   }
@@ -2901,7 +2932,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
       if (syncStores()) staticDirty = true;
       drawScene();
     },
-    decorations, workerWorld, groundType, regrowing, paths, wanderers, hud, herd, army,
+    decorations, workerWorld, groundType, regrowing, paths, wanderers, hud, herd, army, enemyWorkers,
     recruit, atlas, spawnRaid, factions, fires, lightPitch, projectiles,
     manable: () => [...manableTiles(state.buildings)],
     snapshot, applySave, openPause,

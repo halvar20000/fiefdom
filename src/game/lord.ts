@@ -54,6 +54,13 @@ export const BUILD_PLAN: { name: string; want: number }[] = [
   { name: 'mill', want: 1 },
   { name: 'bakery', want: 1 },
   { name: 'hunter', want: 2 },        // feed them BEFORE housing more of them
+  // Food VARIETY, the same as the player's second-tier farms. A one-crop town
+  // starves the moment its single chain is cut, so the lord spreads his food
+  // across apples, cheese and meat too -- and each is another kind of operator
+  // to see working his fields. All need green ground; on a bare map the plan
+  // simply skips whichever has no site.
+  { name: 'apple_orchard', want: 1 },
+  { name: 'dairy_farm', want: 1 },
   { name: 'barracks', want: 1 },      // nothing military until here
   { name: 'hovel', want: 6 },
   { name: 'stockpile', want: 14 },
@@ -69,6 +76,9 @@ export const BUILD_PLAN: { name: string; want: number }[] = [
   { name: 'tower', want: 2 },
   { name: 'siege_camp', want: 1 },
   { name: 'wheat_farm', want: 3 },
+  { name: 'pig_farm', want: 1 },
+  { name: 'dairy_farm', want: 2 },
+  { name: 'apple_orchard', want: 2 },
   { name: 'hunter', want: 4 },
   { name: 'hovel', want: 8 },
   { name: 'quarry', want: 3 },

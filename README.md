@@ -1611,6 +1611,37 @@ change is what makes rivals hostile to each other for free: every check that
 matters asks whether two sides *differ*, not whether one of them is the player.
 Each faction owns its own buildings, keep, wall ring, gate, colour and `Lord`.
 
+### His castle has people in it
+
+The lord's economy was always real — the same building defs, production rates,
+input chains, rations and tax tables the player runs on, so his mill genuinely
+needs wheat and his bakery genuinely needs flour, and razing either has always
+stopped his bread. What was abstract was *labour*: each building carried a
+`staff` count and no bodies, so his castle looked deserted and the economy you
+were fighting was invisible.
+
+`enemyworkers.ts` puts a figure on every staffed, producing job. It is a
+**representation**, not a second economy — the lord still computes his own
+production — but the figures are bound to his real buildings: a woodcutter with
+two `staff` gets two men, and razing it turns them out. They walk between the
+workplace and the nearest of his own stores in his faction colour (the same
+peasant body the player's workers use, tinted), so his castle now visibly runs,
+and breaking a link in a chain is something you can *watch* take effect. They
+re-derive from `staff` on the same one-second beat the player's workers sync on,
+so they need not be saved.
+
+He also farms for variety, not one crop: apple orchards and dairy and pig farms
+join wheat where the ground allows, the second-tier farms the player has. A
+one-crop enemy died the instant his single chain was cut; his food is now spread.
+The build plan skips any of them that has no legal green site rather than
+stalling, the same rule every other terrain-bound building already followed.
+
+This is the first slice of making the lord play the *whole* player's game. The
+ale/faith/market buildings wait on giving him a popularity model (he has none
+today — his growth is housing-and-food only), and his haulage is still
+notional: destroying a building stops him, but blocking the road between two of
+them does not, yet.
+
 ### Nearest-keep targeting is wrong, and not subtly
 
 The player starts near the middle and rivals ring the map, so the player is
