@@ -23,6 +23,20 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.14.0',
+    date: '2026-08-22',
+    headline: 'Greener ground.',
+    sections: [
+      {
+        title: 'Changed',
+        items: [
+          'Grass is a richer, more saturated green instead of dry olive — the biggest single step toward the look of the games this is modelled on. Lush ground under trees deepened to match.',
+          'Scrub, the sand-to-grass transition, was pulled the same way so a green field no longer sits olive-edged against emerald.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.13.0',
     date: '2026-08-22',
     headline: 'Churches, gardens, and rule by fear.',

@@ -917,6 +917,21 @@ silence.
 The regex location is placed **before** the PNG rule, because nginx takes the
 first matching regex, not the most specific one.
 
+## A greener landscape
+
+The grass was dry olive -- the README long admitted it read "flatter and
+browner than the reference." The tile's palette is shifted toward a saturated
+green: green now leads red by about thirty points where it led by six, with a
+little blue in the shadows and a wider light-to-dark spread for variation. Lush
+grass (under trees) deepened to match, and scrub -- the sand-to-grass
+transition -- was greened the same way so a field is not olive at its edge and
+emerald in its middle. It is the same noise and the same shininess; only the
+colour ramp changed, in `materials.py`.
+
+This is the first step of a visual pass toward the reference look. The next
+candidates are the town buildings -- more plaster-and-timber contrast against
+the uniform sandstone -- but the ground was the largest single gain.
+
 ## Popularity levers: faith, beauty, fear
 
 Three town buildings beyond food and ale, following Stronghold and confirmed
