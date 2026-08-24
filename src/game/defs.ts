@@ -111,6 +111,12 @@ export interface BuildingDef {
   needsHauler?: boolean;
   /** Must stand within WATER_REACH tiles of water. See the fishery. */
   needsWater?: boolean;
+  /** People one of these reaches, for coverage levers like the church. */
+  serves?: number;
+  /** Flat popularity-per-minute an aesthetic building adds (before the cap). */
+  beauty?: number;
+  /** A fear building: lowers popularity, raises tax yield. See the gallows. */
+  fear?: { popularity: number; taxMultiplier: number };
   /**
    * Marks a relay: a local drop-off that forwards to the real store.
    * The number is how many goods it can hold at once, all kinds together.
@@ -142,6 +148,23 @@ export interface BuildingDef {
   stocks?: { resource: Resource; capacity: number; batch: number };
   description: string;
 }
+
+/**
+ * The church, mirroring ale: a coverage lever, but with no consumable behind
+ * it -- faith needs no barrels. One church reaches this many people; popularity
+ * rises with the fraction of the town covered.
+ */
+export const CHURCH_SERVES = 24;
+export const RELIGION_POPULARITY_MAX = 8;
+
+/**
+ * Aesthetic "good" buildings, as in Crusader. Their bonus is CAPPED and it
+ * erodes as the town grows -- `sum(beauty) - floor(population / BEAUTY_PER)`,
+ * clamped to [0, BEAUTY_CAP] -- so gardens are not a one-off you place and
+ * forget but something a big settlement must keep adding to.
+ */
+export const BEAUTY_CAP = 12;
+export const BEAUTY_PER = 12;
 
 export const BUILDINGS: Record<string, BuildingDef> = {
   keep: {
@@ -217,6 +240,27 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     name: 'market', label: 'Market', category: 'town',
     footprint: [3, 3], cost: { wood: 10 }, workers: 0, terrain: 'any',
     description: 'Buy and sell goods for gold.',
+  },
+  church: {
+    name: 'church', label: 'Church', category: 'town',
+    footprint: [2, 2], cost: { wood: 20, stone: 30 }, workers: 0, terrain: 'any',
+    serves: CHURCH_SERVES,
+    description: 'Tends the town\'s soul. Popularity rises with how much of '
+               + 'your people it reaches.',
+  },
+  garden: {
+    name: 'garden', label: 'Garden', category: 'town',
+    footprint: [2, 2], cost: { wood: 8 }, workers: 0, terrain: 'green',
+    beauty: 4,
+    description: 'A pleasant thing to look at. Raises popularity — but a '
+               + 'growing town needs more of them to stay charmed.',
+  },
+  gallows: {
+    name: 'gallows', label: 'Gallows', category: 'town',
+    footprint: [2, 2], cost: { wood: 12 }, workers: 0, terrain: 'any',
+    fear: { popularity: -8, taxMultiplier: 1.6 },
+    description: 'Rule by fear. Popularity falls, but frightened people pay '
+               + 'their taxes — gold from tax rises sharply.',
   },
 
   woodcutter: {
@@ -365,7 +409,8 @@ export const BUILDINGS: Record<string, BuildingDef> = {
 export const BUILD_MENU: { category: Category; label: string; items: string[] }[] = [
   { category: 'castle', label: 'Castle', items: ['wall', 'gatehouse', 'tower', 'pitch_ditch', 'barracks', 'siege_camp'] },
   { category: 'castle', label: 'Stores', items: ['stockpile', 'granary'] },
-  { category: 'town', label: 'Town', items: ['hovel', 'market'] },
+  { category: 'town', label: 'Town',
+    items: ['hovel', 'market', 'church', 'garden', 'gallows'] },
   { category: 'industry', label: 'Industry',
     items: ['woodcutter', 'quarry', 'ox_tether', 'iron_mine', 'pitch_rig', 'depot'] },
   { category: 'farm', label: 'Farms',

@@ -2,6 +2,7 @@ import {
   ALL_RESOURCES, BUILDINGS, RAW_RESOURCES, FOOD_RESOURCES, RATIONS, TAX_LEVELS,
   FOOD_VARIETY_BONUS, PRICES, buildingHp, TRADE_BATCH, TRADE_INTERVAL, TRADE_MIN_BAND,
   INN_CAPACITY, ALE_PER_PERSON_PER_MIN, ALE_POPULARITY_MAX, isFood,
+  CHURCH_SERVES, RELIGION_POPULARITY_MAX, BEAUTY_CAP, BEAUTY_PER,
   RESOURCE_LABELS, STOCKPILE_TILE_CAPACITY, STOCKPILE_LEVELS,
   GRANARY_TILE_CAPACITY,
   type BuildingDef, type RationLevel, type Resource, type Store, type TradeOrder,
@@ -182,6 +183,35 @@ export class GameState {
     return this.buildings.filter(b => b.name === 'inn').length * INN_CAPACITY;
   }
 
+  /** Fraction of the town within reach of a church, 0..1. */
+  get religionCoverage(): number {
+    const served = this.buildings.reduce(
+      (n, b) => n + (b.name === 'church' ? CHURCH_SERVES : 0), 0);
+    if (this.population <= 0) return 0;
+    return Math.min(1, served / this.population);
+  }
+
+  /**
+   * Popularity from aesthetic buildings, already capped and eroded by size.
+   * A bare number here; the panel adds the label.
+   */
+  get beautyBonus(): number {
+    const beauty = this.buildings.reduce(
+      (n, b) => n + (b.def.beauty ?? 0), 0);
+    const eroded = beauty - Math.floor(this.population / BEAUTY_PER);
+    return Math.max(0, Math.min(BEAUTY_CAP, eroded));
+  }
+
+  /** The strongest fear building in place, or null. Gallows do not stack. */
+  get fearEffect(): { popularity: number; taxMultiplier: number } | null {
+    let best: { popularity: number; taxMultiplier: number } | null = null;
+    for (const b of this.buildings) {
+      const f = b.def.fear;
+      if (f && (!best || f.taxMultiplier > best.taxMultiplier)) best = f;
+    }
+    return best;
+  }
+
   /**
    * Every contribution to the popularity target, itemised.
    *
@@ -215,6 +245,17 @@ export class GameState {
         value: ALE_POPULARITY_MAX * this.aleCoverage,
       });
     }
+    const religion = this.religionCoverage;
+    if (religion > 0) {
+      out.push({
+        label: `Religion (${Math.round(religion * 100)}% at church)`,
+        value: RELIGION_POPULARITY_MAX * religion,
+      });
+    }
+    const beauty = this.beautyBonus;
+    if (beauty > 0) out.push({ label: 'Gardens', value: beauty });
+    const fear = this.fearEffect;
+    if (fear) out.push({ label: 'Rule by fear', value: fear.popularity });
     if (this.hunger > 0.02) {
       out.push({
         label: this.hunger > 0.6 ? 'People are starving!' : 'Food running short',
@@ -459,7 +500,10 @@ export class GameState {
 
     // --- taxes ---
     if (tax.gold > 0 && this.population > 0) {
-      this.goldDebt += (this.population * tax.gold * dt) / 60;
+      // A gallows frightens people into paying more -- the other half of the
+      // popularity it costs. No fear building, and the multiplier is 1.
+      const fearMult = this.fearEffect?.taxMultiplier ?? 1;
+      this.goldDebt += (this.population * tax.gold * fearMult * dt) / 60;
       const whole = Math.floor(this.goldDebt);
       if (whole > 0) { this.gold += whole; this.goldDebt -= whole; }
     }

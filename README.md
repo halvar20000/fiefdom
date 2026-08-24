@@ -917,6 +917,27 @@ silence.
 The regex location is placed **before** the PNG rule, because nginx takes the
 first matching regex, not the most specific one.
 
+## Popularity levers: faith, beauty, fear
+
+Three town buildings beyond food and ale, following Stronghold and confirmed
+against Stone Kingdoms' popularity model (which, like ours since 1.6.0, treats
+popularity as a rate accumulated toward 0-100):
+
+- **Church** — a coverage lever like the inn, but with no consumable: faith
+  needs no barrels. Popularity rises with the fraction of the town within reach
+  of a church (`RELIGION_POPULARITY_MAX` at full coverage).
+- **Garden** — aesthetic. Its bonus is capped and **erodes with population**
+  (`sum(beauty) - floor(population / BEAUTY_PER)`, clamped to `[0, BEAUTY_CAP]`),
+  so gardens are not place-and-forget; a growing town keeps needing more. This
+  scaling is lifted from Stone Kingdoms' good-buildings rule.
+- **Gallows** — the counterpart: popularity falls, but a fear multiplier raises
+  gold from tax (measured 12 to 19 over a minute at fair tax, the 1.6x it
+  promises). The catch is emergent — the popularity it costs drives people out,
+  shrinking the tax base it feeds, so fear pays less the harder you lean on it.
+
+All three are in `defs.ts` as data plus a Blender sprite; the maths lives in
+`state.ts` alongside ale, itemised in the popularity panel like everything else.
+
 ## Touch controls
 
 On a phone or tablet a thumb bar appears along the bottom: rotate, zoom, build,

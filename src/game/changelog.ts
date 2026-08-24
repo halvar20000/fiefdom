@@ -23,6 +23,21 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.13.0',
+    date: '2026-08-22',
+    headline: 'Churches, gardens, and rule by fear.',
+    sections: [
+      {
+        title: 'Added',
+        items: [
+          'Church — raises popularity by how much of your town it reaches, the way ale does, but needs no barrels behind it.',
+          'Garden — a pretty thing that lifts popularity. The bonus is capped and erodes as the town grows, so a big settlement must keep adding them.',
+          'Gallows — rule by fear: popularity falls, but frightened people pay their taxes and gold from tax rises sharply. Its own popularity hit drives some away, which is the tension of it.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.12.0',
     date: '2026-08-22',
     headline: 'Playable on a phone or tablet.',

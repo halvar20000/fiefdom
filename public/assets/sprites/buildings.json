@@ -1092,6 +1092,58 @@
     "scale": 2
   },
   {
+    "name": "church",
+    "rotation": 0,
+    "width": 174,
+    "height": 158,
+    "anchor_x": 42.23,
+    "anchor_y": 120.78,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "church",
+    "rotation": 1,
+    "width": 214,
+    "height": 158,
+    "anchor_x": 68.04,
+    "anchor_y": 89.1,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "church",
+    "rotation": 2,
+    "width": 174,
+    "height": 198,
+    "anchor_x": 131.77,
+    "anchor_y": 121.45,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "church",
+    "rotation": 3,
+    "width": 214,
+    "height": 176,
+    "anchor_x": 145.96,
+    "anchor_y": 152.32,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
     "name": "dairy_farm",
     "rotation": 0,
     "width": 212,
@@ -1293,6 +1345,110 @@
     "height": 114,
     "anchor_x": 108.88,
     "anchor_y": 99.36,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "gallows",
+    "rotation": 0,
+    "width": 124,
+    "height": 120,
+    "anchor_x": 16.19,
+    "anchor_y": 93.97,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "gallows",
+    "rotation": 1,
+    "width": 156,
+    "height": 120,
+    "anchor_x": 44.65,
+    "anchor_y": 62.29,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "gallows",
+    "rotation": 2,
+    "width": 124,
+    "height": 150,
+    "anchor_x": 107.81,
+    "anchor_y": 90.85,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "gallows",
+    "rotation": 3,
+    "width": 156,
+    "height": 134,
+    "anchor_x": 111.35,
+    "anchor_y": 122.43,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "garden",
+    "rotation": 0,
+    "width": 134,
+    "height": 84,
+    "anchor_x": 6.01,
+    "anchor_y": 48.66,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "garden",
+    "rotation": 1,
+    "width": 140,
+    "height": 84,
+    "anchor_x": 63.76,
+    "anchor_y": 16.66,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "garden",
+    "rotation": 2,
+    "width": 134,
+    "height": 90,
+    "anchor_x": 127.99,
+    "anchor_y": 48.54,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "garden",
+    "rotation": 3,
+    "width": 140,
+    "height": 86,
+    "anchor_x": 76.24,
+    "anchor_y": 80.16,
     "footprint": [
       2,
       2

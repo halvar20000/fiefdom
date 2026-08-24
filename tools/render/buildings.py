@@ -1015,11 +1015,87 @@ def depot():
     return geom.join(parts, "depot"), (2, 2)
 
 
+
+def church():
+    """A small stone chapel: nave, pitched roof, a little bell tower and a cross."""
+    stone = M.castle_stone()
+    rough = M.rough_stone("ChurchFooting")
+    roof = M.timber("ChurchRoof", dark=True)
+    plaster = M.plaster()
+    iron = M.iron()
+
+    parts = []
+    parts.append(geom.box("ch_plinth", (0.08, 0.08, 0.0), (1.84, 1.84, 0.10), rough))
+    parts.append(geom.box("ch_nave", (0.30, 0.16, 0.10), (1.20, 1.66, 0.92), stone))
+    parts.append(geom.gable("ch_roof", (0.30, 0.16, 1.02), (1.20, 1.66, 0.52),
+                            roof, overhang=0.16))
+    parts.append(geom.arch_doorway("ch_door", (0.78, 0.10, 0.10), 0.42, 0.60, 0.12, roof))
+    parts.append(geom.box("ch_tower", (1.44, 0.20, 0.10), (0.40, 0.40, 1.42), stone))
+    parts.append(geom.pyramid("ch_spire", (1.44, 0.20, 1.52), (0.40, 0.40, 0.40),
+                              roof, overhang=0.06))
+    parts.append(geom.box("ch_cross_v", (1.62, 0.38, 1.92), (0.04, 0.04, 0.22), iron))
+    parts.append(geom.box("ch_cross_h", (1.56, 0.38, 2.00), (0.16, 0.04, 0.04), iron))
+    parts.append(geom.box("ch_win", (0.28, 0.70, 0.44), (0.05, 0.30, 0.40), plaster))
+    return geom.join(parts, "church"), (2, 2)
+
+
+def garden():
+    """A low ornamental plot: kerb, beds of flowers, a little path."""
+    kerb = M.plaster(tint=(0.62, 0.56, 0.44))
+    soil = M.rough_stone("GardenSoil")
+    leaf = M.cloth("GardenLeaf", colour=(0.24, 0.44, 0.18))
+    path = M.flagstone()
+    blooms = [
+        M.cloth("Bloom0", colour=(0.85, 0.24, 0.22)),
+        M.cloth("Bloom1", colour=(0.90, 0.78, 0.28)),
+        M.cloth("Bloom2", colour=(0.62, 0.36, 0.72)),
+        M.cloth("Bloom3", colour=(0.92, 0.92, 0.90)),
+    ]
+    parts = []
+    parts.append(geom.box("gd_base", (0.10, 0.10, 0.0), (1.80, 1.80, 0.06), path))
+    beds = [(0.18, 0.18), (1.02, 0.18), (0.18, 1.02), (1.02, 1.02)]
+    for i, (x, y) in enumerate(beds):
+        parts.append(geom.box(f"gd_kerb_{i}", (x, y, 0.06), (0.72, 0.72, 0.08), kerb))
+        parts.append(geom.box(f"gd_soil_{i}", (x + 0.06, y + 0.06, 0.12),
+                              (0.60, 0.60, 0.05), soil))
+        for j in range(6):
+            bx = x + 0.12 + ((i * 7 + j * 3) % 5) * 0.11
+            by = y + 0.12 + ((i * 5 + j * 2) % 5) * 0.11
+            parts.append(geom.cylinder(f"gd_stem_{i}_{j}", (bx, by, 0.17), 0.012, 0.10,
+                                       leaf, segments=4))
+            parts.append(geom.cone(f"gd_bloom_{i}_{j}", (bx, by, 0.27), 0.05, 0.07,
+                                   blooms[(i + j) % 4]))
+    return geom.join(parts, "garden"), (2, 2)
+
+
+def gallows():
+    """A grim timber frame with a crossbeam and a noose. Rule by fear."""
+    timber_l = M.timber("GallowsTimber")
+    timber_d = M.timber("GallowsBeam", dark=True)
+    rope = M.cloth("GallowsRope", colour=(0.58, 0.52, 0.36))
+    rough = M.rough_stone("GallowsFooting")
+
+    parts = []
+    parts.append(geom.box("ga_platform", (0.30, 0.30, 0.0), (1.20, 1.10, 0.30), timber_l))
+    parts.append(geom.box("ga_step", (0.30, 1.40, 0.0), (1.20, 0.28, 0.16), timber_l))
+    for i, x in enumerate((0.44, 1.32)):
+        parts.append(geom.box(f"ga_post_{i}", (x, 0.52, 0.30), (0.12, 0.12, 1.30), timber_d))
+    parts.append(geom.box("ga_beam", (0.40, 0.56, 1.54), (1.00, 0.10, 0.12), timber_d))
+    parts.append(geom.box("ga_brace", (0.50, 0.56, 1.40), (0.14, 0.08, 0.14), timber_d))
+    parts.append(geom.cylinder("ga_rope", (0.90, 0.61, 1.18), 0.018, 0.36, rope, segments=6))
+    parts.append(geom.cylinder("ga_loop", (0.90, 0.61, 1.10), 0.07, 0.10, rope, segments=8, cap=False))
+    parts.append(geom.box("ga_block", (0.80, 0.52, 0.30), (0.22, 0.22, 0.20), rough))
+    return geom.join(parts, "gallows"), (2, 2)
+
+
 REGISTRY.update({
     "barracks": barracks,
     "fishery": fishery,
     "depot": depot,
     "siege_camp": siege_camp,
+    "church": church,
+    "garden": garden,
+    "gallows": gallows,
     "pig_farm": pig_farm,
     "slaughterhouse": slaughterhouse,
     "hunter": hunter,
