@@ -23,6 +23,19 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.17.1',
+    date: '2026-08-24',
+    headline: 'The rival lord stops piling his buildings in a heap.',
+    sections: [
+      {
+        title: 'Fixed',
+        items: [
+          'The rival lord packed every building edge to edge, and because a roof overhangs its footprint by a tile or two, his castle came out an unreadable red heap with the store squares buried under the roofs. He now keeps a one-tile gap around his roofed buildings — houses, workshops, farms — so his town reads, while his wall ring, towers and store yards still tile tight the way they are meant to.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.17.0',
     date: '2026-08-24',
     headline: 'The rival lord’s castle has people in it.',

@@ -859,6 +859,37 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
     return true;
   };
 
+  /**
+   * Buildings that are MEANT to touch, so they skip the spacing rule below.
+   *
+   * A wall ring, its towers and gate must abut to be continuous; the store
+   * squares tile into a yard the same way the player's do; an ox tether is a
+   * small post with no roof to overhang. Everything else has a sprite far larger
+   * than its footprint -- the roof overhangs a tile or two on every side -- so
+   * placed edge to edge they pile into an unreadable heap and bury each other.
+   */
+  const ENEMY_ABUT = new Set([
+    'wall', 'tower', 'gatehouse', 'stockpile', 'granary', 'ox_tether',
+  ]);
+
+  /**
+   * Would a roofed building here keep clear of its neighbours' overhangs?
+   *
+   * A one-tile gap against every existing building's real footprint. Buildings
+   * that are meant to touch (the wall ring, the store yards) are exempt, so they
+   * still tile tight while houses and workshops spread out enough to read.
+   */
+  const enemyGapOk = (f: Faction, name: string, x: number, z: number): boolean => {
+    if (ENEMY_ABUT.has(name)) return true;
+    const [w, d] = BUILDINGS[name].footprint;
+    for (const o of f.buildings) {
+      const [ow, od] = BUILDINGS[o.name].footprint;
+      if (x - 1 < o.x + ow && x + w + 1 > o.x
+          && z - 1 < o.z + od && z + d + 1 > o.z) return false;
+    }
+    return true;
+  };
+
   const placeEnemyAt = (f: Faction, name: string, x: number, z: number): boolean => {
     const [w, d] = BUILDINGS[name].footprint;
     if (x < 1 || z < 1 || x + w >= MAP_W - 1 || z + d >= MAP_H - 1) return false;
@@ -867,6 +898,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
     for (let dz = 0; dz < d; dz++) {
       for (let dx = 0; dx < w; dx++) if (occupied[(z + dz) * MAP_W + (x + dx)]) return false;
     }
+    if (!enemyGapOk(f, name, x, z)) return false;
     f.buildings.push({ name, x, z, hp: buildingHp(BUILDINGS[name]), staff: 0 });
     markArea(x, z, w, d);
     if (!BUILDINGS[name].walkable) markSolid(x, z, w, d);
@@ -874,10 +906,20 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
   };
 
   const placeEnemyNear = (f: Faction, name: string, nx: number, nz: number, radius = 18) => {
-    const [w, d] = BUILDINGS[name].footprint;
-    const site = findSite(terrain, w, d, nx, nz, radius);
-    if (!site) return null;
-    return placeEnemyAt(f, name, site.x, site.z) ? site : null;
+    // Spiral out from the reference point and take the FIRST candidate that
+    // passes every rule -- terrain, occupancy and the roof-gap. findSite alone
+    // only tests level ground and hands back one spot, so once the gap rule can
+    // reject it a single miss failed the whole build; searching here instead
+    // keeps him building at the same pace while his town spreads out.
+    for (let r = 0; r <= radius; r++) {
+      for (let a = 0; a < 24; a++) {
+        const ang = (a / 24) * Math.PI * 2;
+        const x = Math.round(nx + Math.cos(ang) * r);
+        const z = Math.round(nz + Math.sin(ang) * r);
+        if (placeEnemyAt(f, name, x, z)) return { x, z };
+      }
+    }
+    return null;
   };
 
   /**
@@ -986,7 +1028,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
             if (occupied[(z + dz) * MAP_W + (x + dx)]) { clear = false; break; }
           }
         }
-        if (clear) return [x, z];
+        if (clear && enemyGapOk(f, name, x, z)) return [x, z];
       }
     }
     return null;
