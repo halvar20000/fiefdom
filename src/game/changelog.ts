@@ -23,6 +23,26 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.18.0',
+    date: '2026-08-24',
+    headline: 'Cut down the rival lord’s workers to break his economy.',
+    sections: [
+      {
+        title: 'Added',
+        items: [
+          'Your soldiers can now kill the rival lord’s labourers, not just his troops. An archer or swordsman standing among his workers with no enemy soldier to face will cut them down — and each one killed costs that lord the person AND the staffed slot on the building he worked, so the job stops until the lord can spare someone to walk in a replacement. Sit archers over his fields and his economy grinds to a halt.',
+          'Soldiers still fight soldiers first — they only turn on workers when there is no enemy soldier in range — and they do not give chase after them, so an ordered march is never derailed and a wall archer keeps his post while thinning the workers below.',
+        ],
+      },
+      {
+        title: 'Note',
+        items: [
+          'This cuts one way for now: your own workers are still safe from enemy soldiers. Making it symmetric — so a raid through your town costs you workers too — is a deliberate later step.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.17.1',
     date: '2026-08-24',
     headline: 'The rival lord stops piling his buildings in a heap.',

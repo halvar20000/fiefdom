@@ -100,6 +100,17 @@ export interface ArmyWorld {
   /** Nearest building of the OTHER side that this engine could break. */
   siegeTarget?(s: Soldier): SiegeTarget | null;
   /**
+   * Nearest enemy labourer within reach, for a fighter with no soldier to face.
+   *
+   * Returned only when one is already in range: a soldier cuts down the enemy's
+   * people when he is standing among them, but does not GIVE CHASE after them,
+   * so an ordered march is not derailed and an archer does not walk off a wall
+   * to hunt peasants. `hit` is the world's to apply -- it costs the lord the
+   * worker AND a staffed slot on the building he was working, so the job stops
+   * until the lord can spare someone to walk in a replacement.
+   */
+  civilianTarget?(s: Soldier, reach: number): SiegeTarget | null;
+  /**
    * A ranged attack was launched: spawn something the eye can follow.
    *
    * Fired at the moment of the blow, not when it lands -- damage is still
@@ -438,7 +449,33 @@ export class Army {
       // A unit under a move order keeps marching. Everything else looks around.
       if (!foe && !(s.ordered && s.moving)) foe = this.findFoe(s, aggro);
       s.target = foe ? foe.id : null;
-      if (!foe) continue;
+      if (!foe) {
+        // No enemy soldier to face. A fighter standing among an enemy's
+        // labourers still cuts them down -- soldiers first, always, but an
+        // undefended economy is fair game. He does not chase (the target is
+        // only returned when already in reach), so a march is not derailed and
+        // a wall archer keeps his post while thinning the workers below.
+        if (!(s.ordered && s.moving)) {
+          const civ = this.world.civilianTarget?.(s, reach);
+          if (civ) {
+            s.heading = Math.atan2(civ.z - s.z, civ.x - s.x);
+            engaged.add(s.id);
+            s.moving = false;
+            s.path = [];
+            if (s.cooldown <= 0) {
+              const roll = s.def.damage * (0.85 + Math.random() * 0.3);
+              civ.hit(Math.max(1, Math.round(roll)));
+              if (Army.reachOf(s) >= RANGED_THRESHOLD) {
+                this.world.onShoot?.(s.def.targetsUnits ? 'bolt' : 'arrow',
+                                     s.x, s.z, civ.x, civ.z);
+              }
+              s.cooldown = s.def.cooldown;
+              s.swing = SWING_TIME;
+            }
+          }
+        }
+        continue;
+      }
 
       s.heading = Math.atan2(foe.z - s.z, foe.x - s.x);
       if (Math.hypot(foe.x - s.x, foe.z - s.z) <= reach) {

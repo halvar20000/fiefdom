@@ -171,6 +171,21 @@ export class Lord {
     return this.troops.filter(s => !this.garrisonIds.has(s.id) && !this.sentIds.has(s.id));
   }
 
+  /**
+   * A labourer has been cut down by the enemy.
+   *
+   * It costs him the person AND the staffed slot on the building he worked, so
+   * that job stops (production needs full staff) until he can spare someone to
+   * fill it again. If the man happened to be idle rather than employed, only the
+   * head is lost. This is what makes killing his operators a real attack on the
+   * economy rather than a cosmetic one.
+   */
+  loseWorker(b?: { staff: number }): void {
+    this.population = Math.max(0, this.population - 1);
+    if (b && b.staff > 0) b.staff -= 1;
+    else if (this.idle > 0) this.idle -= 1;
+  }
+
   private count(name: string): number {
     return this.world.buildings().filter(b => b.name === name).length;
   }

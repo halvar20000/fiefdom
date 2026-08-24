@@ -62,7 +62,12 @@ export interface EnemyWorker {
   carrying: boolean;
   /** The work animation for this job, e.g. a woodcutter's chop. */
   workClip: string;
+  /** A labourer, not a soldier -- soft, and unarmed. */
+  hp: number;
 }
+
+/** How much a labourer can take before he falls. A few arrows, no more. */
+export const WORKER_HP = 18;
 
 /** Never spend more than this on animating other men's servants. */
 const MAX_WORKERS = 80;
@@ -116,12 +121,18 @@ export class EnemyWorkers {
             speed: 1.4 + Math.random() * 0.4,
             b, state: 'work', timer: Math.random() * 2,
             tx: b.x + 0.5, tz: b.z + 0.5, path: [], carrying: false,
-            workClip: def.workClip ?? 'dig',
+            workClip: def.workClip ?? 'dig', hp: WORKER_HP,
           });
           n++;
         }
       }
     }
+  }
+
+  /** Take a fallen labourer off the map. His building is left to the lord. */
+  remove(w: EnemyWorker): void {
+    const i = this.workers.indexOf(w);
+    if (i >= 0) this.workers.splice(i, 1);
   }
 
   /** Nearest of the lord's own stores of the right kind, as an approach point. */

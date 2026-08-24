@@ -1636,6 +1636,18 @@ one-crop enemy died the instant his single chain was cut; his food is now spread
 The build plan skips any of them that has no legal green site rather than
 stalling, the same rule every other terrain-bound building already followed.
 
+And they can be killed. A soldier with no enemy *soldier* in range will cut down
+an enemy lord's labourers standing near him — `civilianTarget` on the army world
+returns the nearest one already in reach (no chase, so a march is not derailed
+and a wall archer keeps his post). A kill costs the lord the man *and* the
+staffed slot on the building he worked, via `Lord.loseWorker` — and since a
+building produces nothing below full staff, the job halts until he can spare
+someone to fill it. Measured: four archers dropped among his workers took twelve
+to zero and his population from 18 to 9 in twenty seconds, and held the site
+empty. Soldiers are always chosen before labourers, so this never pulls a fighter
+off an actual battle. It cuts one way so far — the player's own workers are still
+immune to enemy soldiers; symmetry is a later step.
+
 This is the first slice of making the lord play the *whole* player's game. The
 ale/faith/market buildings wait on giving him a popularity model (he has none
 today — his growth is housing-and-food only), and his haulage is still

@@ -414,6 +414,32 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
       projectiles.fire(kind, fx, terrain.heightAt(fx, fz), fz,
                              tx, terrain.heightAt(tx, tz), tz);
     },
+    // A soldier with no soldier to fight may cut down an enemy lord's labourers
+    // if any stand within reach. Killing one costs that lord the man and the
+    // staffed slot on the building he worked, so the job halts until refilled --
+    // which is how thinning his operators actually bites into his economy.
+    civilianTarget: (s, reach) => {
+      let best: (typeof enemyWorkers.workers)[number] | null = null;
+      let bestD = reach;
+      for (const w of enemyWorkers.workers) {
+        if (w.side === s.side) continue;   // never his own side's people
+        const d = Math.hypot(w.x - s.x, w.z - s.z);
+        if (d > reach || d >= bestD) continue;
+        bestD = d; best = w;
+      }
+      if (!best) return null;
+      const victim = best;
+      return {
+        x: victim.x, z: victim.z, dist: bestD,
+        hit: (amount) => {
+          victim.hp -= amount;
+          if (victim.hp > 0) return;
+          const b = victim.b ?? undefined;
+          enemyWorkers.remove(victim);
+          factionOf(victim.side)?.lord.loseWorker(b);
+        },
+      };
+    },
   });
 
   const herd = new Herd({
