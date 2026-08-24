@@ -917,6 +917,17 @@ silence.
 The regex location is placed **before** the PNG rule, because nginx takes the
 first matching regex, not the most specific one.
 
+## Why Unraid detects updates
+
+The image is published as a **Docker schema-2 manifest list** with provenance
+and SBOM attestations turned off (`oci-mediatypes=false`, `provenance: false`,
+`sbom: false` in the workflow). This is not cosmetic: Unraid's update checker
+reads schema-2 -- the format every Docker Hub multi-arch image uses -- but not
+GHCR's default OCI image index, so with the default build it always reported
+"up to date" and every update had to be forced by hand. The attestations also
+add `platform: "unknown"` manifests to the index that confuse the digest
+comparison. media-vault hit and fixed exactly this.
+
 ## Projectiles
 
 Ranged attacks now throw something you can watch. An archer's shot is a pale

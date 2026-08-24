@@ -56,8 +56,18 @@ jobs:
           # image that only runs on x86 fails at install time with a message
           # nobody can act on.
           platforms: linux/amd64,linux/arm64
-          push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          # Publish a plain Docker schema-2 manifest list -- no OCI media types,
+          # no provenance/SBOM attestations. This is the whole reason Unraid
+          # showed "up to date" against a newer image and forced a manual
+          # update: its checker reads schema-2 (the format every Docker Hub
+          # multi-arch image uses) but not GHCR's default OCI image index, and
+          # the attestations add platform:"unknown" manifests that confuse the
+          # digest comparison further. `outputs: type=registry` replaces
+          # `push: true` -- the two are mutually exclusive.
+          provenance: false
+          sbom: false
+          outputs: type=registry,oci-mediatypes=false
           cache-from: type=gha
           cache-to: type=gha,mode=max

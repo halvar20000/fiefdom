@@ -23,6 +23,20 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.10.1',
+    date: '2026-08-21',
+    headline: 'Unraid now sees updates without a manual force.',
+    sections: [
+      {
+        title: 'Fixed',
+        items: [
+          'Unraid showed "up to date" against a newer image, so every update had to be forced by hand. The image is now published as a plain Docker schema-2 manifest list with no provenance or SBOM attestations -- the format Unraid\u2019s update checker actually reads. This is the same fix media-vault already uses.',
+          'This is a packaging change only; the game is identical to 1.10.0.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.10.0',
     date: '2026-08-21',
     headline: 'Arrows and bolts you can see fly.',
