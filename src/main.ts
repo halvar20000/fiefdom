@@ -24,6 +24,7 @@ import { Hud } from './ui/hud';
 import { showMenu } from './ui/menu';
 import { showEditor } from './ui/editor';
 import { applyCustomMap, hashVariant, type CustomMap } from './game/custom';
+import { manableTiles } from './game/access';
 import { showPause } from './ui/pause';
 import type { MapDef } from './game/maps';
 import { SAVE_VERSION, takeBootIntent, readSlot, type SaveGame } from './game/save';
@@ -1567,10 +1568,15 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
       garrisonPost: () => {
         // Prefer a tower, then the gatehouse, then any wall he has not manned.
         const rank = (n: string) => n === 'tower' ? 0 : n === 'gatehouse' ? 1 : 2;
+        const reach = manableTiles(f.buildings);
         const posts = f.buildings
           .filter(b => canGarrison(b.name))
           .sort((a, b) => rank(a.name) - rank(b.name));
         for (const b of posts) {
+          // Same rule the player plays by: an unreachable wall cannot be
+          // manned, so the lord does not try and his men do not pile up
+          // walking to a wall they can never climb.
+          if (b.name === 'wall' && !reach.has(`${b.x},${b.z}`)) continue;
           const [w, d] = BUILDINGS[b.name].footprint;
           // Spread them along the battlements: a generous cap put the whole
           // garrison on one gatehouse and left the rest of the wall bare.
@@ -1831,6 +1837,14 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
         return tx >= b.x && tx < b.x + bw && tz >= b.z && tz < b.z + bd;
       });
       if (post) {
+        // A wall needs a stair: it is man-able only if its walkway connects to
+        // a tower or gatehouse. Towers and gatehouses have stairs of their own
+        // and are always reachable.
+        if (!manableTiles(state.buildings).has(`${post.x},${post.z}`)) {
+          state.notify('No stair to that wall — anchor it with a tower or gatehouse',
+                       'warn');
+          return;
+        }
         const [bw, bd] = post.def.footprint;
         const n = army.orderGarrison(post.x, post.z,
                                      post.x + bw / 2, post.z + bd / 2,
@@ -2818,6 +2832,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
     },
     decorations, workerWorld, groundType, regrowing, paths, wanderers, hud, herd, army,
     recruit, atlas, spawnRaid, factions, fires, lightPitch, projectiles,
+    manable: () => [...manableTiles(state.buildings)],
     snapshot, applySave, openPause,
     isPaused: () => paused,
     // Kept singular-friendly for the console: no argument means the first

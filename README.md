@@ -917,6 +917,19 @@ silence.
 The regex location is placed **before** the PNG rule, because nginx takes the
 first matching regex, not the most specific one.
 
+## Walls need stairs
+
+A curtain wall has no way up. A stretch of wall can be manned only if its
+walkway connects, tile by tile, back to a tower or gatehouse -- the buildings
+with stairs inside. A bare ring of wall is an obstacle, not a firing line,
+until a tower anchors it. This is a breadth-first search from the stair-bearing
+tiles across four-connected wall tiles (a corner joined only diagonally does
+not count, which is its own reason to put a tower there); `src/game/access.ts`.
+
+The rival lords obey the same rule, so they no longer march men toward a wall
+they could never climb. The idea is from the Dadud/fiefdom fork's castle.ts,
+reimplemented against our building model.
+
 ## Why Unraid detects updates
 
 The image is published as a **Docker schema-2 manifest list** with provenance

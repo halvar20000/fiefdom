@@ -23,6 +23,20 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.11.0',
+    date: '2026-08-22',
+    headline: 'Walls need stairs to man them.',
+    sections: [
+      {
+        title: 'Changed',
+        items: [
+          'A stretch of curtain wall can only be manned if it joins a tower or gatehouse — the buildings with stairs. A bare ring of wall with no tower is now just an obstacle, as in Crusader, so towers earn their place instead of being optional.',
+          'The rival lords play by the same rule and no longer send men toward walls they could never climb.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.10.1',
     date: '2026-08-21',
     headline: 'Unraid now sees updates without a manual force.',
