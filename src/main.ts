@@ -30,6 +30,7 @@ import { isTouchUi, isPhoneUi, lockPageGestures, makeTouchPad, attachPinch, type
 import { showPause } from './ui/pause';
 import type { MapDef } from './game/maps';
 import { SAVE_VERSION, takeBootIntent, readSlot, type SaveGame } from './game/save';
+import { hydrate } from './game/backend';
 import {
   BUILDINGS, STORE_SPRITES, SOLDIER_TYPES, buildingHp, canGarrison,
   GARRISON_HEIGHT, MARSH_SPEED_FOOT, MARSH_SPEED_SIEGE,
@@ -3071,6 +3072,12 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
 (async () => {
   const intent = takeBootIntent();
   const loading = document.getElementById('loading')!;
+
+  // Contact the storage backend before anything reads a save or a map. Never
+  // throws -- a missing server just leaves saves in this browser's localStorage,
+  // exactly as before. On first run against a fresh server this also copies up
+  // any saves the browser already held, so upgrading loses nothing.
+  await hydrate();
 
   if (intent?.kind === 'load') {
     const info = readSlot(intent.slot);

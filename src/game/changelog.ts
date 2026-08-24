@@ -23,6 +23,27 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.19.0',
+    date: '2026-08-24',
+    headline: 'Saved games and maps now live on the server.',
+    sections: [
+      {
+        title: 'Changed',
+        items: [
+          'Saved games and custom maps are now stored on the server, in a /data folder, instead of only in your browser. On Unraid, map /data to appdata and they survive every container update and are the same in every browser and on every device — no more saves seeming to vanish after an update or when you open the game from a different address.',
+          'Upgrading loses nothing: the first time the new version runs, any saves your browser was already holding are copied up to the server automatically.',
+          'If the /data volume is left unmapped the game still works — it falls back to storing saves in your browser as before — so map the volume to get the durability.',
+        ],
+      },
+      {
+        title: 'Under the hood',
+        items: [
+          'The container is now a small dependency-free Node server rather than nginx; it serves the game with the same careful cache rules as before and adds a tiny storage API. A corrupt or half-written save is now refused rather than crashing the menu.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.18.0',
     date: '2026-08-24',
     headline: 'Cut down the rival lord’s workers to break his economy.',

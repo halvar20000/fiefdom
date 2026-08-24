@@ -1,7 +1,12 @@
 import type { MapDef } from './maps';
+import { store } from './backend';
 
 /**
- * Saved games, in localStorage.
+ * Saved games.
+ *
+ * Stored through `store` (see backend.ts): on the server when the container
+ * provides one, mirrored to and falling back on localStorage otherwise. The
+ * three slots keep their `fiefdom.save.<n>` keys either way.
  *
  * A save is a DIFF against a freshly generated world, not a dump of one. The
  * terrain, the ground types and even the scatter of trees are all deterministic
@@ -79,7 +84,7 @@ export interface SlotInfo {
 
 export function writeSlot(slot: number, save: SaveGame): string | null {
   try {
-    localStorage.setItem(KEY(slot), JSON.stringify(save));
+    store.setItem(KEY(slot), JSON.stringify(save));
     return null;
   } catch (e) {
     // Quota is the realistic failure, and silently losing a save is the worst
@@ -89,12 +94,18 @@ export function writeSlot(slot: number, save: SaveGame): string | null {
 }
 
 export function readSlot(slot: number): SlotInfo {
-  const raw = localStorage.getItem(KEY(slot));
+  const raw = store.getItem(KEY(slot));
   if (!raw) return { slot, save: null };
   try {
     const save = JSON.parse(raw) as SaveGame;
     if (save.version !== SAVE_VERSION) {
       return { slot, save: null, error: `from an older build (v${save.version})` };
+    }
+    // A save missing its map is corrupt -- refuse it rather than let the menu
+    // crash reading its name. Cheap insurance now the data can live on a server
+    // where a stray edit or a half-finished write could produce exactly this.
+    if (!save.map || typeof save.map.name !== 'string') {
+      return { slot, save: null, error: 'unreadable' };
     }
     return { slot, save };
   } catch {
@@ -107,7 +118,7 @@ export function listSlots(): SlotInfo[] {
 }
 
 export function clearSlot(slot: number): void {
-  localStorage.removeItem(KEY(slot));
+  store.removeItem(KEY(slot));
 }
 
 /**

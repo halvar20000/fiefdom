@@ -32,13 +32,16 @@ Packaged as a container and an Unraid Community Applications template — see
 [docs/INSTALL.md](docs/INSTALL.md).
 
 ```bash
-docker run -d --name fiefdom -p 8080:80 ghcr.io/halvar20000/fiefdom:latest
+docker run -d --name fiefdom -p 8080:80 \
+  -v /mnt/user/appdata/fiefdom:/data \
+  ghcr.io/halvar20000/fiefdom:latest
 ```
 
-The image is only nginx serving `dist/`: the simulation, the pathfinding, the
-AI lord and the rendering all happen in the visitor's browser, so the server
-sits near zero CPU. No database, no API keys, no accounts, and **no volume** —
-there is nothing server-side to persist.
+The container is a small dependency-free Node server (`docker/server.mjs`)
+serving `dist/`: the simulation, the pathfinding, the AI lord and the rendering
+all happen in the visitor's browser, so the server sits near zero CPU. Its one
+server-side job is **storage** — saved games and custom maps are kept under
+`/data`, so map that to a host folder and they outlive every update.
 
 Two details that matter:
 
@@ -46,12 +49,15 @@ Two details that matter:
   atlas is ~1300 PNGs and wants aggressive caching, but if `index.html` is
   cached too, a browser goes on loading the previous build's fingerprinted
   script after the container is updated and the game silently stays on the old
-  version.
-* **Saves live in the visitor's browser**, not on the server. They do not
-  follow you between devices, and clearing site data deletes them. That is the
-  one thing about this container likely to surprise a self-hoster, so
-  INSTALL.md says it plainly. Server-side saves would need a save API, which
-  does not exist.
+  version. The server reproduces exactly the cache policy the old nginx config
+  carried, per-path.
+* **Saves and custom maps live on the server, in `/data`.** Map it to appdata
+  and they survive container updates and are the same in every browser. If the
+  volume is left unmapped the game still runs — it falls back to keeping saves
+  in the browser's `localStorage`, as it did before this server existed — but
+  then they are per-browser again and a container recreate can lose them, so map
+  the volume. On first run against a fresh `/data`, any saves a browser already
+  held are copied up automatically, so upgrading loses nothing.
 
 CI publishes amd64 **and** arm64 — plenty of home servers are ARM, and an
 x86-only image fails at install time with a message nobody can act on.

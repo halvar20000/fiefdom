@@ -2,6 +2,7 @@ import type { Terrain } from '../engine/terrain';
 import { GROUND_TYPES, type GroundType, isBuildable } from './worldgen';
 import type { GeneratedMap } from './worldgen';
 import type { MapDef } from './maps';
+import { store } from './backend';
 
 /**
  * Hand-drawn maps.
@@ -211,7 +212,7 @@ export function groundFromImage(
 
 export function listMaps(): CustomMap[] {
   try {
-    const raw = localStorage.getItem(KEY);
+    const raw = store.getItem(KEY);
     if (!raw) return [];
     const all = JSON.parse(raw) as CustomMap[];
     return Array.isArray(all) ? all.filter(m => m.version === CUSTOM_VERSION) : [];
@@ -225,7 +226,7 @@ export function saveMap(m: CustomMap): string | null {
   all.push(m);
   all.sort((a, b) => b.savedAt - a.savedAt);
   try {
-    localStorage.setItem(KEY, JSON.stringify(all));
+    store.setItem(KEY, JSON.stringify(all));
     return null;
   } catch (e) {
     return e instanceof Error ? e.message : 'could not save the map';
@@ -233,7 +234,7 @@ export function saveMap(m: CustomMap): string | null {
 }
 
 export function deleteMap(id: string): void {
-  localStorage.setItem(KEY, JSON.stringify(listMaps().filter(m => m.id !== id)));
+  store.setItem(KEY, JSON.stringify(listMaps().filter(m => m.id !== id)));
 }
 
 export function getMap(id: string): CustomMap | null {

@@ -1,7 +1,8 @@
-# Fiefdom is a pure client-side game: the browser does the simulation and the
-# rendering, so the container is nothing but a web server handing over static
-# files. No database, no API, no secrets -- which is why this is a great deal
-# shorter than most self-hosted app images.
+# Fiefdom is a client-side game: the browser does the simulation and the
+# rendering. The container serves the built files -- and now also keeps saved
+# games and custom maps in a /data volume, so they survive a container update
+# instead of living only in one browser's localStorage. That storage is the one
+# reason there is a small Node server here rather than plain nginx.
 
 # ---- build ----
 FROM node:20-alpine AS build
@@ -21,11 +22,17 @@ COPY public ./public
 RUN npm run build
 
 # ---- runtime ----
-FROM nginx:alpine
-# The sprite atlas is ~1300 PNGs. Serving them with sane cache headers is the
-# difference between a one-second load and a slow one on every single visit.
-COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
-COPY --from=build /app/dist /usr/share/nginx/html
+FROM node:20-alpine
+WORKDIR /app
+# Just the built site and the little dependency-free server. No node_modules --
+# server.mjs uses only Node built-ins, so there is nothing to install.
+COPY --from=build /app/dist ./dist
+COPY docker/server.mjs ./server.mjs
+# Saved games and custom maps land here. Map it to a host folder (Unraid
+# appdata) and it outlives every future container update.
+ENV DATA_DIR=/data
+VOLUME /data
 EXPOSE 80
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s \
   CMD wget -qO- http://localhost/ >/dev/null 2>&1 || exit 1
+CMD ["node", "server.mjs"]
