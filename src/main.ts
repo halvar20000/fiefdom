@@ -25,6 +25,7 @@ import { showMenu } from './ui/menu';
 import { showEditor } from './ui/editor';
 import { applyCustomMap, hashVariant, type CustomMap } from './game/custom';
 import { manableTiles } from './game/access';
+import { isTouchUi, lockPageGestures, makeTouchPad, attachPinch, type PadMode } from './ui/touch';
 import { showPause } from './ui/pause';
 import type { MapDef } from './game/maps';
 import { SAVE_VERSION, takeBootIntent, readSlot, type SaveGame } from './game/save';
@@ -1688,6 +1689,10 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
   let dragging = false, dragMoved = false, lastX = 0, lastY = 0;
   let mouseX = 0, mouseY = 0;
   const canvas = renderer.domElement;
+  // Whether the touch pad's command mode is on; replaced once the pad exists.
+  let touchCommand = (): boolean => false;
+  // Two fingers down means a pinch, not a pan; set by attachPinch below.
+  const pinching = () => (canvas as unknown as { pinching?: () => boolean }).pinching?.() ?? false;
 
   canvas.addEventListener('pointerdown', e => {
     // Left button only. pointerdown/pointerup fire for the RIGHT button too,
@@ -1747,8 +1752,14 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
       return;
     }
 
-    // plain click with nothing being built: pick a soldier
+    // plain click with nothing being built: pick a soldier -- unless the touch
+    // pad is in command mode, where a tap is the missing right-click and orders
+    // the selected troops instead of reselecting.
     if (!dragMoved && !placement.selected) {
+      if (touchCommand() && army.selected.length) {
+        issueOrderAt(e.clientX, e.clientY);
+        return;
+      }
       const w = pickWorld(e.clientX, e.clientY);
       if (!army.selectAt(w.x, w.z, e.shiftKey) && !e.shiftKey) army.clearSelection();
       return;
@@ -1794,7 +1805,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
       selBox.style.height = `${Math.abs(e.clientY - boxY)}px`;
       return;
     }
-    if (dragging) {
+    if (dragging && !pinching()) {
       if (Math.abs(e.clientX - lastX) + Math.abs(e.clientY - lastY) > 3) dragMoved = true;
       iso.panByPixels(-(e.clientX - lastX), (e.clientY - lastY));
       lastX = e.clientX; lastY = e.clientY;
@@ -1821,45 +1832,68 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
                  `${n === 1 ? '' : 's'} selected`, 'info');
   });
 
+  /**
+   * Order the selected troops to a screen point: post them on a wall if it is
+   * one they can reach, otherwise march them there. Returns true if it did
+   * something, so the caller knows whether to fall through.
+   *
+   * Extracted from the right-click handler so a touch "command" tap can issue
+   * exactly the same order without a right button to press.
+   */
+  function issueOrderAt(clientX: number, clientY: number): boolean {
+    if (placement.selected || !army.selected.length) return false;
+    const w = pickWorld(clientX, clientY);
+    const tx = Math.floor(w.x), tz = Math.floor(w.z);
+
+    const post = state.buildings.find(b => {
+      if (!canGarrison(b.name)) return false;
+      const [bw, bd] = b.def.footprint;
+      return tx >= b.x && tx < b.x + bw && tz >= b.z && tz < b.z + bd;
+    });
+    if (post) {
+      if (!manableTiles(state.buildings).has(`${post.x},${post.z}`)) {
+        state.notify('No stair to that wall — anchor it with a tower or gatehouse',
+                     'warn');
+        return true;
+      }
+      const [bw, bd] = post.def.footprint;
+      const n = army.orderGarrison(post.x, post.z,
+                                   post.x + bw / 2, post.z + bd / 2,
+                                   Math.max(bw, bd) * 0.3);
+      state.notify(n ? `${n} to the ${post.def.label.toLowerCase()}`
+                     : 'They cannot reach it', n ? 'info' : 'warn');
+      return true;
+    }
+
+    const n = army.orderMove(w.x, w.z);
+    if (!n) state.notify('They cannot reach there', 'warn');
+    return true;
+  }
+
   canvas.addEventListener('contextmenu', e => {
     e.preventDefault();
     // Right-click is a move order when troops are selected, and only falls back
     // to cancelling a placement when they are not.
-    if (!placement.selected && army.selected.length) {
-      const w = pickWorld(e.clientX, e.clientY);
-      const tx = Math.floor(w.x), tz = Math.floor(w.z);
-
-      // Right-clicking one of your own walls or towers posts them on it
-      // rather than walking them into it.
-      const post = state.buildings.find(b => {
-        if (!canGarrison(b.name)) return false;
-        const [bw, bd] = b.def.footprint;
-        return tx >= b.x && tx < b.x + bw && tz >= b.z && tz < b.z + bd;
-      });
-      if (post) {
-        // A wall needs a stair: it is man-able only if its walkway connects to
-        // a tower or gatehouse. Towers and gatehouses have stairs of their own
-        // and are always reachable.
-        if (!manableTiles(state.buildings).has(`${post.x},${post.z}`)) {
-          state.notify('No stair to that wall — anchor it with a tower or gatehouse',
-                       'warn');
-          return;
-        }
-        const [bw, bd] = post.def.footprint;
-        const n = army.orderGarrison(post.x, post.z,
-                                     post.x + bw / 2, post.z + bd / 2,
-                                     Math.max(bw, bd) * 0.3);
-        state.notify(n ? `${n} to the ${post.def.label.toLowerCase()}`
-                       : 'They cannot reach it', n ? 'info' : 'warn');
-        return;
-      }
-
-      const n = army.orderMove(w.x, w.z);
-      if (!n) state.notify('They cannot reach there', 'warn');
-      return;
-    }
-    placement.cancel();
+    if (!issueOrderAt(e.clientX, e.clientY)) placement.cancel();
   });
+
+  // --- touch: a thumb bar, pinch-zoom, and tap-to-order ---------------------
+  if (isTouchUi()) {
+    document.documentElement.classList.add('touch');
+    lockPageGestures();
+    const pad = makeTouchPad({
+      rotate: (d) => iso.rotateBy(d),
+      zoom: (d) => iso.zoomBy(d),
+      toggleBuild: () => hud.toggleBuild(),
+      pause: () => openPause(),
+      onMode: (m: PadMode) => {
+        // The map cursor tells you a tap will give an order, not a selection.
+        document.body.style.cursor = m === 'command' ? 'crosshair' : '';
+      },
+    });
+    touchCommand = () => pad.mode() === 'command';
+    attachPinch(canvas, { zoom: (d) => iso.zoomBy(d) });
+  }
 
   const keys = new Set<string>();
 

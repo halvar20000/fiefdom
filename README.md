@@ -917,6 +917,25 @@ silence.
 The regex location is placed **before** the PNG rule, because nginx takes the
 first matching regex, not the most specific one.
 
+## Touch controls
+
+On a phone or tablet a thumb bar appears along the bottom: rotate, zoom, build,
+menu, and a **Move** toggle. One finger drags the map and taps to select; two
+fingers pinch to zoom. The desktop game is a mouse and keyboard -- right-click
+to order, letters for everything -- and none of that exists on glass, so the
+bar supplies the actions that were keys and the Move toggle supplies the one
+that was the right button: with it on, a tap orders the selected troops (march,
+or man a wall) instead of reselecting.
+
+Every button routes through the same handler the mouse uses -- the order tap
+calls the exact function right-click does -- so touch and desktop can never
+become two different games. It appears only on a genuine coarse-pointer device
+or with `?touch=1`; a desktop with a mouse never sees it (`(pointer: coarse)`
+and not `(pointer: fine)`). `src/ui/touch.ts`.
+
+The feature-detect and the page-gesture lock follow the Dadud/fiefdom fork's
+touch.ts; the pad, the pinch handling and the tap-to-order wiring are ours.
+
 ## Walls need stairs
 
 A curtain wall has no way up. A stretch of wall can be manned only if its

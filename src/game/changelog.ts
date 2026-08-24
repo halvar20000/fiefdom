@@ -23,6 +23,21 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.12.0',
+    date: '2026-08-22',
+    headline: 'Playable on a phone or tablet.',
+    sections: [
+      {
+        title: 'Added',
+        items: [
+          'On a touch device a thumb bar appears with rotate, zoom, build and menu, and a Move toggle. One finger drags the map and taps to select; pinch to zoom.',
+          'With Move on, a tap orders the selected troops -- march or man a wall -- the touch stand-in for the mouse\u2019s right click.',
+          'It only shows on a real touch device (or with ?touch=1); a desktop with a mouse is untouched.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.11.0',
     date: '2026-08-22',
     headline: 'Walls need stairs to man them.',
