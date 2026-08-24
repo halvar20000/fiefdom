@@ -1567,6 +1567,33 @@ were on screen permanently; it starts open, because box select spent a while
 undiscovered behind a hidden hint, and collapses to reclaim 195px once the keys
 are in your fingers.
 
+### The same HUD on a phone: panels become sheets
+
+All of the above still assumes a screen wide enough to wear four panel columns
+at once. A phone is not. At 375px the stats box, the economy panel, the minimap
+and the build menu together left a letterbox of actual game — the map was the
+smallest thing on screen.
+
+So a phone (detected by its *smallest* viewport edge, not its width, so the
+choice survives being turned on its side — a tablet's short edge is still wider
+than any phone's) gets a different arrangement of the **same elements**. The
+positioned columns are emptied — their panels keep their ids and every handler,
+so only where they sit changes — into three bottom sheets: **Build**, **Info**
+(the summary box, the economy panel and the rations/taxes/sound controls,
+stacked and scrolled) and **Map**. One opens at a time, over a dimming scrim,
+raised by a thumb-bar button and dropped by the scrim or the sheet's grab
+handle. The only permanent chrome is a slim, swipeable resource strip along the
+top — led by population and popularity, the two numbers you watch constantly —
+and the thumb bar along the bottom.
+
+Two touches make it feel like a game rather than a form. Picking a building (or
+arming demolition) closes the build sheet on its own, because the very next
+thing you do is place it on the map the sheet was covering. And the thumb bar's
+buttons light to match the open sheet even when a sheet is closed by tapping the
+scrim, because the bar cannot assume its own taps are the only thing that moves
+that state. A tablet or desktop is wide enough for the columns and keeps them
+untouched; none of this code runs there.
+
 ## Rival lords, and why they must not all march on you
 
 A map now carries 0-3 rival lords. `Side` stopped being `'player' | 'enemy'`

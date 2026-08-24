@@ -395,6 +395,87 @@ const CSS = `
   background: rgba(24,19,12,.93); border: 1px solid var(--edge);
   transform: translate(-50%, -160%); display: none; white-space: nowrap; }
 #ghost.bad { color: var(--warn); border-color: rgba(226,121,79,.5); }
+
+/* ---- Phone layout: canvas first, everything else on demand --------------
+   A phone is too narrow to wear the desktop's four always-open panel columns
+   at once; together they leave a letterbox of actual game. So on a phone the
+   columns are emptied into bottom sheets that open ONE AT A TIME over a dimming
+   scrim, and the only permanent chrome is a slim resource ticker at the top and
+   the thumb bar at the bottom. Which device is a "phone" is decided in main.ts
+   by the SMALLEST viewport edge, not the width, so a handset stays in this mode
+   when it is turned on its side (a tablet's short edge is still wider than any
+   phone's long one). */
+
+/* The positioned columns are emptied by enablePhoneLayout(); hide the shells. */
+html.phone #leftcol, html.phone #rightcol { display: none; }
+
+/* Resources become a one-line ticker pinned to the top, swipeable when the
+   goods outrun the width. Population and popularity are prepended in code. */
+html.phone #topbar {
+  top: 0; left: 0; right: 0;
+  border-radius: 0; border-width: 0 0 1px 0;
+  flex-wrap: nowrap; justify-content: flex-start; gap: 0;
+  overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding: calc(4px + env(safe-area-inset-top)) 8px 4px;
+}
+html.phone #topbar::-webkit-scrollbar { display: none; }
+html.phone #topbar .res { flex: 0 0 auto; padding: 0 7px; gap: 4px; }
+/* Population and popularity lead the ticker, marked off from the goods. */
+html.phone #topbar .res.stat .n { color: var(--ink); }
+html.phone #topbar .res.stat + .res { border-left-color: rgba(196,162,96,.4); }
+
+/* The scrim dims the game behind an open sheet and closes it when tapped. */
+#scrim { position: fixed; inset: 0; z-index: 38; background: rgba(0,0,0,.45);
+  opacity: 0; pointer-events: none; transition: opacity .2s; }
+#scrim.open { opacity: 1; pointer-events: auto; }
+
+/* A sheet rises from the bottom, above the scrim but below the thumb bar so the
+   bar stays live to switch sheets or the scrim to dismiss. */
+html.phone .sheet {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
+  display: flex; flex-direction: column; max-height: 70vh;
+  background: rgba(20,16,10,.985); border-top: 1px solid var(--edge);
+  border-radius: 16px 16px 0 0; box-shadow: 0 -8px 30px rgba(0,0,0,.55);
+  transform: translateY(106%); transition: transform .24s ease;
+  pointer-events: auto;
+}
+html.phone .sheet.open { transform: translateY(0); }
+html.phone .sheet .grab { flex: 0 0 auto; align-self: center; width: 42px; height: 4px;
+  margin: 9px 0 5px; border-radius: 3px; background: rgba(196,162,96,.55); }
+html.phone .sheet .sheet-body {
+  overflow-y: auto; -webkit-overflow-scrolling: touch;
+  padding: 2px 10px calc(74px + env(safe-area-inset-bottom));  /* clear the bar */
+  display: flex; flex-direction: column; gap: 10px; align-items: stretch;
+}
+
+/* Panels drop their fixed widths and fill the sheet. */
+html.phone .sheet #stats,
+html.phone .sheet #controls,
+html.phone .sheet #rightpanel,
+html.phone .sheet #buildwrap,
+html.phone .sheet #buildbar,
+html.phone .sheet #buildmenu,
+html.phone .sheet #market {
+  position: static; width: auto; max-width: none; min-width: 0; margin: 0;
+  flex: 0 0 auto; max-height: none;
+}
+html.phone .sheet #buildwrap { gap: 8px; }
+html.phone .sheet #buildbar { grid-template-columns: repeat(3, 1fr); }
+html.phone .sheet #buildmenu .items { grid-template-columns: repeat(3, 1fr); }
+html.phone .sheet #buildmenu button canvas { width: 100%; height: 40px; }
+/* The panel's own close button is redundant once the whole sheet closes. */
+html.phone .sheet #rightpanel .head button { display: none; }
+html.phone .sheet #rightpanel select { flex: 1; }
+html.phone .sheet #minimap { padding: 4px; }
+html.phone .sheet #minimap canvas { width: min(92vw, 56vh); }
+
+/* The thumb bar floats above scrim and sheets so it can always switch them. */
+html.phone #pad { z-index: 44; }
+/* Nothing needs the touch layout's up-shifted UI once panels are sheets. The
+   extra class outweighs the touch rule that lifts #ui by 64px, which is injected
+   later (from touch.ts) and would otherwise win the specificity tie. */
+html.phone.touch #ui { bottom: 0; }
 `;
 
 export class Hud {
@@ -426,6 +507,8 @@ export class Hud {
   private demolishBtn!: HTMLButtonElement;
   /** Fires when the tool is armed or disarmed, so the cursor can follow. */
   onDemolishChange: (on: boolean) => void = () => {};
+  /** Fires when a phone sheet opens or closes, so the thumb bar can light up. */
+  onDrawerChange: (name: 'build' | 'info' | 'map' | null) => void = () => {};
   /** Refreshes the sound buttons once main.ts has attached the engine. */
   syncSound: () => void = () => {};
   private controls!: HTMLElement;
@@ -438,6 +521,14 @@ export class Hud {
   private rightCol!: HTMLElement;
   private notices!: HTMLElement;
   private ghost!: HTMLElement;
+  /** The build bar + menu wrapper, so the phone layout can lift it into a sheet. */
+  private buildWrap!: HTMLElement;
+  /** Phone mode: columns become on-demand bottom sheets. Off on desktop/tablet. */
+  private phone = false;
+  /** Which bottom sheet is open on a phone, or null for none (canvas only). */
+  private drawer: 'build' | 'info' | 'map' | null = null;
+  private sheets: Record<string, HTMLElement> = {};
+  private scrim!: HTMLElement;
 
   onSelect: (name: string | null) => void = () => {};
   /** Try to recruit. Returns 'ok', or the reason it could not. */
@@ -500,6 +591,7 @@ export class Hud {
 
   private buildBuildPanel(): void {
     const wrap = this.el('div', this.leftCol, '', 'buildwrap');
+    this.buildWrap = wrap;
     this.buildPanel = this.el('div', wrap, 'panel hidden', 'buildmenu');
     this.buildBar = this.el('div', wrap, 'panel', 'buildbar');
 
@@ -527,6 +619,9 @@ export class Hud {
           if (this.demolishing) this.setDemolish(false);
           this.placement.select(name);
           this.onSelect(this.placement.selected);
+          // On a phone the menu is a sheet over the map; once a building is in
+          // hand, get it out of the way so the map is there to place it on.
+          if (this.phone) this.openDrawer(null);
         };
         items.appendChild(b);
       }
@@ -560,6 +655,9 @@ export class Hud {
     this.demolishBtn.classList.toggle('on', on);
     document.body.style.cursor = on ? 'crosshair' : '';
     this.onDemolishChange(on);
+    // Same as picking a building: with the tool armed, the phone sheet has done
+    // its job and should uncover the map it acts on.
+    if (on && this.phone) this.openDrawer(null);
   }
 
   /**
@@ -672,6 +770,76 @@ export class Hud {
 
   toggleMinimap(): void {
     this.mini.classList.toggle('hidden');
+  }
+
+  /**
+   * Switch the HUD into phone mode: lift the panel columns into bottom sheets.
+   *
+   * Called once, from main.ts, only for a handset. The panels keep their own
+   * ids (all their styling is by id, not by column ancestry) so moving them out
+   * of the columns changes where they sit and nothing about how they look or
+   * behave -- every reference the per-frame update holds is still the same node.
+   * Three sheets: BUILD (the build bar and menu), INFO (the summary box, the
+   * economy panel and the rations/taxes/sound controls, stacked and scrolled),
+   * and MAP (the minimap). One opens at a time over a scrim.
+   */
+  enablePhoneLayout(): void {
+    this.phone = true;
+    document.documentElement.classList.add('phone');
+
+    this.scrim = document.createElement('div');
+    this.scrim.id = 'scrim';
+    this.scrim.onclick = () => this.openDrawer(null);
+    this.root.appendChild(this.scrim);
+
+    const sheet = (id: string, panels: HTMLElement[]): HTMLElement => {
+      const s = document.createElement('div');
+      s.id = id;
+      s.className = 'sheet';
+      const grab = document.createElement('div');
+      grab.className = 'grab';
+      // The handle is a second, obvious way to close, next to the scrim tap.
+      grab.onclick = () => this.openDrawer(null);
+      s.appendChild(grab);
+      const body = document.createElement('div');
+      body.className = 'sheet-body';
+      for (const p of panels) body.appendChild(p);   // moves them out of the columns
+      s.appendChild(body);
+      this.root.appendChild(s);
+      return s;
+    };
+
+    // The economy panel starts life hidden behind a keypress; in a sheet it is
+    // the whole point of opening it, so let it always show.
+    this.rightPanel.classList.remove('hidden');
+    this.sheets = {
+      build: sheet('sheet-build', [this.buildWrap]),
+      info: sheet('sheet-info', [this.stats, this.rightPanel, this.controls]),
+      map: sheet('sheet-map', [this.mini]),
+    };
+  }
+
+  /**
+   * Open one bottom sheet, or close all (pass null, or the one already open).
+   *
+   * A no-op off a phone, so callers -- the thumb-bar buttons -- need no guard.
+   */
+  openDrawer(name: 'build' | 'info' | 'map' | null): void {
+    if (!this.phone) return;
+    this.drawer = this.drawer === name ? null : name;
+    for (const [k, el] of Object.entries(this.sheets)) {
+      el.classList.toggle('open', k === this.drawer);
+    }
+    this.scrim.classList.toggle('open', this.drawer !== null);
+    // The minimap hides itself with a class the desktop uses; make sure opening
+    // its sheet actually shows it.
+    if (this.drawer === 'map') this.mini.classList.remove('hidden');
+    this.onDrawerChange(this.drawer);
+  }
+
+  /** Which sheet is open, for the thumb bar to light its buttons. Null off a phone. */
+  openDrawerName(): 'build' | 'info' | 'map' | null {
+    return this.phone ? this.drawer : null;
   }
 
   /** Show one category, or none. Pass the index already open to close it. */
@@ -1145,7 +1313,16 @@ export class Hud {
       'gold', 'wood', 'stone', 'iron', 'pitch', 'wheat', 'flour',
       'bread', 'cheese', 'apples', 'meat', 'fish', 'hops', 'ale', 'pigs',
     ];
-    this.topbar.innerHTML = shown.map(r => {
+    // On a phone the summary box is a sheet, so the two numbers you watch
+    // constantly -- how many people, how well liked -- lead the ticker where the
+    // eye can keep them without opening anything.
+    const lead = this.phone
+      ? `<div class="res stat" title="Population">` +
+          `<span class="n">${s.population}</span><span class="k">Pop</span></div>` +
+        `<div class="res stat" title="Popularity">` +
+          `<span class="n">${Math.round(s.popularity)}</span><span class="k">Liked</span></div>`
+      : '';
+    this.topbar.innerHTML = lead + shown.map(r => {
       const n = r === 'gold' ? Math.floor(s.gold) : s.stock[r as Resource];
       const label = r === 'gold' ? 'Gold' : RESOURCE_LABELS[r as Resource];
       return `<div class="res" title="${label}">` +

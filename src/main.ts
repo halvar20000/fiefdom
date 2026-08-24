@@ -25,7 +25,7 @@ import { showMenu } from './ui/menu';
 import { showEditor } from './ui/editor';
 import { applyCustomMap, hashVariant, type CustomMap } from './game/custom';
 import { manableTiles } from './game/access';
-import { isTouchUi, lockPageGestures, makeTouchPad, attachPinch, type PadMode } from './ui/touch';
+import { isTouchUi, isPhoneUi, lockPageGestures, makeTouchPad, attachPinch, type PadMode } from './ui/touch';
 import { showPause } from './ui/pause';
 import type { MapDef } from './game/maps';
 import { SAVE_VERSION, takeBootIntent, readSlot, type SaveGame } from './game/save';
@@ -1886,16 +1886,24 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
   if (isTouchUi()) {
     document.documentElement.classList.add('touch');
     lockPageGestures();
+    // A phone is too narrow for the always-on panels; fold them into on-demand
+    // bottom sheets and give the thumb bar the buttons that open them. A tablet
+    // keeps the desktop panels and the original bar.
+    const phone = isPhoneUi();
+    if (phone) hud.enablePhoneLayout();
     const pad = makeTouchPad({
       rotate: (d) => iso.rotateBy(d),
       zoom: (d) => iso.zoomBy(d),
-      toggleBuild: () => hud.toggleBuild(),
+      toggleBuild: () => phone ? hud.openDrawer('build') : hud.toggleBuild(),
+      openMap: () => hud.openDrawer('map'),
+      openInfo: () => hud.openDrawer('info'),
       pause: () => openPause(),
       onMode: (m: PadMode) => {
         // The map cursor tells you a tap will give an order, not a selection.
         document.body.style.cursor = m === 'command' ? 'crosshair' : '';
       },
-    });
+    }, phone);
+    hud.onDrawerChange = (name) => pad.syncDrawer(name);
     touchCommand = () => pad.mode() === 'command';
     attachPinch(canvas, { zoom: (d) => iso.zoomBy(d) });
   }

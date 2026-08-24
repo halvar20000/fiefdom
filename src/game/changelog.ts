@@ -23,6 +23,28 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.16.0',
+    date: '2026-08-24',
+    headline: 'A phone shows the game, not the menus.',
+    sections: [
+      {
+        title: 'Changed',
+        items: [
+          'On a phone the four panel columns no longer sit on top of the map at once. The map now fills the screen; the only permanent chrome is a slim resource strip along the top and the thumb bar along the bottom.',
+          'The thumb bar gained Map, Info and Build buttons. Each opens one panel as a sheet that slides up over the map and closes again with a tap on the handle or the dimmed background — one at a time, so the game is always right there behind it.',
+          'Picking a building, or arming the wrecking tool, closes the build sheet on its own, so the map you are about to place on is uncovered the moment you need it.',
+          'Population and how well you are liked lead the top strip, since those are the two numbers you watch without wanting to open anything.',
+        ],
+      },
+      {
+        title: 'Unchanged',
+        items: [
+          'Tablets and desktops keep the always-open panels — there is room for them, and nothing about that layout moved.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.15.0',
     date: '2026-08-24',
     headline: 'A warmer, greener, more varied land.',

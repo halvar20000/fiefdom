@@ -27,6 +27,20 @@ export function isTouchUi(): boolean {
     && !window.matchMedia('(pointer: fine)').matches;
 }
 
+/**
+ * Is this a phone, as opposed to a tablet or a desktop?
+ *
+ * Measured by the SMALLEST viewport edge, not the width: a handset's short side
+ * is ~400px and a tablet's is ~760px whichever way either is held, so this stays
+ * true when a phone is turned on its side where a width test would flip to the
+ * desktop layout mid-game. Gated on touch so `?touch=1` on a small desktop
+ * window still exercises it. The threshold sits comfortably between the two.
+ */
+export function isPhoneUi(): boolean {
+  if (!isTouchUi()) return false;
+  return Math.min(window.innerWidth, window.innerHeight) <= 560;
+}
+
 /** Stop the page itself scrolling, bouncing or pinch-zooming under the game. */
 export function lockPageGestures(): void {
   const html = document.documentElement;
@@ -51,6 +65,10 @@ export interface PadHooks {
   pause(): void;
   /** Told when the mode flips, so the map cursor can reflect it. */
   onMode(mode: PadMode): void;
+  /** Phone only: open the map sheet. */
+  openMap?(): void;
+  /** Phone only: open the info sheet (summary, economy, rule). */
+  openInfo?(): void;
 }
 
 const CSS = `
@@ -72,14 +90,27 @@ html.touch #pad { display: flex; }
 html.touch #build button, html.touch #buildbar button,
 html.touch #buildmenu button, html.touch #controls button { min-height: 34px; }
 html.touch #ui { bottom: 64px; }
+/* Phone: seven buttons share the width equally rather than each claiming a
+   minimum, so the bar never overflows a narrow screen. */
+html.phone #pad { gap: 5px; padding-left: 6px; padding-right: 6px; }
+html.phone #pad button { min-width: 0; flex: 1 1 0; padding: 0 2px; font-size: 12px; }
+html.phone #pad button.grow { flex: 1.3 1 0; }
 `;
 
 /**
- * Build the thumb bar. Returns the current mode getter and a setter, so the
- * canvas handler can ask "are we commanding?" on each tap.
+ * Build the thumb bar. Returns the mode getter/setter and a `syncDrawer` the
+ * HUD calls so the bar's Map/Info/Build buttons light to match whichever sheet
+ * is open -- because a sheet can also be closed by tapping the scrim, the bar
+ * cannot assume its own taps are the only thing that moves that state.
+ *
+ * `phone` swaps the layout. A tablet keeps the original bar beside its always-on
+ * panels; a phone, whose panels are now sheets, gets buttons that open them and
+ * drops the zoom pair (a pinch does that job and the width is needed).
  */
-export function makeTouchPad(hooks: PadHooks): {
-  mode: () => PadMode; setMode: (m: PadMode) => void;
+export function makeTouchPad(hooks: PadHooks, phone = false): {
+  mode: () => PadMode;
+  setMode: (m: PadMode) => void;
+  syncDrawer: (name: 'build' | 'info' | 'map' | null) => void;
 } {
   const style = document.createElement('style');
   style.textContent = CSS;
@@ -101,15 +132,28 @@ export function makeTouchPad(hooks: PadHooks): {
     return b;
   };
 
-  btn('↺', () => hooks.rotate(-1));       // rotate left
-  btn('↻', () => hooks.rotate(1));         // rotate right
-  btn('−', () => hooks.zoom(-1));          // zoom out
-  btn('+', () => hooks.zoom(1));                // zoom in
+  let cmd: HTMLButtonElement;
+  let mapBtn: HTMLButtonElement | null = null;
+  let infoBtn: HTMLButtonElement | null = null;
+  let buildBtn: HTMLButtonElement;
 
-  const cmd = btn('Move', () => setMode(mode === 'command' ? 'select' : 'command'), 'grow');
-
-  btn('Build', () => hooks.toggleBuild());
-  btn('☰', () => hooks.pause());           // menu
+  if (phone) {
+    btn('↺', () => hooks.rotate(-1));
+    btn('↻', () => hooks.rotate(1));
+    mapBtn = btn('Map', () => hooks.openMap?.());
+    infoBtn = btn('Info', () => hooks.openInfo?.());
+    cmd = btn('Move', () => setMode(mode === 'command' ? 'select' : 'command'), 'grow');
+    buildBtn = btn('Build', () => hooks.toggleBuild());
+    btn('☰', () => hooks.pause());
+  } else {
+    btn('↺', () => hooks.rotate(-1));       // rotate left
+    btn('↻', () => hooks.rotate(1));         // rotate right
+    btn('−', () => hooks.zoom(-1));          // zoom out
+    btn('+', () => hooks.zoom(1));                // zoom in
+    cmd = btn('Move', () => setMode(mode === 'command' ? 'select' : 'command'), 'grow');
+    buildBtn = btn('Build', () => hooks.toggleBuild());
+    btn('☰', () => hooks.pause());           // menu
+  }
 
   function setMode(m: PadMode) {
     mode = m;
@@ -118,8 +162,14 @@ export function makeTouchPad(hooks: PadHooks): {
     hooks.onMode(m);
   }
 
+  function syncDrawer(name: 'build' | 'info' | 'map' | null) {
+    mapBtn?.classList.toggle('on', name === 'map');
+    infoBtn?.classList.toggle('on', name === 'info');
+    buildBtn.classList.toggle('on', name === 'build');
+  }
+
   document.body.appendChild(pad);
-  return { mode: () => mode, setMode };
+  return { mode: () => mode, setMode, syncDrawer };
 }
 
 export interface PinchHooks {
