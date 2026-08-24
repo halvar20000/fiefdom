@@ -23,6 +23,27 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.15.0',
+    date: '2026-08-24',
+    headline: 'A warmer, greener, more varied land.',
+    sections: [
+      {
+        title: 'Added',
+        items: [
+          'Oak trees — tall, round-canopied broadleaves that mix in with the palms so a landscape is no longer a field of identical trees. They favour the lush green ground, the way real woodland does, so where the land is richest the trees look it.',
+        ],
+      },
+      {
+        title: 'Changed',
+        items: [
+          'Town buildings are brighter. Their plaster was a dull tan that swallowed the timber framing; it is now a cream white, so the dark beams and roofs stand out and a street reads as buildings rather than a brown mass.',
+          'The whole world is lit warmer. The sun carries a touch more gold and the ambient sky is warmer too, so stone, thatch and skin all sit under one sunlit key instead of the flat, cool light from before. Every sprite in the game — ground, buildings, people, animals, siege engines — was re-rendered under it so nothing looks lit from a different day.',
+          'Trees are scattered with more variety: oak and olive lead on green ground, palms hold the drier edges, and bushes fill between, so no two stretches of country look stamped from the same mould.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.14.0',
     date: '2026-08-22',
     headline: 'Greener ground.',

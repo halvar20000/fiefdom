@@ -159,6 +159,20 @@ The look does not come from the models. It comes from **one shared Blender
 lighting rig** that every asset is rendered through, so all the sprites sit
 together as if photographed in the same place at the same hour.
 
+### Tuning that one hour of light
+
+Because the light lives in a single rig, the whole game's mood is a few numbers
+in `rig.py`. The 1.15 pass warmed them — a more golden `SUN_COLOR` and a warmer
+`SKY_COLOR` ambient — and that is why every sprite had to be re-rendered at once:
+a sprite lit under the old cool key sitting beside a warm one looks like it was
+cut from a different photograph, which is the exact failure the shared rig exists
+to prevent. The other half of the pass was contrast within that light — grass
+pulled from dry olive to a saturated green (1.14), building plaster lifted from a
+dull tan to cream white so the dark timber framing reads, and a second tree, the
+oak, added to `props.py` so the land is not one repeated silhouette. The rule
+holds: a look change is a rig or material change plus a full re-render, never a
+per-sprite touch-up.
+
 ## Layout
 
 ```
@@ -167,7 +181,7 @@ tools/render/      the Blender pipeline (this is the important part)
   materials.py     procedural stone/timber/thatch/ground. No image textures.
   geom.py          mesh primitives built at true size
   buildings.py     parametric buildings
-  props.py         palms, scrub, deadwood
+  props.py         palms, oak, scrub, deadwood
   render_*.py      drivers: buildings, ground tiles, animated units
 src/engine/        iso projection, camera, terrain mesh, sprite batching, loaders
 src/game/          map generation

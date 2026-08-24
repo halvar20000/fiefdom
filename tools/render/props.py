@@ -22,12 +22,27 @@ def frond_material(name="Frond"):
     pos = M._pos(nt, 1.0)
     n = M._noise(nt, pos, scale=12.0, detail=7.0, roughness=0.6)
     ramp = M._ramp(nt, [
-        (0.24, (0.16, 0.24, 0.07, 1.0)),
-        (0.55, (0.30, 0.40, 0.12, 1.0)),
-        (0.86, (0.46, 0.54, 0.20, 1.0)),
+        (0.24, (0.12, 0.24, 0.07, 1.0)),
+        (0.55, (0.22, 0.40, 0.12, 1.0)),
+        (0.86, (0.36, 0.55, 0.19, 1.0)),
     ], n.outputs["Fac"])
     nt.links.new(ramp.outputs["Color"], bsdf.inputs["Base Color"])
     M._set(bsdf, "Roughness", 0.82)
+    return mat
+
+
+def oak_leaf_material(name="OakLeaf"):
+    """A fuller, richer green than the desert fronds -- for temperate maps."""
+    mat, nt, bsdf = M._new(name)
+    pos = M._pos(nt, 1.0)
+    n = M._noise(nt, pos, scale=10.0, detail=8.0, roughness=0.62, distortion=1.2)
+    ramp = M._ramp(nt, [
+        (0.20, (0.08, 0.20, 0.07, 1.0)),
+        (0.52, (0.15, 0.34, 0.12, 1.0)),
+        (0.84, (0.26, 0.48, 0.18, 1.0)),
+    ], n.outputs["Fac"])
+    nt.links.new(ramp.outputs["Color"], bsdf.inputs["Base Color"])
+    M._set(bsdf, "Roughness", 0.80)
     return mat
 
 
@@ -357,8 +372,26 @@ def _pitch_fire(variant):
     return geom.join(parts, f"pitch_fire_{variant}"), (1, 1)
 
 
+def oak():
+    """A full broad-leaf tree for green maps -- taller and rounder than the olive."""
+    bark = bark_material()
+    leaf = oak_leaf_material()
+    parts = []
+    parts.append(tapered_trunk("oak_trunk", (0.5, 0.5, 0.0), 1.05, 0.14, 0.08,
+                               bark, lean=(0.02, 0.02), bow=0.12))
+    # a rounded, layered canopy
+    canopy = [(0.50, 0.50, 1.42, 0.52),
+              (0.30, 0.42, 1.24, 0.34), (0.70, 0.58, 1.26, 0.36),
+              (0.44, 0.70, 1.20, 0.32), (0.60, 0.32, 1.18, 0.30),
+              (0.50, 0.50, 1.70, 0.34)]
+    for i, (bx, by, bz, r) in enumerate(canopy):
+        parts.append(blob(f"oak_canopy_{i}", (bx, by, bz), r, leaf, squash=0.72))
+    return geom.join(parts, "oak"), (1, 1)
+
+
 REGISTRY = {
     "campfire": campfire,
+    "oak": oak,
     "palm": palm,
     "bush": scrub_bush,
     "dead_tree": dead_tree,

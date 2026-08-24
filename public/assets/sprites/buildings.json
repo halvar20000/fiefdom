@@ -1508,6 +1508,58 @@
     "scale": 2
   },
   {
+    "name": "granary",
+    "rotation": 0,
+    "width": 234,
+    "height": 178,
+    "anchor_x": 40.32,
+    "anchor_y": 121.84,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
+    "name": "granary",
+    "rotation": 1,
+    "width": 268,
+    "height": 178,
+    "anchor_x": 105.19,
+    "anchor_y": 77.52,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
+    "name": "granary",
+    "rotation": 2,
+    "width": 234,
+    "height": 210,
+    "anchor_x": 193.68,
+    "anchor_y": 125.28,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
+    "name": "granary",
+    "rotation": 3,
+    "width": 268,
+    "height": 192,
+    "anchor_x": 162.81,
+    "anchor_y": 169.02,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
     "name": "granary_bin",
     "rotation": 0,
     "width": 80,
@@ -1972,6 +2024,58 @@
     "footprint": [
       3,
       3
+    ],
+    "scale": 2
+  },
+  {
+    "name": "oak",
+    "rotation": 0,
+    "width": 114,
+    "height": 122,
+    "anchor_x": 41.88,
+    "anchor_y": 98.96,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "oak",
+    "rotation": 1,
+    "width": 152,
+    "height": 122,
+    "anchor_x": 40.6,
+    "anchor_y": 82.96,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "oak",
+    "rotation": 2,
+    "width": 114,
+    "height": 158,
+    "anchor_x": 72.12,
+    "anchor_y": 99.41,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "oak",
+    "rotation": 3,
+    "width": 152,
+    "height": 140,
+    "anchor_x": 111.4,
+    "anchor_y": 115.67,
+    "footprint": [
+      1,
+      1
     ],
     "scale": 2
   },
@@ -4052,6 +4156,58 @@
     "footprint": [
       2,
       2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "stockpile",
+    "rotation": 0,
+    "width": 212,
+    "height": 126,
+    "anchor_x": 13.89,
+    "anchor_y": 71.62,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
+    "name": "stockpile",
+    "rotation": 1,
+    "width": 222,
+    "height": 126,
+    "anchor_x": 102.92,
+    "anchor_y": 23.62,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
+    "name": "stockpile",
+    "rotation": 2,
+    "width": 212,
+    "height": 134,
+    "anchor_x": 198.11,
+    "anchor_y": 71.58,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
+    "name": "stockpile",
+    "rotation": 3,
+    "width": 222,
+    "height": 130,
+    "anchor_x": 119.08,
+    "anchor_y": 119.68,
+    "footprint": [
+      3,
+      3
     ],
     "scale": 2
   },

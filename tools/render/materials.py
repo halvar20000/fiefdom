@@ -300,16 +300,23 @@ def thatch(name="Thatch"):
     return mat
 
 
-def plaster(name="Plaster", tint=(0.82, 0.76, 0.63)):
-    """Daub / rendered walls on the smaller town buildings."""
+def plaster(name="Plaster", tint=(0.90, 0.87, 0.79)):
+    """
+    Daub / rendered walls on the smaller town buildings.
+
+    Brightened toward a cream white so the timber framing and beams read as
+    dark against it -- the half-timbered contrast of the reference, where the
+    old tan-on-brown left walls and beams at nearly the same value. Callers
+    that pass their own tint (a coloured kerb, say) are unaffected.
+    """
     mat, nt, bsdf = _new(name)
     pos = _pos(nt, 1.0)
     n = _noise(nt, pos, scale=5.0, detail=8.0, roughness=0.6)
     r, g, b = tint
     ramp = _ramp(nt, [
-        (0.28, (r * 0.70, g * 0.70, b * 0.70, 1.0)),
+        (0.28, (r * 0.78, g * 0.78, b * 0.78, 1.0)),
         (0.62, (r, g, b, 1.0)),
-        (1.00, (min(r * 1.14, 1.0), min(g * 1.14, 1.0), min(b * 1.14, 1.0), 1.0)),
+        (1.00, (min(r * 1.10, 1.0), min(g * 1.10, 1.0), min(b * 1.10, 1.0), 1.0)),
     ], n.outputs["Fac"])
     nt.links.new(ramp.outputs["Color"], bsdf.inputs["Base Color"])
     _set(bsdf, "Roughness", 0.90)

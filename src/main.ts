@@ -283,7 +283,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
   const GRASS = GROUND_TYPES.indexOf('grass');
   const DARK = GROUND_TYPES.indexOf('grass_dark');
   const ROCK = GROUND_TYPES.indexOf('rock');
-  const TREES = new Set(['palm', 'olive_tree', 'dead_tree']);
+  const TREES = new Set(['palm', 'olive_tree', 'oak', 'dead_tree']);
 
   /**
    * Gazelle on the open land.
@@ -447,13 +447,18 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
     // editor's "Few" setting still read as a forest. 18% and 12% leave ground
     // showing between the trunks, which is what a Crusader map looks like.
     const T = chosen.trees;
+    // Lush ground leans to leafy oaks and olives, with a few palms for
+    // desert character; open grass is sparser and mixed. The greener foliage
+    // now matches the greener turf rather than dotting it with olive.
     if (g === DARK) {
-      if (r < 0.085 * T) name = 'palm';
-      else if (r < 0.130 * T) name = 'olive_tree';
-      else if (r < 0.180 * T) name = 'bush';
+      if (r < 0.055 * T) name = 'oak';
+      else if (r < 0.100 * T) name = 'olive_tree';
+      else if (r < 0.130 * T) name = 'palm';
+      else if (r < 0.185 * T) name = 'bush';
     } else if (g === GRASS) {
-      if (r < 0.042 * T) name = 'palm';
-      else if (r < 0.080 * T) name = 'olive_tree';
+      if (r < 0.032 * T) name = 'oak';
+      else if (r < 0.060 * T) name = 'olive_tree';
+      else if (r < 0.085 * T) name = 'palm';
       else if (r < 0.120 * T) name = 'bush';
     } else if (g === SCRUB) {
       if (r < 0.032 * T) name = 'bush';

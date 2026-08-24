@@ -43,10 +43,10 @@ PIXELS_PER_UNIT = (TILE_PX_W / math.sqrt(2.0)) * SPRITE_RENDER_SCALE  # 45.25
 SUN_ELEVATION_DEG = 48.0
 SUN_GROUND_DIR = (1.0, -0.35)   # (x, z) before elevation is applied
 SUN_STRENGTH = 3.6
-SUN_COLOR = (1.0, 0.945, 0.86)  # warm midday
+SUN_COLOR = (1.0, 0.935, 0.82)  # warmer midday (visual pass 1.15)
 SUN_SOFTNESS_DEG = 4.5          # softer disc; 2.4 gave hard black crenellation shadows
 
-SKY_COLOR = (0.54, 0.55, 0.58)  # near-neutral. A saturated blue sky greys the sandstone.
+SKY_COLOR = (0.58, 0.555, 0.52)  # warm-neutral fill: cool sky greyed the shadows blue
 SKY_STRENGTH = 0.52
 
 # Fill matters more here than it would in a normal render. Every building is
