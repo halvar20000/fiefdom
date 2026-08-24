@@ -1170,6 +1170,8 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
   // --- rendering helpers --------------------------------------------------
   const atlasPpu = (TILE_PX_W / Math.SQRT2) * atlas.scale;
   const clipFrames = (clip: string) => atlas.clips[clip]?.frames ?? 1;
+  /** Must match DEATH_TIME in army.ts -- the death clip's play length. */
+  const DEATH_SECONDS = 1.1;
 
   let builtRotation = -1;
   let staticDirty = true;
@@ -2419,14 +2421,26 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
       addFigure(w.x, w.z, w.heading, workers.clipFor(w), w.phase);
     }
     for (const sd of army.soldiers) {
-      const act = sd.swing > 0 ? 'attack' : sd.moving ? 'walk' : 'idle';
-      const clip = `${sd.type}_${act}`;
       const dir = (unitDirectionIndex(sd.heading, rot) + DIRECTION_OFFSET) & 7;
-      const n = clipFrames(clip);
-      const f = Math.floor(sd.phase * WALK_FPS) % n;
-      const key = atlas.frames[`${clip}_${dir}_${f}`] ? `${clip}_${dir}_${f}`
+      let key: string;
+      if (sd.hp <= 0) {
+        // Dying: play the shared death clip once, front to back, mapping the
+        // time left onto the frames rather than looping. The clip is the bare
+        // peasant body -- soldiers are that body anyway -- so a red cast is
+        // all that says whose man just fell.
+        const dn = clipFrames('death');
+        const prog = 1 - Math.max(0, sd.dying) / DEATH_SECONDS;
+        const f = Math.min(dn - 1, Math.floor(prog * dn));
+        key = atlas.frames[`death_${dir}_${f}`] ? `death_${dir}_${f}` : `idle_${dir}_0`;
+      } else {
+        const act = sd.swing > 0 ? 'attack' : sd.moving ? 'walk' : 'idle';
+        const clip = `${sd.type}_${act}`;
+        const n = clipFrames(clip);
+        const f = Math.floor(sd.phase * WALK_FPS) % n;
+        key = atlas.frames[`${clip}_${dir}_${f}`] ? `${clip}_${dir}_${f}`
                 : atlas.frames[`${sd.type}_idle_${dir}_0`] ? `${sd.type}_idle_${dir}_0`
                 : `idle_${dir}_0`;
+      }
       if (!atlas.frames[key]) continue;
       // A posted man stands on the walkway, not in the masonry. The extra bias
       // puts him after the wall in the same depth slot, so he is drawn on it

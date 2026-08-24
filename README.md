@@ -917,6 +917,29 @@ silence.
 The regex location is placed **before** the PNG rule, because nginx takes the
 first matching regex, not the most specific one.
 
+## Borrowed animation: 0 A.D.
+
+Four worker and soldier animations are 0 A.D.'s, by Wildfire Games, under CC
+BY-SA 3.0 — the woodcutter's chop, the carrying walk, the fisherman, and a
+death. They are retargeted onto Fiefdom's own character and rendered through
+the same pipeline as everything else, so they match in scale, palette and
+lighting.
+
+Because they are an adaptation of CC BY-SA 3.0 work they cannot be relicensed
+under this project's AGPL-3.0, so they sit in `public/assets/sprites/0ad/` with
+their own `LICENSE.txt` and the rest of the repository is untouched. The tools
+that read and retarget COLLADA (`tools/render/collada_anim.py`,
+`tools/render/retarget.py`) are ours; only the baked sprites carry the second
+licence. See docs/THIRD-PARTY.md.
+
+The retargeting aims each of our bones where the source's bone points, rather
+than copying orientations between two skeletons that do not share a rest pose.
+That is robust to the difference; the cost is that twist along a limb's own
+axis is lost, which is invisible at 80x66. It took three tries to get right —
+a world-space delta folded the figure into a contortion, and two sign and
+frame-of-reference mistakes laid it flat on the ground — all recorded in the
+commit that added the tools.
+
 ## Per-object ambience
 
 What is on screen is what you hear. The river laps, quarries and iron mines

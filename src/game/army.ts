@@ -24,6 +24,9 @@ export interface GarrisonPost {
   sz: number;
 }
 
+/** How long a killed soldier lies dying before he is removed, in seconds. */
+const DEATH_TIME = 1.1;
+
 export interface Soldier {
   id: number;
   side: Side;
@@ -45,6 +48,15 @@ export interface Soldier {
   cooldown: number;
   /** Seconds left of the attack animation. Drives which clip is drawn. */
   swing: number;
+  /**
+   * Seconds left of the death animation, or 0 while alive.
+   *
+   * A killed soldier is kept in the list, inert, until this runs out, so the
+   * death clip can play instead of the man simply blinking out. Everything
+   * that matters -- targeting, combat, movement, blocking -- already gates on
+   * `hp <= 0`, so a corpse is ignored by all of it without a second flag.
+   */
+  dying: number;
   /**
    * The player told this one to go somewhere.
    *
@@ -123,17 +135,17 @@ export class Army {
       heading: -Math.PI / 2, phase: Math.random() * 2,
       hp: def.hp, moving: false, selected: false,
       path: [], tx: x, tz: z,
-      target: null, cooldown: Math.random() * 0.4, swing: 0, ordered: false,
+      target: null, cooldown: Math.random() * 0.4, swing: 0, dying: 0, ordered: false,
       garrison: null, mountAt: null,
     };
     this.soldiers.push(s);
     return s;
   }
 
-  get mine(): Soldier[] { return this.soldiers.filter(s => s.side === PLAYER); }
-  get enemies(): Soldier[] { return this.soldiers.filter(s => s.side !== PLAYER); }
+  get mine(): Soldier[] { return this.soldiers.filter(s => s.side === PLAYER && s.hp > 0); }
+  get enemies(): Soldier[] { return this.soldiers.filter(s => s.side !== PLAYER && s.hp > 0); }
   /** Everyone belonging to one faction. */
-  of(side: Side): Soldier[] { return this.soldiers.filter(s => s.side === side); }
+  of(side: Side): Soldier[] { return this.soldiers.filter(s => s.side === side && s.hp > 0); }
   get selected(): Soldier[] {
     return this.soldiers.filter(s => s.selected && isPlayer(s.side));
   }
@@ -459,13 +471,22 @@ export class Army {
       }
     }
 
-    const fallen = this.soldiers.filter(s => s.hp <= 0);
+    const fallen = this.soldiers.filter(s => s.hp <= 0 && s.dying <= 0);
     if (fallen.length) {
       this.lastFallen = fallen;
-      this.soldiers = this.soldiers.filter(s => s.hp > 0);
+      // A soldier who just died starts his death animation rather than
+      // vanishing. He is already inert -- every combat and movement check
+      // above skips `hp <= 0` -- so this only keeps him on screen falling.
+      for (const s of fallen) s.dying = DEATH_TIME;
       for (const s of this.soldiers) {
         if (s.target !== null && fallen.some(f => f.id === s.target)) s.target = null;
       }
     }
+    // Age out the dying and drop them when the clip has played.
+    let aged = false;
+    for (const s of this.soldiers) {
+      if (s.hp <= 0 && s.dying > 0) { s.dying -= dt; aged = true; }
+    }
+    if (aged) this.soldiers = this.soldiers.filter(s => s.hp > 0 || s.dying > 0);
   }
 }

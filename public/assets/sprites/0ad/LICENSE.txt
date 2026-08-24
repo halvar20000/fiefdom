@@ -1,0 +1,19 @@
+These sprites are licensed CC BY-SA 3.0, NOT under Fiefdom's AGPL-3.0.
+
+They were produced by rendering Fiefdom's own character mesh driven by
+animations from 0 A.D. (https://play0ad.com), by Wildfire Games. The MOTION is
+their work under Creative Commons Attribution-ShareAlike 3.0 Unported, so a
+sprite baked from it is an adaptation and carries the same licence, even though
+the body shown is ours.
+
+  Animation source : 0 A.D. Empires Ascendant, Wildfire Games
+  Animation licence: CC BY-SA 3.0  (https://creativecommons.org/licenses/by-sa/3.0/)
+  Clips used       : gather_wood, carry_wood, hele_gather_fish, death_a
+  Attribution      : "Wildfire Games / 0 A.D., CC BY-SA 3.0"
+
+ShareAlike: anything derived from these files stays CC BY-SA 3.0.
+
+CC BY-SA 3.0 is one-directionally compatible only with GPLv3, and only from
+BY-SA 4.0 -- so these cannot be relicensed under Fiefdom's AGPL-3.0. They sit
+here under their own licence instead, and the rest of the repository is
+unaffected. See docs/THIRD-PARTY.md.

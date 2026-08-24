@@ -23,6 +23,27 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.9.0',
+    date: '2026-08-21',
+    headline: 'Better worker animation, and soldiers that fall.',
+    sections: [
+      {
+        title: 'Added',
+        items: [
+          'Soldiers now fall when killed instead of blinking out — a real death animation that plays before the body is gone.',
+          'The fisherman finally has his own motion, working the water rather than miming a woodcutter\u2019s swing.',
+          'The woodcutter\u2019s chop and the carrying walk are replaced with far more committed versions — a real wind-up and follow-through where there was barely any movement before.',
+        ],
+      },
+      {
+        title: 'Credit',
+        items: [
+          'These four animations come from 0 A.D. by Wildfire Games, CC BY-SA 3.0, retargeted onto Fiefdom\u2019s own character. They live under their own licence in a directory of their own; see docs/THIRD-PARTY.md.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.8.0',
     date: '2026-08-21',
     headline: 'The map sounds like what is on it.',

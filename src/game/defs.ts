@@ -133,7 +133,7 @@ export interface BuildingDef {
    */
   walkable?: boolean;
   /** Animation its workers play while producing. */
-  workClip?: 'chop' | 'mine' | 'dig';
+  workClip?: 'chop' | 'mine' | 'dig' | 'fish';
   /**
    * This building keeps a stock of a good on the premises, fetched from the
    * stockpile by its own worker. Used by the inn: the ale has to physically
@@ -312,7 +312,7 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     footprint: [2, 2], cost: { wood: 20 }, workers: 1, terrain: 'any',
     needsWater: true,
     produces: { output: 'fish', amount: 2, seconds: 15, to: 'granary' },
-    workClip: 'chop',
+    workClip: 'fish',
     description: 'Works the water for fish. Must be built on a shore.',
   },
   hops_farm: {

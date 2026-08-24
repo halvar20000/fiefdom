@@ -1,16 +1,21 @@
 # Third-party material
 
-Everything in this repository is Fiefdom's own work under AGPL-3.0 unless it is
-listed here. Nothing is listed yet.
+Everything in this repository is Fiefdom's own work under AGPL-3.0 except the
+material listed here.
 
-## 0 A.D. animations — evaluated, not adopted
+## 0 A.D. animations — adopted
 
-`tools/render/collada_anim.py` and `tools/render/retarget.py` were written to
-read [0 A.D.](https://play0ad.com)'s animation set. **The tools are ours and
-carry no third-party licence.** No 0 A.D. material is committed to this
-repository, and nothing in `public/assets/` derives from any.
+`public/assets/sprites/0ad/` holds sprites rendered from Fiefdom's own peasant
+mesh driven by animations from [0 A.D.](https://play0ad.com) by Wildfire Games.
+The clips used are `gather_wood`, `carry_wood`, `hele_gather_fish` and
+`death_a`, reaching the game as the `chop`, `carry`, `fish` and `death`
+animations. The tools that read and retarget them
+(`tools/render/collada_anim.py`, `tools/render/retarget.py`) are ours and carry
+no third-party licence; the rendered sprites do.
 
-If that changes, the terms are:
+    Attribution: "Wildfire Games / 0 A.D., CC BY-SA 3.0"
+
+That directory has its own `LICENSE.txt`. The terms:
 
 | Part of 0 A.D. | Licence |
 | --- | --- |
