@@ -4,12 +4,14 @@ import { Terrain } from './engine/terrain';
 import { SpriteBatch } from './engine/sprites';
 import { loadTileArray, buildCombinedAtlas, type CombinedAtlas } from './engine/assets';
 import { Audio } from './engine/audio';
+import { Projectiles } from './engine/projectiles';
 import { reportStaleAssets, missingTiles, missingSprites } from './engine/freshness';
 import {
   generateMap, findSite, isBuildable, findStartSite, GROUND_TYPES,
 } from './game/worldgen';
 import {
   TILE_PX_W, unitDirectionIndex, footprintDepthBias, depthKey, spriteAnchor,
+  cameraDirection,
 } from './engine/iso';
 import { GameState, type PlacedBuilding } from './game/state';
 import { PathGrid } from './game/pathfind';
@@ -147,6 +149,8 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
   ghostBatch.mesh.renderOrder = 11;
   scene.add(sprites.mesh);
   scene.add(ghostBatch.mesh);
+  const projectiles = new Projectiles();
+  scene.add(projectiles.mesh);
 
   // --- occupancy ----------------------------------------------------------
   // Two grids on purpose. `occupied` decides where you may BUILD and counts
@@ -402,6 +406,10 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
         }
       }
       return best;
+    },
+    onShoot: (kind, fx, fz, tx, tz) => {
+      projectiles.fire(kind, fx, terrain.heightAt(fx, fz), fz,
+                             tx, terrain.heightAt(tx, tz), tz);
     },
   });
 
@@ -2129,6 +2137,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
     army.update(dt);
     updateRaids(dt);
     updateFires(dt);
+    projectiles.update(dt);
 
     // Store sprites are part of the static list, so a pile changing level has to
     // invalidate it. sync() returns true only when what is DRAWN moved, not on
@@ -2518,6 +2527,8 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
       }
     }
     ghostBatch.flush();
+    { const [vx, vy, vz] = cameraDirection(iso.rotation); projectiles.setView(vx, vy, vz); }
+    projectiles.render();
 
     renderer.render(scene, iso.camera);
     hud.update();
@@ -2544,6 +2555,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
       army.update(dt);
     updateRaids(dt);
     updateFires(dt);
+      projectiles.update(dt);
       sync += dt;
       if (sync > 1) {
         sync = 0; state.assignWorkers(); workers.sync(); rescueStuckWorkers();
@@ -2805,7 +2817,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
       drawScene();
     },
     decorations, workerWorld, groundType, regrowing, paths, wanderers, hud, herd, army,
-    recruit, atlas, spawnRaid, factions, fires, lightPitch,
+    recruit, atlas, spawnRaid, factions, fires, lightPitch, projectiles,
     snapshot, applySave, openPause,
     isPaused: () => paused,
     // Kept singular-friendly for the console: no argument means the first

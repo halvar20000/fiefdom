@@ -917,6 +917,32 @@ silence.
 The regex location is placed **before** the PNG rule, because nginx takes the
 first matching regex, not the most specific one.
 
+## Projectiles
+
+Ranged attacks now throw something you can watch. An archer's shot is a pale
+arrow, the fire ballista's and the catapult's a glowing bolt; each arcs from
+shooter to target and fades along its length. Melee troops and the ram, which
+strike at contact, throw nothing — the shot is fired only for attacks whose
+reach is actually ranged.
+
+The damage stays instantaneous and simultaneous; the projectile is a flourish
+over the top, not the thing that deals the hit. Tying the hit to the arrow's
+arrival would make effective range a function of frame rate, which is a worse
+bargain than a hit that very slightly precedes its arrow.
+
+They are drawn as short camera-facing ribbon quads in world space, one triangle
+mesh for the whole volley. A GL line was the obvious choice and the wrong one:
+`LineBasicMaterial` is always one physical pixel wide, which on a 2x backbuffer
+scaled down to a screenshot is sub-pixel and invisible. A quad has real world
+width. It is made to face the camera by offsetting its long edges along
+`cross(flightDirection, viewDirection)` — perpendicular to the flight and to
+the line of sight at once — so it keeps a constant apparent width at any shot
+angle and any of the four camera rotations.
+
+Verified by instrumenting the launch: a melee duel fired nothing, an archer
+fired arrows, the ballista fired bolts; and a frozen volley rendered 15 streaks
+radiating from the keep, 90 vertices, on-camera.
+
 ## Borrowed animation: 0 A.D.
 
 Four worker and soldier animations are 0 A.D.'s, by Wildfire Games, under CC

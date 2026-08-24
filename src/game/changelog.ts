@@ -23,6 +23,20 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.10.0',
+    date: '2026-08-21',
+    headline: 'Arrows and bolts you can see fly.',
+    sections: [
+      {
+        title: 'Added',
+        items: [
+          'Archers loose a visible arrow at their target; the fire ballista and the catapult throw a glowing bolt. Each arcs from shooter to mark and fades as it goes.',
+          'Melee troops and the ram, which strike at contact, throw nothing — only real ranged fire draws a projectile.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.9.0',
     date: '2026-08-21',
     headline: 'Better worker animation, and soldiers that fall.',

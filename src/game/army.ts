@@ -99,6 +99,17 @@ export interface ArmyWorld {
   groundSpeed?(x: number, z: number, siege: boolean): number;
   /** Nearest building of the OTHER side that this engine could break. */
   siegeTarget?(s: Soldier): SiegeTarget | null;
+  /**
+   * A ranged attack was launched: spawn something the eye can follow.
+   *
+   * Fired at the moment of the blow, not when it lands -- damage is still
+   * simultaneous and instant, and the projectile is a flourish over the top.
+   * Tying the hit to the projectile's arrival would make range a function of
+   * frame rate, which is a worse bargain than a hit that slightly precedes its
+   * arrow.
+   */
+  onShoot?(kind: 'arrow' | 'bolt',
+           fromX: number, fromZ: number, toX: number, toZ: number): void;
 }
 
 /** Tiles from a click within which a soldier counts as clicked. */
@@ -375,6 +386,7 @@ export class Army {
         if (s.cooldown <= 0) {
           const roll = s.def.damage * (0.85 + Math.random() * 0.3);
           blows.push({ on: foe, amount: Math.max(1, Math.round(roll)) });
+          this.world.onShoot?.('bolt', s.x, s.z, foe.x, foe.z);
           s.cooldown = s.def.cooldown;
           s.swing = SWING_TIME;
         }
@@ -397,6 +409,11 @@ export class Army {
           if (s.cooldown <= 0) {
             const roll = s.def.damage * (0.85 + Math.random() * 0.3);
             wallBlows.push({ t, amount: Math.max(1, Math.round(roll)) });
+            // A catapult lobs a bolt-coloured shot at the stone it is breaking;
+            // a ram is point-blank and throws nothing.
+            if (s.def.range >= RANGED_THRESHOLD) {
+              this.world.onShoot?.('bolt', s.x, s.z, t.x, t.z);
+            }
             s.cooldown = s.def.cooldown;
             s.swing = SWING_TIME;
           }
@@ -428,6 +445,12 @@ export class Army {
           // and reads as the simulation being stuck rather than fair.
           const roll = s.def.damage * (0.85 + Math.random() * 0.3);
           blows.push({ on: foe, amount: Math.max(1, Math.round(roll)) });
+          // An arrow to watch, but only for actual ranged fire -- a spearman's
+          // reach is melee and wants no projectile.
+          if (Army.reachOf(s) >= RANGED_THRESHOLD) {
+            this.world.onShoot?.(s.def.targetsUnits ? 'bolt' : 'arrow',
+                                 s.x, s.z, foe.x, foe.z);
+          }
           s.cooldown = s.def.cooldown;
           s.swing = SWING_TIME;
         }
