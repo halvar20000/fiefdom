@@ -169,8 +169,15 @@ export class Army {
     return this.soldiers.find(s => s.id === id);
   }
 
-  /** Select the single player soldier nearest a world point. */
-  selectAt(x: number, z: number, add: boolean): boolean {
+  /**
+   * Select the single player soldier nearest a world point.
+   *
+   * `add` keeps the rest of the selection (shift-click, or every tap on touch,
+   * where there is no modifier to hold). `toggle` flips the picked man instead
+   * of always selecting him, so a second tap on a touch device takes him back
+   * out of the group -- the only way to deselect one without a modifier key.
+   */
+  selectAt(x: number, z: number, add: boolean, toggle = false): boolean {
     let best: Soldier | null = null;
     let bestD = PICK_RADIUS * PICK_RADIUS;
     for (const s of this.soldiers) {
@@ -180,7 +187,7 @@ export class Army {
     }
     if (!best) return false;
     if (!add) this.clearSelection();
-    best.selected = true;
+    best.selected = toggle ? !best.selected : true;
     return true;
   }
 

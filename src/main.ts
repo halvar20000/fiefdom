@@ -1693,6 +1693,10 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
 
   let dragging = false, dragMoved = false, lastX = 0, lastY = 0;
   let mouseX = 0, mouseY = 0;
+  // Touch has no double-click event to speak of, so a second quick tap near the
+  // first is detected by hand -- the "select all of this kind" idiom otherwise
+  // has no way in on a phone.
+  let lastTapT = 0, lastTapX = 0, lastTapY = 0;
   const canvas = renderer.domElement;
   // Whether the touch pad's command mode is on; replaced once the pad exists.
   let touchCommand = (): boolean => false;
@@ -1766,6 +1770,21 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
         return;
       }
       const w = pickWorld(e.clientX, e.clientY);
+      // Touch has no shift and no reliable double-click, so selection works by
+      // accumulation instead: each tap toggles a soldier into the group, a tap
+      // on empty ground clears it, and a quick second tap on the same man takes
+      // his whole kind. This is the only way to post more than one soldier on a
+      // phone -- without it every tap replaced the selection and just one could
+      // ever be sent to a wall.
+      if (e.pointerType === 'touch') {
+        const now = performance.now();
+        const dbl = now - lastTapT < 350
+          && Math.abs(e.clientX - lastTapX) < 24 && Math.abs(e.clientY - lastTapY) < 24;
+        lastTapT = now; lastTapX = e.clientX; lastTapY = e.clientY;
+        if (dbl && selectTypeAt(e.clientX, e.clientY, false)) return;
+        if (!army.selectAt(w.x, w.z, true, true)) army.clearSelection();
+        return;
+      }
       if (!army.selectAt(w.x, w.z, e.shiftKey) && !e.shiftKey) army.clearSelection();
       return;
     }
@@ -1819,23 +1838,28 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
   canvas.addEventListener('wheel', e => {
     e.preventDefault(); iso.zoomBy(e.deltaY > 0 ? -1 : 1);
   }, { passive: false });
-  // Double-click a soldier to take every one of his kind. The standard RTS
-  // idiom, and the answer to "how do I select all my archers" without hunting
-  // for a modifier key.
-  canvas.addEventListener('dblclick', e => {
-    if (placement.selected) return;
-    const w = pickWorld(e.clientX, e.clientY);
+  /**
+   * Take every soldier of the kind nearest a screen point. The "select all my
+   * archers" idiom, reached by a double-click on desktop and a double-tap on
+   * touch (where there is no double-click event). Returns whether it hit anyone.
+   */
+  function selectTypeAt(clientX: number, clientY: number, add: boolean): boolean {
+    if (placement.selected) return false;
+    const w = pickWorld(clientX, clientY);
     let best: { type: string } | null = null;
     let bestD = 1.0;
     for (const sd of army.soldiers) {
       const d = Math.hypot(sd.x - w.x, sd.z - w.z);
       if (d < bestD) { bestD = d; best = sd; }
     }
-    if (!best) return;
-    const n = army.selectType(best.type, e.shiftKey);
+    if (!best) return false;
+    const n = army.selectType(best.type, add);
     state.notify(`${n} ${SOLDIER_TYPES[best.type].label.toLowerCase()}` +
                  `${n === 1 ? '' : 's'} selected`, 'info');
-  });
+    return true;
+  }
+
+  canvas.addEventListener('dblclick', e => { selectTypeAt(e.clientX, e.clientY, e.shiftKey); });
 
   /**
    * Order the selected troops to a screen point: post them on a wall if it is

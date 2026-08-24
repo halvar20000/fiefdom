@@ -1594,6 +1594,15 @@ scrim, because the bar cannot assume its own taps are the only thing that moves
 that state. A tablet or desktop is wide enough for the columns and keeps them
 untouched; none of this code runs there.
 
+Selecting troops had the same shape of problem. Grouping soldiers on desktop is
+a shift-drag box or a double-click for "all of this kind" — both need a key or
+an event a touchscreen does not have, so every tap simply replaced the selection
+and only one soldier could ever be posted on a wall. On touch a tap now *adds* a
+soldier to the group (tapping him again drops him), a tap on bare ground clears
+it, and a hand-detected double-tap takes his whole kind. Then the **Move** button
+flips to **Ordering** and a tap on the tower sends the whole group up. Mouse and
+keyboard keep their box and their real double-click.
+
 ## Rival lords, and why they must not all march on you
 
 A map now carries 0-3 rival lords. `Side` stopped being `'player' | 'enemy'`

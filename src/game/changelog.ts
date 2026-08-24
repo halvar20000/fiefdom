@@ -23,6 +23,20 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.16.1',
+    date: '2026-08-24',
+    headline: 'Group your troops by touch.',
+    sections: [
+      {
+        title: 'Fixed',
+        items: [
+          'On a phone or tablet you can now select more than one soldier, so more than one can be posted on a wall or tower. Selecting used to need a shift-drag box or a double-click — neither of which a touchscreen has — so every tap replaced the selection and only a single man could ever be sent up.',
+          'Now a tap adds a soldier to the group (tap him again to drop him), a tap on empty ground clears the group, and a double-tap takes every soldier of that kind — the touch stand-ins for shift-click and double-click. Mouse and keyboard are unchanged.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.16.0',
     date: '2026-08-24',
     headline: 'A phone shows the game, not the menus.',
