@@ -23,6 +23,20 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.20.0',
+    date: '2026-08-24',
+    headline: 'Rally flag: send new troops where you want them.',
+    sections: [
+      {
+        title: 'Added',
+        items: [
+          'A rally point for your barracks and siege camp. Open the Barracks panel, click "Set rally point", then click anywhere on the map to plant a flag — every soldier and siege engine you make from then on marches straight to it instead of milling about at the door, so your army forms up where you need it. Click the flag onto the barracks to clear it, or press Esc to cancel while placing.',
+          'The flag is remembered in your saved game.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.19.0',
     date: '2026-08-24',
     headline: 'Saved games and maps now live on the server.',

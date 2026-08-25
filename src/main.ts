@@ -1759,6 +1759,29 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
   document.body.appendChild(selBox);
   let boxing = false, boxX = 0, boxY = 0;
 
+  // The military rally flag: where a newly recruited soldier or engine marches
+  // to, so an army musters at the front instead of at the barracks door. One
+  // per player -- recruitment is already global (it draws from the first
+  // barracks or siege camp), so one flag governs everything that comes out.
+  let rallyPoint: { x: number; z: number } | null = null;
+  let placingRally = false;
+  const rallyFlag = document.createElement('div');
+  rallyFlag.style.cssText = 'position:fixed;pointer-events:none;display:none;'
+    + 'z-index:22;transform:translate(-2px,-100%);font-size:22px;line-height:1;'
+    + 'filter:drop-shadow(0 2px 2px rgba(0,0,0,.6))';
+  rallyFlag.textContent = '\u{1F6A9}';   // a flag the eye finds at a glance
+  document.body.appendChild(rallyFlag);
+
+  function armRally(): void {
+    placement.cancel();
+    if (hud.demolishing) hud.setDemolish(false);
+    placingRally = true;
+    document.body.style.cursor = 'crosshair';
+    hud.openDrawer(null);   // on a phone, get the sheet off the map to place it
+    state.notify('Click where new troops should gather', 'info');
+  }
+  hud.onSetRally = armRally;
+
   /**
    * Scratch buffer for the trouble markers, and a cap on them.
    *
@@ -1802,6 +1825,29 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
     if (e.button !== 0) return;      // see pointerdown
     if (canvas.hasPointerCapture(e.pointerId)) canvas.releasePointerCapture(e.pointerId);
     dragging = false;
+
+    // Planting the rally flag comes before everything else: while the tool is
+    // armed a click on the map is the flag, not a selection or an order. A drag
+    // is a pan to look around first, so it leaves the tool armed.
+    if (placingRally) {
+      if (!dragMoved) {
+        placingRally = false;
+        document.body.style.cursor = '';
+        const w = pickWorld(e.clientX, e.clientY);
+        const tx = Math.floor(w.x), tz = Math.floor(w.z);
+        const on = buildingAt(tx, tz);
+        if (on && (on.name === 'barracks' || on.name === 'siege_camp')) {
+          rallyPoint = null;
+          state.notify('Rally point cleared — troops muster at the barracks', 'info');
+        } else if (tx >= 0 && tz >= 0 && tx < MAP_W && tz < MAP_H && !paths.isBlocked(tx, tz)) {
+          rallyPoint = { x: tx + 0.5, z: tz + 0.5 };
+          state.notify('Rally point set — new troops will gather here', 'info');
+        } else {
+          state.notify('Cannot set a rally point there', 'warn');
+        }
+      }
+      return;
+    }
 
     if (boxing) {
       boxing = false;
@@ -2057,7 +2103,8 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
       // Esc means "back out of what I am doing". With a building in hand that
       // is the building, with the wrecking tool armed it is the tool;
       // otherwise it is the game itself.
-      if (placement.selected) { placement.cancel(); refreshOverlay(); }
+      if (placingRally) { placingRally = false; document.body.style.cursor = ''; }
+      else if (placement.selected) { placement.cancel(); refreshOverlay(); }
       else if (hud.demolishing) hud.setDemolish(false);
       else openPause();
     }
@@ -2166,7 +2213,13 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
     const ang = (n % 8) / 8 * Math.PI * 2;
     let sx = spot.x + Math.cos(ang) * ring, sz = spot.z + Math.sin(ang) * ring;
     if (paths.isBlocked(Math.floor(sx), Math.floor(sz))) { sx = spot.x; sz = spot.z; }
-    army.recruit(type, sx, sz);
+    const soldier = army.recruit(type, sx, sz);
+    // Send him to the rally flag if one is set. `ordered` keeps him marching
+    // there rather than wandering off after the first thing he sees -- the same
+    // flag every recruit follows, so an army forms up where you asked.
+    if (soldier && rallyPoint && army.send(soldier, rallyPoint.x, rallyPoint.z)) {
+      soldier.ordered = true;
+    }
     audio.play('recruit');
     state.notify(`${def.label} recruited`, 'info');
     return 'ok';
@@ -2335,11 +2388,22 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
     }
 
     updateTroubleFlags();
+    updateRallyFlag();
     updateAmbience(performance.now());
     audio.tickAmbience();
     drawMinimap();
     drawScene();
     requestAnimationFrame(frame);
+  }
+
+  /** Keep the flag marker over its world tile, or hidden when none is set. */
+  function updateRallyFlag(): void {
+    if (!rallyPoint) { rallyFlag.style.display = 'none'; return; }
+    const [px, py] = iso.worldToScreen(
+      rallyPoint.x, terrain.heightAt(rallyPoint.x, rallyPoint.z), rallyPoint.z);
+    rallyFlag.style.left = `${px}px`;
+    rallyFlag.style.top = `${py}px`;
+    rallyFlag.style.display = 'block';
   }
 
   /** Rasterise the ground once. Cliffs are shaded from the height, not stored. */
@@ -2805,7 +2869,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
         x: a.x, z: a.z, hx: a.hx, hz: a.hz, alive: a.alive, respawnAt: a.respawnAt,
       })),
       fires: fires.map(f => [f.x, f.z, f.until] as [number, number, number]),
-
+      rally: rallyPoint,
     };
   }
 
@@ -2975,6 +3039,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
     state.taxLevel = sv.taxLevel;
     Object.assign(state.trade, sv.trade);
     state.elapsed = sv.elapsed;
+    rallyPoint = sv.rally ?? null;   // absent on saves made before the flag existed
 
     // sync() alone: it creates exactly one worker per staffed slot, which is
     // what the save recorded. assignWorkers would re-derive it and drift.

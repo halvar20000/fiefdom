@@ -73,7 +73,8 @@ export interface SaveGame {
   soldiers: SavedSoldier[];
   animals: SavedAnimal[];
   fires: [number, number, number][];
-
+  /** The military rally flag, if one is planted. Absent on older saves. */
+  rally?: { x: number; z: number } | null;
 }
 
 export interface SlotInfo {

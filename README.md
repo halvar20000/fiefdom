@@ -1335,6 +1335,19 @@ forgetting exactly that shipped a half-broken image once already.
 Tagging `v1.0.0` publishes `ghcr.io/halvar20000/fiefdom:1.0.0` and `:1.0`
 beside `:latest`, so a version can be pinned rather than tracked.
 
+## The rally flag
+
+Recruitment is global — it draws from your first barracks or siege camp — so the
+rally point is one flag, not one per building. "Set rally point" in the Barracks
+panel arms a placing tool (`placingRally`); the next map click plants
+`rallyPoint`, a click on the barracks itself clears it, and Esc cancels. The
+click is intercepted at the very top of the canvas handler, before selection or
+orders, so while the tool is armed a tap is always the flag. When a unit is
+recruited it is `send`-ordered to the flag and marked `ordered` so it marches
+there instead of wandering; the flag itself is a fixed DOM marker reprojected
+each frame rather than a sprite, so it needs nothing from the atlas. It rides in
+the save (an optional field, no format bump) so loading a game keeps it.
+
 ## A soldier stops being a citizen
 
 Recruits used to stay on the population roll: still a mouth to feed, still

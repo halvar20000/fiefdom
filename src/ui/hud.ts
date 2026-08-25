@@ -533,6 +533,8 @@ export class Hud {
   onSelect: (name: string | null) => void = () => {};
   /** Try to recruit. Returns 'ok', or the reason it could not. */
   onRecruit: (type: string) => string = () => 'No barracks';
+  /** Arm the rally-flag tool: the next map click sets where new troops gather. */
+  onSetRally: () => void = () => {};
   /** Live soldier counts by type, for the barracks view. */
   armyCounts: () => Record<string, number> = () => ({});
   /** How many enemies are on the map, for the alarm in the stats panel. */
@@ -1009,6 +1011,21 @@ export class Hud {
     const warn = this.el('div', panel, 'warn');
     warn.dataset.role = 'nobarracks';
     warn.textContent = 'Build a barracks to recruit.';
+
+    // The rally flag: where a freshly made soldier or engine walks to, instead
+    // of milling about at the barracks door. Set here because this is where you
+    // make them; a click on the map plants the flag, a click on the barracks
+    // itself takes it down.
+    const rally = document.createElement('button');
+    rally.className = 'tog';
+    rally.style.width = '100%';
+    rally.textContent = 'Set rally point';
+    rally.onclick = () => this.onSetRally();
+    panel.appendChild(rally);
+    const rallyHint = this.el('div', panel, 'hint');
+    rallyHint.style.marginBottom = '8px';
+    rallyHint.textContent = 'New troops gather at the flag. '
+                          + 'Plant it on the map, or on the barracks to clear it.';
 
     let siegeHeaderDone = false;
     for (const name of SOLDIER_ORDER) {
