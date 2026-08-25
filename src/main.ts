@@ -1030,6 +1030,97 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
   })();
 
   /**
+   * Guarantee every rival keep can actually be reached from yours by land.
+   *
+   * The only things that stop a unit are water and buildings -- cliffs do not --
+   * so a river can cut the map in two and strand a lord on the far bank with no
+   * crossing anywhere, a game you can neither win nor lose. Where that has
+   * happened, carve the shortest ford: turn the water on the cheapest route
+   * between the two banks into a strip of dry sand. Runs for a new game and again
+   * after a load, since the terrain is regenerated from the seed each time and
+   * the ford is not stored in the save.
+   */
+  function ensureKeepsConnected(): void {
+    const WATER = GROUND_TYPES.indexOf('water');
+    const SAND = GROUND_TYPES.indexOf('sand');
+    const drain = (x: number, z: number) => {
+      const t = z * MAP_W + x;
+      if (groundType[t] !== WATER) return;
+      groundType[t] = SAND;
+      terrain.layer[t] = tiles.layerOf('sand', hashVariant(x, z));
+      paths.setBlocked(x, z, false);
+      occupied[t] = 0;
+    };
+    const near = (x: number, z: number) => paths.nearestOpen(x, z, 10);
+    const home = near(kx, kz);
+    if (!home) return;
+
+    let carved = false;
+    for (const f of factions) {
+      if (!f.keep) continue;
+      const there = near(f.keep.x, f.keep.z);
+      if (!there) continue;
+      // Compare the WALKABLE ground beside each keep, not the keep tiles: a keep
+      // is a building, so it has no region of its own and would read as "-1 ===
+      // -1", i.e. falsely connected, every time.
+      const target = paths.regionAt(there.x, there.z);
+      if (target < 0 || paths.regionAt(home.x, home.z) === target) continue;
+
+      const ford = shortestFord(home.x, home.z, target);
+      if (!ford) { console.warn(`[map] no ford could reach ${f.name}`); continue; }
+      for (const [x, z] of ford) drain(x, z);
+      carved = true;
+      console.log(`[map] carved a ${ford.length}-tile ford so ${f.name} can be reached`);
+    }
+    if (carved) { terrain.rebuild(); staticDirty = true; }
+  }
+
+  /**
+   * The fewest water tiles to turn to land to join a start tile to a target
+   * region: a 0-1 breadth-first search where stepping onto land is free and onto
+   * water costs one, and a building is never crossed nor carved. Returns the
+   * water tiles on the cheapest route, or null if even flooding cannot join them.
+   */
+  function shortestFord(sx: number, sz: number, targetRegion: number): [number, number][] | null {
+    const WATER = GROUND_TYPES.indexOf('water');
+    const N = MAP_W * MAP_H;
+    const cost = new Int32Array(N).fill(0x7fffffff);
+    const prev = new Int32Array(N).fill(-1);
+    const isWater = (i: number) => groundType[i] === WATER;
+    const passable = (x: number, z: number) =>
+      isWater(z * MAP_W + x) || !paths.isBlocked(x, z);   // land or water, never a building
+    const buckets: number[][] = [[sz * MAP_W + sx]];
+    cost[sz * MAP_W + sx] = 0;
+
+    for (let c = 0; c < buckets.length; c++) {
+      const b = buckets[c];
+      while (b && b.length) {
+        const i = b.pop()!;
+        if (cost[i] !== c) continue;                       // stale
+        const x = i % MAP_W, z = (i / MAP_W) | 0;
+        if (!isWater(i) && paths.regionAt(x, z) === targetRegion) {
+          const ford: [number, number][] = [];
+          for (let j = i; j !== -1; j = prev[j]) {
+            if (isWater(j)) ford.push([j % MAP_W, (j / MAP_W) | 0]);
+          }
+          return ford;
+        }
+        for (const [nx, nz] of [[x + 1, z], [x - 1, z], [x, z + 1], [x, z - 1]] as const) {
+          if (nx < 0 || nz < 0 || nx >= MAP_W || nz >= MAP_H) continue;
+          if (!passable(nx, nz)) continue;
+          const ni = nz * MAP_W + nx;
+          const nc = c + (isWater(ni) ? 1 : 0);
+          if (nc < cost[ni]) {
+            cost[ni] = nc; prev[ni] = i;
+            (buckets[nc] ||= []).push(ni);
+          }
+        }
+      }
+    }
+    return null;
+  }
+
+  /**
    * Find somewhere for the lord to put a building.
    *
    * Scans outward from his keep rather than using findSite, because findSite
@@ -3057,6 +3148,10 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
   }
 
   if (restore) applySave(restore);
+
+  // With the keeps final -- placed fresh or restored from a save -- make sure a
+  // land route joins every one of them, carving a ford across any dividing river.
+  ensureKeepsConnected();
 
   // Debug handle: lets the sim be inspected and driven from the console
   // without threading test hooks through the game code.

@@ -23,6 +23,20 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.22.0',
+    date: '2026-08-25',
+    headline: 'The enemy can always be reached.',
+    sections: [
+      {
+        title: 'Fixed',
+        items: [
+          'A river could cut the map in two and strand the enemy lord on the far bank with no way across — a game you could neither win nor lose. Now the map guarantees a land route to every rival: where a river divides you, it carves a ford (a strip of dry sand) across the narrowest crossing so your army can march over.',
+          'Long marches through a narrow gap — a ford, or a gap in a wall — no longer fail. The pathfinder used to give up on very long routes that funnel through a single tile; it now searches as far as it needs to for a route that genuinely exists.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.21.0',
     date: '2026-08-24',
     headline: 'Separate players, separate saves, via a login.',

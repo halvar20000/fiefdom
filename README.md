@@ -1491,6 +1491,30 @@ the water rather than to expect the hut to carry further.
 A seventh ground type, and the only one that is impassable in itself. Marsh
 merely slows a column down; nothing in this game swims.
 
+### It must never wall the enemy off
+
+Because water is the *only* impassable ground — cliffs do not block a unit, only
+water and buildings do — a river can slice the map into two islands and put a
+rival keep on the far one, with no crossing anywhere. That is a game you can
+neither win nor lose. After the keeps are placed (for a new game, and again after
+a load, since terrain is regenerated from the seed and the ford is not stored),
+`ensureKeepsConnected` checks that walkable ground actually joins your keep to
+each rival's, comparing the land *beside* the keeps rather than the keep tiles
+themselves — a keep is a building, so its own tile has no region and would read
+as falsely connected. Where a keep is stranded, `shortestFord` runs a 0-1
+breadth-first search from your side — land free, water one — to the cheapest
+crossing, and those water tiles are turned to sand: a ford across the river.
+
+The other half of the fix was in the pathfinder. `find` had an 8,000-node
+ceiling, and a route that funnels through a one-tile ford makes A* fan out across
+the entire near-side region before it discovers the way through — far past 8,000,
+so it returned "no path" over a ford that plainly existed. Since `find` already
+rejects a genuinely unreachable goal for free by comparing regions first, the
+ceiling now defaults to the whole grid: the only searches that ever get
+expensive are long routes that truly exist, and an unreachable enemy is the worse
+bargain. Verified: on a river map that stranded a lord, a 4-tile ford was carved
+and a spearman marched the length of the map, across it, to the enemy's keep.
+
 **Getting the colour right needed measuring, not judging.** The first render
 came back at luma 163 against sand's 168 — as bright as the desert it is meant
 to sit in, so it read as pale ice rather than water. The ground rig's lighting

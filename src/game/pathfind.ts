@@ -187,8 +187,16 @@ export class PathGrid {
    * own building, and refusing to path out of a blocked start would strand
    * every one of them the moment they were hired.
    */
-  find(sx: number, sz: number, gx: number, gz: number, maxNodes = 8000): PathNode[] | null {
+  find(sx: number, sz: number, gx: number, gz: number, maxNodes = 0): PathNode[] | null {
     if (!this.inBounds(sx, sz) || !this.inBounds(gx, gz)) return null;
+    // Default the budget to the whole grid. A path that squeezes through a narrow
+    // gap -- a river ford, a gap in a wall -- makes A* fan out across the entire
+    // near-side region before it finds the one-tile-wide way through, far more
+    // than a small fixed cap allows. `connected()` below already rejects a
+    // genuinely unreachable goal for free, so the cap is only ever spent on a
+    // route that really exists -- and an unreachable enemy is worse than a rare
+    // expensive search.
+    if (maxNodes <= 0) maxNodes = this.width * this.height;
 
     if (this.isBlocked(gx, gz)) {
       const open = this.nearestOpen(gx, gz);
