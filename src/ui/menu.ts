@@ -2,6 +2,13 @@ import { MAPS, ratings, type MapDef } from '../game/maps';
 import { listSlots, setBootIntent, playTime, savedWhen } from '../game/save';
 import { listMaps, deleteMap, defOf, type CustomMap } from '../game/custom';
 import { versionButton, VERSION_CSS } from './whatsnew';
+import { currentUser, isSignedIn } from '../game/backend';
+
+/** Minimal HTML escaping for an email shown in the footer. */
+function escapeHtml(s: string): string {
+  return s.replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
+}
 
 /**
  * What the player chose. The menu can send you to the editor as well as into
@@ -285,6 +292,20 @@ export function showMenu(): Promise<MenuChoice> {
     ver.className = 'ver';
     ver.appendChild(versionButton());
     root.appendChild(ver);
+
+    // Who is signed in, when Cloudflare Access is in front. Each signed-in
+    // player has their own saves; the log-out link is Cloudflare's own.
+    if (isSignedIn() && currentUser()) {
+      const who = document.createElement('div');
+      who.className = 'note';
+      who.innerHTML = `Signed in as <b>${escapeHtml(currentUser()!)}</b> — your saves are your own. `;
+      const out = document.createElement('a');
+      out.textContent = 'Log out';
+      out.href = '/cdn-cgi/access/logout';
+      out.style.color = 'var(--gold, #f0c869)';
+      who.appendChild(out);
+      root.appendChild(who);
+    }
 
     const note = document.createElement('div');
     note.className = 'note';

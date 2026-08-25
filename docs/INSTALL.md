@@ -62,6 +62,59 @@ Two things worth knowing:
 > which is the same trust boundary the game already had. Keep it on your LAN or
 > behind your own access control, as below.
 
+## Separate logins, separate saves (optional)
+
+By default everyone who reaches the server shares one set of save slots. If more
+than one person plays — say you and your kids — you can give each their own
+private saves, gated by a login, using **Cloudflare Access** (free, part of
+Cloudflare Zero Trust). Cloudflare does the actual login at the edge; the game
+never sees a password.
+
+**1. Put Access in front of the hostname.**
+In the Cloudflare **Zero Trust** dashboard → **Access → Applications → Add an
+application → Self-hosted**. Set the application domain to your game's hostname
+(e.g. `fiefdom.example.com`). Add a **policy** that *allows* the emails who may
+play (an "Emails" rule listing you and your family). Save.
+
+**2. Find two values** from that application's **Overview**:
+- your **team domain** — the part before `.cloudflareaccess.com` in your team's
+  URL (e.g. `smarthomeworld68`);
+- the **Application Audience (AUD)** tag.
+
+**3. Give them to the container** as environment variables (the Unraid template
+has fields for both):
+
+| Variable | Value |
+|---|---|
+| `ACCESS_TEAM_DOMAIN` | your team domain, e.g. `smarthomeworld68` |
+| `ACCESS_AUD` | the AUD tag from step 2 |
+
+```bash
+docker run -d --name fiefdom -p 8080:80 --restart unless-stopped \
+  -v /mnt/user/appdata/fiefdom:/data \
+  -e ACCESS_TEAM_DOMAIN=smarthomeworld68 \
+  -e ACCESS_AUD=<your-aud-tag> \
+  ghcr.io/halvar20000/fiefdom:latest
+```
+
+That is it. Now each person, after logging in through Cloudflare, gets their own
+save slots and custom maps — the server verifies Cloudflare's signed token and
+keeps each email's data in its own file under `/data/users/`. The title screen
+shows who is signed in, with a **Log out** link.
+
+Good to know:
+
+- **The server only trusts a real, Cloudflare-signed token.** It checks the
+  signature against Cloudflare's keys, plus the expiry, issuer and AUD — a forged
+  or copied header does not work. Set both variables; the AUD is what ties tokens
+  to *this* app rather than any app on your team.
+- **On the LAN, bypassing Cloudflare, there is no login** — those visits share a
+  single `local` profile. That `local` profile is also where your *existing*
+  shared saves move to when you upgrade, so they are not lost; reach them by
+  playing over the LAN, or start fresh under your login.
+- Leave the two variables unset and nothing changes: one shared profile, as
+  before.
+
 ## Reaching it from outside your network
 
 A **Cloudflare Tunnel** is the tidy way: no ports forwarded and TLS handled for

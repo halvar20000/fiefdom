@@ -22,6 +22,10 @@
 /** True once a real backend has answered; until then we are localStorage-only. */
 let serverUp = false;
 
+/** Who the server says we are: an email when signed in via Access, else null. */
+let user: string | null = null;
+let authed = false;
+
 /** The server's view, loaded once at boot. Authoritative while `serverUp`. */
 const cache = new Map<string, string>();
 
@@ -78,16 +82,23 @@ export async function hydrate(): Promise<void> {
     // a JSON body with ok:true is the only proof a real backend is present.
     const ct = res.headers.get('content-type') || '';
     if (!res.ok || !ct.includes('application/json')) throw new Error('no backend');
-    const body = await res.json() as { ok?: boolean; data?: Record<string, unknown> };
+    const body = await res.json() as {
+      ok?: boolean; data?: Record<string, unknown>; user?: string; authed?: boolean;
+    };
     if (body.ok !== true || typeof body.data !== 'object' || !body.data) {
       throw new Error('bad response');
     }
     serverUp = true;
+    user = typeof body.user === 'string' && body.user !== 'local' ? body.user : null;
+    authed = body.authed === true;
     for (const [k, v] of Object.entries(body.data)) {
       if (typeof v === 'string') cache.set(k, v);
     }
-    migrateUp();
-    console.log('[store] server-backed storage active');
+    // Only fold a browser's local saves up into a SHARED (local) profile. A
+    // signed-in player gets their own private bucket and must not inherit
+    // whatever happened to be in this browser -- that could be someone else's.
+    if (!authed) migrateUp();
+    console.log(`[store] server-backed storage active${user ? ` as ${user}` : ''}`);
   } catch {
     serverUp = false;   // localStorage-only, exactly as before
   }
@@ -96,6 +107,16 @@ export async function hydrate(): Promise<void> {
 /** Whether saves are being kept on the server. For the UI to reassure the user. */
 export function isServerBacked(): boolean {
   return serverUp;
+}
+
+/** The signed-in player's email, or null when playing the shared local profile. */
+export function currentUser(): string | null {
+  return user;
+}
+
+/** True when a real per-person login (Cloudflare Access) is in force. */
+export function isSignedIn(): boolean {
+  return authed;
 }
 
 /**

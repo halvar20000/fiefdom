@@ -22,4 +22,10 @@
   <Config Name="Saves" Target="/data" Default="/mnt/user/appdata/fiefdom" Mode="rw"
           Description="Where saved games and custom maps are kept. Leave on appdata so they survive container updates."
           Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/fiefdom</Config>
+  <Config Name="Cloudflare Access team" Target="ACCESS_TEAM_DOMAIN" Default="" Mode=""
+          Description="OPTIONAL. To give each player their own separate saves via a login, put your Cloudflare Zero Trust team name here (the part before .cloudflareaccess.com). Requires a Cloudflare Access application in front of this hostname. Leave blank for a single shared profile."
+          Type="Variable" Display="always" Required="false" Mask="false"></Config>
+  <Config Name="Cloudflare Access AUD" Target="ACCESS_AUD" Default="" Mode=""
+          Description="OPTIONAL, used with the team name above. The Application Audience (AUD) tag of your Cloudflare Access application, which ties tokens to THIS app. Find it in Zero Trust > Access > Applications > your app > Overview."
+          Type="Variable" Display="always" Required="false" Mask="false"></Config>
 </Container>

@@ -23,6 +23,26 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.21.0',
+    date: '2026-08-24',
+    headline: 'Separate players, separate saves, via a login.',
+    sections: [
+      {
+        title: 'Added',
+        items: [
+          'More than one person can now play on the same server, each with their own private saved games and custom maps, gated by a login. It uses Cloudflare Access: Cloudflare handles the login at the edge, the server verifies the signed identity token, and every player’s data is kept apart. The title screen shows who is signed in, with a Log out link.',
+          'Turn it on by setting the ACCESS_TEAM_DOMAIN and ACCESS_AUD variables and adding a Cloudflare Access application in front of your hostname — see INSTALL.md. Leave them unset and nothing changes: one shared profile as before.',
+        ],
+      },
+      {
+        title: 'Good to know',
+        items: [
+          'On your LAN (bypassing Cloudflare) there is no login, so those visits share one “local” profile — which is also where any existing shared saves move to when you upgrade, so nothing is lost.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.20.0',
     date: '2026-08-24',
     headline: 'Rally flag: send new troops where you want them.',

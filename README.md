@@ -58,6 +58,12 @@ Two details that matter:
   then they are per-browser again and a container recreate can lose them, so map
   the volume. On first run against a fresh `/data`, any saves a browser already
   held are copied up automatically, so upgrading loses nothing.
+* **Optional per-person logins.** Set `ACCESS_TEAM_DOMAIN` and `ACCESS_AUD` and
+  put a Cloudflare Access application in front, and each signed-in email gets its
+  own private saves under `/data/users/`; the server verifies Cloudflare's signed
+  token (signature, expiry, issuer, AUD) rather than any spoofable header, and
+  LAN visits that skip Cloudflare share a `local` profile. Unset, everyone shares
+  one profile. See [docs/INSTALL.md](docs/INSTALL.md).
 
 CI publishes amd64 **and** arm64 — plenty of home servers are ARM, and an
 x86-only image fails at install time with a message nobody can act on.
