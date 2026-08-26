@@ -23,6 +23,19 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.22.1',
+    date: '2026-08-25',
+    headline: 'The river crossing is now a proper causeway.',
+    sections: [
+      {
+        title: 'Changed',
+        items: [
+          'The ford that joins a divided map is now two tiles wide instead of one — a small causeway across the river rather than a single-file thread, so it reads as a bridge and a column is not funnelled over it one at a time. Only the water is widened; the banks are untouched.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.22.0',
     date: '2026-08-25',
     headline: 'The enemy can always be reached.',

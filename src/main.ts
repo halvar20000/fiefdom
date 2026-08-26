@@ -1069,6 +1069,19 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
       const ford = shortestFord(home.x, home.z, target);
       if (!ford) { console.warn(`[map] no ford could reach ${f.name}`); continue; }
       for (const [x, z] of ford) drain(x, z);
+      // Widen the crossing to two tiles so it reads as a causeway and a column
+      // does not bottleneck single file over it. Only the water beside the ford
+      // is drained -- `drain` ignores anything that is not water -- so the banks
+      // are left alone. Thickened along whichever axis the ford runs LEAST, i.e.
+      // across its length.
+      if (ford.length > 1) {
+        const xs = ford.map(t => t[0]), zs = ford.map(t => t[1]);
+        const runsHorizontal =
+          Math.max(...xs) - Math.min(...xs) >= Math.max(...zs) - Math.min(...zs);
+        for (const [x, z] of ford) {
+          drain(runsHorizontal ? x : x + 1, runsHorizontal ? z + 1 : z);
+        }
+      }
       carved = true;
       console.log(`[map] carved a ${ford.length}-tile ford so ${f.name} can be reached`);
     }
