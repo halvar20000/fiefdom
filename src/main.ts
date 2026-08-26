@@ -1886,6 +1886,23 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
   }
   hud.onSetRally = armRally;
 
+  // A stance toggle that shows itself only while troops are selected, so it is
+  // there when it is useful and gone when it is not. Works by tap or click, so
+  // it covers phone and desktop without another key or thumb-bar button. Its
+  // label and position are refreshed each frame in the loop below.
+  const stanceBtn = document.createElement('button');
+  stanceBtn.id = 'stance';
+  stanceBtn.style.cssText = 'position:fixed;z-index:26;display:none;'
+    + 'left:50%;transform:translateX(-50%);padding:7px 14px;'
+    + 'font:600 13px ui-monospace,SFMono-Regular,Menlo,monospace;color:#ecdfc2;'
+    + 'background:rgba(24,19,12,.94);border:1px solid rgba(196,162,96,.34);'
+    + 'border-radius:8px;box-shadow:0 3px 12px rgba(0,0,0,.5);cursor:pointer;'
+    + '-webkit-tap-highlight-color:transparent;touch-action:manipulation';
+  stanceBtn.addEventListener('pointerup', e => {
+    e.preventDefault(); e.stopPropagation(); toggleHold();
+  });
+  document.body.appendChild(stanceBtn);
+
   /**
    * Scratch buffer for the trouble markers, and a cap on them.
    *
@@ -2091,6 +2108,23 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
   canvas.addEventListener('dblclick', e => { selectTypeAt(e.clientX, e.clientY, e.shiftKey); });
 
   /**
+   * Flip the selected troops between holding ground and going on the attack.
+   *
+   * A toggle so one control does both: if the whole selection is already
+   * holding, this releases them; otherwise it sets them to hold. Held soldiers
+   * stand where they are and only strike what comes into reach.
+   */
+  function toggleHold(): void {
+    const sel = army.selected;
+    if (!sel.length) { state.notify('Select troops first', 'warn'); return; }
+    const on = !army.allHolding;
+    army.setHold(on);
+    state.notify(on
+      ? `${sel.length} holding ground — they will not give chase`
+      : `${sel.length} on the attack`, 'info');
+  }
+
+  /**
    * Order the selected troops to a screen point: post them on a wall if it is
    * one they can reach, otherwise march them there. Returns true if it did
    * something, so the caller knows whether to fall through.
@@ -2234,6 +2268,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
     if (k >= '1' && k <= '6') hud.openCategory(Number(k) - 1);
     if (k === 'm') hud.toggleMarket();
     if (k === 't') hud.toggleStats();
+    if (k === 'h') toggleHold();
     if (k === 'g') {
       // Debug view: paint every tile a unit is forbidden to walk on.
       // If a figure is ever standing on red, movement is at fault; if it is
@@ -2493,6 +2528,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
 
     updateTroubleFlags();
     updateRallyFlag();
+    updateStanceButton();
     updateAmbience(performance.now());
     audio.tickAmbience();
     drawMinimap();
@@ -2508,6 +2544,19 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
     rallyFlag.style.left = `${px}px`;
     rallyFlag.style.top = `${py}px`;
     rallyFlag.style.display = 'block';
+  }
+
+  /** Show the stance toggle while troops are selected, labelled to their state. */
+  function updateStanceButton(): void {
+    const n = army.selected.length;
+    if (!n) { stanceBtn.style.display = 'none'; return; }
+    const holding = army.allHolding;
+    stanceBtn.textContent = holding ? '\u{1F6E1} Holding — tap to attack'
+                                    : '⚔ Attacking — tap to hold';
+    // Sit clear of the thumb bar on a phone, low on the screen on desktop.
+    stanceBtn.style.bottom =
+      document.documentElement.classList.contains('touch') ? '76px' : '18px';
+    stanceBtn.style.display = 'block';
   }
 
   /** Rasterise the ground once. Cliffs are shaded from the height, not stored. */
@@ -2814,8 +2863,11 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
         // Enemies are the same three bodies under a red cast rather than three
         // more palettes: 288 more sprites to say "not yours" is a poor trade,
         // and side reads faster from colour than from costume anyway.
+        // Selection wins; otherwise a held man wears a cool steel cast so you
+        // can see at a glance which of your troops are standing their ground.
         tint: sd.side !== PLAYER ? (factionOf(sd.side)?.unitTint ?? [1.5, 0.62, 0.55])
-            : sd.selected ? [1.45, 1.45, 1.15] : undefined,
+            : sd.selected ? [1.45, 1.45, 1.15]
+            : sd.hold ? [0.82, 0.9, 1.15] : undefined,
       });
     }
 
@@ -2964,6 +3016,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
         .map(([i, d]) => [i, d.regrowAt] as [number, number]),
       soldiers: army.soldiers.map(u => ({
         t: u.type, side: u.side, x: u.x, z: u.z, hp: u.hp,
+        ...(u.hold ? { h: true } : {}),
         ...(u.garrison
           ? { g: [u.garrison.x, u.garrison.z, u.garrison.sx, u.garrison.sz] as
                  [number, number, number, number] }
@@ -3118,6 +3171,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
       const u = army.recruit(su.t, su.x, su.z, su.side);
       if (!u) continue;
       u.hp = su.hp;
+      if (su.h) u.hold = true;
       if (su.g) u.garrison = { x: su.g[0], z: su.g[1], sx: su.g[2], sz: su.g[3] };
     }
 

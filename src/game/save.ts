@@ -33,6 +33,8 @@ export interface SavedSoldier {
   t: string; side: number; x: number; z: number; hp: number;
   /** Post being manned: building tile plus the exact stand point. */
   g?: [number, number, number, number];
+  /** Holding ground (defensive stance). Absent means aggressive. */
+  h?: boolean;
 }
 
 export interface SavedAnimal {

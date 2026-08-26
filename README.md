@@ -1341,6 +1341,26 @@ forgetting exactly that shipped a half-broken image once already.
 Tagging `v1.0.0` publishes `ghcr.io/halvar20000/fiefdom:1.0.0` and `:1.0`
 beside `:latest`, so a version can be pinned rather than tracked.
 
+## Holding ground
+
+Soldiers default to aggressive: a `findFoe` over the aggro radius picks up any
+enemy nearby and, if it is out of reach, `send`s the man to close on it. The
+defensive stance is one flag on the soldier, `hold`, and one gate on that pursuit
+— `else if (!s.moving && !s.garrison && !s.hold)`. A holding man still acquires
+and strikes whatever comes into his reach; he simply never takes the step that
+would close the gap, so he stays exactly where he was put. It sits beside the
+rule that already kept a garrisoned man from climbing down to chase — same idea,
+now available to any soldier, not only one on a wall.
+
+`army.setHold` flips the whole selection and clears any chase already under way
+(the order means "stop here", so a man mid-run turns and stands). `H` toggles it,
+as does a stance button that appears at the foot of the screen only while troops
+are selected — one control that reads its state from `army.allHolding`, so it
+covers mouse and touch without a second key. Held men wear a cool steel tint so
+the standing guard is legible on the map, and the flag rides in the save. An
+explicit move or garrison order still moves them; only the automatic pursuit is
+what "hold" holds back.
+
 ## The rally flag
 
 Recruitment is global — it draws from your first barracks or siege camp — so the

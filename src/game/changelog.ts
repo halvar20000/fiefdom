@@ -23,6 +23,20 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.23.0',
+    date: '2026-08-25',
+    headline: 'Tell troops to hold their ground.',
+    sections: [
+      {
+        title: 'Added',
+        items: [
+          'A defensive stance. Select troops and press H — or use the stance button that appears at the bottom of the screen — and they hold their ground: they attack anything that comes within reach but never move to chase it, so you can post archers on a ford or spearmen at a gate and trust them to stay put. Press H again to send them back on the attack.',
+          'Holding troops wear a cool steel tint so you can see at a glance which of your men are standing guard, and the stance is remembered in your saved game. An explicit move order still moves them; only the automatic pursuit is held.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.22.1',
     date: '2026-08-25',
     headline: 'The river crossing is now a proper causeway.',

@@ -1072,7 +1072,8 @@ export class Hud {
     foot.innerHTML = '<span>Soldiers</span><b data-role="armytotal">0</b>';
     const hint = this.el('div', panel, 'hint');
     hint.innerHTML = 'Click a soldier to select · <b>Shift-drag</b> for a box ·<br>'
-                   + 'Double-click to take every one of that kind · Right-click to move';
+                   + 'Double-click to take every one of that kind · Right-click to move ·<br>'
+                   + '<b>H</b> to hold ground (defensive) or attack again';
   }
 
   private buildMarket(): void {

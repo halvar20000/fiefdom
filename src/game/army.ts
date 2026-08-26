@@ -74,6 +74,17 @@ export interface Soldier {
   garrison: GarrisonPost | null;
   /** Where he is walking to climb up, if he has been sent to man something. */
   mountAt: GarrisonPost | null;
+  /**
+   * Hold ground: attack what comes into reach, but never move to engage.
+   *
+   * The defensive stance. An aggressive soldier (the default) chases any foe he
+   * notices; a holding one stands exactly where he was put and only swings at
+   * what wanders within range -- so a line of archers can be posted to guard a
+   * ford or a gate without wandering off after the first thing they see. An
+   * explicit move order still moves him; this governs only the automatic
+   * pursuit.
+   */
+  hold: boolean;
 }
 
 /** What a siege engine has found to knock down. */
@@ -158,7 +169,7 @@ export class Army {
       hp: def.hp, moving: false, selected: false,
       path: [], tx: x, tz: z,
       target: null, cooldown: Math.random() * 0.4, swing: 0, dying: 0, ordered: false,
-      garrison: null, mountAt: null,
+      garrison: null, mountAt: null, hold: false,
     };
     this.soldiers.push(s);
     return s;
@@ -225,6 +236,30 @@ export class Army {
   /** Every player soldier of one type, for double-click "select all of these". */
   selectType(type: string, add: boolean): number {
     return this.selectWhere(s => s.type === type, add);
+  }
+
+  /**
+   * Set the stance of the selected soldiers. Returns how many changed.
+   *
+   * Holding also drops any pursuit already under way -- the point of the order
+   * is "stop where you are", so a man mid-chase turns and stands rather than
+   * finishing the run he was told to abandon.
+   */
+  setHold(on: boolean): number {
+    let n = 0;
+    for (const s of this.selected) {
+      if (s.hold === on) continue;
+      s.hold = on;
+      if (on && !s.garrison && !s.ordered) { s.moving = false; s.path = []; }
+      n++;
+    }
+    return n;
+  }
+
+  /** Whether every selected soldier is already holding, for a toggle. */
+  get allHolding(): boolean {
+    const sel = this.selected;
+    return sel.length > 0 && sel.every(s => s.hold);
   }
 
   /**
@@ -498,9 +533,10 @@ export class Army {
           s.cooldown = s.def.cooldown;
           s.swing = SWING_TIME;
         }
-      } else if (!s.moving && !s.garrison) {
-        // A man on a wall never climbs down to chase. That is the whole
-        // bargain: he gives up mobility for reach and cover.
+      } else if (!s.moving && !s.garrison && !s.hold) {
+        // A man on a wall never climbs down to chase, and neither does one told
+        // to hold ground -- both give up the pursuit for a fixed post. Everyone
+        // else closes on the foe he has noticed.
         this.send(s, foe.x, foe.z);
       }
     }
