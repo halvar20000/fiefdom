@@ -1778,6 +1778,27 @@ the state at the end. The screen offers "Return to title" (the same boot-intent
 reload the pause menu quits through) or "Survey the field", which just removes the
 overlay so the player can pan across the ruins they made.
 
+### Greatness, and being the greatest lord
+
+The standing that drives the "greatest lord" message and the title ladder is one
+score, `greatness(side)`, applied identically to the player and every rival — the
+only honest way to compare them. It reads the four things both a player and a
+`Lord` actually keep: `population * 8 + armyWorth * 0.6 + buildings * 5 + gold *
+0.02`, where `armyWorth` is the summed gold-cost of that side's living troops so a
+small veteran force outweighs a rabble. People and army lead, holdings follow,
+gold barely registers — roughly how a Crusader map is judged.
+
+Two readings come off that one number. **Title** is absolute — `titleFor` maps the
+player's own score onto Lord → Knight → Baron → Earl → Duke → Prince → King, and
+it only ever climbs (an earned honour is not taken back), so it gives a sense of
+rising even on a map with no rival to measure against. **"Greatest in the land"**
+is comparative — true when the player's score beats every undefeated rival's — and
+it *can* be lost, so it carries hysteresis: claimed only at a tenth clear ahead,
+surrendered only when back under a twentieth, which stops two close lords trading
+the title every few seconds. Both are checked on a six-second beat in the main
+loop and both feed the end tally, where a win reads as "Greatest lord in the land"
+by right of survival and a loss ranks the player Nth of M by score.
+
 ## M2, part four: the enemy lord
 
 A second castle stands across the map — keep, barracks, hovels and a walled

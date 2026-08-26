@@ -23,6 +23,21 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.25.0',
+    date: '2026-08-25',
+    headline: 'Rise to be the greatest lord in the land.',
+    sections: [
+      {
+        title: 'Added',
+        items: [
+          'Your standing is now measured against the rival lords by one fair yardstick — the size of your people, the worth of your army, the extent of your holdings and your treasury — and when you pull ahead of every rival you are told: "You are now the greatest lord in the land!" Lose the lead and a rival takes the honour back.',
+          'A ladder of titles earned from that same standing — Lord, Knight, Baron, Earl, Duke, Prince, King — announced as you climb, so even on a peaceful map you feel your fief growing in stature.',
+          'The end tally now shows the title you earned and your final standing among the lords.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.24.0',
     date: '2026-08-25',
     headline: 'A proper end to the war.',

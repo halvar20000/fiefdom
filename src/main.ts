@@ -338,6 +338,21 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
   /** Set once the war is decided, so the end screen shows exactly once. */
   let gameEnded = false;
 
+  // --- a lord's "greatness", the same measure for the player and every rival --
+  //
+  // Comparable by construction: one formula over data both sides have -- the
+  // size of the settlement, the worth of the standing army (its gold cost, so
+  // quality counts, not just headcount), the extent of the holdings, and the
+  // treasury. Weights put people and army first, holdings next, gold a distant
+  // last, which is roughly how a Crusader map is actually judged.
+  const TITLES: [number, string][] = [
+    [0, 'Lord'], [150, 'Knight'], [350, 'Baron'], [600, 'Earl'],
+    [900, 'Duke'], [1300, 'Prince'], [1800, 'King'],
+  ];
+  let titleIdx = 0;          // only ever climbs -- an earned honour is not lost
+  let isGreatest = false;    // currently ahead of every living rival
+  let standingClock = 0;
+
   /** Gold an unopposed enemy carries off per second, standing at your keep. */
   const SACK_GOLD_PER_SEC = 2.5;
   let sackDebt = 0;
@@ -1727,6 +1742,61 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
     }
   }
 
+  /** One lord's greatness -- the same formula for the player and every rival. */
+  function greatness(side: number): number {
+    let pop: number, gold: number, buildings: number;
+    if (side === PLAYER) {
+      pop = state.population; gold = state.gold; buildings = state.buildings.length;
+    } else {
+      const f = factionOf(side);
+      pop = f?.lord.population ?? 0; gold = f?.lord.gold ?? 0;
+      buildings = f?.buildings.length ?? 0;
+    }
+    const armyWorth = army.of(side)
+      .reduce((n, s) => n + (SOLDIER_TYPES[s.type]?.gold ?? 20), 0);
+    return pop * 8 + armyWorth * 0.6 + buildings * 5 + gold * 0.02;
+  }
+
+  /** The title the player's own score has earned, as an index into TITLES. */
+  function titleFor(score: number): number {
+    let i = 0;
+    for (let k = 0; k < TITLES.length; k++) if (score >= TITLES[k][0]) i = k;
+    return i;
+  }
+
+  /**
+   * Announce a rising title and a change in standing against the living rivals.
+   *
+   * Two separate ideas on purpose. The TITLE is absolute -- earned from the
+   * player's own greatness, never taken back -- so it gives a sense of rising
+   * even on a map with no rivals to measure against. "Greatest in the land" is
+   * comparative and can be lost; the margins (ahead by a tenth to claim it, back
+   * under a twentieth to lose it) keep two close lords from trading the title
+   * every few seconds.
+   */
+  function checkStanding(): void {
+    const score = greatness(PLAYER);
+    const t = titleFor(score);
+    if (t > titleIdx) {
+      titleIdx = t;
+      state.notify(`Your standing rises — you are now a ${TITLES[t][1]}.`, 'info');
+      audio.say(`You are now a ${TITLES[t][1]}.`);
+    }
+
+    const rivals = factions.filter(f => !f.defeated);
+    if (!rivals.length) return;   // nobody to be greater THAN; the title carries it
+    const best = Math.max(...rivals.map(f => greatness(f.id)));
+    if (!isGreatest && score > best * 1.1) {
+      isGreatest = true;
+      state.notify('You are now the greatest lord in the land!', 'info');
+      audio.say('You are the greatest lord in the land.');
+    } else if (isGreatest && score < best * 0.95) {
+      isGreatest = false;
+      state.notify('A rival lord has surpassed you in greatness.', 'warn');
+      audio.say('A rival lord has surpassed you.', true);
+    }
+  }
+
   /**
    * End the game and show the tally. Runs exactly once.
    *
@@ -1762,10 +1832,25 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
     audio.say(win ? 'The field is yours, my lord.' : 'Our keep has fallen.', !win);
 
     const defeated = factions.filter(f => f.defeated).length;
+    // Final standing. A win means every rival keep has fallen, so the player is
+    // the last lord standing -- greatest by survival. Otherwise rank by score.
+    titleIdx = Math.max(titleIdx, titleFor(greatness(PLAYER)));
+    let standing: string;
+    if (win || !factions.length) {
+      standing = 'Greatest lord in the land';
+    } else {
+      const scores = [greatness(PLAYER), ...factions.map(f => greatness(f.id))]
+        .sort((a, b) => b - a);
+      const rank = scores.indexOf(greatness(PLAYER)) + 1;
+      const nth = ['', '1st', '2nd', '3rd', '4th'][rank] ?? `${rank}th`;
+      standing = `${nth} of ${scores.length} lords`;
+    }
     showGameOver({
       win,
       stats: [
         { label: 'Time', value: playTime(state.elapsed) },
+        { label: 'Title earned', value: TITLES[titleIdx][1] },
+        { label: 'Standing', value: standing },
         { label: 'Largest settlement', value: `${peakPop} people` },
         { label: 'Gold amassed', value: Math.floor(peakGold) },
         { label: 'Popularity', value: `${Math.round(state.popularity)}%` },
@@ -2571,6 +2656,8 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
     herd.update(dt, state.elapsed);
     army.update(dt);
     trackStats();
+    standingClock += dt;
+    if (standingClock > 6) { standingClock = 0; checkStanding(); }
     updateRaids(dt);
     enemyWorkers.update(dt, factions);
     updateFires(dt);
@@ -3322,6 +3409,8 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
     lordAttack: (i = 0) => factions[i]?.lord.attackNow() ?? 0,
     /** Force the end screen, for testing. `win=true` also razes the rivals. */
     endGame: (win = true) => { if (win) for (const f of factions) { f.defeated = true; f.lord.defeated = true; } endGame(win); },
+    greatness: (side = 0) => greatness(side),
+    checkStanding: () => checkStanding(),
     /** Hold off the next raid. `setNextRaid(Infinity)` disables them. */
     setNextRaid: (t: number) => { nextRaid = t; },
     raidState: () => ({ nextRaid, raidNumber, elapsed: state.elapsed }),
