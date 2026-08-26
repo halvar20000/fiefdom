@@ -1759,6 +1759,25 @@ Bumped to v4: `enemyBuildings` became a `factions` array. Saves from v3 are
 rejected with "from an older build" rather than loaded into a world whose
 shape no longer matches them.
 
+### Winning, and the tally
+
+The war used to end with a line of text and nothing else — the enemy's town
+simply froze in place, standing but unreachable. `endGame(win)` runs once (a
+`gameEnded` latch), triggered when the last rival keep falls (all factions
+`defeated`) or the player's own keep does. On a win it puts every rival building
+to the torch — a fire dropped at each footprint's centre, the tiles razed and
+freed — routs their leaderless soldiers (`army.soldiers` filtered to the player)
+and clears their workers, so the field really is emptied rather than left as a
+frozen enemy settlement. Then `showGameOver` renders a Stronghold-style tally.
+
+The tally reads from cheap running counters kept in the sim loop: `peakPop` and
+`peakGold` (peaks, because a town cut back from forty was still a town of forty),
+and an `enemyKilled` / `troopsLost` split tallied each tick from
+`army.lastFallen`. Time, popularity and buildings-standing are read straight off
+the state at the end. The screen offers "Return to title" (the same boot-intent
+reload the pause menu quits through) or "Survey the field", which just removes the
+overlay so the player can pan across the ruins they made.
+
 ## M2, part four: the enemy lord
 
 A second castle stands across the map — keep, barracks, hovels and a walled

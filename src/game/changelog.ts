@@ -23,6 +23,21 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.24.0',
+    date: '2026-08-25',
+    headline: 'A proper end to the war.',
+    sections: [
+      {
+        title: 'Added',
+        items: [
+          'When the last rival keep falls, his whole castle is now put to the torch and cleared from the map — buildings razed and burning, his leaderless troops quit the field, his workers gone — so the ground you won is truly yours instead of a frozen enemy town you can no longer touch.',
+          'A victory tally in the spirit of Stronghold: time played, your largest settlement, gold amassed, popularity, buildings standing, rivals defeated, enemy troops destroyed and men lost. Choose "Survey the field" to look over your conquest, or "Return to title".',
+          'Losing your own keep now ends the game too, with a matching defeat screen, rather than just carrying on.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.23.0',
     date: '2026-08-25',
     headline: 'Tell troops to hold their ground.',

@@ -28,8 +28,9 @@ import { applyCustomMap, hashVariant, type CustomMap } from './game/custom';
 import { manableTiles } from './game/access';
 import { isTouchUi, isPhoneUi, lockPageGestures, makeTouchPad, attachPinch, type PadMode } from './ui/touch';
 import { showPause } from './ui/pause';
+import { showGameOver } from './ui/gameover';
 import type { MapDef } from './game/maps';
-import { SAVE_VERSION, takeBootIntent, readSlot, type SaveGame } from './game/save';
+import { SAVE_VERSION, takeBootIntent, readSlot, playTime, type SaveGame } from './game/save';
 import { hydrate } from './game/backend';
 import {
   BUILDINGS, STORE_SPRITES, SOLDIER_TYPES, buildingHp, canGarrison,
@@ -326,6 +327,16 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
   // __game.setNextRaid to bring off-map raiders back.
   let nextRaid = Infinity;
   let raidNumber = 0;
+
+  // Running tallies for the end-of-game score. Peaks rather than final values
+  // where the final would undersell the game -- a settlement that grew to 40
+  // and was cut back to 12 was still, at its height, a town of 40.
+  let peakPop = 0;
+  let peakGold = 0;
+  let enemyKilled = 0;
+  let troopsLost = 0;
+  /** Set once the war is decided, so the end screen shows exactly once. */
+  let gameEnded = false;
 
   /** Gold an unopposed enemy carries off per second, standing at your keep. */
   const SACK_GOLD_PER_SEC = 2.5;
@@ -1642,9 +1653,13 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
       f.defeated = true;
       f.lord.defeated = true;
       const left = factions.filter(o => !o.defeated).length;
-      state.notify(left
-        ? `${f.name}'s keep has fallen. ${left} rival${left === 1 ? '' : 's'} left.`
-        : `${f.name}'s keep has fallen. The field is yours!`, 'info');
+      if (left) {
+        state.notify(
+          `${f.name}'s keep has fallen. ${left} rival${left === 1 ? '' : 's'} left.`, 'info');
+      } else {
+        state.notify(`${f.name}'s keep has fallen. The field is yours!`, 'info');
+        endGame(true);
+      }
     }
   }
 
@@ -1699,6 +1714,68 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
     razeTiles(b.x, b.z, w, d);
     state.notify(`Your ${b.def.label.toLowerCase()} has been destroyed!`, 'warn');
     workers.sync();
+    // Lose your keep and the fief is lost.
+    if (b.name === 'keep') endGame(false);
+  }
+
+  /** Roll the peaks and the kill tally forward. Called each tick after combat. */
+  function trackStats(): void {
+    if (state.population > peakPop) peakPop = state.population;
+    if (state.gold > peakGold) peakGold = state.gold;
+    for (const s of army.lastFallen) {
+      if (s.side === PLAYER) troopsLost++; else enemyKilled++;
+    }
+  }
+
+  /**
+   * End the game and show the tally. Runs exactly once.
+   *
+   * On a win the rivals' castles are put to the torch and cleared from the map,
+   * their leaderless troops quit the field and their workers go with the walls,
+   * so the field the player surveys is genuinely theirs rather than a frozen
+   * enemy town they can no longer touch.
+   */
+  function endGame(win: boolean): void {
+    if (gameEnded) return;
+    gameEnded = true;
+    nextRaid = Infinity;
+
+    if (win) {
+      for (const f of factions) {
+        for (const b of [...f.buildings]) {
+          const [w, d] = BUILDINGS[b.name].footprint;
+          fires.push({
+            x: Math.floor(b.x + w / 2), z: Math.floor(b.z + d / 2),
+            until: state.elapsed + BURN_SECONDS, seed: (b.x * 7 + b.z * 13) & 7,
+          });
+          evictGarrison(b.x, b.z);
+          razeTiles(b.x, b.z, w, d);
+        }
+        f.buildings.length = 0;
+      }
+      army.soldiers = army.soldiers.filter(s => s.side === PLAYER);
+      enemyWorkers.sync(factions);
+      staticDirty = true;
+    }
+
+    audio.play(win ? 'notice' : 'warn');
+    audio.say(win ? 'The field is yours, my lord.' : 'Our keep has fallen.', !win);
+
+    const defeated = factions.filter(f => f.defeated).length;
+    showGameOver({
+      win,
+      stats: [
+        { label: 'Time', value: playTime(state.elapsed) },
+        { label: 'Largest settlement', value: `${peakPop} people` },
+        { label: 'Gold amassed', value: Math.floor(peakGold) },
+        { label: 'Popularity', value: `${Math.round(state.popularity)}%` },
+        { label: 'Buildings standing', value: state.buildings.length },
+        { label: 'Rival lords defeated', value: `${defeated} of ${factions.length}` },
+        { label: 'Enemy troops destroyed', value: enemyKilled },
+        { label: 'Men lost', value: troopsLost },
+      ],
+      onStay: () => {},
+    });
   }
 
   /**
@@ -2493,6 +2570,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
     updateWanderers(dt);
     herd.update(dt, state.elapsed);
     army.update(dt);
+    trackStats();
     updateRaids(dt);
     enemyWorkers.update(dt, factions);
     updateFires(dt);
@@ -2956,6 +3034,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
       updateWanderers(dt);
       herd.update(dt, state.elapsed);
       army.update(dt);
+      trackStats();
     updateRaids(dt);
       enemyWorkers.update(dt, factions);
     updateFires(dt);
@@ -3241,6 +3320,8 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
       ? factions.map(f => ({ who: f.name, ...f.lord.status() }))
       : factions[i]?.lord.status(),
     lordAttack: (i = 0) => factions[i]?.lord.attackNow() ?? 0,
+    /** Force the end screen, for testing. `win=true` also razes the rivals. */
+    endGame: (win = true) => { if (win) for (const f of factions) { f.defeated = true; f.lord.defeated = true; } endGame(win); },
     /** Hold off the next raid. `setNextRaid(Infinity)` disables them. */
     setNextRaid: (t: number) => { nextRaid = t; },
     raidState: () => ({ nextRaid, raidNumber, elapsed: state.elapsed }),
