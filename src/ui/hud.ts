@@ -43,8 +43,34 @@ const CSS = `
   display: flex; flex-wrap: wrap; justify-content: center; gap: 2px 0;
   padding: 7px 10px; align-items: center;
 }
-#topbar .res { display: flex; align-items: baseline; gap: 5px; padding: 0 8px; }
+#topbar .res { display: flex; align-items: baseline; gap: 5px; padding: 0 8px;
+  cursor: pointer; border-radius: 3px; transition: background .12s; }
+#topbar .res:hover { background: rgba(240,200,105,.14); }
 #topbar .res + .res { border-left: 1px solid rgba(196,162,96,.16); }
+
+/* Resource history chart, opened by clicking a bar chip. */
+#chart { position: fixed; inset: 0; z-index: 55; display: grid; place-items: center;
+  background: rgba(8,8,7,.72); backdrop-filter: blur(2px); pointer-events: auto; }
+#chart .cbox { width: min(560px, 94vw); background: rgba(24,19,12,.98);
+  border: 1px solid rgba(196,162,96,.34); border-radius: 8px;
+  box-shadow: 0 14px 46px rgba(0,0,0,.6); padding: 14px 16px 12px; }
+#chart .chead { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+#chart .ct { font-size: 15px; font-weight: 600; color: var(--gold); letter-spacing: .04em; }
+#chart .cnow { margin-left: auto; font-size: 12px; opacity: .8; }
+#chart .cnow b { color: var(--gold); font-variant-numeric: tabular-nums; }
+#chart .cx { width: 26px; height: 26px; padding: 0; font: inherit; cursor: pointer;
+  color: var(--ink); background: rgba(60,48,28,.7); border: 1px solid var(--edge);
+  border-radius: 4px; }
+#chart .cx:hover { border-color: var(--gold); }
+#chart .cempty { padding: 28px 8px; text-align: center; font-size: 12px; opacity: .6; }
+#chart .csvg { display: block; height: 250px; }
+#chart .cgrid { stroke: rgba(196,162,96,.14); stroke-width: 1; }
+#chart .cyl { fill: rgba(236,223,194,.55); font-size: 10px; text-anchor: end;
+  font-family: ui-monospace, monospace; }
+#chart .cxl { fill: rgba(236,223,194,.55); font-size: 10px; font-family: ui-monospace, monospace; }
+#chart .carea { fill: rgba(240,200,105,.12); stroke: none; }
+#chart .cline { fill: none; stroke: var(--gold); stroke-width: 2;
+  stroke-linejoin: round; stroke-linecap: round; }
 #topbar .res .n { color: var(--gold); font-weight: 600; font-variant-numeric: tabular-nums; }
 #topbar .res .k { opacity: .62; font-size: 10px; text-transform: uppercase; letter-spacing: .04em; }
 
@@ -525,6 +551,11 @@ export class Hud {
   private buildWrap!: HTMLElement;
   /** Phone mode: columns become on-demand bottom sheets. Off on desktop/tablet. */
   private phone = false;
+  /** History of each watched figure, sampled over game time, for the charts. */
+  private history = new Map<string, number[]>();
+  private histTimes: number[] = [];
+  private lastSample = -1e9;
+  private readonly HIST_MAX = 300;   // ~20 min at one sample every 4s
   /** Which bottom sheet is open on a phone, or null for none (canvas only). */
   private drawer: 'build' | 'info' | 'map' | null = null;
   private sheets: Record<string, HTMLElement> = {};
@@ -585,6 +616,109 @@ export class Hud {
 
   private buildTopbar(): void {
     this.topbar = this.el('div', this.root, 'panel', 'topbar');
+    // The bar's innerHTML is rebuilt every frame, so a per-chip click handler
+    // would be thrown away each time; one delegated listener reads which chip
+    // was hit from its data-res and opens that resource's history.
+    this.topbar.addEventListener('click', e => {
+      const chip = (e.target as HTMLElement).closest('[data-res]') as HTMLElement | null;
+      if (chip?.dataset.res) this.showResourceChart(chip.dataset.res);
+    });
+  }
+
+  /** The current value behind a bar chip, by its data-res key. */
+  private valueOf(key: string): number {
+    const s = this.state;
+    if (key === 'gold') return Math.floor(s.gold);
+    if (key === 'population') return s.population;
+    if (key === 'popularity') return Math.round(s.popularity);
+    return s.stock[key as Resource] ?? 0;
+  }
+
+  private histLabel(key: string): string {
+    if (key === 'gold') return 'Gold';
+    if (key === 'population') return 'Population';
+    if (key === 'popularity') return 'Popularity';
+    return RESOURCE_LABELS[key as Resource] ?? key;
+  }
+
+  /**
+   * Sample every watched figure once every few seconds of game time.
+   *
+   * A ring buffer capped at HIST_MAX, so the memory never grows and the chart
+   * always shows the most recent stretch. Sampled from the same update the bar
+   * itself runs on, so the graph and the number can never disagree.
+   */
+  private recordHistory(): void {
+    const t = this.state.elapsed;
+    if (t - this.lastSample < 4) return;
+    this.lastSample = t;
+    this.histTimes.push(t);
+    for (const key of ['gold', 'population', 'popularity', ...ALL_RESOURCES]) {
+      let arr = this.history.get(key);
+      if (!arr) { arr = []; this.history.set(key, arr); }
+      arr.push(this.valueOf(key));
+    }
+    if (this.histTimes.length > this.HIST_MAX) {
+      this.histTimes.shift();
+      for (const arr of this.history.values()) arr.shift();
+    }
+  }
+
+  /** Pop up a line chart of one figure's history. */
+  private showResourceChart(key: string): void {
+    document.getElementById('chart')?.remove();
+    const vals = this.history.get(key) ?? [];
+    const label = this.histLabel(key);
+
+    const root = document.createElement('div');
+    root.id = 'chart';
+    root.addEventListener('click', e => { if (e.target === root) root.remove(); });
+    const box = document.createElement('div');
+    box.className = 'cbox';
+    root.appendChild(box);
+
+    box.innerHTML = `<div class="chead"><span class="ct">${label}</span>`
+      + `<span class="cnow">now <b>${this.valueOf(key)}</b></span>`
+      + `<button class="cx" title="Close">✕</button></div>`;
+    (box.querySelector('.cx') as HTMLButtonElement).onclick = () => root.remove();
+
+    if (vals.length < 2) {
+      const p = this.el('div', box, 'cempty');
+      p.textContent = 'Not enough history yet — give it a minute of play.';
+    } else {
+      box.insertAdjacentHTML('beforeend', this.chartSvg(vals, this.histTimes));
+    }
+    document.body.appendChild(root);
+  }
+
+  /** A small SVG line chart of a series, zoomed to its own min..max. */
+  private chartSvg(vals: number[], times: number[]): string {
+    const W = 520, H = 250, PL = 50, PR = 14, PT = 14, PB = 30;
+    const iw = W - PL - PR, ih = H - PT - PB;
+    const n = vals.length;
+    let lo = Math.min(...vals), hi = Math.max(...vals);
+    if (hi === lo) { hi += 1; lo -= 1; }             // a flat line still needs a band
+    const span = hi - lo;
+    const t0 = times[0], tEnd = times[n - 1];
+    const tspan = (tEnd - t0) || 1;
+    const px = (i: number) => PL + ((times[i] - t0) / tspan) * iw;
+    const py = (v: number) => PT + (1 - (v - lo) / span) * ih;
+
+    const line = vals.map((v, i) => `${px(i).toFixed(1)},${py(v).toFixed(1)}`).join(' ');
+    const area = `${PL},${(PT + ih).toFixed(1)} ${line} ${(PL + iw).toFixed(1)},${(PT + ih).toFixed(1)}`;
+
+    const ticks = [lo, lo + span / 2, hi];
+    const grid = ticks.map(v =>
+      `<line x1="${PL}" y1="${py(v).toFixed(1)}" x2="${PL + iw}" y2="${py(v).toFixed(1)}" class="cgrid"/>`
+      + `<text x="${PL - 7}" y="${(py(v) + 3).toFixed(1)}" class="cyl">${Math.round(v)}</text>`).join('');
+
+    const ago = (sec: number) => { const m = Math.floor(sec / 60); return m ? `${m}m` : `${Math.round(sec)}s`; };
+    const xl = `<text x="${PL}" y="${H - 9}" class="cxl">${ago(tspan)} ago</text>`
+      + `<text x="${PL + iw}" y="${H - 9}" class="cxl" text-anchor="end">now</text>`;
+
+    return `<svg class="csvg" viewBox="0 0 ${W} ${H}" width="100%" preserveAspectRatio="none">`
+      + grid + `<polygon points="${area}" class="carea"/>`
+      + `<polyline points="${line}" class="cline"/>` + xl + `</svg>`;
   }
 
   private buildStats(): void {
@@ -1335,17 +1469,19 @@ export class Hud {
     // constantly -- how many people, how well liked -- lead the ticker where the
     // eye can keep them without opening anything.
     const lead = this.phone
-      ? `<div class="res stat" title="Population">` +
+      ? `<div class="res stat" title="Population — click for history" data-res="population">` +
           `<span class="n">${s.population}</span><span class="k">Pop</span></div>` +
-        `<div class="res stat" title="Popularity">` +
+        `<div class="res stat" title="Popularity — click for history" data-res="popularity">` +
           `<span class="n">${Math.round(s.popularity)}</span><span class="k">Liked</span></div>`
       : '';
     this.topbar.innerHTML = lead + shown.map(r => {
       const n = r === 'gold' ? Math.floor(s.gold) : s.stock[r as Resource];
       const label = r === 'gold' ? 'Gold' : RESOURCE_LABELS[r as Resource];
-      return `<div class="res" title="${label}">` +
+      return `<div class="res" title="${label} — click for history" data-res="${r}">` +
              `<span class="n">${n}</span><span class="k">${label}</span></div>`;
     }).join('');
+
+    this.recordHistory();
 
     // stats
     const pop = s.population;

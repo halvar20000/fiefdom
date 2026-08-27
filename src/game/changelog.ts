@@ -23,6 +23,19 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.27.0',
+    date: '2026-08-27',
+    headline: 'Click a resource to see its history.',
+    sections: [
+      {
+        title: 'Added',
+        items: [
+          'Click any figure in the top bar — Gold, Wood, Bread, and the rest, plus Population and Popularity — and a chart pops up showing how it has moved over the game so far. Handy for spotting a slow drain before it becomes a crisis, or seeing whether a new farm actually turned your food around.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.26.0',
     date: '2026-08-27',
     headline: 'Choose how hard the rival lords fight.',
