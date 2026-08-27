@@ -17,7 +17,7 @@ import { GameState, type PlacedBuilding } from './game/state';
 import { PathGrid } from './game/pathfind';
 import { Herd, HUNT_RADIUS } from './game/wildlife';
 import { Army, PLAYER, SWING_TIME } from './game/army';
-import { Lord } from './game/lord';
+import { Lord, type Difficulty } from './game/lord';
 import { WorkerPool, totalHeld, type WorkerWorld } from './game/workers';
 import { EnemyWorkers } from './game/enemyworkers';
 import { Placement, type PlacementWorld } from './game/placement';
@@ -106,7 +106,8 @@ function hash2(x: number, y: number): number {
   return ((h ^ (h >>> 16)) >>> 0) / 4294967295;
 }
 
-async function main(chosen: MapDef, restore: SaveGame | null = null) {
+async function main(chosen: MapDef, restore: SaveGame | null = null,
+                    difficulty: Difficulty = 'normal') {
   const app = document.getElementById('app')!;
   const legacyHud = document.getElementById('hud')!;
   const loading = document.getElementById('loading')!;
@@ -1976,7 +1977,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
         return null;
       },
       notify: (t: string) => state.notify(`${f.name}: ${t}`, 'warn'),
-    }, f.id);
+    }, f.id, difficulty);
   }
 
   /** Relayout both stores. Returns whether anything DRAWN changed. */
@@ -3239,6 +3240,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
       })),
       fires: fires.map(f => [f.x, f.z, f.until] as [number, number, number]),
       rally: rallyPoint,
+      difficulty,
     };
   }
 
@@ -3526,7 +3528,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
     const info = readSlot(intent.slot);
     if (info.save) {
       loading.textContent = `loading ${info.save.map.name.toLowerCase()}…`;
-      return main(info.save.map, info.save);
+      return main(info.save.map, info.save, info.save.difficulty ?? 'normal');
     }
     // The slot went missing between clicking Load and reloading. Fall through
     // to the menu rather than booting a blank world with no explanation.
@@ -3539,7 +3541,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
     const choice = await showMenu();
     if (choice.kind === 'play') {
       loading.textContent = `building ${choice.map.name.toLowerCase()}…`;
-      return main(choice.map);
+      return main(choice.map, null, choice.difficulty);
     }
     // The loading veil sits above the canvas; the editor draws its own world,
     // so it has to come down here and go back up before the game boots.

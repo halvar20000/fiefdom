@@ -114,6 +114,50 @@ export const LORD = {
   taxLevel: 2,
 };
 
+/** How hard the rival lords play. Chosen on the title screen. */
+export type Difficulty = 'easy' | 'normal' | 'heavy';
+
+/**
+ * What each difficulty changes. Everything a lord's strength turns on: how fast
+ * and how large an army he raises, how big and how soon his waves come, and --
+ * the part that funds all of it -- an `economy` multiplier on his production and
+ * his tax. The economy bonus is a deliberate, honest "he works his land harder"
+ * cheat: without it a lord simply cannot pay for a bigger, faster army, and the
+ * higher tiers would be settings that do nothing. `headStart` scales his opening
+ * stores so a Heavy lord is not still clearing his first trees at ten minutes.
+ */
+export interface LordProfile {
+  label: string;
+  recruitEvery: number;
+  maxArmy: number;
+  garrison: number;
+  waveMin: number;
+  waveMax: number;
+  tempoRampSeconds: number;
+  siegeAfter: number;
+  buildEvery: number;
+  economy: number;
+  headStart: number;
+}
+
+export const DIFFICULTY: Record<Difficulty, LordProfile> = {
+  easy: {
+    label: 'Easy', recruitEvery: 10, maxArmy: 16, garrison: 6,
+    waveMin: 3, waveMax: 8, tempoRampSeconds: 1500, siegeAfter: 900,
+    buildEvery: 18, economy: 0.8, headStart: 0.5,
+  },
+  normal: {
+    label: 'Normal', recruitEvery: 6, maxArmy: 30, garrison: 9,
+    waveMin: 5, waveMax: 16, tempoRampSeconds: 1000, siegeAfter: 600,
+    buildEvery: 12, economy: 1.2, headStart: 1,
+  },
+  heavy: {
+    label: 'Heavy', recruitEvery: 3.5, maxArmy: 48, garrison: 14,
+    waveMin: 8, waveMax: 26, tempoRampSeconds: 700, siegeAfter: 420,
+    buildEvery: 9, economy: 1.7, headStart: 2,
+  },
+};
+
 /**
  * The enemy lord: an economy first, an army second.
  *
@@ -159,10 +203,15 @@ export class Lord {
   /** Set while he cannot feed his people, for the status readout. */
   starving = false;
 
-  constructor(private army: Army, private world: LordWorld, readonly side = 1) {
-    this.stock.wood = 40;
-    this.stock.stone = 20;
-    this.stock.bread = 30;
+  readonly cfg: LordProfile;
+
+  constructor(private army: Army, private world: LordWorld, readonly side = 1,
+              difficulty: Difficulty = 'normal') {
+    this.cfg = DIFFICULTY[difficulty];
+    this.stock.wood = Math.round(40 * this.cfg.headStart);
+    this.stock.stone = Math.round(20 * this.cfg.headStart);
+    this.stock.bread = Math.round(30 * this.cfg.headStart);
+    this.gold = Math.round(200 * this.cfg.headStart);
   }
 
   /** His own men only -- `army.enemies` would sweep in the other rivals too. */
@@ -266,7 +315,9 @@ export class Lord {
       if (def.needsHauler && !this.haulerNear(b)) continue;
 
       const perSec = prod.amount / prod.seconds;
-      const want = perSec * dt;
+      // The difficulty economy bonus: the whole cycle runs faster, inputs and
+      // output alike, so ratios hold and the chain simply works harder.
+      const want = perSec * dt * this.cfg.economy;
       if (this.roomFor(prod.output) <= 0) continue;
 
       // Same input chain the player's buildings run on: a mill with no wheat
@@ -293,11 +344,13 @@ export class Lord {
     }
     if (need > 0.0001) this.starving = true;
 
-    this.gold += (this.population * TAX_LEVELS[LORD.taxLevel].gold * dt) / 60;
+    this.gold += (this.population * TAX_LEVELS[LORD.taxLevel].gold * dt * this.cfg.economy) / 60;
 
     // Population drifts toward housing while fed, and away from it while not.
+    // A harder lord's people arrive faster too, so his hovels actually fill and
+    // pay for the larger army his economy can now support.
     const room = this.housing - this.population;
-    if (!this.starving && room > 0) this.growthDebt += dt * 0.09;
+    if (!this.starving && room > 0) this.growthDebt += dt * 0.09 * this.cfg.economy;
     else if (this.starving) this.growthDebt -= dt * 0.12;
     while (this.growthDebt >= 1) {
       this.growthDebt -= 1; this.population += 1; this.idle += 1;
@@ -323,7 +376,7 @@ export class Lord {
    */
   private construct(dt: number): void {
     this.buildClock += dt;
-    if (this.buildClock < LORD.buildEvery) return;
+    if (this.buildClock < this.cfg.buildEvery) return;
 
     let skipping = 0;
     for (const step of BUILD_PLAN) {
@@ -336,7 +389,7 @@ export class Lord {
         if (this.blockedOn !== key) { this.blockedOn = key; this.blockedFor = 0; }
         this.blockedFor += dt;
         if (this.blockedFor < LORD.blockPatience) {
-          this.buildClock = LORD.buildEvery;   // wait and save
+          this.buildClock = this.cfg.buildEvery;   // wait and save
           return;
         }
         skipping++;
@@ -352,7 +405,7 @@ export class Lord {
       }
       return;
     }
-    this.buildClock = LORD.buildEvery;
+    this.buildClock = this.cfg.buildEvery;
     void skipping;
   }
 
@@ -378,14 +431,14 @@ export class Lord {
   }
 
   private get waveSize(): number {
-    const t = Math.min(1, this.elapsed / LORD.tempoRampSeconds);
-    return Math.round(LORD.waveMin + (LORD.waveMax - LORD.waveMin) * t);
+    const t = Math.min(1, this.elapsed / this.cfg.tempoRampSeconds);
+    return Math.round(this.cfg.waveMin + (this.cfg.waveMax - this.cfg.waveMin) * t);
   }
 
   /** What he can afford to raise, hardest first. */
   private nextType(): string | null {
     const wants: string[] = [];
-    if (this.elapsed > LORD.siegeAfter && this.count('siege_camp') > 0) {
+    if (this.elapsed > this.cfg.siegeAfter && this.count('siege_camp') > 0) {
       wants.push('ram', 'catapult');
     }
     wants.push('swordsman', 'archer', 'spearman');
@@ -418,8 +471,8 @@ export class Lord {
     const at = this.world.muster();
     this.barracksStanding = at !== null;
     this.recruitClock += dt;
-    if (at && this.recruitClock >= LORD.recruitEvery
-        && this.troops.length < LORD.maxArmy && this.idle > 0) {
+    if (at && this.recruitClock >= this.cfg.recruitEvery
+        && this.troops.length < this.cfg.maxArmy && this.idle > 0) {
       const type = this.nextType();
       if (type) {
         const d = SOLDIER_TYPES[type];
@@ -435,7 +488,7 @@ export class Lord {
           at.x + (Math.random() - 0.5) * 2.4, at.z + (Math.random() - 0.5) * 2.4, this.side);
         if (s) {
           this.recruited++;
-          if (this.garrisonIds.size < LORD.garrison) {
+          if (this.garrisonIds.size < this.cfg.garrison) {
             this.garrisonIds.add(s.id);
             // Put him on the wall if there is a wall to stand on. A lord who
             // builds battlements and then leaves his men milling about at the

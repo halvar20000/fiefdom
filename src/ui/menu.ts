@@ -2,7 +2,15 @@ import { MAPS, ratings, type MapDef } from '../game/maps';
 import { listSlots, setBootIntent, playTime, savedWhen } from '../game/save';
 import { listMaps, deleteMap, defOf, type CustomMap } from '../game/custom';
 import { versionButton, VERSION_CSS } from './whatsnew';
-import { currentUser, isSignedIn } from '../game/backend';
+import { currentUser, isSignedIn, store } from '../game/backend';
+import { DIFFICULTY, type Difficulty } from '../game/lord';
+
+const DIFF_KEY = 'fiefdom.difficulty';
+const DIFFS: Difficulty[] = ['easy', 'normal', 'heavy'];
+function readDifficulty(): Difficulty {
+  const v = store.getItem(DIFF_KEY);
+  return v === 'easy' || v === 'normal' || v === 'heavy' ? v : 'normal';
+}
 
 /** Minimal HTML escaping for an email shown in the footer. */
 function escapeHtml(s: string): string {
@@ -15,7 +23,7 @@ function escapeHtml(s: string): string {
  * a game, so it cannot just resolve with a map.
  */
 export type MenuChoice =
-  | { kind: 'play'; map: MapDef }
+  | { kind: 'play'; map: MapDef; difficulty: Difficulty }
   | { kind: 'edit'; edit: CustomMap | null };
 
 /**
@@ -82,8 +90,18 @@ const CSS = `
              border-top: 1px solid rgba(196,162,96,.14); }
 #menu .foe b { color: #e2794f; }
 #menu .foe.none b { color: #8fbf6a; }
+#menu .diff { margin-top: 24px; display: flex; align-items: center; gap: 7px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+#menu .diff .lbl { font-size: 11px; letter-spacing: .08em; text-transform: uppercase;
+  opacity: .55; margin-right: 4px; }
+#menu .diff button { padding: 6px 16px; font: inherit; font-size: 12px; cursor: pointer;
+  color: #ecdfc2; background: rgba(60,48,28,.6);
+  border: 1px solid rgba(196,162,96,.3); border-radius: 5px; }
+#menu .diff button:hover { background: rgba(84,66,36,.85); border-color: rgba(240,200,105,.55); }
+#menu .diff button.on { background: rgba(240,200,105,.22); border-color: var(--gold, #f0c869);
+  color: #fff; font-weight: 600; }
 #menu .go {
-  margin-top: 26px; padding: 12px 44px; font: inherit; font-size: 14px;
+  margin-top: 16px; padding: 12px 44px; font: inherit; font-size: 14px;
   letter-spacing: 3px; cursor: pointer; color: #10100e; background: #f0c869;
   border: none; border-radius: 5px; font-weight: 600;
 }
@@ -253,11 +271,31 @@ export function showMenu(): Promise<MenuChoice> {
     };
     grid.appendChild(make);
 
+    // How hard the rival lords play. Remembered between games.
+    let difficulty = readDifficulty();
+    const diffWrap = document.createElement('div');
+    diffWrap.className = 'diff';
+    diffWrap.innerHTML = '<span class="lbl">Rival lords</span>';
+    const diffBtns: Record<Difficulty, HTMLButtonElement> = {} as never;
+    for (const d of DIFFS) {
+      const b = document.createElement('button');
+      b.textContent = DIFFICULTY[d].label;
+      b.className = d === difficulty ? 'on' : '';
+      b.onclick = () => {
+        difficulty = d;
+        store.setItem(DIFF_KEY, d);
+        for (const k of DIFFS) diffBtns[k].classList.toggle('on', k === d);
+      };
+      diffBtns[d] = b;
+      diffWrap.appendChild(b);
+    }
+    root.appendChild(diffWrap);
+
     const go = document.createElement('button');
     go.className = 'go';
     go.textContent = 'BEGIN';
     const leave = () => { root.remove(); style.remove(); };
-    go.onclick = () => { leave(); resolve({ kind: 'play', map: chosen }); };
+    go.onclick = () => { leave(); resolve({ kind: 'play', map: chosen, difficulty }); };
     root.appendChild(go);
 
     // Saved games, if there are any. Hidden entirely when there are none --

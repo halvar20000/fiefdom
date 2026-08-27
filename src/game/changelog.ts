@@ -23,6 +23,20 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.26.0',
+    date: '2026-08-27',
+    headline: 'Choose how hard the rival lords fight.',
+    sections: [
+      {
+        title: 'Added',
+        items: [
+          'A rival-strength setting on the title screen — Easy, Normal or Heavy. It scales how fast and how large an army each lord raises, how big and how soon his waves come, and the economy that pays for all of it, so a Heavy lord fields a real army (up to 48 strong) that can genuinely come for your keep.',
+          'Normal is stronger than the lords were before, and Heavy much stronger still; pick Easy for a gentler game. Your choice is remembered and saved with the game.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.25.2',
     date: '2026-08-27',
     headline: 'The fisherman fishes at the water.',

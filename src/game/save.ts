@@ -77,6 +77,8 @@ export interface SaveGame {
   fires: [number, number, number][];
   /** The military rally flag, if one is planted. Absent on older saves. */
   rally?: { x: number; z: number } | null;
+  /** How hard the rival lords play. Absent on older saves (treated as normal). */
+  difficulty?: 'easy' | 'normal' | 'heavy';
 }
 
 export interface SlotInfo {
