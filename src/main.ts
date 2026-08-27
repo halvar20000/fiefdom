@@ -737,6 +737,38 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
         return snapOpen(standBesidePoint(quarry, c), w);
       }
 
+      // A fisherman works the water, not the lawn behind his hut. Walk to the
+      // nearest water, stand on the shore tile beside it, and lean toward the
+      // water so the casting animation faces what it is casting into.
+      if (b.name === 'fishery') {
+        const WATER = GROUND_TYPES.indexOf('water');
+        const R = 10;
+        let wx = -1, wz = -1, bd = Infinity;
+        const x0 = Math.max(0, Math.floor(c.x - R)), x1 = Math.min(MAP_W - 1, Math.floor(c.x + R));
+        const z0 = Math.max(0, Math.floor(c.z - R)), z1 = Math.min(MAP_H - 1, Math.floor(c.z + R));
+        for (let z = z0; z <= z1; z++) {
+          for (let x = x0; x <= x1; x++) {
+            if (groundType[z * MAP_W + x] !== WATER) continue;
+            const d = (x + 0.5 - c.x) ** 2 + (z + 0.5 - c.z) ** 2;
+            if (d < bd) { bd = d; wx = x; wz = z; }
+          }
+        }
+        if (wx < 0) { state.notify('The fishery has no water to work', 'warn'); return null; }
+        // the walkable land tile touching that water, nearest the hut
+        let sx = -1, sz = -1, sbd = Infinity;
+        for (const [dx, dz] of
+             [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]] as const) {
+          const nx = wx + dx, nz = wz + dz;
+          if (nx < 0 || nz < 0 || nx >= MAP_W || nz >= MAP_H) continue;
+          if (paths.isBlocked(nx, nz)) continue;         // water and buildings are out
+          const d = (nx + 0.5 - c.x) ** 2 + (nz + 0.5 - c.z) ** 2;
+          if (d < sbd) { sbd = d; sx = nx; sz = nz; }
+        }
+        if (sx < 0) return snapOpen({ x: c.x, z: c.z }, w);
+        // stand at the shore, nudged toward the water so he faces it
+        return snapOpen({ x: sx + 0.5 + (wx - sx) * 0.32, z: sz + 0.5 + (wz - sz) * 0.32 }, w);
+      }
+
       const ang = (w.slot / Math.max(1, b.def.workers)) * Math.PI * 2 + b.id;
       const rad = Math.max(fw, fd) * 0.55 + 0.6;
       return snapOpen({ x: c.x + Math.cos(ang) * rad, z: c.z + Math.sin(ang) * rad }, w);

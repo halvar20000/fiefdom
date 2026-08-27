@@ -23,6 +23,19 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.25.2',
+    date: '2026-08-27',
+    headline: 'The fisherman fishes at the water.',
+    sections: [
+      {
+        title: 'Fixed',
+        items: [
+          'A fisherman stood on the grass behind his hut instead of at the shore. He now walks to the nearest water and works from the bank, facing it, as he should.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.25.1',
     date: '2026-08-27',
     headline: 'Blows that connect.',
