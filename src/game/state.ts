@@ -31,6 +31,10 @@ export interface Notice {
   kind: 'info' | 'warn';
 }
 
+/** The band a popularity factor belongs to, for grouping in the history chart. */
+export type PopCat = 'food' | 'rations' | 'taxes' | 'fear';
+export interface PopFactor { label: string; value: number; cat: PopCat; }
+
 /**
  * The whole economy's mutable state.
  *
@@ -219,16 +223,20 @@ export class GameState {
    * repeating the arithmetic, so what the player reads can never drift from
    * what the simulation applies.
    */
-  popularityBreakdown(): { label: string; value: number }[] {
+  popularityBreakdown(): PopFactor[] {
     const ration = RATIONS[this.rations];
     const tax = TAX_LEVELS[this.taxLevel];
     // No "starting goodwill" line any more. 50 is where popularity BEGINS, not
     // a force acting on it; listing it as a factor was what made the panel read
     // as "you are at 51 because 50 + 1" instead of "you are rising by 1 a
     // minute".
-    const out: { label: string; value: number }[] = [
-      { label: ration.label, value: ration.popularity },
-      { label: tax.label, value: tax.popularity },
+    //
+    // Every item also carries a `cat`, so the history chart can group these many
+    // lines into four legible bands (see `popularityFactors`) without a second
+    // copy of the arithmetic that could drift from this one.
+    const out: PopFactor[] = [
+      { label: ration.label, value: ration.popularity, cat: 'rations' },
+      { label: tax.label, value: tax.popularity, cat: 'taxes' },
     ];
 
     const variety = FOOD_VARIETY_BONUS[Math.min(FOOD_VARIETY_BONUS.length - 1, this.foodVariety)];
@@ -236,30 +244,30 @@ export class GameState {
       label: this.foodVariety > 1
         ? `Food variety (${this.foodVariety} kinds)`
         : 'Food variety (one kind)',
-      value: variety,
+      value: variety, cat: 'food',
     });
 
     if (this.innCapacity > 0) {
       out.push({
         label: `Ale (${Math.round(this.aleCoverage * 100)}% drinking)`,
-        value: ALE_POPULARITY_MAX * this.aleCoverage,
+        value: ALE_POPULARITY_MAX * this.aleCoverage, cat: 'food',
       });
     }
     const religion = this.religionCoverage;
     if (religion > 0) {
       out.push({
         label: `Religion (${Math.round(religion * 100)}% at church)`,
-        value: RELIGION_POPULARITY_MAX * religion,
+        value: RELIGION_POPULARITY_MAX * religion, cat: 'food',
       });
     }
     const beauty = this.beautyBonus;
-    if (beauty > 0) out.push({ label: 'Gardens', value: beauty });
+    if (beauty > 0) out.push({ label: 'Gardens', value: beauty, cat: 'food' });
     const fear = this.fearEffect;
-    if (fear) out.push({ label: 'Rule by fear', value: fear.popularity });
+    if (fear) out.push({ label: 'Rule by fear', value: fear.popularity, cat: 'fear' });
     if (this.hunger > 0.02) {
       out.push({
         label: this.hunger > 0.6 ? 'People are starving!' : 'Food running short',
-        value: -45 * this.hunger,
+        value: -45 * this.hunger, cat: 'food',
       });
     }
     if (this.population >= this.housing) {
@@ -267,9 +275,24 @@ export class GameState {
       // untaxed town's +6, so a full settlement could never pass 67 no matter
       // what else it did -- and the cap on population is already the real
       // pressure to build more housing. Stronghold has no such penalty at all.
-      out.push({ label: 'Overcrowded', value: -2 });
+      out.push({ label: 'Overcrowded', value: -2, cat: 'fear' });
     }
     return out;
+  }
+
+  /**
+   * The popularity breakdown folded into four bands, for the history chart.
+   *
+   * `food` gathers everything you PROVIDE -- variety, ale, church, gardens, and
+   * the shortage penalty when it bites; `rations` and `taxes` are the two dials
+   * you set directly; `fear` is the harsh pressures (rule by fear, overcrowding).
+   * They partition the breakdown exactly, so the four always sum to
+   * `popularityRate` and the chart can never quietly lose a factor.
+   */
+  popularityFactors(): Record<PopCat, number> {
+    const bands: Record<PopCat, number> = { food: 0, rations: 0, taxes: 0, fear: 0 };
+    for (const f of this.popularityBreakdown()) bands[f.cat] += f.value;
+    return bands;
   }
 
   /**

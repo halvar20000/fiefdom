@@ -892,6 +892,17 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     for (const sd of army.mine) n[sd.type] = (n[sd.type] ?? 0) + 1;
     return n;
   };
+  // The richest living rival, for the "you vs him" line on the gold chart. The
+  // leader is the one worth measuring yourself against; a beaten lord drops out
+  // so the comparison follows whoever is actually still in the game.
+  hud.rivalGold = () => {
+    let best: Faction | null = null;
+    for (const f of factions) {
+      if (f.defeated) continue;
+      if (!best || f.lord.gold > best.lord.gold) best = f;
+    }
+    return best ? { gold: Math.floor(best.lord.gold), name: best.name } : null;
+  };
 
   /**
    * Recompute the legal-placement overlay. Runs once per selection change, not

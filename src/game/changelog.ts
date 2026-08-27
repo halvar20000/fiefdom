@@ -23,6 +23,21 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.30.0',
+    date: '2026-08-27',
+    headline: 'Charts that show why, how far back, and against whom.',
+    sections: [
+      {
+        title: 'Added',
+        items: [
+          'Click Popularity (in the stats panel, or the top bar on a phone) for a new chart that shows WHY it is moving — food & ale, rations, taxes and fear each drawn as its own line around a zero rule. The tax line diving under while food climbs is the whole story of a town squeezed too hard, told at a glance.',
+          'Every history chart now covers the WHOLE game, not just the last stretch. As a game runs long the chart quietly coarsens its resolution instead of forgetting how things began, so an hours-long siege still shows its opening moves.',
+          'Click Gold once a rival is in play and the chart draws your treasury against the richest enemy lord’s, so you can see whether you are winning the war of economies — not just the war.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.29.2',
     date: '2026-08-27',
     headline: 'Clicking a resource for its history actually works now.',

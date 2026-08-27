@@ -72,6 +72,7 @@ const CSS = `
 #chart .cempty { padding: 28px 8px; text-align: center; font-size: 12px; opacity: .6; }
 #chart .csvg { display: block; height: 250px; }
 #chart .cgrid { stroke: rgba(196,162,96,.14); stroke-width: 1; }
+#chart .czero { stroke: rgba(236,223,194,.4); stroke-width: 1.5; stroke-dasharray: 4 3; }
 #chart .cyl { fill: rgba(236,223,194,.55); font-size: 10px; text-anchor: end;
   font-family: ui-monospace, monospace; }
 #chart .cxl { fill: rgba(236,223,194,.55); font-size: 10px; font-family: ui-monospace, monospace; }
@@ -92,6 +93,8 @@ const CSS = `
 #leftcol > * { pointer-events: auto; }
 #stats { padding: 9px 11px; min-width: 190px; flex: 0 0 auto; }
 #stats .row { display: flex; justify-content: space-between; gap: 14px; line-height: 1.65; }
+#stats .row.hist { cursor: pointer; border-radius: 3px; margin: 0 -5px; padding: 0 5px; }
+#stats .row.hist:hover { background: rgba(196,162,96,.12); }
 #stats .row b { color: var(--gold); font-weight: 600; font-variant-numeric: tabular-nums; }
 #stats .bar { height: 5px; background: rgba(255,255,255,.10); border-radius: 3px; margin-top: 5px; overflow: hidden; }
 #stats .bar i { display: block; height: 100%; background: var(--good); transition: width .3s, background .3s; }
@@ -562,7 +565,16 @@ export class Hud {
   private history = new Map<string, number[]>();
   private histTimes: number[] = [];
   private lastSample = -1e9;
-  private readonly HIST_MAX = 600;   // ~40 min at one sample every 4s
+  private readonly HIST_MAX = 600;
+  // The gap between samples, in game seconds. It STARTS at 4s but doubles every
+  // time the buffer fills (see recordHistory), so the history always spans the
+  // whole game -- a two-hour siege and a five-minute skirmish both fit end to
+  // end -- at a resolution that coarsens gracefully instead of the chart only
+  // ever showing the last stretch and forgetting how the game began.
+  private sampleEvery = 4;
+  /** True once any rival has ever been seen, so the gold chart adds his line. */
+  private hasRival = false;
+  private rivalName = 'Rival';
   /** Which bottom sheet is open on a phone, or null for none (canvas only). */
   private drawer: 'build' | 'info' | 'map' | null = null;
   private sheets: Record<string, HTMLElement> = {};
@@ -577,6 +589,8 @@ export class Hud {
   armyCounts: () => Record<string, number> = () => ({});
   /** How many enemies are on the map, for the alarm in the stats panel. */
   enemyCount: () => number = () => 0;
+  /** The leading living rival's treasury and name, or null if none is left. */
+  rivalGold: () => { gold: number; name: string } | null = () => null;
 
   constructor(private state: GameState, private placement: Placement) {
     const style = document.createElement('style');
@@ -613,6 +627,27 @@ export class Hud {
     this.root.appendChild(this.ghost);
   }
 
+  /**
+   * Let any `data-res` element inside `el` open that figure's history chart.
+   *
+   * Shared by the top bar and the stats panel, both of which rebuild their
+   * innerHTML every frame -- so it delegates from the (persistent) container and
+   * listens for 'pointerdown', NOT 'click'. A click only fires if press and
+   * release land on the same element, but the chip pressed on is destroyed and
+   * recreated by the next frame's rebuild before the finger lifts, so the click
+   * retargets up to the container where closest() finds no data-res and nothing
+   * opens. (It slips through in a throttled background tab, which rebuilds too
+   * slowly to swap the chip out mid-press -- exactly why it hid during testing.)
+   * pointerdown fires once, on the element under the cursor at that instant, so
+   * there is no release to outrun.
+   */
+  private wireChartClicks(el: HTMLElement): void {
+    el.addEventListener('pointerdown', e => {
+      const chip = (e.target as HTMLElement).closest('[data-res]') as HTMLElement | null;
+      if (chip?.dataset.res) this.showResourceChart(chip.dataset.res);
+    });
+  }
+
   private el(tag: string, parent: HTMLElement, cls = '', id = ''): HTMLElement {
     const e = document.createElement(tag);
     if (cls) e.className = cls;
@@ -623,23 +658,7 @@ export class Hud {
 
   private buildTopbar(): void {
     this.topbar = this.el('div', this.root, 'panel', 'topbar');
-    // The bar's innerHTML is rebuilt every frame, so a per-chip handler would be
-    // thrown away each time; one delegated listener reads which chip was hit
-    // from its data-res and opens that resource's history.
-    //
-    // It listens for 'pointerdown', NOT 'click', and that is not a detail. A
-    // click only fires if press and release land on the SAME element -- but the
-    // chip pressed on is destroyed and recreated by the next frame's rebuild
-    // before the finger lifts, so the browser retargets the click up to the bar
-    // itself, where closest() finds no data-res and nothing opens. (It slips
-    // through in a throttled background tab, which rebuilds too slowly to swap
-    // the chip out mid-press -- which is exactly why it hid during testing.)
-    // pointerdown fires once, on the chip under the cursor at that instant, so
-    // there is no release to outrun.
-    this.topbar.addEventListener('pointerdown', e => {
-      const chip = (e.target as HTMLElement).closest('[data-res]') as HTMLElement | null;
-      if (chip?.dataset.res) this.showResourceChart(chip.dataset.res);
-    });
+    this.wireChartClicks(this.topbar);
   }
 
   /** The current value behind a bar chip, by its data-res key. */
@@ -667,17 +686,31 @@ export class Hud {
    */
   private recordHistory(): void {
     const t = this.state.elapsed;
-    if (t - this.lastSample < 4) return;
+    if (t - this.lastSample < this.sampleEvery) return;
     this.lastSample = t;
     this.histTimes.push(t);
     // Two extra RATE series, so a food chart can show produced against eaten and
     // the deficit is a widening gap rather than a number to work out.
     const s = this.state;
     const foodMade = FOOD_RESOURCES.reduce((n, f) => n + s.ledger.producedPerMin(f), 0);
+    const round1 = (v: number) => Math.round(v * 10) / 10;
     const sample: Record<string, number> = {
-      foodMade: Math.round(foodMade * 10) / 10,
-      foodEat: Math.round(s.foodDemandPerMin * 10) / 10,
+      foodMade: round1(foodMade),
+      foodEat: round1(s.foodDemandPerMin),
     };
+    // The four popularity bands, so its chart can show WHY it is moving -- which
+    // dial or shortage is pulling, not just the number. Kept as rounded rates.
+    const bands = s.popularityFactors();
+    sample.popFood = round1(bands.food);
+    sample.popRations = round1(bands.rations);
+    sample.popTaxes = round1(bands.taxes);
+    sample.popFear = round1(bands.fear);
+    // The leading rival's treasury, for the gold comparison. Once any rival has
+    // been seen the series is kept for the whole game (0 after they are all
+    // beaten), so it stays aligned with the timeline for the chart.
+    const rv = this.rivalGold();
+    if (rv) { this.hasRival = true; this.rivalName = rv.name; }
+    if (this.hasRival) sample.rivalGold = rv ? rv.gold : 0;
     for (const key of ['gold', 'population', 'popularity', ...ALL_RESOURCES]) {
       sample[key] = this.valueOf(key);
     }
@@ -686,9 +719,15 @@ export class Hud {
       if (!arr) { arr = []; this.history.set(key, arr); }
       arr.push(v);
     }
+    // Buffer full: halve the resolution rather than forget the oldest. Keeping
+    // every other sample and doubling the interval means the span still reaches
+    // back to turn one -- the chart is always the whole game, never a window
+    // that slides off the start.
     if (this.histTimes.length > this.HIST_MAX) {
-      this.histTimes.shift();
-      for (const arr of this.history.values()) arr.shift();
+      const thin = (a: number[]) => a.filter((_, i) => i % 2 === 0);
+      this.histTimes = thin(this.histTimes);
+      for (const [k, arr] of this.history) this.history.set(k, thin(arr));
+      this.sampleEvery *= 2;
     }
   }
 
@@ -703,10 +742,37 @@ export class Hud {
    * the same kind of thing -- rates with rates, stocks with stocks.
    */
   private chartSpec(key: string): {
-    title: string; fill: 'area' | 'between' | 'none';
+    title: string; fill: 'area' | 'between' | 'none'; zero?: boolean;
     series: { key: string; label: string; color: string }[];
   } {
     const GOLD = '#f0c869', GREEN = '#8fbf6a', BLUE = '#6f9fd8', RED = '#e2794f';
+
+    // Popularity: not the number, but the four forces moving it, each a line
+    // around a zero rule. Above the line is lifting your standing, below is
+    // dragging it down -- so the tax line diving under while food climbs is the
+    // whole story of a town you are squeezing too hard, told at a glance.
+    if (key === 'popularity') {
+      return {
+        title: 'Popularity — what moves it', fill: 'none', zero: true, series: [
+          { key: 'popFood', label: 'Food & ale', color: GREEN },
+          { key: 'popRations', label: 'Rations', color: BLUE },
+          { key: 'popTaxes', label: 'Taxes', color: GOLD },
+          { key: 'popFear', label: 'Fear', color: RED },
+        ],
+      };
+    }
+
+    // Gold, once a rival has been seen: your treasury against the richest lord's,
+    // so you can see whether you are pulling ahead in the war of economies.
+    if (key === 'gold' && this.hasRival) {
+      return {
+        title: `Gold — you vs ${this.rivalName}`, fill: 'none', series: [
+          { key: 'gold', label: 'You', color: GOLD },
+          { key: 'rivalGold', label: this.rivalName, color: RED },
+        ],
+      };
+    }
+
     if ((FOOD_RESOURCES as readonly string[]).includes(key)) {
       return {
         title: 'Food balance', fill: 'between', series: [
@@ -783,14 +849,14 @@ export class Hud {
       const p = this.el('div', box, 'cempty');
       p.textContent = 'Not enough history yet — give it a minute of play.';
     } else {
-      box.insertAdjacentHTML('beforeend', this.chartSvg(data, spec.fill));
+      box.insertAdjacentHTML('beforeend', this.chartSvg(data, spec.fill, spec.zero));
     }
     document.body.appendChild(root);
   }
 
   /** A multi-series SVG line chart, every series sharing one min..max axis. */
   private chartSvg(series: { color: string; vals: number[] }[],
-                   fill: 'area' | 'between' | 'none'): string {
+                   fill: 'area' | 'between' | 'none', zero = false): string {
     const W = 540, H = 250, PL = 50, PR = 14, PT = 14, PB = 30;
     const iw = W - PL - PR, ih = H - PT - PB;
     const times = this.histTimes;
@@ -800,7 +866,7 @@ export class Hud {
     // Rates read against zero so a deficit is a line dropping toward the floor;
     // a stock zooms to its OWN range, or a steady figure like an untouched
     // treasury sits pinned to the top edge and the chart looks blank.
-    if (fill === 'between') lo = Math.min(lo, 0);
+    if (fill === 'between' || zero) { lo = Math.min(lo, 0); hi = Math.max(hi, 0); }
     if (hi === lo) { hi += 1; lo -= 1; }
     const pad = (hi - lo) * 0.1;                       // breathing room off the edges
     lo -= pad; hi += pad;
@@ -813,7 +879,12 @@ export class Hud {
     const ticks = [lo, lo + span / 2, hi];
     const grid = ticks.map(v =>
       `<line x1="${PL}" y1="${py(v).toFixed(1)}" x2="${PL + iw}" y2="${py(v).toFixed(1)}" class="cgrid"/>`
-      + `<text x="${PL - 7}" y="${(py(v) + 3).toFixed(1)}" class="cyl">${Math.round(v)}</text>`).join('');
+      + `<text x="${PL - 7}" y="${(py(v) + 3).toFixed(1)}" class="cyl">${Math.round(v)}</text>`).join('')
+      // A firmer line at zero when the chart is about rates: it is the divide
+      // between helping and hurting, so it should read as more than a gridline.
+      + (zero && lo < 0 && hi > 0
+        ? `<line x1="${PL}" y1="${py(0).toFixed(1)}" x2="${PL + iw}" y2="${py(0).toFixed(1)}" class="czero"/>`
+        : '');
 
     let body = '';
     if (fill === 'between' && series.length >= 2) {
@@ -838,6 +909,9 @@ export class Hud {
 
   private buildStats(): void {
     this.stats = this.el('div', this.leftCol, 'panel', 'stats');
+    // On desktop the top bar carries only goods; population and popularity live
+    // here, so this panel needs the same click-for-history wiring.
+    this.wireChartClicks(this.stats);
   }
 
   private buildBuildPanel(): void {
@@ -1613,7 +1687,8 @@ export class Hud {
     const yardColour = fill(s.stockpileUsed, s.stockpileCapacity);
     const granaryColour = fill(s.totalFood, s.granaryCapacity);
     this.stats.innerHTML =
-      `<div class="row"><span>Population</span><b>${pop} / ${s.housing}</b></div>` +
+      `<div class="row hist" data-res="population" title="Population — click for history">` +
+        `<span>Population</span><b>${pop} / ${s.housing}</b></div>` +
       `<div class="row"><span>Unemployed</span><b>${s.idle}</b></div>` +
       // Soldiers left the population roll when they took up arms, so without
       // this line recruiting reads as people simply vanishing.
@@ -1622,7 +1697,8 @@ export class Hud {
         `${s.totalFood} / ${s.granaryCapacity}</b></div>` +
       `<div class="row"><span>Stockpile</span><b style="color:${yardColour}">` +
         `${s.stockpileUsed} / ${s.stockpileCapacity}</b></div>` +
-      `<div class="row"><span>Popularity</span><b>${pct}</b></div>` +
+      `<div class="row hist" data-res="popularity" title="Popularity — click for history">` +
+        `<span>Popularity</span><b>${pct}</b></div>` +
       `<div class="bar"><i style="width:${pct}%;background:${colour}"></i></div>` +
       // Only shown when it matters. A permanent "Enemies 0" row trains the eye
       // to skip the line that one day says something else.
