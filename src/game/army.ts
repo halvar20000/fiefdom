@@ -141,7 +141,7 @@ export const PICK_RADIUS = 0.7;
 export const AGGRO_MARGIN = 4.5;
 
 /** Seconds an attack animation is held after a blow. */
-const SWING_TIME = 0.45;
+export const SWING_TIME = 0.45;
 
 /**
  * Every combatant on the map, both sides.

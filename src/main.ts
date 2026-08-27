@@ -16,7 +16,7 @@ import {
 import { GameState, type PlacedBuilding } from './game/state';
 import { PathGrid } from './game/pathfind';
 import { Herd, HUNT_RADIUS } from './game/wildlife';
-import { Army, PLAYER } from './game/army';
+import { Army, PLAYER, SWING_TIME } from './game/army';
 import { Lord } from './game/lord';
 import { WorkerPool, totalHeld, type WorkerWorld } from './game/workers';
 import { EnemyWorkers } from './game/enemyworkers';
@@ -592,7 +592,9 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
     const tx = p.x, tz = p.z;
     const dx = from.x - tx, dz = from.z - tz;
     const len = Math.hypot(dx, dz) || 1;
-    const off = 0.55;
+    // Close enough to be swinging AT the trunk, not standing back from it. Was
+    // 0.55, which read as a gap between the woodcutter and the tree he is felling.
+    const off = 0.35;
     return { x: tx + (dx / len) * off, z: tz + (dz / len) * off };
   }
 
@@ -3021,10 +3023,22 @@ async function main(chosen: MapDef, restore: SaveGame | null = null) {
       // rather than behind it.
       const post = sd.garrison;
       const lift = post ? (GARRISON_HEIGHT[buildingNameAt(post.x, post.z)] ?? 0) : 0;
+      // The strike lunge. A close-fighter or a battering ram thrusts toward what
+      // it is hitting on the moment of the blow and eases back -- so the blow
+      // visibly lands instead of falling short across a gap, and the ram meets
+      // the wall. Ranged men (archers, catapults) and posted men do not lunge:
+      // they loose from where they stand. Heading already points at the target
+      // while a blow is in the air, so it needs no target lookup here.
+      let dx = sd.x, dz = sd.z;
+      if (sd.hp > 0 && sd.swing > 0 && !post && sd.def.range < 3.0) {
+        const l = (sd.def.siege ? 0.5 : 0.32) * (sd.swing / SWING_TIME);
+        dx += Math.cos(sd.heading) * l;
+        dz += Math.sin(sd.heading) * l;
+      }
       figures.push({
-        key, x: sd.x, z: sd.z, y: terrain.heightAt(sd.x, sd.z) + lift,
+        key, x: dx, z: dz, y: terrain.heightAt(dx, dz) + lift,
         bias: footprintDepthBias(1, 1, rot) + (post ? 0.6 : 0),
-        depth: depthKey(sd.x, sd.z, rot),
+        depth: depthKey(dx, dz, rot),
         // Enemies are the same three bodies under a red cast rather than three
         // more palettes: 288 more sprites to say "not yours" is a poor trade,
         // and side reads faster from colour than from costume anyway.

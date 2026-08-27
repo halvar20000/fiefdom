@@ -23,6 +23,20 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.25.1',
+    date: '2026-08-27',
+    headline: 'Blows that connect.',
+    sections: [
+      {
+        title: 'Changed',
+        items: [
+          'Close-quarters attacks now land where they should. A swordsman, spearman or battering ram lunges into its target on each blow and eases back — so the ram meets the wall it is breaking and a sword-stroke reaches the man it is aimed at, instead of striking across a gap. Archers and catapults still loose from where they stand.',
+          'Woodcutters and other workers stand closer to what they are working, so a man felling a tree is swinging at the trunk rather than a step back from it.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.25.0',
     date: '2026-08-25',
     headline: 'Rise to be the greatest lord in the land.',
