@@ -23,6 +23,19 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.29.1',
+    date: '2026-08-27',
+    headline: 'Resource charts that show a line, not a filled block.',
+    sections: [
+      {
+        title: 'Fixed',
+        items: [
+          'Clicking a steady resource — an untouched treasury, a stable wood pile — used to open a chart that looked blank: the line sat pinned to the top with the whole box filled in. Stock charts now zoom to their own range, so a flat figure reads as a flat line across the middle and small rises and falls are actually visible.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.29.0',
     date: '2026-08-27',
     headline: 'Build within your lands, and rams that obey.',

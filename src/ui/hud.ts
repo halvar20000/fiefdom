@@ -787,8 +787,13 @@ export class Hud {
     const n = times.length;
     const all = series.flatMap(s => s.vals);
     let lo = Math.min(...all), hi = Math.max(...all);
-    if (fill !== 'none') lo = Math.min(lo, 0);        // stocks and rates read against zero
+    // Rates read against zero so a deficit is a line dropping toward the floor;
+    // a stock zooms to its OWN range, or a steady figure like an untouched
+    // treasury sits pinned to the top edge and the chart looks blank.
+    if (fill === 'between') lo = Math.min(lo, 0);
     if (hi === lo) { hi += 1; lo -= 1; }
+    const pad = (hi - lo) * 0.1;                       // breathing room off the edges
+    lo -= pad; hi += pad;
     const span = hi - lo;
     const t0 = times[0], tspan = (times[n - 1] - t0) || 1;
     const px = (i: number) => PL + ((times[i] - t0) / tspan) * iw;
