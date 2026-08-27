@@ -23,6 +23,21 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.28.0',
+    date: '2026-08-27',
+    headline: 'Richer resource charts.',
+    sections: [
+      {
+        title: 'Added',
+        items: [
+          'Click a food good and the chart now shows your food produced against food eaten on one graph — when the lines cross, a shortage is opening up, plain to see.',
+          'Click a good with a chain — wheat, flour, hops, ale — and the whole chain is drawn together, so a pile-up upstream next to a flat line downstream points straight at the bottleneck.',
+          'Every chart’s header now shows the rate of change, e.g. “+12/min” in green or a fall in red, and the history it keeps was extended to cover a long game.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.27.0',
     date: '2026-08-27',
     headline: 'Click a resource to see its history.',

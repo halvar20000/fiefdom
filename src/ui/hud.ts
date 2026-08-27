@@ -54,10 +54,17 @@ const CSS = `
 #chart .cbox { width: min(560px, 94vw); background: rgba(24,19,12,.98);
   border: 1px solid rgba(196,162,96,.34); border-radius: 8px;
   box-shadow: 0 14px 46px rgba(0,0,0,.6); padding: 14px 16px 12px; }
-#chart .chead { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+#chart .chead { display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+  flex-wrap: wrap; }
 #chart .ct { font-size: 15px; font-weight: 600; color: var(--gold); letter-spacing: .04em; }
-#chart .cnow { margin-left: auto; font-size: 12px; opacity: .8; }
+#chart .clegs { display: flex; gap: 12px; }
+#chart .cleg { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; opacity: .82; }
+#chart .cleg i { width: 11px; height: 3px; border-radius: 2px; display: inline-block; }
+#chart .cnow { margin-left: auto; font-size: 12px; opacity: .85; white-space: nowrap; }
 #chart .cnow b { color: var(--gold); font-variant-numeric: tabular-nums; }
+#chart .cnow b.up { color: #8fbf6a; }
+#chart .cnow b.dn { color: #e2794f; }
+#chart .cbetween { fill: rgba(143,191,106,.10); stroke: none; }
 #chart .cx { width: 26px; height: 26px; padding: 0; font: inherit; cursor: pointer;
   color: var(--ink); background: rgba(60,48,28,.7); border: 1px solid var(--edge);
   border-radius: 4px; }
@@ -555,7 +562,7 @@ export class Hud {
   private history = new Map<string, number[]>();
   private histTimes: number[] = [];
   private lastSample = -1e9;
-  private readonly HIST_MAX = 300;   // ~20 min at one sample every 4s
+  private readonly HIST_MAX = 600;   // ~40 min at one sample every 4s
   /** Which bottom sheet is open on a phone, or null for none (canvas only). */
   private drawer: 'build' | 'info' | 'map' | null = null;
   private sheets: Record<string, HTMLElement> = {};
@@ -653,10 +660,21 @@ export class Hud {
     if (t - this.lastSample < 4) return;
     this.lastSample = t;
     this.histTimes.push(t);
+    // Two extra RATE series, so a food chart can show produced against eaten and
+    // the deficit is a widening gap rather than a number to work out.
+    const s = this.state;
+    const foodMade = FOOD_RESOURCES.reduce((n, f) => n + s.ledger.producedPerMin(f), 0);
+    const sample: Record<string, number> = {
+      foodMade: Math.round(foodMade * 10) / 10,
+      foodEat: Math.round(s.foodDemandPerMin * 10) / 10,
+    };
     for (const key of ['gold', 'population', 'popularity', ...ALL_RESOURCES]) {
+      sample[key] = this.valueOf(key);
+    }
+    for (const [key, v] of Object.entries(sample)) {
       let arr = this.history.get(key);
       if (!arr) { arr = []; this.history.set(key, arr); }
-      arr.push(this.valueOf(key));
+      arr.push(v);
     }
     if (this.histTimes.length > this.HIST_MAX) {
       this.histTimes.shift();
@@ -664,11 +682,63 @@ export class Hud {
     }
   }
 
-  /** Pop up a line chart of one figure's history. */
+  /**
+   * What to plot when a bar chip is clicked.
+   *
+   * Three shapes. A food good opens the town's food BALANCE -- produced against
+   * eaten, so a deficit shows as the lines crossing. A good with a processing
+   * chain (grain, ale) overlays the whole chain, so a pile-up upstream of a flat
+   * line downstream points straight at the bottleneck. Everything else is its
+   * own single line. All series in one chart share the axis, so they are always
+   * the same kind of thing -- rates with rates, stocks with stocks.
+   */
+  private chartSpec(key: string): {
+    title: string; fill: 'area' | 'between' | 'none';
+    series: { key: string; label: string; color: string }[];
+  } {
+    const GOLD = '#f0c869', GREEN = '#8fbf6a', BLUE = '#6f9fd8', RED = '#e2794f';
+    if ((FOOD_RESOURCES as readonly string[]).includes(key)) {
+      return {
+        title: 'Food balance', fill: 'between', series: [
+          { key: 'foodMade', label: 'Produced /min', color: GREEN },
+          { key: 'foodEat', label: 'Eaten /min', color: RED },
+        ],
+      };
+    }
+    const chains: Record<string, string[]> = {
+      wheat: ['wheat', 'flour', 'bread'], flour: ['wheat', 'flour', 'bread'],
+      hops: ['hops', 'ale'], ale: ['hops', 'ale'],
+    };
+    const chain = chains[key];
+    if (chain) {
+      const cols = [GOLD, GREEN, BLUE];
+      return {
+        title: `${this.histLabel(key)} chain`, fill: 'none',
+        series: chain.map((k, i) => ({ key: k, label: this.histLabel(k), color: cols[i % cols.length] })),
+      };
+    }
+    return { title: this.histLabel(key), fill: 'area',
+      series: [{ key, label: this.histLabel(key), color: GOLD }] };
+  }
+
+  /** Change per minute of a series over its recent tail, for the header. */
+  private ratePerMin(key: string): number {
+    const arr = this.history.get(key) ?? [];
+    const times = this.histTimes;
+    const n = arr.length;
+    if (n < 2) return 0;
+    let j = n - 1;
+    while (j > 0 && times[n - 1] - times[j] < 30) j--;   // ~last 30s
+    const dt = (times[n - 1] - times[j]) / 60;
+    return dt > 0 ? (arr[n - 1] - arr[j]) / dt : 0;
+  }
+
+  /** Pop up a history chart for one bar chip: balance, chain, or single line. */
   private showResourceChart(key: string): void {
     document.getElementById('chart')?.remove();
-    const vals = this.history.get(key) ?? [];
-    const label = this.histLabel(key);
+    const spec = this.chartSpec(key);
+    const data = spec.series.map(sp => ({ ...sp, vals: this.history.get(sp.key) ?? [] }));
+    const enough = this.histTimes.length >= 2 && data.every(s => s.vals.length >= 2);
 
     const root = document.createElement('div');
     root.id = 'chart';
@@ -677,48 +747,78 @@ export class Hud {
     box.className = 'cbox';
     root.appendChild(box);
 
-    box.innerHTML = `<div class="chead"><span class="ct">${label}</span>`
-      + `<span class="cnow">now <b>${this.valueOf(key)}</b></span>`
+    const legend = data.length > 1
+      ? `<span class="clegs">${data.map(s =>
+          `<span class="cleg"><i style="background:${s.color}"></i>${s.label}</span>`).join('')}</span>`
+      : '';
+
+    let now: string;
+    if (spec.fill === 'between') {
+      const made = this.history.get('foodMade')?.slice(-1)[0] ?? 0;
+      const eat = this.history.get('foodEat')?.slice(-1)[0] ?? 0;
+      const net = Math.round((made - eat) * 10) / 10;
+      now = `net <b class="${net >= 0 ? 'up' : 'dn'}">${net >= 0 ? '+' : ''}${net}/min</b>`;
+    } else {
+      const r = Math.round(this.ratePerMin(key));
+      const rt = r === 0 ? '' : ` <b class="${r > 0 ? 'up' : 'dn'}">${r > 0 ? '+' : ''}${r}/min</b>`;
+      now = `now <b>${this.valueOf(key)}</b>${rt}`;
+    }
+
+    box.innerHTML = `<div class="chead"><span class="ct">${spec.title}</span>${legend}`
+      + `<span class="cnow">${now}</span>`
       + `<button class="cx" title="Close">✕</button></div>`;
     (box.querySelector('.cx') as HTMLButtonElement).onclick = () => root.remove();
 
-    if (vals.length < 2) {
+    if (!enough) {
       const p = this.el('div', box, 'cempty');
       p.textContent = 'Not enough history yet — give it a minute of play.';
     } else {
-      box.insertAdjacentHTML('beforeend', this.chartSvg(vals, this.histTimes));
+      box.insertAdjacentHTML('beforeend', this.chartSvg(data, spec.fill));
     }
     document.body.appendChild(root);
   }
 
-  /** A small SVG line chart of a series, zoomed to its own min..max. */
-  private chartSvg(vals: number[], times: number[]): string {
-    const W = 520, H = 250, PL = 50, PR = 14, PT = 14, PB = 30;
+  /** A multi-series SVG line chart, every series sharing one min..max axis. */
+  private chartSvg(series: { color: string; vals: number[] }[],
+                   fill: 'area' | 'between' | 'none'): string {
+    const W = 540, H = 250, PL = 50, PR = 14, PT = 14, PB = 30;
     const iw = W - PL - PR, ih = H - PT - PB;
-    const n = vals.length;
-    let lo = Math.min(...vals), hi = Math.max(...vals);
-    if (hi === lo) { hi += 1; lo -= 1; }             // a flat line still needs a band
+    const times = this.histTimes;
+    const n = times.length;
+    const all = series.flatMap(s => s.vals);
+    let lo = Math.min(...all), hi = Math.max(...all);
+    if (fill !== 'none') lo = Math.min(lo, 0);        // stocks and rates read against zero
+    if (hi === lo) { hi += 1; lo -= 1; }
     const span = hi - lo;
-    const t0 = times[0], tEnd = times[n - 1];
-    const tspan = (tEnd - t0) || 1;
+    const t0 = times[0], tspan = (times[n - 1] - t0) || 1;
     const px = (i: number) => PL + ((times[i] - t0) / tspan) * iw;
     const py = (v: number) => PT + (1 - (v - lo) / span) * ih;
-
-    const line = vals.map((v, i) => `${px(i).toFixed(1)},${py(v).toFixed(1)}`).join(' ');
-    const area = `${PL},${(PT + ih).toFixed(1)} ${line} ${(PL + iw).toFixed(1)},${(PT + ih).toFixed(1)}`;
+    const pts = (vals: number[]) => vals.map((v, i) => `${px(i).toFixed(1)},${py(v).toFixed(1)}`).join(' ');
 
     const ticks = [lo, lo + span / 2, hi];
     const grid = ticks.map(v =>
       `<line x1="${PL}" y1="${py(v).toFixed(1)}" x2="${PL + iw}" y2="${py(v).toFixed(1)}" class="cgrid"/>`
       + `<text x="${PL - 7}" y="${(py(v) + 3).toFixed(1)}" class="cyl">${Math.round(v)}</text>`).join('');
 
+    let body = '';
+    if (fill === 'between' && series.length >= 2) {
+      const back = series[1].vals.map((v, i) => `${px(i).toFixed(1)},${py(v).toFixed(1)}`).reverse();
+      body += `<polygon points="${pts(series[0].vals)} ${back.join(' ')}" class="cbetween"/>`;
+    } else if (fill === 'area' && series.length) {
+      body += `<polygon points="${PL},${(PT + ih).toFixed(1)} ${pts(series[0].vals)} `
+        + `${(PL + iw).toFixed(1)},${(PT + ih).toFixed(1)}" class="carea"/>`;
+    }
+    for (const s of series) {
+      body += `<polyline points="${pts(s.vals)}" fill="none" stroke="${s.color}" `
+        + `stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    }
+
     const ago = (sec: number) => { const m = Math.floor(sec / 60); return m ? `${m}m` : `${Math.round(sec)}s`; };
     const xl = `<text x="${PL}" y="${H - 9}" class="cxl">${ago(tspan)} ago</text>`
       + `<text x="${PL + iw}" y="${H - 9}" class="cxl" text-anchor="end">now</text>`;
 
     return `<svg class="csvg" viewBox="0 0 ${W} ${H}" width="100%" preserveAspectRatio="none">`
-      + grid + `<polygon points="${area}" class="carea"/>`
-      + `<polyline points="${line}" class="cline"/>` + xl + `</svg>`;
+      + grid + body + xl + `</svg>`;
   }
 
   private buildStats(): void {
