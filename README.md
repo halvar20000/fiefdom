@@ -1403,6 +1403,22 @@ minute later at popularity 70 the town had refilled to 10 with the two soldiers
 still standing, and food consumption read 5.0/min for 10 people rather than the
 6.0 twelve would have eaten.
 
+## Building within your lands
+
+A settlement is a place, not a sprawl. Building is limited to your **lands**: two
+tile grids computed in main.ts, `territory` (where anything may go) and
+`territoryEdge` (that plus a margin). `recomputeTerritory` stamps a disc of
+`R_KEEP` (22) around the keep and a disc of `R_EXT` (12) around every wall, tower
+and gatehouse, so the buildable area is the union of those discs -- and the one
+way to grow it is stone. `territoryOk` in the placement world tests the footprint
+against `territory`, except for a border piece (wall/tower/gatehouse), which is
+tested against `territoryEdge` and so may be planted up to `EDGE_REACH` (6) past
+the current border -- which is how you push the line outward one wall at a time,
+exactly as a Crusader castle claims ground. The grids are recomputed only when a
+keep or a border piece is added or removed (a cheap union of discs), and the
+existing build-mode overlay -- `terrain.setOverlay(x,z => placement.check().ok)`
+-- now paints the lands for free, adapting to whichever building is in hand.
+
 ## Demolition, and knowing what you already have
 
 Two small things that were conspicuously missing.
@@ -1929,6 +1945,16 @@ beat the lord", and it should cost a real part of an economy.
 **Only siege engines damage buildings.** That is what makes them worth their
 price and worth escorting: an engine ignores enemy soldiers completely and will
 stand there being cut to pieces without swinging back.
+
+**An engine under orders marches; it does not fight.** The siege blocks in
+`army.update` now bail out the moment `s.hold || (s.ordered && s.moving)` is true,
+before they look for a target. Without that guard a ram clamped onto the first
+enemy wall it passed within reach of, cleared its own path, and set `moving`
+false again the very next tick -- so a move order was undone before it could
+take a step and the ram read as "stuck and unmovable". Now it only ever batters
+what you PARK it at: it ignores everything while walking to where it was sent,
+attacks whatever is in range once it arrives and the order clears, and `H` (hold)
+stops it firing where it stands.
 
 Buildings carry `hp`, defaulted from the footprint by `buildingHp` so adding a
 building never silently creates an indestructible one. Keep 900, tower 420,

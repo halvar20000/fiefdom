@@ -23,6 +23,25 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.29.0',
+    date: '2026-08-27',
+    headline: 'Build within your lands, and rams that obey.',
+    sections: [
+      {
+        title: 'Changed',
+        items: [
+          'You can no longer build across the whole map. Building is now limited to your lands — a generous area around your keep. The one way to claim more ground is stone: raise a wall, tower or gatehouse and the border pushes out around it, so your castle grows by walling in land, as in Stronghold. While you have a building in hand, the highlighted ground shows exactly where it may go.',
+        ],
+      },
+      {
+        title: 'Fixed',
+        items: [
+          'The battering ram now obeys move orders. It used to clamp onto the first enemy building it passed and refuse to budge; now, while marching to where you send it, it ignores everything and only batters the building you actually park it at. (Setting it to Hold with H also makes it hold its fire.)',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.28.0',
     date: '2026-08-27',
     headline: 'Richer resource charts.',

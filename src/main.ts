@@ -539,12 +539,68 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     return GROUND_TYPES[groundType[z * MAP_W + x]] ?? 'sand';
   };
 
+  // --- buildable territory --------------------------------------------------
+  //
+  // You may build within reach of your keep, and NOTHING else lets you build
+  // out on the far side of the map -- a settlement is a place, not a sprawl. The
+  // one way to claim more ground is stone: a wall, a tower or a gatehouse pushes
+  // the border outward around itself, so a castle grows by walling in more land,
+  // exactly as in Stronghold. `territory` is where ordinary buildings may go;
+  // `territoryEdge` is that plus a margin, where a border piece may be planted to
+  // extend the line one step at a time.
+  const territory = new Uint8Array(MAP_W * MAP_H);
+  const territoryEdge = new Uint8Array(MAP_W * MAP_H);
+  const R_KEEP = 22;       // a generous starting settlement
+  const R_EXT = 12;        // how far a wall/tower/gate claims around itself
+  const EDGE_REACH = 6;    // how far past the border a new wall may be planted
+  const BORDER_BUILDINGS = new Set(['wall', 'tower', 'gatehouse']);
+
+  const stampDisc = (grid: Uint8Array, cx: number, cz: number, r: number) => {
+    const r2 = r * r;
+    const x0 = Math.max(0, Math.floor(cx - r)), x1 = Math.min(MAP_W - 1, Math.ceil(cx + r));
+    const z0 = Math.max(0, Math.floor(cz - r)), z1 = Math.min(MAP_H - 1, Math.ceil(cz + r));
+    for (let z = z0; z <= z1; z++) {
+      for (let x = x0; x <= x1; x++) {
+        const dx = x + 0.5 - cx, dz = z + 0.5 - cz;
+        if (dx * dx + dz * dz <= r2) grid[z * MAP_W + x] = 1;
+      }
+    }
+  };
+
+  function recomputeTerritory(): void {
+    territory.fill(0);
+    territoryEdge.fill(0);
+    for (const b of state.buildings) {
+      const isKeep = b.name === 'keep';
+      if (!isKeep && !BORDER_BUILDINGS.has(b.name)) continue;
+      const [w, d] = b.def.footprint;
+      const cx = b.x + w / 2, cz = b.z + d / 2;
+      const r = isKeep ? R_KEEP : R_EXT;
+      stampDisc(territory, cx, cz, r);
+      stampDisc(territoryEdge, cx, cz, r + EDGE_REACH);
+    }
+  }
+
+  /** Is this footprint on land you may build on -- looser for a border piece? */
+  const territoryOk = (name: string, x: number, z: number, w: number, d: number): boolean => {
+    const grid = BORDER_BUILDINGS.has(name) ? territoryEdge : territory;
+    for (let dz = 0; dz < d; dz++) {
+      for (let dx = 0; dx < w; dx++) {
+        const tx = x + dx, tz = z + dz;
+        if (tx < 0 || tz < 0 || tx >= MAP_W || tz >= MAP_H) return false;
+        if (!grid[tz * MAP_W + tx]) return false;
+      }
+    }
+    return true;
+  };
+
   const placementWorld: PlacementWorld = {
     isFlat: (x, z, w, d) => isBuildable(terrain, x, z, w, d),
     groundAt: groundName,
     isOccupied: (x, z) =>
       x < 0 || z < 0 || x >= MAP_W || z >= MAP_H ? true : occupied[z * MAP_W + x] === 1,
     inBounds: (x, z, w, d) => x >= 0 && z >= 0 && x + w <= MAP_W && z + d <= MAP_H,
+    territoryOk,
   };
 
   /** Felled trees waiting to grow back. */
@@ -915,6 +971,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
   place('hovel', kx - 4, kz - 4);
   state.assignWorkers();
   workers.sync();
+  recomputeTerritory();   // the starting lands, around the keep
 
   /**
    * Raise the enemy lord's castle, far across the map.
@@ -1746,6 +1803,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     state.removeBuilding(b);
     evictGarrison(b.x, b.z);
     razeTiles(b.x, b.z, w, d);
+    if (BORDER_BUILDINGS.has(b.name)) recomputeTerritory();   // the border it held is gone
     workers.sync();
     state.notify(
       back.length
@@ -1762,6 +1820,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     state.removeBuilding(b);
     evictGarrison(b.x, b.z);
     razeTiles(b.x, b.z, w, d);
+    if (b.name === 'keep' || BORDER_BUILDINGS.has(b.name)) recomputeTerritory();
     state.notify(`Your ${b.def.label.toLowerCase()} has been destroyed!`, 'warn');
     workers.sync();
     // Lose your keep and the fief is lost.
@@ -2253,6 +2312,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
         const [w, d] = b.def.footprint;
         markArea(b.x, b.z, w, d);
         if (!b.def.walkable) markSolid(b.x, b.z, w, d);
+        if (BORDER_BUILDINGS.has(b.name)) recomputeTerritory();   // a wall claims new ground
         workers.sync();
         staticDirty = true;
         // Keep the tool in hand for anything laid in runs -- yard squares,
@@ -3416,6 +3476,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     // sync() alone: it creates exactly one worker per staffed slot, which is
     // what the save recorded. assignWorkers would re-derive it and drift.
     workers.sync();
+    recomputeTerritory();   // the lands, from the restored keep and walls
     rebuildFirePosts();
     staticDirty = true;
     state.notify('Game loaded', 'info');
@@ -3484,6 +3545,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
         const b = state.buildings[state.buildings.length - 1];
         markArea(b.x, b.z, b.def.footprint[0], b.def.footprint[1]);
         if (!b.def.walkable) markSolid(b.x, b.z, b.def.footprint[0], b.def.footprint[1]);
+        if (BORDER_BUILDINGS.has(b.name)) recomputeTerritory();
         workers.sync();
         staticDirty = true;
       }

@@ -9,6 +9,12 @@ export interface PlacementWorld {
   /** Already taken by a building, tree or rock? */
   isOccupied(x: number, z: number): boolean;
   inBounds(x: number, z: number, w: number, d: number): boolean;
+  /**
+   * Is this footprint on ground you are allowed to build on -- within your
+   * lands? Border pieces (walls, towers, gatehouses) are allowed a little past
+   * the edge, since planting them is how the border is pushed out.
+   */
+  territoryOk(name: string, x: number, z: number, w: number, d: number): boolean;
 }
 
 export interface PlacementCheck {
@@ -132,6 +138,17 @@ export class Placement {
     // reason first.
     if (def.needsWater && !this.nearWater(x, z, w, d)) {
       return { ok: false, reason: 'Must be built on a shore' };
+    }
+
+    // Within your own lands. Kept near the end, after the ground is otherwise
+    // fine, so a spot that fails for a plainer reason is reported by that reason
+    // first. Walls, towers and gatehouses are how the lands are extended, so
+    // they answer to a looser boundary than everything else.
+    if (!this.world.territoryOk(name, x, z, w, d)) {
+      return {
+        ok: false,
+        reason: 'Outside your lands — extend them with walls, towers or a gatehouse',
+      };
     }
 
     if (!this.state.canAfford(def.cost)) {

@@ -425,6 +425,9 @@ export class Army {
         // breakers -- it never goes hunting, it holds where you put it and
         // covers the ground in front of it, which is the whole point of
         // owning one.
+        // Under a move order it marches; held, it holds fire -- same bargain as
+        // the wall breakers, so the player keeps control of it.
+        if (s.hold || (s.ordered && s.moving)) { s.target = null; continue; }
         const reach = Army.reachOf(s);
         let foe = s.target !== null ? this.byId(s.target) ?? null : null;
         if (foe && (foe.hp <= 0 || foe.side === s.side
@@ -447,8 +450,14 @@ export class Army {
       }
 
       if (s.def.siege) {
-        const t = this.world.siegeTarget?.(s) ?? null;
         s.target = null;
+        // A ram or catapult under a MOVE order marches past everything, and a
+        // held one holds its fire -- so it only ever batters the building you
+        // parked it at, and a wrong turn can always be taken back. Without this
+        // it clamped onto the first wall it passed and cleared its own path,
+        // which read as "the ram is stuck and will not move".
+        if (s.hold || (s.ordered && s.moving)) continue;
+        const t = this.world.siegeTarget?.(s) ?? null;
         // An engine NEVER goes looking for a target. It shoots what is already
         // in reach and otherwise waits to be told where to go. Auto-advancing
         // meant a catapult trundled off across the map the moment it was
