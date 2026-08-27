@@ -23,6 +23,19 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.29.2',
+    date: '2026-08-27',
+    headline: 'Clicking a resource for its history actually works now.',
+    sections: [
+      {
+        title: 'Fixed',
+        items: [
+          'Clicking a top-bar figure — Gold, Wood, and the rest — to open its history chart did nothing at all during real play. The bar redraws every frame, so the chip you pressed on was gone before you lifted your finger, and the click landed on empty bar instead. It now opens the moment you press, so the chart appears every time.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.29.1',
     date: '2026-08-27',
     headline: 'Resource charts that show a line, not a filled block.',

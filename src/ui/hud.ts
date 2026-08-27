@@ -623,10 +623,20 @@ export class Hud {
 
   private buildTopbar(): void {
     this.topbar = this.el('div', this.root, 'panel', 'topbar');
-    // The bar's innerHTML is rebuilt every frame, so a per-chip click handler
-    // would be thrown away each time; one delegated listener reads which chip
-    // was hit from its data-res and opens that resource's history.
-    this.topbar.addEventListener('click', e => {
+    // The bar's innerHTML is rebuilt every frame, so a per-chip handler would be
+    // thrown away each time; one delegated listener reads which chip was hit
+    // from its data-res and opens that resource's history.
+    //
+    // It listens for 'pointerdown', NOT 'click', and that is not a detail. A
+    // click only fires if press and release land on the SAME element -- but the
+    // chip pressed on is destroyed and recreated by the next frame's rebuild
+    // before the finger lifts, so the browser retargets the click up to the bar
+    // itself, where closest() finds no data-res and nothing opens. (It slips
+    // through in a throttled background tab, which rebuilds too slowly to swap
+    // the chip out mid-press -- which is exactly why it hid during testing.)
+    // pointerdown fires once, on the chip under the cursor at that instant, so
+    // there is no release to outrun.
+    this.topbar.addEventListener('pointerdown', e => {
       const chip = (e.target as HTMLElement).closest('[data-res]') as HTMLElement | null;
       if (chip?.dataset.res) this.showResourceChart(chip.dataset.res);
     });
