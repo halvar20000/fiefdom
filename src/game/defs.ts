@@ -158,6 +158,16 @@ export const CHURCH_SERVES = 24;
 export const RELIGION_POPULARITY_MAX = 8;
 
 /**
+ * The pharmacy, a second wellbeing lever cut from the same cloth as the church:
+ * it tends the body where the church tends the soul. One reaches this many
+ * people, and popularity rises with the fraction of the town it covers. Pitched
+ * a little below the church so faith stays the larger comfort, but the two stack
+ * -- a town given both is a markedly happier one.
+ */
+export const PHARMACY_SERVES = 24;
+export const HEALTH_POPULARITY_MAX = 6;
+
+/**
  * Aesthetic "good" buildings, as in Crusader. Their bonus is CAPPED and it
  * erodes as the town grows -- `sum(beauty) - floor(population / BEAUTY_PER)`,
  * clamped to [0, BEAUTY_CAP] -- so gardens are not a one-off you place and
@@ -218,7 +228,7 @@ export const BUILDINGS: Record<string, BuildingDef> = {
   siege_camp: {
     name: 'siege_camp', label: 'Siege Camp', category: 'castle',
     footprint: [3, 3], cost: { wood: 40, stone: 10 }, workers: 0, terrain: 'any',
-    description: 'Builds rams and catapults. The only way through stone.',
+    description: 'Builds rams, catapults and trebuchets. The only way through stone.',
   },
   barracks: {
     name: 'barracks', label: 'Barracks', category: 'castle',
@@ -247,6 +257,13 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     serves: CHURCH_SERVES,
     description: 'Tends the town\'s soul. Popularity rises with how much of '
                + 'your people it reaches.',
+  },
+  pharmacy: {
+    name: 'pharmacy', label: 'Pharmacy', category: 'town',
+    footprint: [2, 2], cost: { wood: 20, stone: 15 }, workers: 0, terrain: 'any',
+    serves: PHARMACY_SERVES,
+    description: 'Tends the town\'s health. Popularity rises with how much of '
+               + 'your people it reaches — and it stacks with the church.',
   },
   garden: {
     name: 'garden', label: 'Garden', category: 'town',
@@ -410,7 +427,7 @@ export const BUILD_MENU: { category: Category; label: string; items: string[] }[
   { category: 'castle', label: 'Castle', items: ['wall', 'gatehouse', 'tower', 'pitch_ditch', 'barracks', 'siege_camp'] },
   { category: 'castle', label: 'Stores', items: ['stockpile', 'granary'] },
   { category: 'town', label: 'Town',
-    items: ['hovel', 'market', 'church', 'garden', 'gallows'] },
+    items: ['hovel', 'market', 'church', 'pharmacy', 'garden', 'gallows'] },
   { category: 'industry', label: 'Industry',
     items: ['woodcutter', 'quarry', 'ox_tether', 'iron_mine', 'pitch_rig', 'depot'] },
   { category: 'farm', label: 'Farms',
@@ -697,6 +714,17 @@ export const SIEGE_TYPES: Record<string, SoldierType> = {
     hp: 85, speed: 0.45, damage: 30, range: 7.5, cooldown: 3.4, siege: true,
     description: 'Breaks stone from well out of reach. Fragile — keep men round it.',
   },
+  trebuchet: {
+    name: 'trebuchet', from: 'siege_camp', label: 'Trebuchet', gold: 300,
+    cost: { wood: 45, iron: 15 },
+    // The heavy engine above the catapult: it out-ranges everything and each
+    // stone bites nearly twice as deep, but it crawls and it reloads slowly, so
+    // it wants an escort and a good firing spot rather than a brawl. Same
+    // fragility as the catapult -- a siege engine, not a tank.
+    hp: 90, speed: 0.35, damage: 55, range: 10.5, cooldown: 5.0, siege: true,
+    description: 'Hurls great stones farther than any catapult and hits far '
+               + 'harder — but slow to move and slow to reload.',
+  },
   fire_ballista: {
     name: 'fire_ballista', from: 'siege_camp', label: 'Fire Ballista', gold: 150,
     cost: { wood: 20, iron: 5 },
@@ -712,4 +740,4 @@ export const SIEGE_TYPES: Record<string, SoldierType> = {
 Object.assign(SOLDIER_TYPES, SIEGE_TYPES);
 
 export const SOLDIER_ORDER =
-  ['spearman', 'archer', 'swordsman', 'ram', 'catapult', 'fire_ballista'] as const;
+  ['spearman', 'archer', 'swordsman', 'ram', 'catapult', 'trebuchet', 'fire_ballista'] as const;

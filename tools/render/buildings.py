@@ -17,6 +17,7 @@ import bpy
 
 import geom
 import materials as M
+import props
 
 
 def keep():
@@ -1017,26 +1018,95 @@ def depot():
 
 
 def church():
-    """A small stone chapel: nave, pitched roof, a little bell tower and a cross."""
+    """A small domed chapel: an octagonal stone drum under a pale cupola, a
+    lantern and finial on top, an arched door and tall window niches. Replaces
+    the old spired parish church with the round-domed shrine Thomas asked for."""
     stone = M.castle_stone()
-    rough = M.rough_stone("ChurchFooting")
-    roof = M.timber("ChurchRoof", dark=True)
-    plaster = M.plaster()
+    rough = M.rough_stone("ChapelFooting")
+    pale = M.plaster(tint=(0.87, 0.84, 0.76))     # the cupola: light lead/plaster
+    trim = M.plaster(tint=(0.80, 0.77, 0.70))
+    dark = M.timber("ChapelDoor", dark=True)      # recessed door / window shadow
     iron = M.iron()
 
+    cx, cy = 0.96, 0.96
+    A = math.pi / 8.0        # turn the octagon so a flat face points each way
     parts = []
-    parts.append(geom.box("ch_plinth", (0.08, 0.08, 0.0), (1.84, 1.84, 0.10), rough))
-    parts.append(geom.box("ch_nave", (0.30, 0.16, 0.10), (1.20, 1.66, 0.92), stone))
-    parts.append(geom.gable("ch_roof", (0.30, 0.16, 1.02), (1.20, 1.66, 0.52),
-                            roof, overhang=0.16))
-    parts.append(geom.arch_doorway("ch_door", (0.78, 0.10, 0.10), 0.42, 0.60, 0.12, roof))
-    parts.append(geom.box("ch_tower", (1.44, 0.20, 0.10), (0.40, 0.40, 1.42), stone))
-    parts.append(geom.pyramid("ch_spire", (1.44, 0.20, 1.52), (0.40, 0.40, 0.40),
-                              roof, overhang=0.06))
-    parts.append(geom.box("ch_cross_v", (1.62, 0.38, 1.92), (0.04, 0.04, 0.22), iron))
-    parts.append(geom.box("ch_cross_h", (1.56, 0.38, 2.00), (0.16, 0.04, 0.04), iron))
-    parts.append(geom.box("ch_win", (0.28, 0.70, 0.44), (0.05, 0.30, 0.40), plaster))
+    # stepped stone base
+    parts.append(geom.box("cp_plinth", (0.06, 0.06, 0.0), (1.80, 1.80, 0.12), rough))
+    parts.append(geom.box("cp_step", (0.20, 0.20, 0.12), (1.52, 1.52, 0.08), stone))
+    # octagonal drum, its cornice, and the pale cupola
+    parts.append(geom.cylinder("cp_drum", (cx, cy, 0.20), 0.74, 0.90, stone,
+                               segments=8, angle0=A))
+    parts.append(geom.cylinder("cp_cornice", (cx, cy, 1.06), 0.80, 0.10, trim,
+                               segments=8, angle0=A))
+    parts.append(geom.dome("cp_dome", (cx, cy, 1.16), 0.74, 0.60, pale))
+    # a little lantern with its own cupola and a finial
+    parts.append(geom.cylinder("cp_lantern", (cx, cy, 1.70), 0.15, 0.18, stone, segments=8))
+    parts.append(geom.dome("cp_lantern_top", (cx, cy, 1.88), 0.15, 0.13, pale))
+    parts.append(geom.cylinder("cp_finial", (cx, cy, 2.01), 0.028, 0.14, iron, segments=6))
+    parts.append(geom.box("cp_ball", (cx - 0.05, cy - 0.05, 2.11), (0.10, 0.10, 0.10), iron))
+    # arched door on the front (-Y) face
+    parts.append(geom.arch_doorway("cp_door", (cx - 0.22, 0.14, 0.20), 0.44, 0.64, 0.16, dark))
+    # tall window niches on the other faces, so the side rotations aren't blank
+    parts.append(geom.box("cp_win_e", (1.60, cy - 0.15, 0.60), (0.06, 0.30, 0.42), dark))
+    parts.append(geom.box("cp_win_w", (0.28, cy - 0.15, 0.60), (0.06, 0.30, 0.42), dark))
+    parts.append(geom.box("cp_win_n", (cx - 0.15, 1.60, 0.60), (0.30, 0.06, 0.42), dark))
     return geom.join(parts, "church"), (2, 2)
+
+
+def pharmacy():
+    """A flat-roofed apothecary: a stone block with a rooftop terrace of potted
+    herbs under an awning, stacked crates and a small upper room. The town's
+    second wellbeing building -- it tends the body as the chapel tends the soul.
+    Modelled from Thomas's reference of a herb-drying rooftop house."""
+    stone = M.castle_stone()
+    rough = M.rough_stone("PharmaFooting")
+    terra = M.plaster("PharmaPot", tint=(0.72, 0.42, 0.30))       # terracotta pots
+    canvas = M.cloth("PharmaCanvas", colour=(0.90, 0.87, 0.78))   # off-white awning
+    leaf = M.cloth("PharmaLeaf", colour=(0.28, 0.46, 0.20))
+    leaf2 = M.cloth("PharmaLeaf2", colour=(0.42, 0.56, 0.26))
+    timber_l = M.timber("PharmaTimber")
+    dark = M.timber("PharmaDark", dark=True)                      # door/window shadow
+
+    parts = []
+    # footing and the main stone block
+    parts.append(geom.box("ph_plinth", (0.05, 0.05, 0.0), (1.84, 1.84, 0.10), rough))
+    parts.append(geom.box("ph_block", (0.14, 0.14, 0.10), (1.62, 1.62, 0.90), stone))
+    # the flat roof terrace, walled by a low parapet (taller at the back)
+    parts.append(geom.box("ph_deck", (0.16, 0.16, 0.98), (1.58, 1.58, 0.05), M.flagstone()))
+    parts.append(geom.box("ph_par_f", (0.14, 0.14, 1.00), (1.62, 0.12, 0.18), stone))
+    parts.append(geom.box("ph_par_b", (0.14, 1.64, 1.00), (1.62, 0.12, 0.30), stone))
+    parts.append(geom.box("ph_par_l", (0.14, 0.14, 1.00), (0.12, 1.62, 0.24), stone))
+    parts.append(geom.box("ph_par_r", (1.64, 0.14, 1.00), (0.12, 1.62, 0.24), stone))
+    # a small upper room at the back-left, capped in timber
+    parts.append(geom.box("ph_upper", (0.22, 1.06, 1.00), (0.64, 0.70, 0.66), stone))
+    parts.append(geom.box("ph_upcap", (0.18, 1.02, 1.66), (0.72, 0.78, 0.06), timber_l))
+    # crates stacked on the roof, back-right
+    parts.append(geom.box("ph_crate0", (1.16, 1.14, 1.04), (0.36, 0.36, 0.32), timber_l))
+    parts.append(geom.box("ph_crate1", (1.20, 1.18, 1.36), (0.30, 0.30, 0.26), timber_l))
+    parts.append(geom.box("ph_crate2", (1.44, 1.14, 1.04), (0.20, 0.30, 0.22), dark))
+    # an awning over the front-right terrace on four posts
+    for i, (px, py) in enumerate([(0.34, 0.30), (1.02, 0.30), (0.34, 0.90), (1.02, 0.90)]):
+        parts.append(geom.box(f"ph_post_{i}", (px, py, 1.04), (0.05, 0.05, 0.42), timber_l))
+    parts.append(geom.box("ph_awn", (0.26, 0.22, 1.44), (0.86, 0.80, 0.05), canvas))
+    # potted herbs on the terrace, set to peek over the low front parapet
+    for i, (px, py) in enumerate([(0.30, 0.30), (0.60, 0.26), (1.30, 0.30)]):
+        parts.append(geom.cylinder(f"ph_pot_{i}", (px, py, 1.02), 0.10, 0.16, terra, segments=10))
+        parts.append(props.blob(f"ph_herb_{i}", (px, py, 1.22), 0.15,
+                                leaf if i % 2 else leaf2, squash=0.7))
+    # ground floor: arched door, window niches, and a little shade over the door
+    parts.append(geom.arch_doorway("ph_door", (0.72, 0.06, 0.10), 0.42, 0.58, 0.14, dark))
+    parts.append(geom.box("ph_win0", (0.22, 0.42, 0.44), (0.05, 0.30, 0.34), dark))
+    parts.append(geom.box("ph_win1", (1.68, 0.60, 0.44), (0.05, 0.30, 0.34), dark))
+    for i, px in enumerate((0.66, 1.16)):
+        parts.append(geom.box(f"ph_dpost_{i}", (px, 0.02, 0.10), (0.04, 0.04, 0.60), timber_l))
+    parts.append(geom.box("ph_dawn", (0.60, 0.00, 0.68), (0.68, 0.20, 0.04), canvas))
+    # greenery and pots around the base
+    parts.append(geom.cylinder("ph_bpot", (0.30, 0.12, 0.10), 0.11, 0.18, terra, segments=10))
+    parts.append(props.blob("ph_bherb", (0.30, 0.12, 0.30), 0.17, leaf, squash=0.7))
+    parts.append(props.blob("ph_bush0", (1.62, 0.24, 0.10), 0.22, leaf2, squash=0.6))
+    parts.append(props.blob("ph_bush1", (0.16, 1.30, 0.10), 0.20, leaf, squash=0.6))
+    return geom.join(parts, "pharmacy"), (2, 2)
 
 
 def garden():
@@ -1094,6 +1164,7 @@ REGISTRY.update({
     "depot": depot,
     "siege_camp": siege_camp,
     "church": church,
+    "pharmacy": pharmacy,
     "garden": garden,
     "gallows": gallows,
     "pig_farm": pig_farm,

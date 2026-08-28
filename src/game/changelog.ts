@@ -23,6 +23,27 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.31.0',
+    date: '2026-08-28',
+    headline: 'A pharmacy, a domed chapel, and the trebuchet.',
+    sections: [
+      {
+        title: 'Added',
+        items: [
+          'The Pharmacy, a new town building. Like the church it tends your people — the church their soul, the pharmacy their health — and popularity rises with how much of the town it reaches. The two stack, so a settlement given both is markedly happier. Find it in the Town menu; its effect shows on the Popularity chart.',
+          'The Trebuchet, the heavy siege engine above the catapult. Built at the Siege Camp, it out-ranges everything and each stone bites nearly twice as deep — but it crawls into position and reloads slowly, so it wants an escort and a good firing spot. Watch the great counterweight drop as it looses.',
+        ],
+      },
+      {
+        title: 'Changed',
+        items: [
+          'The church is now a domed stone chapel — an octagonal drum under a pale cupola with a lantern and finial — in place of the old spired parish church. Its role is unchanged; only the look.',
+          'The catapult was rebuilt as a proper torsion mangonel: the arm now rests cocked back off its skein and whips forward through a padded crossbeam when it fires, a clearer silhouette that reads as a catapult at a glance.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.30.0',
     date: '2026-08-27',
     headline: 'Charts that show why, how far back, and against whom.',

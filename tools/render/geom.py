@@ -81,13 +81,17 @@ def pyramid(name, pos, size, mat, rot_z=0.0, overhang=0.0):
     return _finish(name, verts, faces, mat, pos, rot_z)
 
 
-def cylinder(name, pos, radius, height, mat, segments=16, cap=True):
+def cylinder(name, pos, radius, height, mat, segments=16, cap=True, angle0=0.0):
+    # angle0 rotates the ring of vertices, baked into the coordinates rather than
+    # applied as an object rotation so the UV cube projection stays put. Lets a
+    # low-segment prism (an octagon) present a flat FACE toward an axis instead
+    # of an edge -- which is what a door or window wants to sit on.
     verts, faces = [], []
     for i in range(segments):
-        a = (i / segments) * math.tau
+        a = angle0 + (i / segments) * math.tau
         verts.append((math.cos(a) * radius, math.sin(a) * radius, 0.0))
     for i in range(segments):
-        a = (i / segments) * math.tau
+        a = angle0 + (i / segments) * math.tau
         verts.append((math.cos(a) * radius, math.sin(a) * radius, height))
     for i in range(segments):
         j = (i + 1) % segments
@@ -107,6 +111,35 @@ def cone(name, pos, radius, height, mat, segments=16):
     faces = [(i, (i + 1) % segments, segments) for i in range(segments)]
     faces.append(tuple(range(segments - 1, -1, -1)))
     return _finish(name, verts, faces, mat, pos)
+
+
+def dome(name, pos, radius, height, mat, segments=20, rings=8):
+    """Hemispherical dome. `pos` is the base centre; rises to `height` at the top.
+
+    Built as stacked latitude rings so it can be taller than a true hemisphere
+    (a slightly ogee cupola) by setting height > radius. Smooth-shaded so it
+    reads as a curved lead or plaster dome rather than a faceted cone.
+    """
+    verts, faces = [], []
+    for r in range(rings):
+        phi = (r / rings) * (math.pi / 2.0)      # 0 at the base, pi/2 at the top
+        rr = radius * math.cos(phi)
+        z = height * math.sin(phi)
+        for i in range(segments):
+            a = (i / segments) * math.tau
+            verts.append((math.cos(a) * rr, math.sin(a) * rr, z))
+    apex = len(verts)
+    verts.append((0.0, 0.0, height))
+    for r in range(rings - 1):
+        base, nxt = r * segments, (r + 1) * segments
+        for i in range(segments):
+            j = (i + 1) % segments
+            faces.append((base + i, base + j, nxt + j, nxt + i))
+    top = (rings - 1) * segments
+    for i in range(segments):
+        faces.append((top + i, top + (i + 1) % segments, apex))
+    faces.append(tuple(range(segments - 1, -1, -1)))   # underside, so it reads solid
+    return _finish(name, verts, faces, mat, pos, shade_smooth=True)
 
 
 def crenellate(name_prefix, origin, width, depth, mat,

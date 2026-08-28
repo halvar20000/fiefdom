@@ -1094,10 +1094,10 @@
   {
     "name": "church",
     "rotation": 0,
-    "width": 174,
+    "width": 168,
     "height": 158,
-    "anchor_x": 42.23,
-    "anchor_y": 120.78,
+    "anchor_x": 42.09,
+    "anchor_y": 122.31,
     "footprint": [
       2,
       2
@@ -1107,10 +1107,10 @@
   {
     "name": "church",
     "rotation": 1,
-    "width": 214,
+    "width": 210,
     "height": 158,
-    "anchor_x": 68.04,
-    "anchor_y": 89.1,
+    "anchor_x": 64.43,
+    "anchor_y": 91.59,
     "footprint": [
       2,
       2
@@ -1120,10 +1120,10 @@
   {
     "name": "church",
     "rotation": 2,
-    "width": 174,
+    "width": 168,
     "height": 198,
-    "anchor_x": 131.77,
-    "anchor_y": 121.45,
+    "anchor_x": 125.91,
+    "anchor_y": 122.02,
     "footprint": [
       2,
       2
@@ -1133,10 +1133,10 @@
   {
     "name": "church",
     "rotation": 3,
-    "width": 214,
+    "width": 210,
     "height": 176,
-    "anchor_x": 145.96,
-    "anchor_y": 152.32,
+    "anchor_x": 145.57,
+    "anchor_y": 152.26,
     "footprint": [
       2,
       2
@@ -2232,6 +2232,58 @@
     "footprint": [
       1,
       1
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pharmacy",
+    "rotation": 0,
+    "width": 166,
+    "height": 144,
+    "anchor_x": 39.01,
+    "anchor_y": 104.92,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pharmacy",
+    "rotation": 1,
+    "width": 200,
+    "height": 144,
+    "anchor_x": 68.74,
+    "anchor_y": 75.48,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pharmacy",
+    "rotation": 2,
+    "width": 166,
+    "height": 174,
+    "anchor_x": 126.99,
+    "anchor_y": 105.08,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "pharmacy",
+    "rotation": 3,
+    "width": 200,
+    "height": 158,
+    "anchor_x": 131.26,
+    "anchor_y": 134.7,
+    "footprint": [
+      2,
+      2
     ],
     "scale": 2
   },

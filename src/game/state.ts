@@ -2,7 +2,8 @@ import {
   ALL_RESOURCES, BUILDINGS, RAW_RESOURCES, FOOD_RESOURCES, RATIONS, TAX_LEVELS,
   FOOD_VARIETY_BONUS, PRICES, buildingHp, TRADE_BATCH, TRADE_INTERVAL, TRADE_MIN_BAND,
   INN_CAPACITY, ALE_PER_PERSON_PER_MIN, ALE_POPULARITY_MAX, isFood,
-  CHURCH_SERVES, RELIGION_POPULARITY_MAX, BEAUTY_CAP, BEAUTY_PER,
+  CHURCH_SERVES, RELIGION_POPULARITY_MAX, PHARMACY_SERVES, HEALTH_POPULARITY_MAX,
+  BEAUTY_CAP, BEAUTY_PER,
   RESOURCE_LABELS, STOCKPILE_TILE_CAPACITY, STOCKPILE_LEVELS,
   GRANARY_TILE_CAPACITY,
   type BuildingDef, type RationLevel, type Resource, type Store, type TradeOrder,
@@ -195,6 +196,14 @@ export class GameState {
     return Math.min(1, served / this.population);
   }
 
+  /** Fraction of the town within reach of a pharmacy, 0..1. Mirrors the church. */
+  get healthCoverage(): number {
+    const served = this.buildings.reduce(
+      (n, b) => n + (b.name === 'pharmacy' ? PHARMACY_SERVES : 0), 0);
+    if (this.population <= 0) return 0;
+    return Math.min(1, served / this.population);
+  }
+
   /**
    * Popularity from aesthetic buildings, already capped and eroded by size.
    * A bare number here; the panel adds the label.
@@ -258,6 +267,13 @@ export class GameState {
       out.push({
         label: `Religion (${Math.round(religion * 100)}% at church)`,
         value: RELIGION_POPULARITY_MAX * religion, cat: 'food',
+      });
+    }
+    const health = this.healthCoverage;
+    if (health > 0) {
+      out.push({
+        label: `Health (${Math.round(health * 100)}% near a pharmacy)`,
+        value: HEALTH_POPULARITY_MAX * health, cat: 'food',
       });
     }
     const beauty = this.beautyBonus;

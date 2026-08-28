@@ -45,6 +45,7 @@ def _emissive(name, colour, strength):
 CLIPS = {
     "ram_idle": 1, "ram_walk": 4, "ram_attack": 6,
     "catapult_idle": 1, "catapult_walk": 4, "catapult_attack": 6,
+    "trebuchet_idle": 1, "trebuchet_walk": 4, "trebuchet_attack": 6,
     "fire_ballista_idle": 1, "fire_ballista_walk": 4, "fire_ballista_attack": 6,
 }
 
@@ -133,48 +134,112 @@ def build_ram():
 
 
 def build_catapult():
-    """Throwing arm on a heavy frame. Parts: the arm rotates."""
+    """A torsion mangonel: a single arm cocked back off a rope skein, a cup of
+    stone at its head, slamming into a padded crossbeam when it fires. Parts:
+    the arm rotates. Restyled from Thomas's reference of the classic catapult."""
     timber_l = M.timber("CatTimber")
     timber_d = M.timber("CatBeam", dark=True)
     iron = M.iron()
     rope = M.cloth("CatRope", colour=(0.62, 0.55, 0.38))
+    pad = M.cloth("CatPad", colour=(0.50, 0.36, 0.22))
     stone = M.rough_stone("CatShot")
 
     objs, parts = [], {}
     p = []
-    deck = _frame_and_wheels(p, timber_d, iron, w=0.38, l=0.80)
+    deck = _frame_and_wheels(p, timber_d, iron, w=0.42, l=0.86)
 
-    # A-frame the arm swings through
+    # side rails rising along the frame, tied by a padded crossbeam at the FRONT
+    # (-Y) that the arm strikes, and carrying the torsion skein it springs from.
     for sx in (-1, 1):
-        p.append(geom.box(f"ct_upright_{sx}", (sx * 0.16 - 0.03, -0.03, deck),
-                          (0.06, 0.06, 0.34), timber_d))
-    p.append(_beam("ct_cross", (0.0, 0.0, deck + 0.34), 0.40, 0.024, timber_d))
-    p.append(_beam("ct_cross", (0.0, 0.0, deck + 0.34), 0.40, 0.024, timber_d))
+        p.append(geom.box(f"ct_rail_{sx}", (sx * 0.19 - 0.03, -0.30, deck),
+                          (0.06, 0.66, 0.10), timber_d))
+        p.append(geom.box(f"ct_stanchion_{sx}", (sx * 0.19 - 0.03, -0.34, deck),
+                          (0.06, 0.06, 0.40), timber_d))
+    # the padded crossbeam the arm hits, up at the front
+    p.append(_beam("ct_stopbar", (0.0, -0.31, deck + 0.36), 0.44, 0.05, pad))
     p[-1].rotation_euler = (0.0, math.pi / 2.0, 0.0)
-    # winch drum at the back
-    p.append(_wheel("ct_drum", (0.0, 0.30, deck + 0.10), 0.075, 0.20, timber_l))
-    p.append(geom.box("ct_stop", (-0.13, -0.34, deck), (0.26, 0.05, 0.20), timber_d))
-    # a spare shot on the deck
-    p.append(geom.cone("ct_spare", (0.11, 0.26, deck), 0.055, 0.09, stone))
+    # the torsion skein: a thick rope bundle across the frame, low and central
+    p.append(_beam("ct_skein", (0.0, 0.06, deck + 0.10), 0.44, 0.06, rope))
+    p[-1].rotation_euler = (0.0, math.pi / 2.0, 0.0)
+    # winch drum and rope at the back, for cocking the arm
+    p.append(_wheel("ct_drum", (0.0, 0.34, deck + 0.10), 0.08, 0.22, timber_l))
+    p.append(geom.box("ct_pawl", (-0.02, 0.20, deck + 0.10), (0.04, 0.14, 0.03), iron))
+    # a small pile of spare shot on the deck
+    for i, (dx, dy) in enumerate([(0.13, 0.24), (0.19, 0.28), (0.16, 0.20)]):
+        p.append(geom.cone(f"ct_spare_{i}", (dx, dy, deck), 0.05, 0.08, stone))
 
+    # --- the throwing arm: stands up and back off the skein, cup at its head --
     arm_root = bpy.data.objects.new("ct_armroot", None)
     bpy.context.collection.objects.link(arm_root)
-    arm_root.location = (0.0, 0.0, deck + 0.32)
-    arm = _beam("ct_arm", (0.0, 0.14, 0.0), 0.62, 0.026, timber_l)
+    arm_root.location = (0.0, 0.06, deck + 0.10)
+    arm = geom.box("ct_arm", (-0.03, -0.03, 0.0), (0.06, 0.06, 0.66), timber_l)
     arm.parent = arm_root
-    bucket = geom.cylinder("ct_bucket", (0.0, 0.0, 0.0), 0.072, 0.055, rope, segments=10)
-    bucket.location = (0.0, 0.44, -0.01)
-    bucket.parent = arm_root
-    shot = geom.cone("ct_shot", (0.0, 0.0, 0.0), 0.052, 0.085, stone)
-    shot.location = (0.0, 0.44, 0.03)
+    # an open cup (a capless cylinder) holding the stone at the arm's head
+    cup = geom.cylinder("ct_cup", (0.0, 0.0, 0.62), 0.075, 0.07, rope, segments=10, cap=False)
+    cup.parent = arm_root
+    shot = geom.cone("ct_shot", (0.0, 0.0, 0.64), 0.058, 0.09, stone)
     shot.parent = arm_root
-    counter = geom.box("ct_counter", (-0.055, -0.36, -0.06), (0.11, 0.12, 0.11), iron)
-    counter.parent = arm_root
-    objs += [arm, bucket, shot, counter]
+    objs += [arm, cup, shot]
     parts["swing"] = arm_root
 
     objs += p
     return _finish(objs, parts, "catapult")
+
+
+def build_trebuchet():
+    """The heavy engine: a tall A-frame, a long arm pivoting high, a great
+    counterweight box at the short end and a sling at the long end. It rests
+    loaded -- counterweight up -- and drops it to fling the stone. Parts: the
+    arm swings. Modelled from Thomas's trebuchet reference."""
+    timber_l = M.timber("TrebTimber")
+    timber_d = M.timber("TrebBeam", dark=True)
+    iron = M.iron()
+    rope = M.cloth("TrebRope", colour=(0.62, 0.55, 0.38))
+    stone = M.rough_stone("TrebShot")
+
+    objs, parts = [], {}
+    p = []
+    deck = _frame_and_wheels(p, timber_d, iron, w=0.46, l=1.00)
+
+    # a tall A-frame: four legs leaning in to a high pivot beam
+    apex = deck + 0.94
+    for sy in (-1, 1):
+        for sx in (-1, 1):
+            leg = geom.box(f"tb_leg_{sy}_{sx}", (sx * 0.20 - 0.03, sy * 0.26 - 0.03, deck),
+                           (0.06, 0.06, 1.00), timber_d)
+            leg.rotation_euler = (math.radians(sy * -14.0), math.radians(sx * 14.0), 0.0)
+            p.append(leg)
+    pivot = _beam("tb_pivot", (0.0, 0.0, apex), 0.34, 0.03, iron)
+    pivot.rotation_euler = (0.0, math.pi / 2.0, 0.0)
+    p.append(pivot)
+    # a guide trough at the front where the sling is drawn, and a spare stone
+    p.append(geom.box("tb_trough", (-0.07, -0.66, deck), (0.14, 0.52, 0.05), timber_d))
+    p.append(geom.cone("tb_spare", (0.17, 0.40, deck), 0.06, 0.10, stone))
+
+    # --- the throwing arm, pivoting high at the apex -------------------------
+    arm_root = bpy.data.objects.new("tb_armroot", None)
+    bpy.context.collection.objects.link(arm_root)
+    arm_root.location = (0.0, 0.0, apex)
+    # long arm along Y: long throwing end to -Y, short counterweight end to +Y
+    arm = _beam("tb_arm", (0.0, -0.18, 0.0), 1.34, 0.034, timber_l)
+    arm.parent = arm_root
+    objs.append(arm)
+    # the counterweight, hung at the short (+Y) end below the arm
+    hanger = geom.box("tb_hanger", (-0.02, 0.44, -0.18), (0.04, 0.04, 0.18), iron)
+    hanger.parent = arm_root
+    counter = geom.box("tb_counter", (-0.12, 0.35, -0.38), (0.24, 0.22, 0.22), iron)
+    counter.parent = arm_root
+    objs += [hanger, counter]
+    # the sling and its stone at the long (-Y) end
+    sling = _beam("tb_sling", (0.0, -0.72, -0.08), 0.18, 0.006, rope)
+    sling.parent = arm_root
+    shot = geom.cone("tb_shot", (0.0, -0.82, -0.14), 0.062, 0.10, stone)
+    shot.parent = arm_root
+    objs += [sling, shot]
+    parts["swing"] = arm_root
+
+    objs += p
+    return _finish(objs, parts, "trebuchet")
 
 
 def build_fire_ballista():
@@ -312,9 +377,49 @@ def pose(parts, clip, t):
             root.location.z = abs(math.sin(a)) * 0.012
         return
 
+    if clip.startswith("catapult"):
+        # A mangonel rests cocked WELL back off its skein, so the raised arm
+        # reads as a catapult even when idle. It winds a touch further, then
+        # whips forward through the crossbeam.
+        rest = 56.0
+        if clip.endswith("_attack"):
+            if t < 0.55:
+                ang = rest + 10.0 * (t / 0.55)            # wind back 56 -> 66
+            else:
+                ang = 66.0 - 96.0 * ((t - 0.55) / 0.45)   # whip forward 66 -> -30
+            swing.rotation_euler = (math.radians(ang), 0.0, 0.0)
+            root.location.z = math.sin(a) * 0.006
+        elif clip.endswith("_walk"):
+            root.location.z = abs(math.sin(a)) * 0.012
+            swing.rotation_euler = (math.radians(rest) + math.sin(a) * 0.05, 0.0, 0.0)
+        else:
+            swing.rotation_euler = (math.radians(rest), 0.0, 0.0)
+        return
+
+    if clip.startswith("trebuchet"):
+        # Rests LOADED -- counterweight up (+Y end high). On release the weight
+        # drops through zero and the long arm whips up and over, then it winches
+        # back to loaded. A big, slow, deliberate motion.
+        rest = 40.0
+        if clip.endswith("_attack"):
+            if t < 0.25:
+                ang = rest                                # poised, loaded
+            elif t < 0.55:
+                ang = rest - 118.0 * ((t - 0.25) / 0.30)  # weight drops: 40 -> -78
+            else:
+                ang = -78.0 + 118.0 * ((t - 0.55) / 0.45) # winched back: -78 -> 40
+            swing.rotation_euler = (math.radians(ang), 0.0, 0.0)
+            root.location.z = math.sin(a) * 0.004
+        elif clip.endswith("_walk"):
+            root.location.z = abs(math.sin(a)) * 0.012
+            swing.rotation_euler = (math.radians(rest) + math.sin(a) * 0.04, 0.0, 0.0)
+        else:
+            swing.rotation_euler = (math.radians(rest), 0.0, 0.0)
+        return
+
     if clip.endswith("_attack"):
-        # Wind back slowly, release fast. A symmetric swing reads as a pendulum
-        # rather than a machine doing work.
+        # The ram's log: wind back slowly, release fast. A symmetric swing reads
+        # as a pendulum rather than a machine doing work.
         if t < 0.6:
             f = t / 0.6
             ang = math.radians(-6.0 - 52.0 * f)
@@ -332,4 +437,4 @@ def pose(parts, clip, t):
 
 
 BUILDERS = {"ram": build_ram, "catapult": build_catapult,
-            "fire_ballista": build_fire_ballista}
+            "trebuchet": build_trebuchet, "fire_ballista": build_fire_ballista}
