@@ -23,6 +23,21 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.32.0',
+    date: '2026-08-31',
+    headline: 'Play at your own pace: pause, slow, normal, fast.',
+    sections: [
+      {
+        title: 'Added',
+        items: [
+          'A Speed control at the top of the settings panel: Pause, Slow, Normal and Fast. Press Space to pause and unpause, or nudge the speed a notch at a time with the , and . keys. Pause remembers what you were running at, so unpausing from Fast puts you straight back to Fast.',
+          'Pausing stops the world, not the game. Peasants freeze, the harvest stops, the raiders hold where they stand — but you can still rotate, pan, zoom, read any building under the cursor and line up a whole quarter of your castle before letting the clock run again. A PAUSED banner sits under the resource bar so the stillness is never mistaken for a hang. (The Esc menu is unchanged and still stops everything, drawing included.)',
+          'Fast forward at three times speed, for the long quiet stretch while the granary fills or the wall goes up. It runs the same-sized steps as normal play, just more of them, so nothing walks through a wall or skips a harvest because you sped the game up.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.31.0',
     date: '2026-08-28',
     headline: 'A pharmacy, a domed chapel, and the trebuchet.',

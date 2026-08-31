@@ -3,7 +3,7 @@ import {
   FOOD_VARIETY_BONUS, PRICES, buildingHp, TRADE_BATCH, TRADE_INTERVAL, TRADE_MIN_BAND,
   INN_CAPACITY, ALE_PER_PERSON_PER_MIN, ALE_POPULARITY_MAX, isFood,
   CHURCH_SERVES, RELIGION_POPULARITY_MAX, PHARMACY_SERVES, HEALTH_POPULARITY_MAX,
-  BEAUTY_CAP, BEAUTY_PER,
+  BEAUTY_CAP, BEAUTY_PER, SPEED_LEVELS, NORMAL_SPEED,
   RESOURCE_LABELS, STOCKPILE_TILE_CAPACITY, STOCKPILE_LEVELS,
   GRANARY_TILE_CAPACITY,
   type BuildingDef, type RationLevel, type Resource, type Store, type TradeOrder,
@@ -66,6 +66,48 @@ export class GameState {
   popularity = 50;
   rations: RationLevel = 'normal';
   taxLevel = 0;
+
+  /**
+   * How fast the world runs: an index into SPEED_LEVELS.
+   *
+   * Only the frame loop reads it, to scale the dt it hands the simulation. The
+   * state never ticks itself, so nothing here has to know about speed at all.
+   * Pause is a multiplier of 0 rather than a second flag beside `speed`: one
+   * number to read, and no way to be paused and ticking at the same time.
+   */
+  speed: number = NORMAL_SPEED;
+  /** What Pause returns to. Never Pause itself, or the toggle would stick. */
+  private lastRunningSpeed = NORMAL_SPEED;
+
+  /** Simulation seconds per real second. 0 while paused. */
+  get speedMult(): number {
+    return SPEED_LEVELS[this.speed]?.mult ?? 1;
+  }
+
+  get paused(): boolean {
+    return this.speedMult === 0;
+  }
+
+  setSpeed(i: number): void {
+    if (i < 0 || i >= SPEED_LEVELS.length) return;
+    if (SPEED_LEVELS[i].mult > 0) this.lastRunningSpeed = i;
+    this.speed = i;
+  }
+
+  /** Pause, or resume at whatever speed was running before it. */
+  togglePause(): void {
+    this.setSpeed(this.paused ? this.lastRunningSpeed : 0);
+  }
+
+  /**
+   * Step one notch faster or slower.
+   *
+   * Clamped rather than wrapped: a player leaning on the key to speed up should
+   * never find themselves suddenly paused at the far end.
+   */
+  nudgeSpeed(step: number): void {
+    this.setSpeed(Math.max(0, Math.min(SPEED_LEVELS.length - 1, this.speed + step)));
+  }
 
   /** Accumulates fractional food/gold between ticks. */
   private foodDebt = 0;

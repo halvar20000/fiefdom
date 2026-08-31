@@ -1,7 +1,7 @@
 import {
   BUILDINGS, BUILD_MENU, PRICES, RATIONS, RATION_LEVELS, TAX_LEVELS,
   RESOURCE_LABELS, ALL_RESOURCES, FOOD_RESOURCES,
-  SOLDIER_TYPES, SOLDIER_ORDER,
+  SOLDIER_TYPES, SOLDIER_ORDER, SPEED_LEVELS,
   type RationLevel, type Resource,
 } from '../game/defs';
 import type { GameState } from '../game/state';
@@ -363,6 +363,18 @@ const CSS = `
   margin-top: 4px; padding-top: 4px; }
 #stats2 .pf.total b { color: var(--gold); }
 
+/* The paused banner. Centred on the viewport like the notices rather than
+   pinned between the side panels, because the phone layout hides those panels
+   and stretches the resource ticker across the whole width. */
+#paused { position: absolute; top: 52px; left: 50%; transform: translateX(-50%);
+  display: none; pointer-events: none; }
+#paused.on { display: block; }
+#paused span { display: block; padding: 4px 15px; border-radius: 3px;
+  font-size: 11px; letter-spacing: .22em; text-transform: uppercase;
+  font-weight: 600; color: var(--gold); background: rgba(24,19,12,.93);
+  border: 1px solid rgba(240,200,105,.45); }
+html.phone #paused { top: calc(34px + env(safe-area-inset-top)); }
+
 #notices { position: absolute; left: 50%; bottom: 74px; transform: translateX(-50%);
   display: flex; flex-direction: column; gap: 4px; align-items: center; }
 #notices div { padding: 5px 11px; border-radius: 3px; font-size: 11px;
@@ -556,6 +568,7 @@ export class Hud {
   private leftCol!: HTMLElement;
   private rightCol!: HTMLElement;
   private notices!: HTMLElement;
+  private pausedBanner!: HTMLElement;
   private ghost!: HTMLElement;
   /** The build bar + menu wrapper, so the phone layout can lift it into a sheet. */
   private buildWrap!: HTMLElement;
@@ -609,6 +622,9 @@ export class Hud {
     this.buildRightPanel();
     this.buildMinimap();
     this.buildControls();
+
+    this.pausedBanner = this.el('div', this.root, '', 'paused');
+    this.el('span', this.pausedBanner).textContent = 'Paused';
 
     this.notices = document.createElement('div');
     this.notices.id = 'notices';
@@ -1233,6 +1249,21 @@ export class Hud {
   private buildControls(): void {
     this.controls = this.el('div', this.rightCol, 'panel', 'controls');
 
+    // Speed leads the panel: it is the one setting a player reaches for in the
+    // middle of something else, whereas rations and taxes are set and left.
+    this.el('div', this.controls, 'lbl').textContent = 'Speed';
+    const sp = this.el('div', this.controls, 'seg');
+    SPEED_LEVELS.forEach((lvl, i) => {
+      const b = document.createElement('button');
+      b.dataset.speed = String(i);
+      b.textContent = lvl.label;
+      b.title = lvl.mult
+        ? `${lvl.label} — ${lvl.mult}x speed`
+        : `${lvl.label} — the world stops, the camera does not (Space)`;
+      b.onclick = () => { this.state.setSpeed(i); };
+      sp.appendChild(b);
+    });
+
     this.el('div', this.controls, 'lbl').textContent = 'Rations';
     const rs = this.el('div', this.controls, 'seg');
     for (const level of RATION_LEVELS) {
@@ -1312,6 +1343,7 @@ export class Hud {
     };
     hint.innerHTML =
       'R / E rotate &nbsp; wheel zoom &nbsp; drag pan<br>' +
+      '<b>Space</b> pause &nbsp; <b>,</b> / <b>.</b> slower / faster<br>' +
       '<b>1-6</b> build menu &nbsp; <b>B</b> toggle it<br>' +
       '<b>V</b> mutes and unmutes<br>' +
       '<b>X</b> demolish a building (half cost back)<br>' +
@@ -1644,6 +1676,10 @@ export class Hud {
   update(): void {
     const s = this.state;
 
+    // Says it in the middle of the screen, not just as a lit button in a panel
+    // that the phone layout keeps behind a sheet.
+    this.pausedBanner.classList.toggle('on', s.paused);
+
     // resource bar
     // Ordered by hand rather than taken from ALL_RESOURCES: the bar reads
     // left to right as raw goods then food, which no declaration order gives
@@ -1726,6 +1762,7 @@ export class Hud {
       const el = b as HTMLElement;
       if (el.dataset.ration) b.classList.toggle('on', s.rations === el.dataset.ration);
       if (el.dataset.tax) b.classList.toggle('on', s.taxLevel === Number(el.dataset.tax));
+      if (el.dataset.speed) b.classList.toggle('on', s.speed === Number(el.dataset.speed));
     }
 
     // market: stock, standing-order state and the running trade tally

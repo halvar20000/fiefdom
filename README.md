@@ -106,6 +106,43 @@ The menu appears instantly, before any sprite loads. That matters: the atlas is
 1300-odd PNGs and on a cold cache the wait is real, so the player gets
 something to read and a decision to make while it happens.
 
+## Game speed
+
+Pause / Slow / Normal / Fast, as a segment at the top of the settings panel,
+`Space` to pause, `,` and `.` to step a notch either way. It is
+`GameState.speed`, an index into `SPEED_LEVELS`; the only code that reads it is
+the frame loop, which scales the dt it hands the simulation.
+
+**This is not the Esc menu.** That stops the frame outright — nothing ticks and
+nothing but the last drawn image is on screen. Speed Pause stops only the
+*world*: the camera, the build ghost, the tooltips and the whole HUD stay live,
+so a paused settlement is one you can turn around, read, and plan a quarter of
+before letting the clock run again. A banner under the resource bar says
+PAUSED, because a game frozen without a word looks like a game that has hung.
+
+Three decisions worth keeping:
+
+* **Pause is a multiplier of 0, not a second flag.** One number to read, and no
+  way to end up paused and ticking at once. `togglePause` returns to the last
+  *running* speed, so pausing out of Fast and back resumes at Fast rather than
+  dropping you to Normal.
+* **Fast forward runs more steps, not longer ones.** `advanceSim` slices the
+  scaled time into pieces of at most `MAX_SIM_STEP` (0.1s — the same clamp the
+  loop has always put on a slow frame's dt) and calls `simulateStep` for each.
+  Everything that moves integrates as `speed * dt`, and one 0.3s stride is long
+  enough to carry a man through a wall that three 0.1s steps stop him at.
+* **Nothing is announced while paused.** A notice expires on *game* time
+  (`elapsed - at < 6`), which at Pause is not running — so a "Paused" notice
+  would have sat on the screen until the world started again. The banner says
+  it instead, because a banner can be taken away.
+
+`simulateStep` is now the single place the world advances. The console harness
+`__game.stepSim(seconds)` goes through it too, so the fixed-step test path and
+real play can no longer disagree about what one tick does — which they had
+quietly begun to: the harness never ran `checkStanding`, so a game driven from
+the console could not be won or lost, and it never refreshed the store sprites,
+so a stockpile grown under it drew at its old height.
+
 ## Saving, loading and the pause menu
 
 **Esc** pauses and opens the in-game menu: resume, save or load one of three

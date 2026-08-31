@@ -535,6 +535,23 @@ export const TAX_LEVELS = [
   { label: 'High taxes', gold: 1.00, popularity: -28 },
 ] as const;
 
+/**
+ * Game speed. The multiplier scales the simulation's dt and nothing else.
+ *
+ * Distinct from the Esc menu, which stops the world dead while it is open.
+ * This is a speed you play at: at Pause the camera, the build ghost and every
+ * tooltip still work, so a paused settlement is one you can read and plan in.
+ */
+export const SPEED_LEVELS = [
+  { label: 'Pause',  mult: 0 },
+  { label: 'Slow',   mult: 0.5 },
+  { label: 'Normal', mult: 1 },
+  { label: 'Fast',   mult: 3 },
+] as const;
+
+/** Index of Normal -- where a new game starts, and what Pause returns to. */
+export const NORMAL_SPEED = 2;
+
 // --- ale ------------------------------------------------------------------
 // Ale is the other happiness lever, and the interesting one: unlike food it is
 // optional, so it is a genuine choice about where the labour goes.

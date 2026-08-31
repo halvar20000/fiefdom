@@ -36,6 +36,7 @@ import {
   BUILDINGS, STORE_SPRITES, SOLDIER_TYPES, buildingHp, canGarrison,
   GARRISON_HEIGHT, MARSH_SPEED_FOOT, MARSH_SPEED_SIEGE,
   BURN_SECONDS, BURN_RADIUS, BURN_DPS, IGNITE_RADIUS, DEMOLISH_REFUND,
+  SPEED_LEVELS,
   type Store, type Resource,
 } from './game/defs';
 
@@ -71,6 +72,14 @@ const DIRECTION_OFFSET = 2;
 const IDLE_WANDERERS = 48;
 /** Minimum gap between two people standing at the fire, in tiles. */
 const GATHER_SPACING = 0.85;
+/**
+ * The longest single simulation step, in seconds.
+ *
+ * Doubles as the clamp on a real frame's dt -- a stalled tab must not hand the
+ * world a two-second stride -- and as the slice size for fast forward, so at 3x
+ * the systems still only ever see a step they already cope with.
+ */
+const MAX_SIM_STEP = 0.1;
 
 interface Decoration {
   name: string;
@@ -2494,6 +2503,17 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     if (document.hidden) releaseKeys();
   });
 
+  /**
+   * Say the new speed, but never while paused.
+   *
+   * A notice expires on GAME time (`elapsed - at < 6`), and at Pause that clock
+   * is not running -- so "Paused" would sit on the screen until the world was
+   * started again. The banner says it instead, and it can be cleared.
+   */
+  function announceSpeed(): void {
+    if (!state.paused) state.notify(`Speed: ${SPEED_LEVELS[state.speed].label}`);
+  }
+
   window.addEventListener('keydown', e => {
     const k = e.key.toLowerCase();
     // A dropdown or a text box owns the keyboard while it has focus. Adding
@@ -2521,6 +2541,17 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
           ? 'No enemy in the pitch yet' : 'You have no pitch ditches', 'warn');
       }
     }
+    if (k === ' ') {
+      // preventDefault twice over: the page would scroll, and a space while a
+      // HUD button still holds focus would press that button again.
+      e.preventDefault();
+      state.togglePause();
+      announceSpeed();
+    }
+    // Not the digits: 1-6 already open the build categories. , and . sit under
+    // the fingers that are not on the camera keys.
+    if (k === ',' || k === '<') { state.nudgeSpeed(-1); announceSpeed(); }
+    if (k === '.' || k === '>') { state.nudgeSpeed(1); announceSpeed(); }
     if (k === 'b') hud.toggleBuild();
     if (k === 'x' || k === 'delete') hud.setDemolish(!hud.demolishing);
     if (k === 'n') hud.toggleMinimap();
@@ -2725,26 +2756,13 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
   let last = performance.now();
   let syncClock = 0;
 
-  function frame() {
-    const now = performance.now();
-    // Clamp AND discard while paused, so a menu left open for two minutes does
-    // not resume by fast-forwarding the settlement through two minutes of
-    // starvation the moment it closes.
-    const dt = paused ? 0 : Math.min(0.1, (now - last) / 1000);
-    last = now;
-    if (paused) {
-      drawScene();
-      requestAnimationFrame(frame);
-      return;
-    }
-
-    const pan = 420 * dt;
-    if (keys.has('arrowleft') || keys.has('a')) iso.panByPixels(-pan, 0);
-    if (keys.has('arrowright') || keys.has('d')) iso.panByPixels(pan, 0);
-    if (keys.has('arrowup') || keys.has('w')) iso.panByPixels(0, -pan);
-    if (keys.has('arrowdown') || keys.has('s')) iso.panByPixels(0, pan);
-
-    // --- simulation ---
+  /**
+   * One step of the world. The ONLY place the simulation advances.
+   *
+   * The render loop and the console harness both come through here, so the
+   * fixed-step test path and real play cannot disagree about what a tick does.
+   */
+  function simulateStep(dt: number): void {
     state.tickEconomy(dt);
     regrowForest();
     workers.update(dt);
@@ -2773,6 +2791,50 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     // invalidate it. sync() returns true only when what is DRAWN moved, not on
     // every unit deposited, so this rebuilds a few times a minute.
     if (syncStores()) staticDirty = true;
+  }
+
+  /**
+   * Advance `seconds` of game time, in steps no longer than MAX_SIM_STEP.
+   *
+   * Fast forward runs MORE steps, never longer ones. Everything that moves
+   * integrates as `speed * dt`, and a single 3x step is long enough to carry a
+   * man clean through a wall he would have stopped at -- the same reason the
+   * loop has always clamped a slow frame's dt rather than trusting it.
+   */
+  function advanceSim(seconds: number): void {
+    let left = seconds;
+    while (left > 1e-6) {
+      const step = Math.min(MAX_SIM_STEP, left);
+      left -= step;
+      simulateStep(step);
+    }
+  }
+
+  function frame() {
+    const now = performance.now();
+    // Clamp AND discard while paused, so a menu left open for two minutes does
+    // not resume by fast-forwarding the settlement through two minutes of
+    // starvation the moment it closes.
+    const dt = paused ? 0 : Math.min(MAX_SIM_STEP, (now - last) / 1000);
+    last = now;
+    if (paused) {
+      drawScene();
+      requestAnimationFrame(frame);
+      return;
+    }
+
+    const pan = 420 * dt;
+    if (keys.has('arrowleft') || keys.has('a')) iso.panByPixels(-pan, 0);
+    if (keys.has('arrowright') || keys.has('d')) iso.panByPixels(pan, 0);
+    if (keys.has('arrowup') || keys.has('w')) iso.panByPixels(0, -pan);
+    if (keys.has('arrowdown') || keys.has('s')) iso.panByPixels(0, pan);
+
+    // --- simulation ---
+    // Real seconds scaled by the chosen speed: 0 at Pause, 3x at Fast. The
+    // camera, the ghost and the HUD above and below this line stay on real
+    // time, so a paused settlement is still one you can look around and plan
+    // in -- unlike the Esc menu, which stops the frame outright.
+    advanceSim(dt * state.speedMult);
 
     // --- placement ghost ---
     if (placement.selected) {
@@ -3229,26 +3291,10 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
    */
   function stepSim(seconds: number, step = 1 / 30): void {
     let left = seconds;
-    let sync = 0;
     while (left > 0) {
       const dt = Math.min(step, left);
       left -= dt;
-      state.tickEconomy(dt);
-      regrowForest();
-      workers.update(dt);
-      updateWanderers(dt);
-      herd.update(dt, state.elapsed);
-      army.update(dt);
-      trackStats();
-    updateRaids(dt);
-      enemyWorkers.update(dt, factions);
-    updateFires(dt);
-      projectiles.update(dt);
-      sync += dt;
-      if (sync > 1) {
-        sync = 0; state.assignWorkers(); workers.sync(); rescueStuckWorkers();
-        enemyWorkers.sync(factions);
-      }
+      simulateStep(dt);
     }
   }
 
