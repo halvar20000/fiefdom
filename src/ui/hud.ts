@@ -366,6 +366,9 @@ const CSS = `
 /* The paused banner. Centred on the viewport like the notices rather than
    pinned between the side panels, because the phone layout hides those panels
    and stretches the resource ticker across the whole width. */
+/* The top offset here is a first-frame fallback only -- update() anchors the
+   banner to the measured bottom of the resource bar, which wraps to a second
+   line at some widths. */
 #paused { position: absolute; top: 52px; left: 50%; transform: translateX(-50%);
   display: none; pointer-events: none; }
 #paused.on { display: block; }
@@ -373,7 +376,6 @@ const CSS = `
   font-size: 11px; letter-spacing: .22em; text-transform: uppercase;
   font-weight: 600; color: var(--gold); background: rgba(24,19,12,.93);
   border: 1px solid rgba(240,200,105,.45); }
-html.phone #paused { top: calc(34px + env(safe-area-inset-top)); }
 
 #notices { position: absolute; left: 50%; bottom: 74px; transform: translateX(-50%);
   display: flex; flex-direction: column; gap: 4px; align-items: center; }
@@ -569,6 +571,8 @@ export class Hud {
   private rightCol!: HTMLElement;
   private notices!: HTMLElement;
   private pausedBanner!: HTMLElement;
+  /** Last `top` written to the banner, so a steady frame writes no style. */
+  private pausedTop = 0;
   private ghost!: HTMLElement;
   /** The build bar + menu wrapper, so the phone layout can lift it into a sheet. */
   private buildWrap!: HTMLElement;
@@ -1679,6 +1683,17 @@ export class Hud {
     // Says it in the middle of the screen, not just as a lit button in a panel
     // that the phone layout keeps behind a sheet.
     this.pausedBanner.classList.toggle('on', s.paused);
+    if (s.paused) {
+      // Anchored to the MEASURED bottom of the resource bar. A constant offset
+      // sat on top of the bar at exactly the widths where it wraps to a second
+      // line -- 1400px and 1200px, found by measuring the two rectangles, the
+      // same way the panel clashes were. Only written when it moves.
+      const top = Math.round(this.topbar.getBoundingClientRect().bottom) + 8;
+      if (top !== this.pausedTop) {
+        this.pausedTop = top;
+        this.pausedBanner.style.top = `${top}px`;
+      }
+    }
 
     // resource bar
     // Ordered by hand rather than taken from ALL_RESOURCES: the bar reads

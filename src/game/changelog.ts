@@ -23,6 +23,19 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.32.1',
+    date: '2026-08-31',
+    headline: 'The PAUSED banner keeps clear of the resource bar.',
+    sections: [
+      {
+        title: 'Fixed',
+        items: [
+          'At window widths where the resource bar wraps onto a second line, the PAUSED banner was drawn over its lower edge. It now sits under whatever height the bar actually has.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.32.0',
     date: '2026-08-31',
     headline: 'Play at your own pace: pause, slow, normal, fast.',

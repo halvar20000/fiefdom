@@ -135,6 +135,12 @@ Three decisions worth keeping:
   (`elapsed - at < 6`), which at Pause is not running — so a "Paused" notice
   would have sat on the screen until the world started again. The banner says
   it instead, because a banner can be taken away.
+* **The banner is anchored to the measured bar, not to a constant.** `top: 52px`
+  looked right until the resource bar wrapped onto a second line, which it does
+  between roughly 1100 and 1500 pixels wide — and there the banner sat on the
+  bar's lower edge. `update()` reads the bar's real bottom while paused and
+  writes the offset only when it moves. Found by measuring the two rectangles
+  at five widths, the same way the panel clashes in "HUD layout" were.
 
 `simulateStep` is now the single place the world advances. The console harness
 `__game.stepSim(seconds)` goes through it too, so the fixed-step test path and
