@@ -1,6 +1,7 @@
 import {
   BUILDINGS, RATIONS, TAX_LEVELS, ALL_RESOURCES, FOOD_RESOURCES,
-  STOCKPILE_TILE_CAPACITY, GRANARY_TILE_CAPACITY, SOLDIER_TYPES, isFood,
+  STOCKPILE_TILE_CAPACITY, GRANARY_TILE_CAPACITY, ARMOURY_CAPACITY,
+  SOLDIER_TYPES, isFood, isWeapon,
   type Resource,
 } from './defs';
 import type { Army, Soldier } from './army';
@@ -62,6 +63,18 @@ export const BUILD_PLAN: { name: string; want: number }[] = [
   { name: 'apple_orchard', want: 1 },
   { name: 'dairy_farm', want: 1 },
   { name: 'barracks', want: 1 },      // nothing military until here
+  // The barracks alone raises nobody now: a recruit is issued kit off the rack,
+  // so the armoury and a poleturner come with it. Spears first because they are
+  // the cheapest thing that puts a man on the wall -- one shed and some timber,
+  // no ore, no second workshop -- and the lord needs SOMETHING under arms long
+  // before his iron is flowing.
+  { name: 'armoury', want: 1 },
+  { name: 'poleturner', want: 1 },
+  // The fletcher belongs beside the poleturner, not several steps later.
+  // Measured with it after the iron mine: his first bow arrived at minute 19,
+  // by which point he was already at his army cap, and he fielded thirty
+  // spearmen and not one archer for the whole game.
+  { name: 'fletcher', want: 1 },
   { name: 'hovel', want: 6 },
   { name: 'stockpile', want: 14 },
   { name: 'iron_mine', want: 1 },
@@ -75,6 +88,11 @@ export const BUILD_PLAN: { name: string; want: number }[] = [
   { name: 'wall', want: 28 },
   { name: 'tower', want: 2 },
   { name: 'siege_camp', want: 1 },
+  // Heavy kit last, and both halves of it together: a blacksmith on its own
+  // makes swords for swordsmen he still has no mail for.
+  { name: 'blacksmith', want: 1 },
+  { name: 'armourer', want: 1 },
+  { name: 'poleturner', want: 2 },
   { name: 'wheat_farm', want: 3 },
   { name: 'pig_farm', want: 1 },
   { name: 'dairy_farm', want: 2 },
@@ -83,6 +101,9 @@ export const BUILD_PLAN: { name: string; want: number }[] = [
   { name: 'hovel', want: 8 },
   { name: 'quarry', want: 3 },
   { name: 'stockpile', want: 18 },
+  { name: 'iron_mine', want: 2 },
+  { name: 'fletcher', want: 2 },
+  { name: 'armoury', want: 2 },
   { name: 'wall', want: 44 },
 ];
 
@@ -259,6 +280,13 @@ export class Lord {
    * player's per-square allocation prevents.
    */
   private roomFor(r: Resource): number {
+    // Kit pools its room across kinds, exactly as the player's armoury does.
+    if (isWeapon(r)) {
+      const cap = this.count('armoury') * ARMOURY_CAPACITY;
+      const used = ALL_RESOURCES.filter(isWeapon)
+        .reduce((n, w) => n + this.stock[w], 0);
+      return Math.max(0, cap - used);
+    }
     if (isFood(r)) {
       const bays = this.count('granary');
       const mine = Math.ceil(this.stock[r] / GRANARY_TILE_CAPACITY);
@@ -267,7 +295,7 @@ export class Lord {
       return (mine + Math.max(0, bays - used)) * GRANARY_TILE_CAPACITY - this.stock[r];
     }
     const squares = this.count('stockpile');
-    const raws = ALL_RESOURCES.filter(x => !isFood(x));
+    const raws = ALL_RESOURCES.filter(x => !isFood(x) && !isWeapon(x));
     const mine = Math.ceil(this.stock[r] / STOCKPILE_TILE_CAPACITY);
     const used = raws
       .reduce((n, x) => n + Math.ceil(this.stock[x] / STOCKPILE_TILE_CAPACITY), 0);

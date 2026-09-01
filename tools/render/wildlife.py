@@ -26,9 +26,13 @@ import materials as M
 #: that at the shoulder with a notably longer body.
 SHOULDER = 0.36
 
-#: The model is built facing +Y. Direction 0 must match the peasant's, which is
-#: set by whatever Mixamo exported; if the herd walks sideways, this is the
-#: single number to turn.
+#: The model is built facing +Y. The peasant body faces -Y (Mixamo's export, and
+#: what the shield on a swordsman's left arm confirms), so direction 0 here is
+#: the OPPOSITE of direction 0 there -- half a turn out. The engine compensates
+#: with GAZELLE_DIRECTION_OFFSET in main.ts rather than this number, so that the
+#: gazelle sprites already on disk stay valid. Setting this to 180.0 and
+#: re-rendering the herd would be the other half of the same fix; do not do one
+#: without the other, or the herd walks backwards.
 BASE_YAW_DEG = 0.0
 
 #: Neck carried high when alert. POSITIVE rotates the +Y neck upward; a negative

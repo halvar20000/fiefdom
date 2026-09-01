@@ -33,11 +33,12 @@ import type { MapDef } from './game/maps';
 import { SAVE_VERSION, takeBootIntent, readSlot, playTime, type SaveGame } from './game/save';
 import { hydrate } from './game/backend';
 import {
-  BUILDINGS, STORE_SPRITES, SOLDIER_TYPES, buildingHp, canGarrison,
+  BUILDINGS, STORE_SPRITES, SPRITE_STANDIN, SOLDIER_TYPES, buildingHp,
+  canGarrison, isWeapon,
   GARRISON_HEIGHT, MARSH_SPEED_FOOT, MARSH_SPEED_SIEGE,
   BURN_SECONDS, BURN_RADIUS, BURN_DPS, IGNITE_RADIUS, DEMOLISH_REFUND,
-  SPEED_LEVELS,
-  type Store, type Resource,
+  SPEED_LEVELS, RESOURCE_LABELS,
+  type Resource,
 } from './game/defs';
 
 /**
@@ -60,13 +61,33 @@ const MINI_COLOURS: [number, number, number][] = [
   [74, 124, 150],   // water
 ];
 
-/** Both stores, for the loops that must treat them identically. */
-const STORE_KINDS: readonly Store[] = ['stockpile', 'granary'];
+/**
+ * The stores that are PAINTED a square at a time, for the loops that lay out
+ * piles. The armoury is a shed and draws its own sprite, so it is not here --
+ * see STORE_SPRITES, which is the declaration these two follow from.
+ */
+const STORE_KINDS: readonly ('stockpile' | 'granary')[] = ['stockpile', 'granary'];
 
 const MAP_W = 200;
 const MAP_H = 200;
 const WALK_FPS = 10;
+/**
+ * Which sprite index a model's REST pose (Blender rotation 0) occupies.
+ *
+ * The peasant body -- and every soldier and siege engine cut from the same
+ * convention -- is modelled facing Blender -Y, which the engine sees as world
+ * +z. Two slots is where that lands once `unitDirectionIndex` has done the
+ * heading and camera arithmetic.
+ */
 const DIRECTION_OFFSET = 2;
+/**
+ * The gazelle is modelled facing +Y instead (see tools/render/wildlife.py,
+ * where BASE_YAW_DEG assumes the peasant faces the same way and it does not),
+ * so its rest pose is the opposite one: four slots round from everything else.
+ * Compensated here rather than in the renderer so the sprites already on disk
+ * stay valid -- turning BASE_YAW_DEG to 180 would mean re-rendering the herd.
+ */
+const GAZELLE_DIRECTION_OFFSET = (DIRECTION_OFFSET + 4) & 7;
 // How many idle peasants are drawn at the fire. Beyond this the crowd stops
 // growing visually, though the Unemployed figure keeps counting.
 const IDLE_WANDERERS = 48;
@@ -2059,6 +2080,21 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     }, f.id, difficulty);
   }
 
+  /**
+   * The atlas key a building draws, falling back to its stand-in.
+   *
+   * Null when neither exists, which is the caller's cue to draw nothing at all
+   * -- the same behaviour a missing frame always had. See SPRITE_STANDIN for
+   * why a building might not have its own art.
+   */
+  function spriteKey(name: string, rot: number): string | null {
+    const own = `${name}_${rot}`;
+    if (atlas.frames[own]) return own;
+    const alias = SPRITE_STANDIN[name];
+    const key = alias ? `${alias}_${rot}` : null;
+    return key && atlas.frames[key] ? key : null;
+  }
+
   /** Relayout both stores. Returns whether anything DRAWN changed. */
   function syncStores(): boolean {
     let moved = false;
@@ -2076,8 +2112,8 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
 
     const push = (name: string, x: number, z: number, w: number, d: number,
                   tint?: [number, number, number]) => {
-      const key = `${name}_${rot}`;
-      if (!atlas.frames[key]) return;
+      const key = spriteKey(name, rot);
+      if (!key) return;
       const [ax, az] = spriteAnchor(x, z, d);
       items.push({
         key, x: ax, z: az, y: terrain.heightAt(x, z),
@@ -2095,7 +2131,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     // itself and peasants still walk over the top of both.
     const squareAt = new Map<string, string>();
     for (const kind of STORE_KINDS) {
-      const art = STORE_SPRITES[kind];
+      const art = STORE_SPRITES[kind]!;
       for (const p of state.layoutFor(kind).piles) {
         squareAt.set(`${p.x},${p.z}`,
           p.res && p.level > 0 ? `${art.prefix}_${p.res}_${p.level}` : art.empty);
@@ -2103,9 +2139,11 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     }
     for (const b of state.buildings) {
       const [w, d] = b.def.footprint;
-      if (b.def.storeFor) {
-        push(squareAt.get(`${b.x},${b.z}`) ?? STORE_SPRITES[b.def.storeFor].empty,
-             b.x, b.z, 1, 1);
+      // A PAINTED store draws the square and whatever is stacked on it. A store
+      // with no square art -- the armoury -- falls through and draws itself.
+      const art = b.def.storeFor ? STORE_SPRITES[b.def.storeFor] : undefined;
+      if (art) {
+        push(squareAt.get(`${b.x},${b.z}`) ?? art.empty, b.x, b.z, 1, 1);
         continue;
       }
       push(b.name, b.x, b.z, w, d);
@@ -2609,10 +2647,15 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
   /**
    * Recruit one soldier at the barracks.
    *
-   * The peasant comes out of the idle pool but stays in `population`: he is
-   * still a mouth to feed and still needs a bed. That is the whole cost model
-   * now that there is no weapons chain -- gold, goods, and a body that no
-   * longer works for you.
+   * Three things are spent, and each is a different kind of pressure. GOLD, out
+   * of the treasury. A PEASANT, who comes off the idle pool -- and off the
+   * population roll, so he stops eating, stops paying tax and frees his bed.
+   * And his KIT, taken off the armoury rack: the barracks arms a man, it does
+   * not forge for him, so a spear that no poleturner has made is a spearman you
+   * cannot raise however much gold you are sitting on.
+   *
+   * Siege engines are the exception and go on costing timber and iron directly
+   * -- an engine is built at the camp rather than issued from a store.
    */
   function recruit(type: string): string {
     const def = SOLDIER_TYPES[type];
@@ -2624,9 +2667,17 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     if (state.idle < 1) return 'No idle peasant to take up arms';
     if (state.gold < def.gold) return 'Not enough gold';
     if (!state.canAfford(def.cost)) {
-      const missing = Object.entries(def.cost)
-        .filter(([r, n]) => state.stock[r as never] < (n ?? 0)).map(([r]) => r);
-      return `Not enough ${missing.join(' and ')}`;
+      const missing = (Object.entries(def.cost) as [Resource, number][])
+        .filter(([r, n]) => state.stock[r] < (n ?? 0));
+      const names = missing.map(([r]) => RESOURCE_LABELS[r].toLowerCase());
+      // Say where the shortfall has to be made up. "Not enough bows" sends a
+      // player to the market; "no bows in the armoury" sends them to a
+      // fletcher, which is the answer.
+      const kit = missing.every(([r]) => isWeapon(r));
+      if (kit && !state.hasStore('armoury')) return 'You need an armoury';
+      return kit
+        ? `No ${names.join(' or ')} in the armoury`
+        : `Not enough ${names.join(' and ')}`;
     }
     state.gold -= def.gold;
     state.spend(def.cost);
@@ -2922,6 +2973,10 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
    */
   const AMBIENT_OF: Record<string, string> = {
     quarry: 'quarry', iron_mine: 'quarry',
+    // A smithy is a hammer on iron, which is the pick-on-rock voice; a fletcher
+    // and a poleturner are both a blade working timber.
+    blacksmith: 'quarry', armourer: 'quarry',
+    fletcher: 'woodcutter', poleturner: 'woodcutter',
     woodcutter: 'woodcutter',
     mill: 'mill',
     brewery: 'brewery', inn: 'crowd', market: 'crowd',
@@ -3048,12 +3103,16 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
         bits.push(`${p.amount} ${p.output} / ${p.seconds}s`);
       }
       if (def.housing) bits.push(`houses ${def.housing}`);
-      if (def.storeFor) {
+      if (def.storeFor === 'stockpile' || def.storeFor === 'granary') {
         // Store squares hold nothing themselves; what sits on this one comes
         // from the yard layout, which is what the player can actually see.
         const pile = state.layoutFor(def.storeFor).piles
           .find(q => q.x === mine.x && q.z === mine.z);
         bits.push(pile ? `${pile.count} ${pile.res}` : 'empty');
+      } else if (def.storeFor === 'armoury') {
+        // The armoury pools its room, so the useful number is the town's whole
+        // stock of kit against what its armouries can hold.
+        bits.push(`${state.armouryUsed} / ${state.armouryCapacity} weapons`);
       }
       const held = Object.entries(mine.held).filter(([, n]) => (n ?? 0) > 0);
       if (def.relay && held.length) {
@@ -3128,8 +3187,9 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     // scenery so the entire scene emits as one back-to-front stream.
     const figures: DrawItem[] = [];
     const addFigure = (x: number, z: number, heading: number,
-                       clip: string, phase: number) => {
-      const dir = (unitDirectionIndex(heading, rot) + DIRECTION_OFFSET) & 7;
+                       clip: string, phase: number,
+                       facingOffset = DIRECTION_OFFSET) => {
+      const dir = (unitDirectionIndex(heading, rot) + facingOffset) & 7;
       const n = clipFrames(clip);
       const f = Math.floor(phase * WALK_FPS) % n;
       const key = atlas.frames[`${clip}_${dir}_${f}`]
@@ -3237,7 +3297,8 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       // Real ones keep a couple of sentinels up, so a third of them stand
       // alert instead -- split by id so an individual does not flicker.
       const still = a.id % 3 === 0 ? 'gazelle_idle' : 'gazelle_graze';
-      addFigure(a.x, a.z, a.heading, a.moving ? 'gazelle_walk' : still, a.phase);
+      addFigure(a.x, a.z, a.heading, a.moving ? 'gazelle_walk' : still, a.phase,
+                GAZELLE_DIRECTION_OFFSET);
     }
     const idleShown = Math.min(wanderers.length, state.idle);
     for (let i = 0; i < idleShown; i++) {
@@ -3260,11 +3321,10 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     // ghost building, tinted green or red, floated in front of everything
     ghostBatch.clear();
     if (placement.selected && placement.hover) {
-      // Neither store has a building sprite of its own any more -- they are
-      // squares, so the ghost is the empty square.
-      const store = BUILDINGS[placement.selected].storeFor;
-      const ghostName = store ? STORE_SPRITES[store].empty : placement.selected;
-      const frame = atlas.frames[`${ghostName}_${rot}`];
+      // A painted store has no building sprite of its own -- it is a square, so
+      // the ghost is the empty square. SPRITE_STANDIN already says as much.
+      const key = spriteKey(placement.selected, rot);
+      const frame = key ? atlas.frames[key] : undefined;
       if (frame) {
         const [w, d] = BUILDINGS[placement.selected].footprint;
         const { x, z } = placement.hover;

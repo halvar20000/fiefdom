@@ -1,11 +1,11 @@
 import {
   ALL_RESOURCES, BUILDINGS, RAW_RESOURCES, FOOD_RESOURCES, RATIONS, TAX_LEVELS,
   FOOD_VARIETY_BONUS, PRICES, buildingHp, TRADE_BATCH, TRADE_INTERVAL, TRADE_MIN_BAND,
-  INN_CAPACITY, ALE_PER_PERSON_PER_MIN, ALE_POPULARITY_MAX, isFood,
+  INN_CAPACITY, ALE_PER_PERSON_PER_MIN, ALE_POPULARITY_MAX,
   CHURCH_SERVES, RELIGION_POPULARITY_MAX, PHARMACY_SERVES, HEALTH_POPULARITY_MAX,
   BEAUTY_CAP, BEAUTY_PER, SPEED_LEVELS, NORMAL_SPEED,
   RESOURCE_LABELS, STOCKPILE_TILE_CAPACITY, STOCKPILE_LEVELS,
-  GRANARY_TILE_CAPACITY,
+  GRANARY_TILE_CAPACITY, ARMOURY_CAPACITY, WEAPON_RESOURCES, storeOf, STORE_LABELS,
   type BuildingDef, type RationLevel, type Resource, type Store, type TradeOrder,
 } from './defs';
 import { Ledger } from './ledger';
@@ -190,7 +190,7 @@ export class GameState {
     return FOOD_RESOURCES.filter(f => this.stock[f] > 0).length;
   }
 
-  hasStore(kind: 'stockpile' | 'granary'): boolean {
+  hasStore(kind: Store): boolean {
     return this.buildings.some(b => b.def.storeFor === kind);
   }
 
@@ -199,8 +199,14 @@ export class GameState {
     return this.buildings.filter(b => b.def.storeFor === kind);
   }
 
-  /** The layout that owns a good: food to the granary, everything else the yard. */
-  layoutFor(kind: Store): StoreLayout {
+  /**
+   * The layout that owns a good: food to the granary, everything else the yard.
+   *
+   * Only the two PAINTED stores have one. The armoury is a shed with a pooled
+   * capacity and no per-square art, so it is deliberately not expressible here
+   * -- see `armouryCapacity`.
+   */
+  layoutFor(kind: 'stockpile' | 'granary'): StoreLayout {
     return kind === 'granary' ? this.granary : this.stockpile;
   }
 
@@ -219,9 +225,26 @@ export class GameState {
     return RAW_RESOURCES.reduce((n, r) => n + Math.max(0, this.stock[r]), 0);
   }
 
+  /**
+   * Weapons the armouries can hold, and how much of that is spoken for.
+   *
+   * Pooled across kinds rather than reserved per kind, unlike the yard. The
+   * yard reserves because bulk goods arrive by the dozen and one flood would
+   * starve every other chain; kit arrives one piece at a time and is spent one
+   * piece at a time, so pooling is simply the shed being a shed.
+   */
+  get armouryCapacity(): number {
+    return this.storeTiles('armoury').length * ARMOURY_CAPACITY;
+  }
+
+  get armouryUsed(): number {
+    return WEAPON_RESOURCES.reduce((n, r) => n + Math.max(0, this.stock[r]), 0);
+  }
+
   /** How much more of a good its store will take. */
   roomFor(resource: Resource): number {
-    const kind: Store = isFood(resource) ? 'granary' : 'stockpile';
+    const kind = storeOf(resource);
+    if (kind === 'armoury') return Math.max(0, this.armouryCapacity - this.armouryUsed);
     return this.layoutFor(kind).spaceFor(resource, this.storeTiles(kind), this.stock);
   }
 
@@ -449,8 +472,7 @@ export class GameState {
         if (n <= 0) {
           // Distinguish the two, or a full yard reads as bankruptcy.
           this.notify(room <= 0
-            ? `No room in the ${isFood(r) ? 'granary' : 'stockpile'} for ` +
-              RESOURCE_LABELS[r].toLowerCase()
+            ? `No room in the ${storeOf(r)} for ` + RESOURCE_LABELS[r].toLowerCase()
             : 'Not enough gold to buy', 'warn');
           continue;
         }
@@ -491,7 +513,7 @@ export class GameState {
 
   /** Deposit produced goods, but only if the matching store has room. */
   deposit(resource: Resource, amount: number): boolean {
-    const needed = isFood(resource) ? 'granary' : 'stockpile';
+    const needed = storeOf(resource);
     if (!this.hasStore(needed)) return false;
 
     // A part load is accepted and the remainder spills. The carrier is already
@@ -502,7 +524,7 @@ export class GameState {
     const room = this.roomFor(resource);
     const put = Math.min(amount, room);
     if (put <= 0) {
-      const where = needed === 'granary' ? 'The granary' : 'The stockpile';
+      const where = STORE_LABELS[needed];
       this.notify(
         `${where} is full — nowhere to put ${RESOURCE_LABELS[resource].toLowerCase()}`,
         'warn');

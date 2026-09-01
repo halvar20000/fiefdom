@@ -1,5 +1,7 @@
 import type { GameState, PlacedBuilding } from './state';
-import { isFood, DEPOT_BATCH, type Resource } from './defs';
+import {
+  storeOf, STORE_LABELS, DEPOT_BATCH, type Resource, type Store,
+} from './defs';
 import type { PathNode } from './pathfind';
 
 export type WorkerState =
@@ -61,7 +63,7 @@ export function totalHeld(b: PlacedBuilding): number {
 export interface WorkerWorld {
   heightAt(x: number, z: number): number;
   /** Nearest store building of the given kind, or null if none exists. */
-  nearestStore(kind: 'stockpile' | 'granary', x: number, z: number): PlacedBuilding | null;
+  nearestStore(kind: Store, x: number, z: number): PlacedBuilding | null;
   /**
    * Where this worker goes to do its job.
    *
@@ -76,9 +78,7 @@ export interface WorkerWorld {
    * Where a load of this good should be taken from here: the real store, or a
    * storehouse if one is nearer and has room.
    */
-  nearestDrop(
-    kind: 'stockpile' | 'granary', x: number, z: number,
-  ): PlacedBuilding | null;
+  nearestDrop(kind: Store, x: number, z: number): PlacedBuilding | null;
   /** A production cycle finished -- consume whatever was being worked. */
   harvest(b: PlacedBuilding, w: Worker): void;
   /** Route around buildings. Null means no route exists. */
@@ -255,13 +255,12 @@ export class WorkerPool {
           // the player sees the DOWNSTREAM workshop "waiting for materials"
           // (the bakery, when it is really the mill that cannot store flour)
           // and has no way to trace that back to the store being full.
-          const outStore = isFood(prod.output) ? 'granary' : 'stockpile';
+          const outStore = storeOf(prod.output);
           if (this.state.hasStore(outStore)
               && this.state.roomFor(prod.output) < prod.amount) {
             w.timer = 3;
             this.state.notify(
-              `${outStore === 'granary' ? 'The granary' : 'The stockpile'} is full` +
-              ` — ${b.def.label} has stopped`, 'warn');
+              `${STORE_LABELS[outStore]} is full — ${b.def.label} has stopped`, 'warn');
             break;
           }
 
@@ -357,12 +356,12 @@ export class WorkerPool {
           this.world.harvest(b, w);
           w.carrying = prod.output;
           w.carryAmount = prod.amount;
-          const kind = isFood(prod.output) ? 'granary' : 'stockpile';
+          const kind = storeOf(prod.output);
           const store = this.world.nearestDrop(kind, w.x, w.z);
           if (!store) {
             this.state.notify(
-              kind === 'granary'
-                ? 'You need a granary to store food'
+              kind === 'granary' ? 'You need a granary to store food'
+                : kind === 'armoury' ? 'You need an armoury to store weapons'
                 : 'You need a stockpile to store goods', 'warn');
             w.carrying = null;
             w.state = 'idle';
@@ -491,14 +490,12 @@ export class WorkerPool {
         }
         if (!best || most <= 0) { w.timer = 2; return; }
 
-        const kind = isFood(best) ? 'granary' : 'stockpile';
+        const kind = storeOf(best);
         const store = this.world.nearestStore(kind, w.x, w.z);
         if (!store) {
           w.timer = 4;
           this.state.notify(
-            kind === 'granary'
-              ? 'The storehouse has no granary to deliver to'
-              : 'The storehouse has no stockpile to deliver to', 'warn');
+            `The storehouse has no ${kind} to deliver to`, 'warn');
           return;
         }
         const take = Math.min(DEPOT_BATCH, most);

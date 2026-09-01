@@ -1174,3 +1174,297 @@ REGISTRY.update({
     "tower": tower,
     "gatehouse": gatehouse,
 })
+
+
+# --- the weapons chain -----------------------------------------------------
+#
+# Five buildings that have to read as ONE family at sprite scale, because their
+# job is a chain and the player picks them off a single menu row. The reference
+# (reference/weapon_production.jpg) is unambiguous about the shape: a low
+# open-fronted shed with a plank roof, a workbench under it, and the thing it
+# makes propped where you can see it. So the shell is shared and only the goods
+# on the bench differ -- which is also what makes them tell apart at 60 pixels,
+# since the silhouette is identical and the CONTENTS are the whole signal.
+
+
+def _workshop_shell(p, parts, wall, timber_l, timber_d, roof_mat):
+    """
+    The shared 2x2 shed: pad, three walls, posts, plank roof, workbench.
+
+    Open at the front (-Y) for the same reason the storehouse is: what a
+    building does has to be visible from the road, and a fourth wall would hide
+    the one detail that says which workshop this is. Returns the deck height and
+    the bench top, so each builder can stand its goods on them without
+    re-deriving numbers that must agree.
+    """
+    rough = M.rough_stone(f"{p}Footing")
+    deck = 0.06
+    parts.append(geom.box(f"{p}_pad", (0.06, 0.06, 0.0), (1.88, 1.88, deck), rough))
+    parts.append(geom.box(f"{p}_back", (0.12, 1.50, deck), (1.76, 0.20, 0.90), wall))
+    parts.append(geom.box(f"{p}_side_l", (0.12, 0.58, deck), (0.16, 0.94, 0.84), wall))
+    parts.append(geom.box(f"{p}_side_r", (1.72, 0.58, deck), (0.16, 0.94, 0.84), wall))
+    parts.append(geom.box(f"{p}_post_l", (0.16, 0.26, deck), (0.14, 0.14, 0.92), timber_d))
+    parts.append(geom.box(f"{p}_post_r", (1.70, 0.26, deck), (0.14, 0.14, 0.92), timber_d))
+    parts.append(geom.box(f"{p}_lintel", (0.12, 0.24, deck + 0.92), (1.76, 0.18, 0.10),
+                          timber_d))
+    # Plank roof rather than thatch: every food building in the game is thatched
+    # and the weapons row should not read as another bakery.
+    parts.append(geom.gable(f"{p}_roof", (0.10, 0.22, deck + 1.02), (1.80, 1.54, 0.44),
+                            roof_mat, overhang=0.18))
+    for i in range(5):
+        parts.append(geom.box(f"{p}_batten_{i}", (0.10, 0.30 + i * 0.30, deck + 1.05),
+                              (1.80, 0.06, 0.05), timber_d))
+
+    bench = deck + 0.54
+    parts.append(geom.box(f"{p}_bench", (0.28, 1.10, bench), (1.34, 0.44, 0.08), timber_l))
+    for i, (bx, by) in enumerate(((0.32, 1.14), (1.52, 1.14), (0.32, 1.46), (1.52, 1.46))):
+        parts.append(geom.box(f"{p}_leg_{i}", (bx, by, deck), (0.09, 0.09, 0.54), timber_d))
+    return deck, bench + 0.08
+
+
+def poleturner():
+    """Poleturner's Workshop: a pole lathe, and finished spears in a rack."""
+    wall = M.plaster("PoleturnerWall", tint=(0.75, 0.68, 0.55))
+    timber_l = M.timber("PoleturnerTimber")
+    timber_d = M.timber("PoleturnerTimberDark", dark=True)
+    roof = M.timber("PoleturnerRoof", dark=True)
+    steel = M.iron()
+
+    parts = []
+    deck, top = _workshop_shell("pt", parts, wall, timber_l, timber_d, roof)
+
+    # The lathe: a shaft between two puppets, lying along +X on the bench.
+    for i, x in enumerate((0.36, 1.44)):
+        parts.append(geom.box(f"pt_puppet_{i}", (x, 1.22, top), (0.10, 0.20, 0.26),
+                              timber_d))
+    shaft = geom.cylinder("pt_shaft", (0.0, 0.0, 0.0), 0.045, 1.02, timber_l, segments=8)
+    shaft.rotation_euler = (0.0, math.pi / 2.0, 0.0)
+    shaft.location = (0.46, 1.32, top + 0.14)
+    parts.append(shaft)
+
+    # Finished spears standing against the right-hand post, points up, so the
+    # product is the tallest thing in the frame from every rotation.
+    for i in range(4):
+        x = 1.20 + i * 0.13
+        parts.append(geom.cylinder(f"pt_spear_{i}", (x, 0.52 + (i % 2) * 0.06, deck),
+                                   0.022, 1.02, timber_d, segments=6))
+        parts.append(geom.cone(f"pt_tip_{i}", (x, 0.52 + (i % 2) * 0.06, deck + 1.02),
+                               0.036, 0.14, steel))
+
+    # A stack of unturned poles on the ground, waiting their turn.
+    for i in range(4):
+        o = geom.cylinder(f"pt_pole_{i}", (0.0, 0.0, 0.0), 0.05, 0.90, timber_l,
+                          segments=8)
+        o.rotation_euler = (math.pi / 2.0, 0.0, 0.0)
+        o.location = (0.34 + (i % 2) * 0.12, 0.92, deck + 0.05 + (i // 2) * 0.10)
+        parts.append(o)
+    return geom.join(parts, "poleturner"), (2, 2)
+
+
+def fletcher():
+    """Fletcher's Workshop: a bow on the bench, staves seasoning, a shaft barrel."""
+    wall = M.plaster("FletcherWall", tint=(0.77, 0.70, 0.57))
+    timber_l = M.timber("FletcherTimber")
+    timber_d = M.timber("FletcherTimberDark", dark=True)
+    roof = M.timber("FletcherRoof", dark=True)
+    string = M.cloth("BowString", colour=(0.86, 0.83, 0.74))
+
+    parts = []
+    deck, top = _workshop_shell("fl", parts, wall, timber_l, timber_d, roof)
+
+    # A finished bow standing upright against the back wall. Three straight
+    # segments read as a curve at sprite scale -- the same trick the archer's
+    # own bow uses, so the two match.
+    bx, by = 1.28, 1.42
+    for i, (z0, z1, dx) in enumerate([(0.0, 0.22, 0.07), (0.22, 0.46, 0.0),
+                                      (0.46, 0.68, 0.07)]):
+        seg = geom.box(f"fl_bow_{i}", (bx + dx * 0.5, by, deck + z0),
+                       (0.05, 0.05, z1 - z0), timber_l)
+        parts.append(seg)
+    parts.append(geom.box("fl_string", (bx + 0.055, by + 0.01, deck),
+                          (0.02, 0.02, 0.68), string))
+
+    # Staves seasoning across the bench, and a barrel of shafts beside it.
+    for i in range(3):
+        o = geom.cylinder(f"fl_stave_{i}", (0.0, 0.0, 0.0), 0.032, 1.10, timber_l,
+                          segments=6)
+        o.rotation_euler = (0.0, math.pi / 2.0, 0.0)
+        o.location = (0.34, 1.20 + i * 0.11, top + 0.03)
+        parts.append(o)
+
+    parts.append(geom.cylinder("fl_barrel", (0.52, 0.60, deck), 0.20, 0.34,
+                               timber_d, segments=10))
+    for i in range(7):
+        a = i / 7.0 * math.tau
+        parts.append(geom.cylinder(
+            f"fl_shaft_{i}",
+            (0.52 + math.cos(a) * 0.09, 0.60 + math.sin(a) * 0.09, deck + 0.30),
+            0.012, 0.46, timber_l, segments=4))
+    return geom.join(parts, "fletcher"), (2, 2)
+
+
+def _forge(prefix, parts, x, y, deck, stone, dark, coal, steel):
+    """
+    A stone hearth with a lit coal bed and a stubby chimney.
+
+    Shared by the smith and the armourer, because the fire is the one thing
+    that says "this building works metal" at a glance, and two hand-built
+    hearths would drift apart the first time either was adjusted.
+    """
+    parts.append(geom.box(f"{prefix}_forge", (x, y, deck), (0.52, 0.46, 0.44), stone))
+    parts.append(geom.box(f"{prefix}_coal", (x + 0.08, y + 0.07, deck + 0.44),
+                          (0.36, 0.32, 0.05), coal))
+    parts.append(geom.box(f"{prefix}_hood", (x - 0.02, y + 0.26, deck + 0.52),
+                          (0.56, 0.24, 0.30), dark))
+    parts.append(geom.box(f"{prefix}_flue", (x + 0.16, y + 0.30, deck + 0.82),
+                          (0.20, 0.20, 0.46), stone))
+    parts.append(geom.cylinder(f"{prefix}_bucket", (x + 0.70, y + 0.10, deck), 0.13, 0.24,
+                               steel, segments=10))
+
+
+def blacksmith():
+    """Blacksmith's Workshop: forge, anvil, and finished blades on the rack."""
+    wall = M.plaster("SmithWall", tint=(0.70, 0.64, 0.53))
+    timber_l = M.timber("SmithTimber")
+    timber_d = M.timber("SmithTimberDark", dark=True)
+    roof = M.timber("SmithRoof", dark=True)
+    stone = M.rough_stone("SmithHearth")
+    steel = M.iron()
+    # Modest strength for the same reason the ram's brazier is: high values clip
+    # to flat white and the coals stop reading as coals.
+    coal = props._emissive("SmithCoals", (1.0, 0.42, 0.10), 6.0)
+
+    parts = []
+    deck, top = _workshop_shell("bs", parts, wall, timber_l, timber_d, roof)
+    _forge("bs", parts, 0.26, 1.28, deck, stone, timber_d, coal, steel)
+
+    # The anvil, out front where the hammering happens: a stump, a waisted block
+    # and a horn, which is the silhouette everyone recognises.
+    parts.append(geom.cylinder("bs_stump", (1.22, 0.62, deck), 0.17, 0.34, timber_d,
+                               segments=10))
+    parts.append(geom.box("bs_anvil", (1.06, 0.50, deck + 0.34), (0.34, 0.16, 0.10), steel))
+    parts.append(geom.box("bs_waist", (1.14, 0.53, deck + 0.28), (0.18, 0.10, 0.06), steel))
+    parts.append(geom.cone("bs_horn", (1.04, 0.58, deck + 0.39), 0.05, 0.16, steel))
+    parts[-1].rotation_euler = (0.0, -math.pi / 2.0, 0.0)
+
+    # Hammer and tongs left on the bench, so it is a bench in use rather than a
+    # plank -- and so the bench top earns the number the shell hands back.
+    hammer = geom.cylinder("bs_haft", (0.0, 0.0, 0.0), 0.022, 0.34, timber_d, segments=6)
+    hammer.rotation_euler = (0.0, math.pi / 2.0, 0.0)
+    hammer.location = (0.52, 1.20, top + 0.03)
+    parts.append(hammer)
+    parts.append(geom.box("bs_head", (0.48, 1.16, top + 0.01), (0.09, 0.09, 0.09), steel))
+    for i in range(2):
+        arm = geom.cylinder(f"bs_tong_{i}", (0.0, 0.0, 0.0), 0.014, 0.30, steel, segments=5)
+        arm.rotation_euler = (0.0, math.pi / 2.0, 0.08 - i * 0.16)
+        arm.location = (0.62, 1.42, top + 0.02)
+        parts.append(arm)
+
+    # Finished swords stood point-down against the back wall: blade, guard, grip.
+    for i in range(3):
+        x = 1.14 + i * 0.19
+        parts.append(geom.box(f"bs_blade_{i}", (x, 1.44, deck + 0.10),
+                              (0.055, 0.02, 0.52), steel))
+        parts.append(geom.box(f"bs_guard_{i}", (x - 0.05, 1.44, deck + 0.62),
+                              (0.16, 0.03, 0.035), steel))
+        parts.append(geom.box(f"bs_grip_{i}", (x + 0.005, 1.44, deck + 0.655),
+                              (0.045, 0.03, 0.14), timber_d))
+    return geom.join(parts, "blacksmith"), (2, 2)
+
+
+def armourer():
+    """Armourer's Workshop: a forge, and a mail hauberk on an armourer's tree."""
+    wall = M.plaster("ArmourerWall", tint=(0.72, 0.66, 0.55))
+    timber_l = M.timber("ArmourerTimber")
+    timber_d = M.timber("ArmourerTimberDark", dark=True)
+    roof = M.timber("ArmourerRoof", dark=True)
+    stone = M.rough_stone("ArmourerHearth")
+    steel = M.iron()
+    mail = M.iron("ArmourerMail")
+    coal = props._emissive("ArmourerCoals", (1.0, 0.45, 0.12), 5.0)
+
+    parts = []
+    deck, top = _workshop_shell("ar", parts, wall, timber_l, timber_d, roof)
+    _forge("ar", parts, 0.24, 1.26, deck, stone, timber_d, coal, steel)
+
+    # The armourer's tree out front: a post, crossed shoulders, and a hauberk
+    # hanging off it. This is the ONE thing that distinguishes this shed from
+    # the smith's at sprite size, so it stands where nothing overlaps it.
+    parts.append(geom.cylinder("ar_post", (1.24, 0.60, deck), 0.06, 0.94, timber_d,
+                               segments=8))
+    parts.append(geom.box("ar_shoulders", (0.96, 0.56, deck + 0.78),
+                          (0.56, 0.10, 0.07), timber_d))
+    parts.append(geom.box("ar_hauberk", (1.00, 0.52, deck + 0.40),
+                          (0.48, 0.20, 0.40), mail))
+    parts.append(geom.box("ar_skirt", (1.06, 0.54, deck + 0.24),
+                          (0.36, 0.17, 0.18), mail))
+    # A helm sitting on the bench beside it.
+    parts.append(geom.dome("ar_helm", (1.34, 1.30, top), 0.11, 0.13, steel))
+    # Sheet stock leaning against the left post, the raw side of the trade.
+    for i in range(2):
+        parts.append(geom.box(f"ar_sheet_{i}", (0.34 + i * 0.09, 0.42, deck),
+                              (0.06, 0.30, 0.66), steel, rot_z=0.12))
+    return geom.join(parts, "armourer"), (2, 2)
+
+
+def armoury():
+    """
+    Armoury: a 3x3 stone-footed store hall with racked kit under its eaves.
+
+    Built heavier than the workshops on purpose. It is the one building in the
+    chain the player MUST have, it gates the whole military, and a shed that
+    looked like the four sheds beside it would be the easy one to forget to put
+    up. So: stone to the waist, a tiled hall above, double doors, and the racks
+    visible along the open side.
+    """
+    stone = M.castle_stone()
+    rough = M.rough_stone("ArmouryFooting")
+    roof = M.timber("ArmouryRoof", dark=True)
+    timber_l = M.timber("ArmouryTimber")
+    timber_d = M.timber("ArmouryTimberDark", dark=True)
+    steel = M.iron()
+    shield = M.cloth("ArmouryShield", colour=(0.55, 0.16, 0.14))
+
+    parts = []
+    parts.append(geom.box("am_plinth", (0.08, 0.60, 0.0), (2.84, 2.32, 0.14), rough))
+    parts.append(geom.box("am_body", (0.16, 0.68, 0.14), (2.68, 2.16, 1.14), stone))
+    parts.append(geom.box("am_band", (0.10, 0.62, 1.20), (2.80, 2.28, 0.10), timber_d))
+    parts.append(geom.gable("am_roof", (0.16, 0.68, 1.30), (2.68, 2.16, 0.72),
+                            roof, overhang=0.22))
+    for i in range(7):
+        parts.append(geom.box(f"am_batten_{i}", (0.16, 0.76 + i * 0.30, 1.33),
+                              (2.68, 0.07, 0.05), timber_d))
+
+    # Double doors on the front (-Y) face, banded with iron.
+    parts.append(geom.box("am_doors", (1.02, 0.60, 0.14), (0.96, 0.10, 0.92), timber_d))
+    for i, z in enumerate((0.34, 0.78)):
+        parts.append(geom.box(f"am_band_{i}", (1.02, 0.56, z), (0.96, 0.05, 0.07), steel))
+
+    # Racked spears under the eaves on the +X side, so the building says what is
+    # inside it without the doors having to be open.
+    parts.append(geom.box("am_rack", (2.86, 1.00, 0.14), (0.14, 1.40, 0.16), timber_l))
+    parts.append(geom.box("am_rackbar", (2.88, 1.00, 0.86), (0.08, 1.40, 0.07), timber_l))
+    for i in range(6):
+        y = 1.06 + i * 0.23
+        parts.append(geom.cylinder(f"am_spear_{i}", (2.92, y, 0.16), 0.021, 0.98,
+                                   timber_d, segments=6))
+        parts.append(geom.cone(f"am_tip_{i}", (2.92, y, 1.14), 0.034, 0.13, steel))
+
+    # Shields hung on the -X wall, and a crate and barrel by the door.
+    for i, y in enumerate((1.10, 1.62, 2.14)):
+        parts.append(geom.cylinder(f"am_shield_{i}", (0.10, y, 0.62), 0.20, 0.06,
+                                   shield, segments=12))
+        parts[-1].rotation_euler = (0.0, math.pi / 2.0, 0.0)
+    parts.append(geom.box("am_crate", (0.40, 0.18, 0.0), (0.44, 0.36, 0.32), timber_l))
+    parts.append(geom.cylinder("am_barrel", (2.20, 0.32, 0.0), 0.19, 0.36, timber_l,
+                               segments=10))
+    return geom.join(parts, "armoury"), (3, 3)
+
+
+REGISTRY.update({
+    "armoury": armoury,
+    "poleturner": poleturner,
+    "fletcher": fletcher,
+    "blacksmith": blacksmith,
+    "armourer": armourer,
+})

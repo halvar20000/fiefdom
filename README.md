@@ -687,17 +687,24 @@ you satisfy the guard.
 
 ## M2, part two: soldiers
 
-**No weapons chain.** Stronghold routes iron through a blacksmith and an armoury
-before you get a swordsman; here you buy the man at the barracks. The trade-off
-is kept elsewhere and is still real: every recruit costs gold, costs a peasant
-out of the idle pool, and then goes on eating and occupying housing while
-producing nothing. `population` and `idle` are independent counters, so
-`idle -= 1` is the whole accounting — the soldier is still a mouth to feed.
+**Gold buys the man; the armoury arms him.** Recruiting costs gold, a peasant
+out of the idle pool, and one item of kit off the rack — and nothing else.
+`population` and `idle` are independent counters, so `idle -= 1` is the whole
+accounting; the soldier is off the roll but was never free.
 
-Armoured troops cost **iron directly** (swordsman: 80g + 4 iron; archer 40g +
-2 wood; spearman 20g). Without that, nothing in the game consumes iron or pitch
-at all — they are mined and then only ever sold — and the iron mine exists
-purely for trade.
+| Recruit | Gold | Kit |
+| --- | --- | --- |
+| Spearman | 20 | 1 spear |
+| Archer | 40 | 1 bow |
+| Swordsman | 80 | 1 sword + 1 armour |
+
+No timber and no iron are charged at the barracks, because the workshop that
+made the spear already spent them — charging for both would be charging twice
+for the same spear. Siege engines are the exception and still cost materials
+directly: an engine is built at the camp out of beams, not issued from a store.
+
+See [the weapons chain](#m6-the-weapons-chain) for the four workshops and the
+armoury behind that table.
 
 `Army` is deliberately separate from `WorkerPool`. Workers are driven BY their
 building through a production state machine and have no will of their own;
@@ -2251,6 +2258,113 @@ being replaced. All assets render in a single Blender process because Cycles
 spends over a minute compiling Metal kernels on first use — warm renders are
 under a second each.
 
+## Which way a unit faces
+
+Both renderers turn the MODEL by `+d * 45` degrees about Blender's +Z and hold
+the camera still, and Blender's +Y is the engine's -Z (see `cameraDirection`).
+So a model spun one slot anticlockwise in Blender comes out one slot *clockwise*
+in world heading — and `unitDirectionIndex` therefore indexes off `-heading`,
+not `+heading`.
+
+It used to index off `+heading`, which mirrors every facing about the x axis.
+That is right for a unit walking along +x or -x, ninety degrees out on the
+diagonals, and *the exact opposite way* along +z and -z — which is why a
+catapult would stand with its back to the wall it was breaking. The camera term
+keeps its sign: a 90-degree azimuth step moves the camera clockwise round the
+map, which is two slots either way.
+
+The model's own rest facing is then added on top, and it is **not the same for
+everything**:
+
+| Body | Modelled facing | Rest slot |
+| --- | --- | --- |
+| Peasant, soldier, siege engine | Blender -Y | `DIRECTION_OFFSET` = 2 |
+| Gazelle | Blender +Y | `GAZELLE_DIRECTION_OFFSET` = 6 |
+
+The peasant's -Y is Mixamo's export, and it is confirmed by the model itself:
+`peasant.py` hangs the shield on the *outside* of the left forearm at y-0.06 and
+puts the bowstring at +y, both of which only make sense with the front at -Y.
+The siege engines were built to match (the ram's head is at y-0.47). The gazelle
+was not — `wildlife.py` says in a comment that it assumes the peasant faces +Y,
+and it does not. Rather than re-render the whole herd, the engine adds the extra
+half-turn. Turning `BASE_YAW_DEG` to 180 and dropping
+`GAZELLE_DIRECTION_OFFSET` is the other half of the same fix; do one without
+the other and the herd walks backwards.
+
+Cheapest way to check any of this without launching the game: the sprites on
+disk. `gazelle_idle_0_0.png` shows the animal facing screen up-right, which is
+world -z, which is exactly what `h = atan2(-cos(d*45), -sin(d*45))` predicts for
+a +Y model at d=0. All eight slots agree.
+
+## M6: the weapons chain
+
+Recruiting used to be a gold sink with a token bill of goods. It is now the end
+of a real production chain, which is the part of Stronghold worth copying: an
+army is limited by how fast your workshops turn out gear, not by how fast the
+treasury fills.
+
+```
+wood ──> Poleturner's ──> spears ─┐
+wood ──> Fletcher's   ──> bows   ─┤
+iron ──> Blacksmith's ──> swords ─┼──> ARMOURY ──> barracks
+iron ──> Armourer's   ──> armour ─┘
+```
+
+Four workshops, one store, four new goods in `WEAPON_RESOURCES`. Each workshop
+draws its raw material from the stockpile through the ordinary `toFetch` path
+and delivers its output to the nearest armoury, so nothing in `WorkerPool`
+needed a special case — only `isFood(x) ? 'granary' : 'stockpile'`, which was
+written out longhand in three places, became one `storeOf(r)`.
+
+**The armoury is a shed, not a yard.** The stockpile and the granary are painted
+a square at a time because their contents are bulk — you buy room by the tile,
+and each good reserves its own squares so one flood cannot starve every other
+chain. Kit is not bulk: it is made in ones and twos and spent in ones and twos,
+so an armoury is a whole 3x3 building with `ARMOURY_CAPACITY` pooled across all
+four kinds. That distinction is expressed once, in `STORE_SPRITES`: a store with
+an entry there is painted and draws its contents, one without draws its own
+sprite. Nothing needed a second flag.
+
+Gating is automatic and needs no new check. A weapon can only exist in `stock`
+if it was delivered to an armoury, so "the corresponding weapon must be in the
+weapon store" falls out of `canAfford(def.cost)` — the same call that used to
+check the iron. The only work was the *message*: "Not enough bows" sends a
+player to the market, so `recruit()` says "No bows in the armoury" when
+everything short is kit, and "You need an armoury" when there is nowhere for kit
+to be.
+
+The rival lord runs the same chain on the same defs. His `BUILD_PLAN` gains an
+armoury and a poleturner immediately after the barracks — spears are the
+cheapest thing that puts a man on a wall, needing one shed and some timber
+rather than ore and two workshops — a fletcher beside it, and the smith and the
+armourer together late, because a blacksmith on its own makes swords for
+swordsmen he has no mail for. Measured over a 30-minute headless run he still
+reaches his army cap at the same minute as before, with the same mix of
+spearmen and archers; the chain gates him exactly as it gates the player.
+
+**The tanner is deliberately absent.** The reference sheet has one, but in
+Stronghold leather armour exists to equip crossbowmen and pikemen, and this game
+has neither. A workshop whose output nothing consumes is worse than a missing
+building, so it waits for the unit that needs it.
+
+### Buildings with no sprite yet
+
+The five new buildings have Blender models in `buildings.py` but the PNGs only
+exist once somebody runs Cycles. `push` skips any sprite with no frame, so
+without help they would be invisible on the map and blank in the menu — which
+reads as a broken feature rather than as an un-run render. `SPRITE_STANDIN` maps
+each to a same-footprint neighbour to draw meanwhile, and `missingSprites` still
+names them in the stale-asset banner so the stand-in is never mistaken for the
+finished art:
+
+```bash
+blender -b -P tools/render/render_buildings.py -- \
+  --only armoury,poleturner,fletcher,blacksmith,armourer
+```
+
+Delete the entries from `SPRITE_STANDIN` afterwards; the two store entries stay,
+because a painted yard has no building model to render.
+
 ## Running
 
 ```bash
@@ -2264,9 +2378,9 @@ small window). `?noterrain` / `?nosprites` isolate a layer when profiling.
 ## Status
 
 M0 (look test) and M1 (the economy) are built: terrain with cliff faces,
-27 buildings, vegetation, Mixamo peasants, 4-way rotation, A* pathfinding,
-the full food/ale/meat chains, painted stockpile and granary, standing trade
-orders, gazelle herds and a hunter.
+45 buildings, vegetation, Mixamo peasants, 4-way rotation, A* pathfinding,
+the full food/ale/meat chains, the weapons chain and its armoury, painted
+stockpile and granary, standing trade orders, gazelle herds and a hunter.
 
 M2 is next: walls, towers, soldiers, an AI lord.
 

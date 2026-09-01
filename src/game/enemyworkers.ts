@@ -1,4 +1,4 @@
-import { BUILDINGS, isFood } from './defs';
+import { BUILDINGS, storeOf } from './defs';
 import type { PathNode } from './pathfind';
 
 /**
@@ -139,7 +139,7 @@ export class EnemyWorkers {
   private storeFor(w: EnemyWorker, factions: EWFaction[]): { x: number; z: number } | null {
     const b = w.b!;
     const def = BUILDINGS[b.name];
-    const kind = def.produces && isFood(def.produces.output) ? 'granary' : 'stockpile';
+    const kind = def.produces ? storeOf(def.produces.output) : 'stockpile';
     const mine = factions.find(f => f.id === w.side);
     if (!mine) return null;
     let best: { x: number; z: number } | null = null;

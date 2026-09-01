@@ -1,12 +1,24 @@
 import {
   BUILDINGS, BUILD_MENU, PRICES, RATIONS, RATION_LEVELS, TAX_LEVELS,
   RESOURCE_LABELS, ALL_RESOURCES, FOOD_RESOURCES,
-  SOLDIER_TYPES, SOLDIER_ORDER, SPEED_LEVELS,
+  SOLDIER_TYPES, SOLDIER_ORDER, SPEED_LEVELS, SPRITE_STANDIN,
   type RationLevel, type Resource,
 } from '../game/defs';
 import type { GameState } from '../game/state';
 import type { Placement } from '../game/placement';
 import type { Audio } from '../engine/audio';
+
+/**
+ * A good's name for a COUNT of it: "1 bow", "2 bows".
+ *
+ * Only kit needs it -- the bulk goods are mass nouns and read the same either
+ * way ("2 wood"), whereas a recruit is issued exactly one of a countable thing
+ * and "1 bows" looks like a bug in the panel.
+ */
+function one(r: Resource, n: number): string {
+  const label = RESOURCE_LABELS[r].toLowerCase();
+  return n === 1 && label.endsWith('s') ? label.slice(0, -1) : label;
+}
 
 /** The views the right-hand panel can show, in dropdown order. */
 const VIEWS = [
@@ -804,6 +816,12 @@ export class Hud {
     const chains: Record<string, string[]> = {
       wheat: ['wheat', 'flour', 'bread'], flour: ['wheat', 'flour', 'bread'],
       hops: ['hops', 'ale'], ale: ['hops', 'ale'],
+      // The weapons chains. Iron leads to both heavy kits, so all three open
+      // the same chart -- ore climbing while swords stay flat is a blacksmith
+      // short of a worker, and that is the picture worth having.
+      iron: ['iron', 'swords', 'armour'],
+      swords: ['iron', 'swords', 'armour'], armour: ['iron', 'swords', 'armour'],
+      bows: ['wood', 'bows'], spears: ['wood', 'spears'],
     };
     const chain = chains[key];
     if (chain) {
@@ -1216,16 +1234,6 @@ export class Hud {
    * Scaling is contain-but-never-upscale, so a wall reads as smaller than a
    * barracks instead of every icon being stretched to the same size.
    */
-  /**
-   * Buildings whose menu icon is not their own sprite, because they have none.
-   * The stores are painted yards assembled from pile and bin sprites rather
-   * than one building, so the icon borrows the empty deck and a single bin.
-   */
-  private static ICON_ALIAS: Record<string, string> = {
-    stockpile: 'stockpile_deck',
-    granary: 'granary_bin',
-  };
-
   setIcons(atlas: {
     frames: Record<string, { x: number; y: number; w: number; h: number }>;
     texture: { image: unknown };
@@ -1236,7 +1244,10 @@ export class Hud {
     for (const el of Array.from(this.buildPanel.querySelectorAll('canvas'))) {
       const cv = el as HTMLCanvasElement;
       const name = cv.dataset.name!;
-      const f = atlas.frames[`${Hud.ICON_ALIAS[name] ?? name}_0`];
+      // Its own art if it has been rendered, else whatever stands in for it --
+      // the same fallback the map draws with, from the same declaration.
+      const f = atlas.frames[`${name}_0`]
+             ?? atlas.frames[`${SPRITE_STANDIN[name]}_0`];
       if (!f) { cv.style.display = 'none'; continue; }
       const W = cv.clientWidth || 46, H = cv.clientHeight || 34;
       cv.width = Math.round(W * dpr);
@@ -1407,8 +1418,14 @@ export class Hud {
 
       const price = document.createElement('span');
       price.className = 'c';
-      const goods = Object.entries(t.cost).map(([r, n]) => `${n} ${r}`).join(' ');
+      // Kit reads as what it is -- "1 bow", not "1 bows" -- because this line
+      // is the whole explanation of why a recruit is refused.
+      const goods = Object.entries(t.cost)
+        .map(([r, n]) => `${n} ${one(r as Resource, n ?? 0)}`).join(' + ');
       price.textContent = `${t.gold}g${goods ? ' + ' + goods : ''}`;
+      price.title = t.siege
+        ? 'Gold and materials, taken from the stockpile.'
+        : 'Gold, plus kit taken off the armoury rack.';
       row.appendChild(price);
 
       const count = document.createElement('span');
@@ -1704,6 +1721,7 @@ export class Hud {
     const shown: (Resource | 'gold')[] = [
       'gold', 'wood', 'stone', 'iron', 'pitch', 'wheat', 'flour',
       'bread', 'cheese', 'apples', 'meat', 'fish', 'hops', 'ale', 'pigs',
+      'spears', 'bows', 'swords', 'armour',
     ];
     // On a phone the summary box is a sheet, so the two numbers you watch
     // constantly -- how many people, how well liked -- lead the ticker where the
@@ -1737,6 +1755,7 @@ export class Hud {
     const troops = Object.values(this.armyCounts()).reduce((n, v) => n + v, 0);
     const yardColour = fill(s.stockpileUsed, s.stockpileCapacity);
     const granaryColour = fill(s.totalFood, s.granaryCapacity);
+    const armouryColour = fill(s.armouryUsed, s.armouryCapacity);
     this.stats.innerHTML =
       `<div class="row hist" data-res="population" title="Population — click for history">` +
         `<span>Population</span><b>${pop} / ${s.housing}</b></div>` +
@@ -1748,6 +1767,12 @@ export class Hud {
         `${s.totalFood} / ${s.granaryCapacity}</b></div>` +
       `<div class="row"><span>Stockpile</span><b style="color:${yardColour}">` +
         `${s.stockpileUsed} / ${s.stockpileCapacity}</b></div>` +
+      // Only once there is an armoury. Before that the line would read 0 / 0
+      // and say nothing except that a building exists you have not met yet.
+      (s.armouryCapacity
+        ? `<div class="row"><span>Armoury</span><b style="color:${armouryColour}">` +
+          `${s.armouryUsed} / ${s.armouryCapacity}</b></div>`
+        : '') +
       `<div class="row hist" data-res="popularity" title="Popularity — click for history">` +
         `<span>Popularity</span><b>${pct}</b></div>` +
       `<div class="bar"><i style="width:${pct}%;background:${colour}"></i></div>` +

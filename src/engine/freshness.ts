@@ -30,7 +30,8 @@ export function reportStaleAssets(missing: string[]): void {
   ].join(';');
   el.innerHTML =
     '<b style="color:#ffb08a">Your browser is using cached assets from an older build.</b><br>'
-    + 'Water will draw as sand and new buildings will not draw at all. '
+    + 'Water will draw as sand, and a new building draws a stand-in sprite or '
+    + 'nothing at all. '
     + 'Hard-refresh to fix it: <b>Ctrl-Shift-R</b> (<b>Cmd-Shift-R</b> on a Mac).<br>'
     + `<span style="opacity:.7">Missing from the manifests: ${missing.join(', ')}</span>`
     + '<br><span style="opacity:.55">(click to dismiss)</span>';

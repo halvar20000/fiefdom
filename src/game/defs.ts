@@ -8,27 +8,55 @@
 export const RAW_RESOURCES =
   ['wood', 'stone', 'iron', 'pitch', 'wheat', 'flour', 'hops', 'ale', 'pigs'] as const;
 export const FOOD_RESOURCES = ['bread', 'cheese', 'apples', 'meat', 'fish'] as const;
+/**
+ * What the weapons workshops turn raw goods into.
+ *
+ * A third class rather than more raw goods, because they answer to a third
+ * store. Kit is what the barracks spends: a man is issued a weapon that already
+ * cost the timber or the iron, which is why recruiting itself costs only gold.
+ */
+export const WEAPON_RESOURCES = ['bows', 'spears', 'swords', 'armour'] as const;
 
 export type RawResource = typeof RAW_RESOURCES[number];
 export type FoodResource = typeof FOOD_RESOURCES[number];
-export type Resource = RawResource | FoodResource;
+export type WeaponResource = typeof WEAPON_RESOURCES[number];
+export type Resource = RawResource | FoodResource | WeaponResource;
 
-export const ALL_RESOURCES: Resource[] = [...RAW_RESOURCES, ...FOOD_RESOURCES];
+export const ALL_RESOURCES: Resource[] =
+  [...RAW_RESOURCES, ...FOOD_RESOURCES, ...WEAPON_RESOURCES];
 
 export function isFood(r: Resource): r is FoodResource {
   return (FOOD_RESOURCES as readonly string[]).includes(r);
+}
+
+export function isWeapon(r: Resource): r is WeaponResource {
+  return (WEAPON_RESOURCES as readonly string[]).includes(r);
 }
 
 export const RESOURCE_LABELS: Record<Resource, string> = {
   wood: 'Wood', stone: 'Stone', iron: 'Iron', pitch: 'Pitch',
   wheat: 'Wheat', flour: 'Flour', hops: 'Hops', ale: 'Ale', pigs: 'Pigs',
   bread: 'Bread', cheese: 'Cheese', apples: 'Apples', meat: 'Meat', fish: 'Fish',
+  bows: 'Bows', spears: 'Spears', swords: 'Swords', armour: 'Armour',
 };
 
 /** Where a produced good is delivered. */
-export type Store = 'stockpile' | 'granary';
+export type Store = 'stockpile' | 'granary' | 'armoury';
 
-export type Category = 'castle' | 'industry' | 'farm' | 'food' | 'town';
+/**
+ * Which store a good belongs in. The ONE place that decides, so a worker, the
+ * market and the capacity warning can never disagree about where a load goes.
+ */
+export function storeOf(r: Resource): Store {
+  return isFood(r) ? 'granary' : isWeapon(r) ? 'armoury' : 'stockpile';
+}
+
+/** The store's name as it appears in a sentence: "The armoury is full". */
+export const STORE_LABELS: Record<Store, string> = {
+  stockpile: 'The stockpile', granary: 'The granary', armoury: 'The armoury',
+};
+
+export type Category = 'castle' | 'industry' | 'farm' | 'food' | 'town' | 'weapons';
 
 /**
  * Terrain a building demands underneath it.
@@ -420,6 +448,60 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     description: 'Bakes flour into bread. Two loaves per sack.',
     workClip: 'dig',
   },
+
+  // --- the weapons chain: four workshops feeding one store ---------------
+  armoury: {
+    name: 'armoury', label: 'Armoury', category: 'weapons',
+    footprint: [3, 3], cost: { wood: 25, stone: 15 }, workers: 0, terrain: 'any',
+    storeFor: 'armoury',
+    // A shed, not a yard. The stockpile and the granary are painted square by
+    // square because their contents are BULK -- you buy more room by the tile.
+    // Kit is not bulk: an armoury either exists or it does not, and gating the
+    // whole military on one building the player must decide to put up is the
+    // point. Each one holds ARMOURY_CAPACITY weapons of all kinds together.
+    description: 'Stores finished weapons and armour. The barracks arms its '
+               + 'recruits from here — without one, nothing you make is kept.',
+  },
+  poleturner: {
+    name: 'poleturner', label: "Poleturner's Workshop", category: 'weapons',
+    footprint: [2, 2], cost: { wood: 15 }, workers: 1, terrain: 'any',
+    produces: {
+      output: 'spears', amount: 2, seconds: 13,
+      inputs: { wood: 2 }, to: 'armoury',
+    },
+    workClip: 'chop',
+    description: 'Turns timber into spears. The cheapest way to arm a man.',
+  },
+  fletcher: {
+    name: 'fletcher', label: "Fletcher's Workshop", category: 'weapons',
+    footprint: [2, 2], cost: { wood: 20 }, workers: 1, terrain: 'any',
+    produces: {
+      output: 'bows', amount: 1, seconds: 15,
+      inputs: { wood: 2 }, to: 'armoury',
+    },
+    workClip: 'chop',
+    description: 'Makes bows from timber. No bow, no archer.',
+  },
+  blacksmith: {
+    name: 'blacksmith', label: "Blacksmith's Workshop", category: 'weapons',
+    footprint: [2, 2], cost: { wood: 20, stone: 10 }, workers: 1, terrain: 'any',
+    produces: {
+      output: 'swords', amount: 1, seconds: 19,
+      inputs: { iron: 2 }, to: 'armoury',
+    },
+    workClip: 'mine',
+    description: 'Beats iron into swords. Slow, and hungry for ore.',
+  },
+  armourer: {
+    name: 'armourer', label: "Armourer's Workshop", category: 'weapons',
+    footprint: [2, 2], cost: { wood: 20, stone: 10 }, workers: 1, terrain: 'any',
+    produces: {
+      output: 'armour', amount: 1, seconds: 21,
+      inputs: { iron: 2 }, to: 'armoury',
+    },
+    workClip: 'mine',
+    description: 'Forges mail. A swordsman needs a suit as well as a blade.',
+  },
 };
 
 /** Buildings offered in the build menu, in the order they appear. */
@@ -435,6 +517,8 @@ export const BUILD_MENU: { category: Category; label: string; items: string[] }[
             'fishery', 'hops_farm'] },
   { category: 'food', label: 'Food & Ale',
     items: ['mill', 'bakery', 'slaughterhouse', 'brewery', 'inn'] },
+  { category: 'weapons', label: 'Weapons',
+    items: ['armoury', 'poleturner', 'fletcher', 'blacksmith', 'armourer'] },
 ];
 
 /**
@@ -467,18 +551,67 @@ export const STOCKPILE_TILE_CAPACITY = 50;
  */
 export const GRANARY_TILE_CAPACITY = 40;
 
+/**
+ * Weapons ONE armoury holds, all kinds together.
+ *
+ * A shed, not a yard: unlike the stockpile and the granary the armoury is a
+ * whole building rather than a painted square, so its capacity is pooled the
+ * way the storehouse's is. Kit is spent in ones and twos at the barracks and
+ * made in ones and twos at the workshops, so forty is several minutes of
+ * recruiting -- enough that one armoury serves a modest war, not so much that
+ * the second is never worth building.
+ */
+export const ARMOURY_CAPACITY = 40;
+
 /** Fill levels a square is drawn at. Must match the rendered pile sprites. */
 export const STOCKPILE_LEVELS = 3;
 
 /**
  * Which sprites a store's squares draw.
  *
- * The two stores must not look alike -- the stockpile is a flat deck you pile
- * goods on, the granary a kerbed bay you look into.
+ * The two painted stores must not look alike -- the stockpile is a flat deck
+ * you pile goods on, the granary a kerbed bay you look into.
+ *
+ * PARTIAL, and that is what tells the two kinds of store apart. A store with
+ * an entry here is painted a square at a time and draws its contents; one
+ * without -- the armoury -- is an ordinary building that draws its own sprite
+ * and pools its capacity. Everything that lays out piles keys off this map, so
+ * adding a shed-style store needs no second flag to remember to set.
  */
-export const STORE_SPRITES: Record<Store, { empty: string; prefix: string }> = {
+export const STORE_SPRITES: Partial<Record<Store, { empty: string; prefix: string }>> = {
   stockpile: { empty: 'stockpile_deck', prefix: 'pile' },
   granary: { empty: 'granary_bin', prefix: 'bin' },
+};
+
+/**
+ * Buildings drawn with somebody else's sprite, and why each one is.
+ *
+ * Two different needs, served by one map because the drawing code only ever
+ * asks the same question -- "what art does this building use?".
+ *
+ * PERMANENT: the stockpile and the granary have no building model at all. They
+ * are yards painted a square at a time, so their menu icon and their placement
+ * ghost borrow the empty square they lay down.
+ *
+ * TEMPORARY: a building whose Blender model exists but has not been RENDERED
+ * yet draws nothing -- `push` skips any sprite with no frame, so it is invisible
+ * on the map and unclickable in the menu, which reads as a broken feature
+ * rather than as a missing PNG. Standing in with a same-footprint neighbour
+ * keeps it playable meanwhile, and `missingSprites` still names it in the stale-
+ * asset banner so nobody mistakes the stand-in for the finished art. Run
+ * `blender -b -P tools/render/render_buildings.py -- --only <name>` and the
+ * entry becomes dead weight to delete.
+ */
+export const SPRITE_STANDIN: Record<string, string> = {
+  stockpile: 'stockpile_deck',
+  granary: 'granary_bin',
+  // The weapons chain, pending a render. Footprints match on purpose -- a 2x2
+  // stand-in under a 3x3 building would sit wrong on its own ground.
+  armoury: 'market',
+  fletcher: 'woodcutter',
+  poleturner: 'woodcutter',
+  blacksmith: 'bakery',
+  armourer: 'bakery',
 };
 
 /** The two levels must not meet, or the orders churn and bleed the spread. */
@@ -504,6 +637,13 @@ export const PRICES: Partial<Record<Resource, [number, number]>> = {
   cheese: [26, 16],
   apples: [17, 10],
   fish:   [22, 13],
+  // Kit trades dear. Buying a sword outright costs well over the iron in it,
+  // so the market is the expensive way to arm a garrison in a hurry rather
+  // than a way to skip the workshops altogether.
+  bows:   [72, 46],
+  spears: [44, 28],
+  swords: [115, 74],
+  armour: [130, 84],
 };
 
 // --- population and popularity --------------------------------------------
@@ -581,15 +721,16 @@ export const FOOD_VARIETY_BONUS = [0, 0, 3, 6, 9];
 /**
  * What you can buy at the barracks.
  *
- * No weapons chain. Stronghold routes iron through a blacksmith and an armoury
- * before you get a swordsman; here you simply buy the man. The trade-off is
- * kept elsewhere and is still real: every recruit costs GOLD, costs a peasant
- * out of the idle pool, and goes on eating and occupying housing while
- * producing nothing. An army you cannot feed is still a mistake.
+ * Gold buys the MAN; the armoury arms him. Recruiting costs no timber and no
+ * iron any more, because the timber and the iron were already spent by the
+ * workshop that made the weapon sitting in the armoury -- charging for both
+ * would be charging twice for the same spear. So a recruit costs gold, a
+ * peasant out of the idle pool, and one item of kit off the rack, and an army
+ * is now limited by how fast your workshops turn out gear rather than by how
+ * fast the treasury fills.
  *
- * Armoured troops cost iron directly. Without that, nothing in the game
- * consumes iron or pitch at all -- they are mined and then only ever sold --
- * and the iron mine has no reason to exist beyond trade.
+ * That also finally gives iron a job. It used to be mined and then only ever
+ * sold; it is now the whole supply line behind swordsmen.
  */
 /**
  * How much punishment a building takes.
@@ -695,19 +836,24 @@ export interface SoldierType {
 
 export const SOLDIER_TYPES: Record<string, SoldierType> = {
   spearman: {
-    name: 'spearman', from: 'barracks', label: 'Spearman', gold: 20, cost: {},
+    name: 'spearman', from: 'barracks', label: 'Spearman', gold: 20,
+    cost: { spears: 1 },
     hp: 40, speed: 1.5, damage: 6, range: 0.9, cooldown: 1.2,
-    description: 'Cheap and quick. Numbers, not quality.',
+    description: 'Cheap and quick. Numbers, not quality. Needs a spear.',
   },
   archer: {
-    name: 'archer', from: 'barracks', label: 'Archer', gold: 40, cost: { wood: 2 },
+    name: 'archer', from: 'barracks', label: 'Archer', gold: 40,
+    cost: { bows: 1 },
     hp: 26, speed: 1.6, damage: 5, range: 6.5, cooldown: 1.6,
-    description: 'Shoots at range. Helpless once reached.',
+    description: 'Shoots at range. Helpless once reached. Needs a bow.',
   },
   swordsman: {
-    name: 'swordsman', from: 'barracks', label: 'Swordsman', gold: 80, cost: { iron: 4 },
+    name: 'swordsman', from: 'barracks', label: 'Swordsman', gold: 80,
+    // The one recruit that wants two workshops behind it, which is exactly
+    // what makes him the late unit rather than merely the dear one.
+    cost: { swords: 1, armour: 1 },
     hp: 95, speed: 1.15, damage: 13, range: 0.9, cooldown: 1.5,
-    description: 'Armoured and slow. Holds a gatehouse.',
+    description: 'Armoured and slow. Holds a gatehouse. Needs a sword and mail.',
   },
 };
 
@@ -717,6 +863,11 @@ export const SOLDIER_TYPES: Record<string, SoldierType> = {
  * Priced well above troops on purpose: a catapult is the answer to "how do I
  * ever beat the lord", and it should cost a real part of an economy rather than
  * being another unit in the queue.
+ *
+ * These still cost timber and iron DIRECTLY, unlike the men at the barracks.
+ * An engine is not a soldier being handed kit off a rack -- it is built on the
+ * spot out of beams and fittings, so the siege camp draws on the stockpile
+ * and the armoury has nothing to do with it.
  */
 export const SIEGE_TYPES: Record<string, SoldierType> = {
   ram: {

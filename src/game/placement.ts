@@ -1,4 +1,4 @@
-import { WATER_REACH, BUILDINGS, type TerrainNeed } from './defs';
+import { WATER_REACH, BUILDINGS, STORE_SPRITES, type TerrainNeed } from './defs';
 import type { GameState } from './state';
 
 export interface PlacementWorld {
@@ -97,14 +97,14 @@ export class Placement {
     // sprinkle next to each workshop, and the whole point -- one place where
     // you can see everything you own -- evaporates. Each store checks only its
     // own squares, so a granary bay may not annex the yard.
-    if (def.storeFor) {
+    // Only the PAINTED stores, which is what STORE_SPRITES says. The armoury is
+    // a whole building rather than a square you extend, so a second one belongs
+    // wherever the workshops are, not welded to the side of the first.
+    if (def.storeFor && STORE_SPRITES[def.storeFor]) {
       const own = this.state.storeTiles(def.storeFor);
       if (own.length
           && !own.some(t => Math.abs(t.x - x) + Math.abs(t.z - z) === 1)) {
-        return {
-          ok: false,
-          reason: `Must touch the ${def.storeFor === 'granary' ? 'granary' : 'stockpile'}`,
-        };
+        return { ok: false, reason: `Must touch the ${def.storeFor}` };
       }
     }
 

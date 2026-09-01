@@ -58,11 +58,27 @@ export const UNIT_DIRECTIONS = 8;
  * Unit headings are stored in world space, so rotating the camera does not
  * re-render anything: it just shifts which direction index faces the viewer.
  * Each 90 degree camera step equals 2 of the 8 direction slots.
+ *
+ * The heading term is NEGATED, and that sign is the whole subtlety. The
+ * renderers turn the model by `+d * 45` about Blender's +Z with the camera
+ * held still, and Blender's Y maps to the engine's -Z (see `cameraDirection`).
+ * So a model spun one slot ANTICLOCKWISE in Blender comes out one slot
+ * CLOCKWISE in world heading, and indexing straight off `+heading` mirrors
+ * every facing about the x axis: it happens to be right for a unit walking
+ * along +x or -x, is 90 degrees out on the diagonals, and points a unit
+ * walking along +z or -z the exact opposite way. That is why a catapult stood
+ * with its back to the wall it was breaking.
+ *
+ * The camera term keeps its sign: increasing the azimuth by 90 degrees moves
+ * the camera clockwise round the map, which is the same two slots either way.
+ *
+ * The result still needs the model's own rest facing added -- see
+ * `DIRECTION_OFFSET` and `GAZELLE_DIRECTION_OFFSET` in main.ts.
  */
 export function unitDirectionIndex(headingRad: number, rotation: RotationIndex): number {
   const step = (Math.PI * 2) / UNIT_DIRECTIONS;
   const raw = Math.round(headingRad / step);
-  return (((raw - rotation * 2) % UNIT_DIRECTIONS) + UNIT_DIRECTIONS) % UNIT_DIRECTIONS;
+  return (((-raw - rotation * 2) % UNIT_DIRECTIONS) + UNIT_DIRECTIONS) % UNIT_DIRECTIONS;
 }
 
 /**

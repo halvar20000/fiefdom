@@ -23,6 +23,35 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.33.0',
+    date: '2026-08-31',
+    headline: 'Arm your men: four weapons workshops and an armoury.',
+    sections: [
+      {
+        title: 'Added',
+        items: [
+          'The weapons chain, in a new Weapons menu. The Poleturner\'s Workshop turns timber into spears and the Fletcher\'s Workshop into bows; the Blacksmith\'s Workshop beats iron into swords and the Armourer\'s Workshop forges mail. Everything they make is carried to the Armoury, and the Armoury is what the barracks arms a recruit from.',
+          'The Armoury, a 3x3 store for finished kit. Each one holds forty pieces of all kinds together, so a second is a real decision rather than more painted squares. Its contents show in the resource bar and as a line in the summary panel, and clicking a weapon there opens its chain chart — ore climbing while swords stay flat is a blacksmith short of a worker.',
+        ],
+      },
+      {
+        title: 'Changed',
+        items: [
+          'Recruits cost GOLD and their kit, and nothing else. A spearman is 20 gold and one spear, an archer 40 and one bow, a swordsman 80 with a sword and a suit of mail. No more timber or iron at the barracks: the workshop that made the weapon already spent it. An army is now limited by how fast your workshops turn out gear rather than by how fast the treasury fills — and iron finally has a job beyond being sold.',
+          'Siege engines are unchanged and still cost timber and iron directly. An engine is built at the camp out of beams; it is not a man being handed a spear.',
+          'The rival lords run the same chain on the same numbers. Break a lord\'s poleturner and his spearmen stop coming, exactly as breaking his bakery stops his bread.',
+        ],
+      },
+      {
+        title: 'Fixed',
+        items: [
+          'Siege engines — and everyone else — now face the right way. A catapult would stand with its back to the wall it was breaking, and a unit walking in some directions was drawn walking backwards: the sprite for a heading was picked as though the eight rendered facings ran the other way round. They run the way the models were turned now, so an engine turns to the building it is battering and a column marches the way it is going.',
+          'The gazelle herd was modelled facing the opposite way to everyone else, which the facing fix would otherwise have made obvious. Handled in the engine, so the animals go on running head-first.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.32.1',
     date: '2026-08-31',
     headline: 'The PAUSED banner keeps clear of the resource bar.',
