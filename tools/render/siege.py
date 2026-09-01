@@ -42,11 +42,16 @@ def _emissive(name, colour, strength):
     nt.links.new(e.outputs["Emission"], out.inputs["Surface"])
     return mat
 
+#: clip -> (frames, cycle seconds). The engines are posed procedurally from a
+#: phase in 0..1, so a finer sampling is free smoothness: a trebuchet's arm now
+#: sweeps through eight positions instead of six over the same six-tenths of a
+#: second. Durations match what these already played at.
 CLIPS = {
-    "ram_idle": 1, "ram_walk": 4, "ram_attack": 6,
-    "catapult_idle": 1, "catapult_walk": 4, "catapult_attack": 6,
-    "trebuchet_idle": 1, "trebuchet_walk": 4, "trebuchet_attack": 6,
-    "fire_ballista_idle": 1, "fire_ballista_walk": 4, "fire_ballista_attack": 6,
+    "ram_idle": (1, 0.1), "ram_walk": (6, 0.4), "ram_attack": (8, 0.6),
+    "catapult_idle": (1, 0.1), "catapult_walk": (6, 0.4), "catapult_attack": (8, 0.6),
+    "trebuchet_idle": (1, 0.1), "trebuchet_walk": (6, 0.4), "trebuchet_attack": (8, 0.6),
+    "fire_ballista_idle": (1, 0.1), "fire_ballista_walk": (6, 0.4),
+    "fire_ballista_attack": (8, 0.6),
 }
 
 

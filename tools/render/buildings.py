@@ -40,20 +40,74 @@ def keep():
                              merlon=0.30, gap=0.24, height=0.30, thickness=0.16,
                              z=body_h + 0.14)
 
-    # projecting door surround on the -Y face
+    # Corner pilasters running the full height. Four unbroken faces of ashlar
+    # is a great deal of flat wall at this zoom; the pilasters give each face a
+    # frame and put a hard vertical shadow at every corner.
+    for (px, py) in ((-0.05, -0.05), (w - 0.13, -0.05),
+                     (-0.05, d - 0.13), (w - 0.13, d - 0.13)):
+        parts.append(geom.box("keep_pilaster", (px, py, 0.0),
+                              (0.18, 0.18, body_h + 0.14), stone))
+
+    # String course dividing the wall into two storeys, the way the reference
+    # keep's is. Without it the height reads as one huge undifferentiated block
+    # and the building loses its scale.
+    parts.append(geom.box("keep_string", (-0.05, -0.05, 1.02),
+                          (w + 0.10, d + 0.10, 0.09), stone))
+
+    # projecting door surround on the -Y face, with a real boarded gate in it
     parts.append(geom.box("keep_porch", (0.85, -0.30, 0.14), (1.30, 0.32, 1.05), stone))
     parts.append(geom.arch_doorway("keep_door", (1.05, -0.36, 0.14), 0.62, 0.95, 0.10, dark))
+    parts += geom.plank_door("keep_gate", (1.09, -0.40, 0.14), 0.54, 0.66,
+                             timber, dark, planks=5)
+    # steps up to it
+    for i in range(3):
+        parts.append(geom.box(f"keep_step_{i}", (0.95 - i * 0.05, -0.38 - i * 0.13, 0.0),
+                              (1.10 + i * 0.10, 0.14, 0.14 - i * 0.045), stone))
 
-    # arrow slits
+    # arrow slits, splayed and hooded so they are not simply dark rectangles
     for (sx, sy, rot) in ((0.55, -0.02, 0.0), (2.30, -0.02, 0.0),
                           (-0.02, 1.10, math.pi / 2), (-0.02, 2.05, math.pi / 2)):
         parts.append(geom.box("keep_slit", (sx, sy, 0.95), (0.10, 0.06, 0.34), dark, rot_z=rot))
+    for (wx, wy, rot) in ((0.42, -0.06, 0.0), (2.17, -0.06, 0.0),
+                          (-0.06, 0.97, math.pi / 2), (-0.06, 1.92, math.pi / 2)):
+        parts += geom.shuttered_window("keep_win", (wx, wy, 1.22), 0.24, 0.34,
+                                       dark, stone, rot_z=rot, shutters=False)
 
     # flagstone deck inside the parapet, so the roof is not a blank plane in the
     # rotations that look down onto it
     deck = M.flagstone("KeepDeck")
     parts.append(geom.box("keep_deck", (0.16, 0.16, body_h + 0.14),
                           (w - 0.32, d - 0.32, 0.035), deck))
+
+    # Timber hoarding on the -X wall head: the covered fighting gallery a keep
+    # under threat gets, and the one thing that breaks the parapet's straight
+    # top line.
+    #
+    # It stands ON the wall-walk, at the same height a man on the parapet
+    # stands. Hung from the top of the merlons instead -- which is where the
+    # first attempt put it, by measuring from the parapet's cap rather than its
+    # base -- it reads as an awning floating clear of the wall, with daylight
+    # under it and its posts propped on nothing.
+    walk_z = body_h + 0.14
+    parts.append(geom.box("keep_hoard_floor", (-0.34, 0.52, walk_z - 0.07),
+                          (0.40, 1.96, 0.09), timber))
+    # brackets carrying the floor out past the wall face
+    brac = geom._Batch()
+    for i in range(6):
+        py = 0.60 + i * 0.34
+        brac.rod((0.02, py, walk_z - 0.36), (-0.30, py, walk_z - 0.07), 0.035)
+    parts.append(brac.finish("keep_hoard_brackets", timber))
+    # posts, and a boarded outer wall with shooting gaps between the boards
+    posts = geom._Batch()
+    for i in range(6):
+        py = 0.60 + i * 0.34
+        posts.box((-0.30, py, walk_z), (0.08, 0.08, 0.62))
+    for k in range(4):
+        posts.box((-0.33, 0.52, walk_z + 0.06 + k * 0.14), (0.06, 1.96, 0.09))
+    parts.append(posts.finish("keep_hoard_wall", timber))
+    parts += geom.shingle_roof("keep_hoard", (-0.36, 0.50, walk_z + 0.62),
+                               (0.46, 2.00, 0.24), M.shingle_wood("KeepHoardRoof"),
+                               overhang=0.09, course=0.11, ridge_mat=timber)
 
     # banner pole at the +X/-Y corner -- tall enough to break the silhouette
     parts.append(geom.box("keep_pole", (2.84, 0.10, body_h + 0.14), (0.07, 0.07, 1.35), timber))
@@ -63,21 +117,36 @@ def keep():
 
 
 def hovel():
-    """Peasant housing: 2x2, daub walls, heavy thatch, lopsided on purpose."""
-    wall = M.plaster(tint=(0.80, 0.73, 0.60))
+    """Peasant housing: 2x2, half-timbered daub walls under heavy thatch."""
+    wall = M.plaster(tint=(0.93, 0.90, 0.82))
     roof = M.thatch()
     timber = M.timber(dark=True)
+    light = M.timber()
+    stone = M.rough_stone()
     dark = M.iron()
 
+    x, y, w, d, h = 0.18, 0.20, 1.62, 1.44, 0.78
     parts = []
-    parts.append(geom.box("hovel_body", (0.18, 0.20, 0.0), (1.62, 1.44, 0.74), wall))
-    parts.append(geom.gable("hovel_roof", (0.18, 0.20, 0.74), (1.62, 1.44, 0.62),
-                            roof, overhang=0.16))
-    parts.append(geom.arch_doorway("hovel_door", (0.78, 0.14, 0.0), 0.40, 0.56, 0.08, dark))
 
-    # corner posts
-    for (px, py) in ((0.14, 0.16), (1.76, 0.16), (0.14, 1.60), (1.76, 1.60)):
-        parts.append(geom.box("hovel_post", (px, py, 0.0), (0.09, 0.09, 0.78), timber))
+    parts += geom.stone_footing("hovel", (x, y, 0.0), (w, d, h), stone,
+                                height=0.13, block=0.24)
+    parts += geom.timber_frame("hovel", (x, y, 0.0), (w, d, h), wall, timber,
+                               bay=0.52, mid_rail=False)
+    parts += geom.thatch_roof("hovel", (x, y, h), (w, d, 0.84), roof,
+                              overhang=0.26, depth=0.11, binder_mat=timber)
+
+    parts.append(geom.arch_doorway("hovel_door", (x + 0.60, y - 0.08, 0.0),
+                                   0.40, 0.56, 0.12, dark))
+    parts += geom.shuttered_window("hovel_win", (x + 1.16, y - 0.06, 0.38),
+                                   0.22, 0.20, dark, timber, shutters=False)
+
+    # A water butt by the door and firewood stacked under the eaves: the
+    # smallest signs that somebody lives here, and at this zoom they are the
+    # difference between a house and a shape.
+    parts += geom.barrel("hovel_butt", (x + 0.30, y - 0.18, 0.0), 0.115, 0.30,
+                         light, dark)
+    parts += geom.log_stack("hovel_wood", (x + w + 0.03, y + 0.32, 0.0), 6,
+                            0.60, 0.055, light, along='y')
 
     return geom.join(parts, "hovel"), (2, 2)
 
@@ -86,33 +155,28 @@ def woodcutter():
     """Woodcutter's hut: 2x2 open-fronted timber shed with a log pile."""
     timber_l = M.timber()
     timber_d = M.timber(dark=True)
-    roof = M.thatch()
-    wall = M.plaster(tint=(0.74, 0.67, 0.55))
+    roof = M.shingle_wood()
+    wall = M.plaster(tint=(0.90, 0.86, 0.76))
+    stone = M.rough_stone()
 
+    x, y, w, d, h = 0.20, 0.26, 1.60, 1.16, 0.88
     parts = []
-    parts.append(geom.box("wc_back", (0.20, 1.10, 0.0), (1.55, 0.16, 0.92), wall))
-    parts.append(geom.box("wc_side_l", (0.20, 0.30, 0.0), (0.14, 0.82, 0.80), wall))
-    parts.append(geom.box("wc_side_r", (1.61, 0.30, 0.0), (0.14, 0.82, 0.80), wall))
-    parts.append(geom.gable("wc_roof", (0.14, 0.22, 0.86), (1.68, 1.12, 0.46),
-                            roof, overhang=0.18))
+    parts += geom.stone_footing("wc", (x, y, 0.0), (w, d, h), stone, height=0.11)
+    # Three walls and an open working front: the shed is where the sawing
+    # happens and the player should be able to see into it.
+    parts += geom.timber_frame("wc", (x, y, 0.0), (w, d, h), wall, timber_d,
+                               bay=0.50, wall=0.15, sides=('+y', '-x', '+x'))
+    parts += geom.shingle_roof("wc", (x, y, h), (w, d, 0.52), roof,
+                               overhang=0.20, ridge_mat=timber_d)
+    parts += geom.rafters("wc", (x, y, 0.0), (w, d, h), timber_d, overhang=0.20)
 
-    # front posts holding the roof over the open working side
-    parts.append(geom.box("wc_post_l", (0.24, 0.26, 0.0), (0.10, 0.10, 0.88), timber_d))
-    parts.append(geom.box("wc_post_r", (1.66, 0.26, 0.0), (0.10, 0.10, 0.88), timber_d))
-
-    # sawn logs stacked beside the hut
-    for row in range(3):
-        for col in range(3 - row):
-            x = 0.30 + col * 0.20 + row * 0.10
-            z = row * 0.17
-            parts.append(geom.cylinder(f"wc_log_{row}_{col}", (x, 0.52, z + 0.09),
-                                       0.085, 0.72, timber_l, segments=10))
-    # rotate the log pile to lie along +Y
-    for o in parts[-6:]:
-        o.rotation_euler = (math.pi / 2.0, 0.0, 0.0)
-
-    # chopping block
-    parts.append(geom.cylinder("wc_block", (1.45, 0.55, 0.0), 0.16, 0.26, timber_l, segments=12))
+    # sawn logs stacked beside the hut, and the chopping block
+    parts += geom.log_stack("wc_logs", (0.24, 0.46, 0.0), 6, 0.70, 0.085,
+                            timber_l, along='y')
+    parts.append(geom.cylinder("wc_block", (1.48, 0.52, 0.0), 0.16, 0.26,
+                               timber_l, segments=12))
+    parts += geom.log_stack("wc_offcut", (1.30, 1.52, 0.0), 3, 0.42, 0.055,
+                            timber_l, along='x')
     return geom.join(parts, "woodcutter"), (2, 2)
 
 
@@ -124,18 +188,35 @@ def stockpile():
 
     parts = []
     parts.append(geom.box("sp_deck", (0.0, 0.0, 0.0), (3.0, 3.0, 0.10), flag))
+    # A kerb round the paving, so the yard has an edge instead of ending
+    # wherever the terrain happens to be.
+    kerb = geom._Batch()
+    for (kx, ky, kw, kd) in ((0.0, 0.0, 3.0, 0.10), (0.0, 2.90, 3.0, 0.10),
+                             (0.0, 0.10, 0.10, 2.80), (2.90, 0.10, 0.10, 2.80)):
+        kerb.box((kx, ky, 0.10), (kw, kd, 0.06))
+    parts.append(kerb.finish("sp_kerb", M.rough_stone("StockpileKerb")))
 
-    # stacked planks
-    for i in range(4):
-        parts.append(geom.box(f"sp_plank_{i}", (0.25, 0.30, 0.10 + i * 0.075),
-                              (1.05, 0.62, 0.07), timber_l))
-    # stone blocks
-    for i, (bx, by) in enumerate(((1.75, 0.35), (2.30, 0.35), (1.75, 0.92))):
-        parts.append(geom.box(f"sp_stone_{i}", (bx, by, 0.10), (0.48, 0.48, 0.34), flag))
-    # iron bars
-    for i in range(3):
-        parts.append(geom.box(f"sp_iron_{i}", (0.35, 1.85 + i * 0.16, 0.10),
-                              (0.90, 0.13, 0.11), iron))
+    # sawn planks, stacked and slightly out of true
+    planks = geom._Batch()
+    rnd = geom.rng_for("stockpile_planks")
+    for i in range(5):
+        planks.box((0.25 + (rnd.random() - 0.5) * 0.05, 0.30, 0.16 + i * 0.072),
+                   (1.05, 0.62, 0.065))
+    parts.append(planks.finish("sp_planks", timber_l))
+    # dressed stone blocks, courses offset
+    for i, (bx, by, bz) in enumerate(((1.75, 0.35, 0.16), (2.30, 0.35, 0.16),
+                                      (1.75, 0.92, 0.16), (1.98, 0.52, 0.50))):
+        parts.append(geom.box(f"sp_stone_{i}", (bx, by, bz), (0.48, 0.48, 0.34), flag))
+    # iron bars, round bar stock rather than flat slabs
+    bars = geom._Batch()
+    for row in range(3):
+        for col in range(4 - row):
+            bars.rod((0.35 + row * 0.06 + col * 0.115, 1.85, 0.19 + row * 0.10),
+                     (0.35 + row * 0.06 + col * 0.115, 2.72, 0.19 + row * 0.10),
+                     0.055, segments=6)
+    parts.append(bars.finish("sp_iron", iron))
+    parts += geom.barrel("sp_barrel", (2.42, 2.30, 0.16), 0.16, 0.36, timber_l, iron)
+    parts += geom.crate("sp_crate", (2.28, 1.62, 0.16), (0.42, 0.38, 0.32), timber_l)
     return geom.join(parts, "stockpile"), (3, 3)
 
 
@@ -169,16 +250,59 @@ REGISTRY = {
 # ---------------------------------------------------------------------------
 
 def _ox(name_prefix, origin, mat_hide, mat_dark, rot_z=0.0):
-    """A draught ox. Crude, but at 60px the silhouette is all that survives."""
+    """
+    A draught ox.
+
+    Used to be two boxes and four sticks, on the reasoning that at sixty pixels
+    the silhouette is all that survives. At the zoom the game now reaches it is
+    nearer a hundred and forty, and a cow made of cuboids is the most obviously
+    unfinished thing in a farmyard -- the eye forgives a blocky building far
+    more readily than a blocky animal. So: a barrel body that tapers to the
+    shoulder, a dropped head, horns and a tail.
+    """
     ox, oy = origin
-    parts = [
-        geom.box(f"{name_prefix}_body", (ox, oy, 0.20), (0.62, 0.28, 0.26), mat_hide, rot_z=rot_z),
-        geom.box(f"{name_prefix}_head", (ox + 0.58, oy + 0.04, 0.24), (0.20, 0.20, 0.18), mat_hide, rot_z=rot_z),
-    ]
-    for i, (lx, ly) in enumerate(((0.06, 0.03), (0.06, 0.22), (0.48, 0.03), (0.48, 0.22))):
-        parts.append(geom.box(f"{name_prefix}_leg{i}", (ox + lx, oy + ly, 0.0),
-                              (0.06, 0.06, 0.22), mat_dark, rot_z=rot_z))
-    return parts
+    b = geom.rng_for(name_prefix)
+    body = geom._Batch()
+    # Built around the LOCAL origin and placed by finish(), never at absolute
+    # coordinates. `rot_z` turns an object about its own origin, so geometry
+    # baked at world coordinates gets swung around the map origin instead of
+    # about the animal -- which put the dairy's cow on the byre roof.
+    # barrel of the body, four tapering rings along its length
+    rings = ((0.00, 0.115), (0.22, 0.150), (0.62, 0.146), (0.86, 0.112),
+             (1.00, 0.085))
+    seg, prev = 8, None
+    for (t, r) in rings:
+        n0 = len(body.verts)
+        for i in range(seg):
+            a = (i / seg) * math.tau
+            body.verts.append((0.06 + t * 0.56,
+                               0.14 + math.cos(a) * r,
+                               0.34 + math.sin(a) * r * 0.92))
+        if prev is not None:
+            for i in range(seg):
+                j = (i + 1) % seg
+                body.faces.append((prev + i, prev + j, n0 + j, n0 + i))
+        prev = n0
+    body.faces.append(tuple(range(seg - 1, -1, -1)))
+    body.faces.append(tuple(range(prev, prev + seg)))
+    # neck and head, dipped toward the grass
+    body.slab((0.58, 0.05, 0.30), (0.16, 0.0, -0.05),
+              (0.0, 0.18, 0.0), (0.0, 0.0, 0.17))
+    body.slab((0.72, 0.06, 0.20), (0.15, 0.0, -0.02),
+              (0.0, 0.16, 0.0), (0.0, 0.0, 0.14))
+    at = (ox, oy, 0.0)
+    parts = [body.finish(f"{name_prefix}_body", mat_hide, at, rot_z)]
+
+    dark = geom._Batch()
+    for (lx, ly) in ((0.10, 0.02), (0.10, 0.20), (0.52, 0.02), (0.52, 0.20)):
+        j = 0.20 + b.random() * 0.04
+        dark.rod((lx, ly + 0.03, j), (lx + 0.015, ly + 0.03, 0.0), 0.030, segments=6)
+    # horns and tail
+    dark.rod((0.84, 0.07, 0.32), (0.90, -0.01, 0.38), 0.017, segments=5)
+    dark.rod((0.84, 0.20, 0.32), (0.90, 0.28, 0.38), 0.017, segments=5)
+    dark.rod((0.06, 0.14, 0.40), (-0.03, 0.14, 0.14), 0.016, segments=5)
+    parts.append(dark.finish(f"{name_prefix}_dark", mat_dark, at, rot_z))
+    return [p for p in parts if p is not None]
 
 
 def quarry():
@@ -215,16 +339,21 @@ def quarry():
 
 def ox_tether():
     """Ox and sledge: the stone haulier. 2x2."""
-    hide = M.plaster("OxHide", tint=(0.42, 0.30, 0.20))
+    hide = M.plaster("OxHide", tint=(0.36, 0.22, 0.13))
     dark = M.timber(dark=True)
     timber = M.timber()
     stone = M.castle_stone()
 
-    parts = [geom.box("ot_post", (1.55, 0.90, 0.0), (0.10, 0.10, 0.70), dark)]
-    parts += _ox("ot_ox", (0.55, 0.80), hide, dark)
-    # sledge with a block on it
-    parts.append(geom.box("ot_sledge", (0.20, 0.70, 0.0), (0.62, 0.50, 0.09), timber))
-    parts.append(geom.box("ot_load", (0.28, 0.76, 0.09), (0.46, 0.38, 0.28), stone))
+    # The ox stands IN FRONT of the sledge, not on top of it. It used to be
+    # placed inside the sledge's own footprint, which at the old zoom passed as
+    # a vague brown mass and now reads as an animal sunk into its cargo.
+    parts = [geom.box("ot_post", (1.72, 0.98, 0.0), (0.10, 0.10, 0.70), dark)]
+    parts += _ox("ot_ox", (0.86, 0.72), hide, dark)
+    # sledge with a block on it, and the traces running up to the yoke
+    parts.append(geom.box("ot_sledge", (0.12, 0.66, 0.0), (0.62, 0.50, 0.09), timber))
+    parts.append(geom.box("ot_load", (0.20, 0.72, 0.09), (0.46, 0.38, 0.28), stone))
+    for ty in (0.78, 0.98):
+        parts.append(geom.box(f"ot_trace_{ty}", (0.72, ty, 0.24), (0.20, 0.035, 0.035), dark))
     return geom.join(parts, "ox_tether"), (2, 2)
 
 
@@ -286,18 +415,50 @@ def market():
     parts = []
     for (px, py) in ((0.25, 0.25), (2.55, 0.25), (0.25, 2.35), (2.55, 2.35)):
         parts.append(geom.box(f"mk_post_{px}_{py}", (px, py, 0.0), (0.09, 0.09, 1.15), dark))
-    parts.append(geom.box("mk_awning", (0.15, 0.15, 1.12), (2.60, 2.35, 0.07), canvas))
-    for i in range(4):
-        parts.append(geom.box(f"mk_stripe_{i}", (0.15 + i * 0.66, 0.15, 1.19),
-                              (0.30, 2.35, 0.03), stripe))
 
-    parts.append(geom.box("mk_trestle", (0.40, 0.45, 0.0), (2.20, 0.70, 0.52), timber))
-    # goods on the trestle
-    for i in range(6):
-        parts.append(geom.box(f"mk_goods_{i}", (0.52 + i * 0.34, 0.55, 0.52),
-                              (0.24, 0.46, 0.16), timber if i % 2 else canvas))
+    # A ridged, striped awning rather than a flat lid. A stall roof is cloth
+    # thrown over a ridge pole; a horizontal slab reads as a table on stilts,
+    # which is what this looked like once there were enough pixels to tell.
+    #
+    # The stripes run ACROSS the slope, alternating panel by panel. Colouring
+    # one whole slope red and the other cream instead -- which is what falls
+    # out of building each side as a single batch -- makes a two-tone tent, not
+    # a market stall.
+    parts.append(geom.box("mk_ridge", (0.18, 1.26, 1.46), (2.54, 0.08, 0.08), dark))
+    panels = {0: geom._Batch(), 1: geom._Batch()}
+    n = 10
+    for side in (-1, 1):
+        y_ridge = 1.30
+        y_eave = 2.26 if side > 0 else 0.34
+        for i in range(n):
+            x = 0.18 + (2.54 * i) / n
+            dip = 0.07 * math.sin(((i + 0.5) / n) * math.pi)
+            panels[i % 2].slab(
+                (x, y_ridge, 1.46 - dip),
+                (2.54 / n, 0.0, 0.0),
+                (0.0, y_eave - y_ridge, 1.06 - (1.46 - dip)),
+                (0.0, 0.0, 0.045))
+    parts.append(panels[0].finish("mk_awning_a", canvas))
+    parts.append(panels[1].finish("mk_awning_b", stripe))
+
+    parts.append(geom.box("mk_trestle", (0.40, 0.45, 0.44), (2.20, 0.70, 0.08), timber))
+    for (lx, ly) in ((0.44, 0.48), (2.52, 0.48), (0.44, 1.08), (2.52, 1.08)):
+        parts.append(geom.box(f"mk_leg_{lx}_{ly}", (lx, ly, 0.0), (0.08, 0.08, 0.44), dark))
+    # goods on the trestle: crates, sacks and a barrel rather than six identical
+    # blocks in a row
+    parts += geom.crate("mk_crate_a", (0.52, 0.56, 0.52), (0.32, 0.28, 0.24), timber)
+    parts += geom.crate("mk_crate_b", (0.90, 0.60, 0.52), (0.26, 0.24, 0.20), timber)
+    parts += geom.crate("mk_crate_c", (0.55, 0.58, 0.76), (0.24, 0.22, 0.18), timber)
+    parts += geom.barrel("mk_barrel", (1.42, 0.72, 0.52), 0.13, 0.30, timber, iron)
+    for i in range(3):
+        parts.append(geom.box(f"mk_sack_{i}", (1.75 + i * 0.26, 0.58 + (i % 2) * 0.18, 0.52),
+                              (0.22, 0.20, 0.22), canvas, rot_z=0.25 * i))
     parts.append(geom.box("mk_scale_post", (2.30, 1.60, 0.0), (0.06, 0.06, 0.85), iron))
     parts.append(geom.box("mk_scale_beam", (2.05, 1.62, 0.82), (0.56, 0.04, 0.04), iron))
+    for px in (2.08, 2.58):
+        parts.append(geom.box(f"mk_pan_{px}", (px, 1.55, 0.60), (0.16, 0.16, 0.03), iron))
+        parts.append(geom.box(f"mk_chain_{px}", (px + 0.075, 1.62, 0.63),
+                              (0.012, 0.012, 0.20), iron))
     return geom.join(parts, "market"), (3, 3)
 
 
@@ -306,22 +467,47 @@ def granary():
     stone = M.castle_stone()
     roof = M.thatch()
     dark = M.timber(dark=True)
+    plaster = M.plaster(tint=(0.92, 0.89, 0.81))
     sack = M.cloth("Sack", colour=(0.66, 0.58, 0.40))
 
+    shingle = M.shingle_wood()
+    x, y, w, d, h = 0.10, 0.25, 2.80, 2.30, 1.05
+
     parts = []
-    parts.append(geom.box("gr_body", (0.10, 0.25, 0.0), (2.80, 2.30, 1.05), stone))
-    parts.append(geom.gable("gr_roof", (0.10, 0.25, 1.05), (2.80, 2.30, 0.72),
-                            roof, overhang=0.20))
-    parts.append(geom.arch_doorway("gr_door", (1.15, 0.18, 0.0), 0.78, 0.82, 0.10, dark))
+    parts.append(geom.box("gr_plinth", (x - 0.07, y - 0.07, 0.0),
+                          (w + 0.14, d + 0.14, 0.13), stone))
+    parts.append(geom.box("gr_body", (x, y, 0.11), (w, d, h), stone))
+    # Timber upper storey over the stone base -- the reference granary is a
+    # stone ground floor carrying a jettied timber loft, and the change of
+    # material halfway up is most of what makes it read as a big building
+    # rather than a big box.
+    parts += geom.timber_frame("gr_loft", (x - 0.06, y - 0.06, h + 0.11),
+                               (w + 0.12, d + 0.12, 0.46), plaster, dark,
+                               bay=0.62, mid_rail=False)
+    parts += geom.shingle_roof("gr", (x - 0.06, y - 0.06, h + 0.57),
+                               (w + 0.12, d + 0.12, 0.74), shingle,
+                               overhang=0.22, ridge_mat=dark)
+    parts += geom.rafters("gr", (x - 0.06, y - 0.06, h + 0.57),
+                          (w + 0.12, d + 0.12, 0.0), dark, overhang=0.22)
+
+    parts.append(geom.arch_doorway("gr_door", (1.15, y - 0.10, 0.11),
+                                   0.78, 0.82, 0.14, dark))
+    # loading hatch and hoist beam in the gable
+    parts.append(geom.box("gr_hoist", (1.38, y - 0.42, h + 0.44),
+                          (0.10, 0.52, 0.10), dark))
+    parts += geom.shuttered_window("gr_hatch", (1.24, y - 0.08, h + 0.16),
+                                   0.38, 0.30, dark, dark)
     for i, (sx, sy) in enumerate(((0.30, 0.05), (0.62, 0.02), (2.45, 0.06))):
         parts.append(geom.box(f"gr_sack_{i}", (sx, sy, 0.0), (0.26, 0.22, 0.28), sack,
                               rot_z=0.3 * i))
+    parts += geom.barrel("gr_barrel", (2.62, 0.42, 0.0), 0.13, 0.34,
+                         M.timber(), M.iron())
     return geom.join(parts, "granary"), (3, 3)
 
 
 def wheat_farm():
     """Farmstead: cottage plus a ploughed strip of field."""
-    wall = M.plaster(tint=(0.78, 0.71, 0.57))
+    wall = M.plaster(tint=(0.92, 0.89, 0.80))
     roof = M.thatch()
     dark = M.timber(dark=True)
     soil = M.plaster("Furrow", tint=(0.40, 0.30, 0.20))
@@ -330,17 +516,22 @@ def wheat_farm():
     M._set(bsdf, "Roughness", 0.9)
 
     parts = []
-    parts.append(geom.box("wf_body", (0.20, 1.85, 0.0), (1.65, 1.00, 0.72), wall))
-    parts.append(geom.gable("wf_roof", (0.20, 1.85, 0.72), (1.65, 1.00, 0.55),
-                            roof, overhang=0.16))
-    parts.append(geom.arch_doorway("wf_door", (0.85, 1.78, 0.0), 0.38, 0.52, 0.09, dark))
+    parts += geom.stone_footing("wf", (0.20, 1.85, 0.0), (1.65, 1.00, 0.76),
+                                M.rough_stone(), height=0.11)
+    parts += geom.timber_frame("wf", (0.20, 1.85, 0.0), (1.65, 1.00, 0.76),
+                               wall, dark, bay=0.54, mid_rail=False)
+    parts += geom.thatch_roof("wf", (0.20, 1.85, 0.76), (1.65, 1.00, 0.66),
+                              roof, overhang=0.22, binder_mat=dark)
+    parts.append(geom.arch_doorway("wf_door", (0.85, 1.78, 0.0), 0.38, 0.52, 0.11, dark))
+    parts += geom.log_stack("wf_sheaves", (1.95, 1.92, 0.0), 3, 0.72, 0.09,
+                            M.thatch(), along='y')
 
-    # field furrows in front
+    # field furrows in front, planted with real stalks
     for i in range(6):
         parts.append(geom.box(f"wf_furrow_{i}", (0.15, 0.20 + i * 0.26, 0.0),
                               (2.70, 0.17, 0.05), soil))
-        parts.append(geom.box(f"wf_crop_{i}", (0.18, 0.24 + i * 0.26, 0.05),
-                              (2.62, 0.10, 0.20), crop))
+    parts += geom.stalks("wf_crop", (0.18, 0.22, 0.04), (2.62, 1.52, 0.0), crop,
+                         rows=6, spacing=0.075, height=0.26)
     return geom.join(parts, "wheat_farm"), (3, 3)
 
 
@@ -351,60 +542,134 @@ def mill():
     sail = M.cloth("Sail", colour=(0.76, 0.72, 0.60))
     cap = M.thatch()
 
+    shingle = M.shingle_wood("MillCap")
     parts = []
+    parts.append(geom.cylinder("ml_batter", (1.5, 1.5, 0.0), 0.80, 0.18,
+                               M.rough_stone("MillFooting"), segments=14))
     parts.append(geom.cylinder("ml_tower", (1.5, 1.5, 0.0), 0.72, 1.75, stone, segments=14))
-    parts.append(geom.cone("ml_cap", (1.5, 1.5, 1.75), 0.80, 0.55, cap, segments=14))
-    parts.append(geom.arch_doorway("ml_door", (1.28, 0.74, 0.0), 0.44, 0.62, 0.10, timber))
+    # A stage running round the tower at the height a miller reaches the sails
+    # from, on brackets. The tower was a plain drum of ashlar nearly two tiles
+    # tall, which at this zoom is a silo.
+    parts.append(geom.cylinder("ml_stage", (1.5, 1.5, 0.86), 0.94, 0.045, timber,
+                               segments=16))
+    # Brackets under the stage and a post-and-rail round it. The rail is rods,
+    # not a second disc: a solid ring at head height turned the mill into a
+    # lighthouse with two brims.
+    rail = geom._Batch()
+    for i in range(14):
+        a = (i / 14) * math.tau
+        px, py = 1.5 + math.cos(a) * 0.70, 1.5 + math.sin(a) * 0.70
+        qx, qy = 1.5 + math.cos(a) * 0.92, 1.5 + math.sin(a) * 0.92
+        rail.rod((px, py, 0.58), (qx, qy, 0.86), 0.028)
+        rail.rod((qx, qy, 0.90), (qx, qy, 1.18), 0.024)
+        b = ((i + 1) / 14) * math.tau
+        rx, ry = 1.5 + math.cos(b) * 0.90, 1.5 + math.sin(b) * 0.90
+        rail.rod((qx, qy, 1.15), (rx, ry, 1.15), 0.020)
+    parts.append(rail.finish("ml_stage_rail", timber))
+    # A shingled conical cap. Built as one cone with thin course rings laid on
+    # it, NOT as a stack of cylinders -- stacked cylinders of falling radius are
+    # a beehive, or a pile of pancakes, and that is exactly how the first
+    # attempt read at a hundred and fifty pixels across.
+    parts.append(geom.cone("ml_cap", (1.5, 1.5, 1.75), 0.82, 0.62, shingle, segments=16))
+    courses = geom._Batch()
+    for r in range(4):
+        t = (r + 0.5) / 5.0
+        rr = 0.82 * (1.0 - t) + 0.012
+        courses.rod((1.5, 1.5, 1.75 + t * 0.62), (1.5, 1.5, 1.75 + t * 0.62 + 0.025),
+                    rr, segments=16)
+    parts.append(courses.finish("ml_courses", shingle))
+    parts.append(geom.cone("ml_finial", (1.5, 1.5, 2.35), 0.09, 0.16, cap, segments=10))
+    parts += geom.plank_door("ml_door", (1.28, 0.72, 0.0), 0.46, 0.64, timber, M.iron())
+    for (wx, wy) in ((1.34, 0.80), (1.34, 2.14)):
+        parts += geom.shuttered_window("ml_win", (wx, wy - 0.06, 1.28), 0.26, 0.26,
+                                       M.iron(), timber)
 
     # Sails on the -Y face. The shaft points along -Y, so the arms live in the
     # XZ plane and must rotate about Y. The first version made them long in X
     # and rotated about X, which just spun each sail about its own axis and
     # rendered as a couple of stray sticks.
-    hub = (1.5, 0.62, 1.45)
-    parts.append(geom.box("ml_shaft", (1.46, 0.50, 1.41), (0.08, 0.26, 0.08), timber))
+    #
+    # The blades are open lattice now rather than solid boards: a common sail is
+    # a frame of spars that cloth is spread over, and at this size the gaps
+    # between the bars are what make it a windmill rather than four paddles.
+    hub = (1.5, 0.62, 1.60)
+    parts.append(geom.box("ml_shaft", (1.46, 0.50, 1.56), (0.08, 0.30, 0.08), timber))
     for i in range(4):
         a = (i / 4) * math.tau + math.pi / 4
-        arm = geom.box(f"ml_arm_{i}", hub, (0.055, 0.05, 1.00), timber)
+        arm = geom.box(f"ml_arm_{i}", hub, (0.055, 0.05, 1.10), timber)
         arm.rotation_euler = (0.0, a, 0.0)
         parts.append(arm)
-        blade = geom.box(f"ml_sail_{i}", (hub[0] - 0.005, hub[1] - 0.012, hub[2] + 0.30),
-                         (0.20, 0.03, 0.62), sail)
-        blade.rotation_euler = (0.0, a, 0.0)
-        parts.append(blade)
+
+        lat = geom._Batch()
+        # whip along the blade, with bars crossing it and cloth on one side
+        for k in range(7):
+            z = 0.34 + k * 0.105
+            lat.box((-0.115, -0.012, z), (0.24, 0.024, 0.022))
+        lat.box((-0.115, -0.012, 0.30), (0.030, 0.024, 0.78))
+        lat.box((0.095, -0.012, 0.30), (0.030, 0.024, 0.78))
+        frame = lat.finish(f"ml_lattice_{i}", timber,
+                           (hub[0], hub[1], hub[2]))
+        frame.rotation_euler = (0.0, a, 0.0)
+        parts.append(frame)
+
+        cloth = geom.box(f"ml_sail_{i}", (hub[0] - 0.112, hub[1] - 0.030, hub[2] + 0.32),
+                         (0.11, 0.016, 0.52), sail)
+        cloth.rotation_euler = (0.0, a, 0.0)
+        parts.append(cloth)
     return geom.join(parts, "mill"), (3, 3)
 
 
 def bakery():
     """Bakery: oven dome and chimney against a plastered workshop."""
-    wall = M.plaster(tint=(0.80, 0.73, 0.58))
-    roof = M.thatch()
+    wall = M.plaster(tint=(0.93, 0.90, 0.82))
     brick = M.castle_stone()
     dark = M.timber(dark=True)
 
+    shingle = M.shingle_wood()
+    x, y, w, d, h = 0.20, 0.30, 1.55, 1.40, 0.86
+
     parts = []
-    parts.append(geom.box("bk_body", (0.20, 0.30, 0.0), (1.55, 1.40, 0.80), wall))
-    parts.append(geom.gable("bk_roof", (0.20, 0.30, 0.80), (1.55, 1.40, 0.55),
-                            roof, overhang=0.16))
-    parts.append(geom.arch_doorway("bk_door", (0.82, 0.24, 0.0), 0.40, 0.56, 0.09, dark))
+    # A flagged apron: every workshop in the reference stands on paving, and it
+    # is what stops the building looking dropped onto the grass.
+    parts.append(geom.box("bk_apron", (x - 0.14, y - 0.16, 0.0),
+                          (w + 0.30, d + 0.30, 0.045), M.flagstone("BakeryApron")))
+    parts += geom.stone_footing("bk", (x, y, 0.045), (w, d, h),
+                                M.rough_stone(), height=0.12)
+    parts += geom.timber_frame("bk", (x, y, 0.045), (w, d, h), wall, dark,
+                               bay=0.52)
+    parts += geom.shingle_roof("bk", (x, y, h + 0.045), (w, d, 0.60), shingle,
+                               overhang=0.20, ridge_mat=dark)
+    parts += geom.rafters("bk", (x, y, 0.045), (w, d, h), dark, overhang=0.20)
+
+    parts += geom.plank_door("bk_door", (x + 0.60, y - 0.07, 0.045),
+                             0.42, 0.60, M.timber(), dark)
+    parts += geom.shuttered_window("bk_win", (x + 1.10, y - 0.06, 0.42),
+                                   0.30, 0.26, M.iron(), dark)
     # oven bulge and chimney
-    parts.append(geom.cylinder("bk_oven", (1.78, 1.00, 0.0), 0.34, 0.62, brick, segments=12))
-    parts.append(geom.cone("bk_ovencap", (1.78, 1.00, 0.62), 0.36, 0.26, brick, segments=12))
-    parts.append(geom.box("bk_chimney", (1.68, 0.94, 0.80), (0.20, 0.20, 0.62), brick))
+    parts.append(geom.cylinder("bk_oven", (1.80, 1.00, 0.0), 0.34, 0.62, brick, segments=12))
+    parts.append(geom.cone("bk_ovencap", (1.80, 1.00, 0.62), 0.36, 0.26, brick, segments=12))
+    parts.append(geom.box("bk_chimney", (1.70, 0.94, 0.86), (0.20, 0.20, 0.68), brick))
+    parts.append(geom.box("bk_chimcap", (1.65, 0.89, 1.54), (0.30, 0.30, 0.07), brick))
+    parts += geom.log_stack("bk_wood", (0.24, 1.56, 0.0), 6, 0.58, 0.055,
+                            M.timber(), along='x')
     return geom.join(parts, "bakery"), (2, 2)
 
 
 def apple_orchard():
     """Orchard: keeper's hut with fruit trees in rows."""
-    wall = M.plaster(tint=(0.76, 0.69, 0.55))
+    wall = M.plaster(tint=(0.92, 0.89, 0.80))
     roof = M.thatch()
     bark = M.timber(dark=True)
     leaf = M.ground_grass(dark=False)
     fruit = M.cloth("Apple", colour=(0.58, 0.14, 0.10))
 
     parts = []
-    parts.append(geom.box("ao_hut", (0.20, 2.05, 0.0), (1.10, 0.80, 0.62), wall))
-    parts.append(geom.gable("ao_roof", (0.20, 2.05, 0.62), (1.10, 0.80, 0.42),
-                            roof, overhang=0.14))
+    parts += geom.timber_frame("ao", (0.20, 2.05, 0.0), (1.10, 0.80, 0.66),
+                               wall, bark, bay=0.46, mid_rail=False)
+    parts += geom.thatch_roof("ao", (0.20, 2.05, 0.66), (1.10, 0.80, 0.52),
+                              roof, overhang=0.18, binder_mat=bark)
+    parts += geom.crate("ao_crate", (1.44, 2.16, 0.0), (0.34, 0.30, 0.26),
+                        M.timber())
     for i, (tx, ty) in enumerate(((0.70, 0.55), (1.75, 0.60), (0.75, 1.35),
                                   (1.80, 1.40), (2.45, 0.95))):
         parts.append(geom.box(f"ao_trunk_{i}", (tx, ty, 0.0), (0.10, 0.10, 0.42), bark))
@@ -425,17 +690,21 @@ def apple_orchard():
 
 def dairy_farm():
     """Dairy: byre, fenced paddock and a cow."""
-    wall = M.plaster(tint=(0.79, 0.72, 0.57))
+    wall = M.plaster(tint=(0.92, 0.89, 0.81))
     roof = M.thatch()
     rail = M.timber()
     dark = M.timber(dark=True)
     hide = M.plaster("CowHide", tint=(0.72, 0.68, 0.60))
 
     parts = []
-    parts.append(geom.box("df_byre", (0.20, 1.95, 0.0), (1.45, 0.90, 0.68), wall))
-    parts.append(geom.gable("df_roof", (0.20, 1.95, 0.68), (1.45, 0.90, 0.48),
-                            roof, overhang=0.15))
-    parts.append(geom.arch_doorway("df_door", (0.78, 1.88, 0.0), 0.38, 0.50, 0.09, dark))
+    parts += geom.stone_footing("df", (0.20, 1.95, 0.0), (1.45, 0.90, 0.72),
+                                M.rough_stone(), height=0.10)
+    parts += geom.timber_frame("df", (0.20, 1.95, 0.0), (1.45, 0.90, 0.72),
+                               wall, dark, bay=0.48, mid_rail=False)
+    parts += geom.thatch_roof("df", (0.20, 1.95, 0.72), (1.45, 0.90, 0.58),
+                              roof, overhang=0.20, binder_mat=dark)
+    parts.append(geom.arch_doorway("df_door", (0.78, 1.88, 0.0), 0.38, 0.50, 0.11, dark))
+    parts += geom.barrel("df_churn", (1.78, 2.02, 0.0), 0.11, 0.28, rail, dark)
 
     # paddock fence along the front and sides
     for i in range(7):
@@ -472,27 +741,46 @@ REGISTRY.update({
 
 def hops_farm():
     """Hop garden: cottage plus rows of climbing poles strung with vines."""
-    wall = M.plaster(tint=(0.78, 0.71, 0.57))
+    wall = M.plaster(tint=(0.92, 0.89, 0.80))
     roof = M.thatch()
     pole = M.timber(dark=True)
     dark = M.iron()
     vine = M.ground_grass(dark=False)
 
     parts = []
-    parts.append(geom.box("hf_body", (0.20, 1.95, 0.0), (1.40, 0.90, 0.70), wall))
-    parts.append(geom.gable("hf_roof", (0.20, 1.95, 0.70), (1.40, 0.90, 0.52),
-                            roof, overhang=0.15))
-    parts.append(geom.arch_doorway("hf_door", (0.78, 1.88, 0.0), 0.38, 0.50, 0.09, dark))
+    parts += geom.stone_footing("hf", (0.20, 1.95, 0.0), (1.40, 0.90, 0.74),
+                                M.rough_stone(), height=0.10)
+    parts += geom.timber_frame("hf", (0.20, 1.95, 0.0), (1.40, 0.90, 0.74),
+                               wall, pole, bay=0.48, mid_rail=False)
+    parts += geom.thatch_roof("hf", (0.20, 1.95, 0.74), (1.40, 0.90, 0.58),
+                              roof, overhang=0.20, binder_mat=pole)
+    parts.append(geom.arch_doorway("hf_door", (0.78, 1.88, 0.0), 0.38, 0.50, 0.11, dark))
 
-    # rows of hop poles with the vines grown up them
+    # Rows of hop poles with the bines grown up them.
+    #
+    # These were cones, and a cone of green on a stick is a fir tree -- the hop
+    # garden read as a plantation of small conifers. A bine is a climber: it
+    # spirals up the pole in a loose helix of leaf, so it is modelled as one.
+    poles = geom._Batch()
+    bines = geom._Batch()
+    rnd = geom.rng_for("hops_farm_bines")
     for row in range(3):
         for col in range(4):
             px = 0.30 + col * 0.62
             py = 0.28 + row * 0.52
-            parts.append(geom.box(f"hf_pole_{row}_{col}", (px, py, 0.0),
-                                  (0.05, 0.05, 1.05), pole))
-            parts.append(geom.cone(f"hf_vine_{row}_{col}", (px + 0.025, py + 0.025, 0.18),
-                                   0.15, 0.82, vine, segments=8))
+            poles.box((px, py, 0.0), (0.05, 0.05, 1.05))
+            turns, leaves = 2.4, 9
+            for i in range(leaves):
+                t = 0.10 + (i / leaves) * 0.86
+                a = t * turns * math.tau + rnd.random() * 0.4
+                r = 0.075 + (1.0 - t) * 0.045
+                lx = px + 0.025 + math.cos(a) * r
+                ly = py + 0.025 + math.sin(a) * r
+                sz = 0.075 * (0.7 + rnd.random() * 0.7)
+                bines.slab((lx - sz / 2, ly - sz / 2, 1.05 * t),
+                           (sz, 0.0, 0.0), (0.0, sz, 0.0), (0.0, 0.0, sz * 1.5))
+    parts.append(poles.finish("hf_poles", pole))
+    parts.append(bines.finish("hf_bines", vine))
     return geom.join(parts, "hops_farm"), (3, 3)
 
 
@@ -507,56 +795,82 @@ def brewery():
     M._set(bsdf, "Metallic", 0.75)
     M._set(bsdf, "Roughness", 0.42)
 
+    shingle = M.shingle_wood()
     parts = []
-    parts.append(geom.box("bw_body", (0.15, 0.85, 0.0), (1.85, 1.55, 1.00), stone))
-    parts.append(geom.gable("bw_roof", (0.15, 0.85, 1.00), (1.85, 1.55, 0.62),
-                            roof, overhang=0.18))
-    parts.append(geom.arch_doorway("bw_door", (0.85, 0.78, 0.0), 0.46, 0.66, 0.10, timber_d))
-    parts.append(geom.box("bw_chimney", (1.62, 1.30, 1.00), (0.24, 0.24, 0.70), stone))
+    parts.append(geom.box("bw_plinth", (0.09, 0.79, 0.0), (1.97, 1.67, 0.12), stone))
+    parts.append(geom.box("bw_body", (0.15, 0.85, 0.10), (1.85, 1.55, 1.00), stone))
+    parts += geom.shingle_roof("bw", (0.15, 0.85, 1.10), (1.85, 1.55, 0.66),
+                               shingle, overhang=0.20, ridge_mat=timber_d)
+    parts += geom.rafters("bw", (0.15, 0.85, 1.10), (1.85, 1.55, 0.0), timber_d,
+                          overhang=0.20)
+    parts += geom.plank_door("bw_door", (0.85, 0.77, 0.10), 0.48, 0.68,
+                             timber_l, M.iron())
+    parts += geom.shuttered_window("bw_win", (0.30, 0.78, 0.52), 0.28, 0.26,
+                                   M.iron(), timber_d)
+    parts.append(geom.box("bw_chimney", (1.62, 1.30, 1.10), (0.24, 0.24, 0.78), stone))
+    parts.append(geom.box("bw_chimcap", (1.56, 1.24, 1.88), (0.36, 0.36, 0.08), stone))
 
     # the copper vat under a little lean-to
     parts.append(geom.cylinder("bw_vat", (2.35, 1.55, 0.0), 0.30, 0.46, copper, segments=14))
     parts.append(geom.cone("bw_vat_cap", (2.35, 1.55, 0.46), 0.32, 0.18, copper, segments=14))
+    for sx, sy in ((2.05, 1.20), (2.68, 1.20), (2.05, 1.92), (2.68, 1.92)):
+        parts.append(geom.box(f"bw_leanpost_{sx}_{sy}", (sx, sy, 0.0),
+                              (0.07, 0.07, 0.86), timber_d))
+    parts += geom.shingle_roof("bw_lean", (2.00, 1.14, 0.86), (0.78, 0.86, 0.24),
+                               shingle, overhang=0.12, course=0.13,
+                               ridge_mat=timber_d)
 
-    # barrels waiting outside
+    # barrels waiting outside, properly coopered now rather than a cylinder
+    # with a flat plate stuck round its waist
     for i, (bx, by) in enumerate(((0.35, 0.30), (0.80, 0.26), (1.25, 0.32))):
-        b = geom.cylinder(f"bw_barrel_{i}", (bx, by, 0.0), 0.16, 0.34, timber_l, segments=10)
-        parts.append(b)
-        parts.append(geom.box(f"bw_hoop_{i}", (bx - 0.17, by - 0.17, 0.13),
-                              (0.34, 0.34, 0.04), timber_d))
+        parts += geom.barrel(f"bw_barrel_{i}", (bx, by, 0.0), 0.17, 0.36,
+                             timber_l, M.iron())
+    parts += geom.barrel("bw_barrel_up", (0.58, 0.62, 0.0), 0.17, 0.36,
+                         timber_l, M.iron())
     return geom.join(parts, "brewery"), (3, 3)
 
 
 def inn():
     """Inn: a long hall with a hanging sign, benches and a barrel by the door."""
-    wall = M.plaster(tint=(0.80, 0.73, 0.59))
+    wall = M.plaster(tint=(0.93, 0.90, 0.82))
     roof = M.thatch()
     timber_l = M.timber()
     timber_d = M.timber(dark=True)
     sign = M.cloth("InnSign", colour=(0.52, 0.16, 0.12))
 
     parts = []
-    parts.append(geom.box("in_body", (0.18, 0.95, 0.0), (2.60, 1.75, 1.05), wall))
-    parts.append(geom.gable("in_roof", (0.18, 0.95, 1.05), (2.60, 1.75, 0.70),
-                            roof, overhang=0.20))
-    parts.append(geom.arch_doorway("in_door", (1.30, 0.88, 0.0), 0.50, 0.72, 0.10, timber_d))
-
-    # half-timbered framing on the front wall
-    for i in range(5):
-        parts.append(geom.box(f"in_stud_{i}", (0.30 + i * 0.56, 0.92, 0.0),
-                              (0.08, 0.06, 1.05), timber_d))
-    parts.append(geom.box("in_rail", (0.20, 0.92, 0.62), (2.56, 0.05, 0.08), timber_d))
+    parts += geom.stone_footing("in", (0.18, 0.95, 0.0), (2.60, 1.75, 1.10),
+                                M.rough_stone(), height=0.14)
+    # The inn is the one town building tall enough for two bands of framing,
+    # so it gets a mid rail and a jettied upper storey overhanging the front.
+    parts += geom.timber_frame("in", (0.18, 0.95, 0.0), (2.60, 1.75, 1.10),
+                               wall, timber_d, bay=0.56, mid_rail=True)
+    parts += geom.timber_frame("in_upper", (0.12, 0.86, 1.10),
+                               (2.72, 1.86, 0.42), wall, timber_d,
+                               bay=0.56, mid_rail=False, braces=False)
+    parts += geom.thatch_roof("in", (0.12, 0.86, 1.52), (2.72, 1.86, 0.86),
+                              roof, overhang=0.24, binder_mat=timber_d)
+    parts += geom.plank_door("in_door", (1.30, 0.86, 0.0), 0.52, 0.74,
+                             timber_l, M.iron())
+    for wx in (0.42, 2.02):
+        parts += geom.shuttered_window(f"in_win_{wx}", (wx, 0.88, 0.52),
+                                       0.34, 0.30, M.iron(), timber_d)
 
     # hanging sign on a bracket
     parts.append(geom.box("in_bracket", (2.60, 0.80, 0.92), (0.42, 0.06, 0.06), timber_d))
     parts.append(geom.box("in_signpost", (2.94, 0.80, 0.52), (0.04, 0.04, 0.42), timber_d))
     parts.append(geom.box("in_sign", (2.78, 0.79, 0.50), (0.34, 0.03, 0.28), sign))
 
-    # benches and a barrel outside the door
+    # trestle benches and barrels outside the door
     for i, by in enumerate((0.34, 0.62)):
-        parts.append(geom.box(f"in_bench_{i}", (0.45, by, 0.0), (1.10, 0.16, 0.20), timber_l))
-    parts.append(geom.cylinder("in_barrel", (2.25, 0.45, 0.0), 0.19, 0.40, timber_l, segments=10))
-    parts.append(geom.box("in_hoop", (2.05, 0.25, 0.16), (0.40, 0.40, 0.05), timber_d))
+        parts.append(geom.box(f"in_bench_{i}", (0.45, by, 0.16), (1.10, 0.16, 0.06), timber_l))
+        for lx in (0.48, 1.48):
+            parts.append(geom.box(f"in_leg_{i}_{lx}", (lx, by + 0.02, 0.0),
+                                  (0.05, 0.11, 0.17), timber_d))
+    parts += geom.barrel("in_barrel", (2.25, 0.45, 0.0), 0.19, 0.40,
+                         timber_l, M.iron())
+    parts += geom.barrel("in_barrel2", (1.90, 0.32, 0.0), 0.16, 0.34,
+                         timber_l, M.iron())
     return geom.join(parts, "inn"), (3, 3)
 
 
@@ -572,24 +886,47 @@ REGISTRY.update({
 # ---------------------------------------------------------------------------
 
 def _pig(name_prefix, origin, hide, dark, rot_z=0.0):
-    """A pig. Smaller and rounder than the ox, or it reads as a small cow."""
+    """A pig. Rounder and lower than the ox, or it reads as a small cow."""
     ox, oy = origin
-    parts = [
-        geom.box(f"{name_prefix}_body", (ox, oy, 0.13), (0.40, 0.22, 0.19), hide, rot_z=rot_z),
-        geom.box(f"{name_prefix}_head", (ox + 0.36, oy + 0.04, 0.15),
-                 (0.14, 0.14, 0.13), hide, rot_z=rot_z),
-        geom.box(f"{name_prefix}_snout", (ox + 0.48, oy + 0.07, 0.18),
-                 (0.05, 0.07, 0.06), hide, rot_z=rot_z),
-    ]
-    for i, (lx, ly) in enumerate(((0.04, 0.02), (0.04, 0.17), (0.31, 0.02), (0.31, 0.17))):
-        parts.append(geom.box(f"{name_prefix}_leg{i}", (ox + lx, oy + ly, 0.0),
-                              (0.05, 0.05, 0.14), dark, rot_z=rot_z))
-    return parts
+    body = geom._Batch()
+    rings = ((0.00, 0.075), (0.25, 0.105), (0.66, 0.100), (0.88, 0.070),
+             (1.00, 0.048))
+    seg, prev = 8, None
+    for (t, r) in rings:
+        n0 = len(body.verts)
+        for i in range(seg):
+            a = (i / seg) * math.tau
+            body.verts.append((0.04 + t * 0.40,
+                               0.11 + math.cos(a) * r,
+                               0.20 + math.sin(a) * r * 0.90))
+        if prev is not None:
+            for i in range(seg):
+                j = (i + 1) % seg
+                body.faces.append((prev + i, prev + j, n0 + j, n0 + i))
+        prev = n0
+    body.faces.append(tuple(range(seg - 1, -1, -1)))
+    body.faces.append(tuple(range(prev, prev + seg)))
+    # snout, rooting downward
+    body.slab((0.43, 0.06, 0.17), (0.09, 0.0, -0.04),
+              (0.0, 0.10, 0.0), (0.0, 0.0, 0.08))
+    # ears
+    body.slab((0.40, 0.03, 0.24), (0.05, 0.0, 0.04),
+              (0.0, 0.03, 0.0), (0.0, 0.0, 0.06))
+    body.slab((0.40, 0.16, 0.24), (0.05, 0.0, 0.04),
+              (0.0, 0.03, 0.0), (0.0, 0.0, 0.06))
+    at = (ox, oy, 0.0)
+    parts = [body.finish(f"{name_prefix}_body", hide, at, rot_z)]
+
+    legs = geom._Batch()
+    for (lx, ly) in ((0.08, 0.02), (0.08, 0.15), (0.34, 0.02), (0.34, 0.15)):
+        legs.rod((lx, ly + 0.02, 0.15), (lx, ly + 0.02, 0.0), 0.024, segments=6)
+    parts.append(legs.finish(f"{name_prefix}_legs", dark, at, rot_z))
+    return [p for p in parts if p is not None]
 
 
 def pig_farm():
     """Pig farm: a sty, a muddy pen and pigs rooting about."""
-    wall = M.plaster(tint=(0.78, 0.71, 0.57))
+    wall = M.plaster(tint=(0.91, 0.88, 0.79))
     roof = M.thatch()
     rail = M.timber()
     dark = M.timber(dark=True)
@@ -597,10 +934,11 @@ def pig_farm():
     mud = M.plaster("Mud", tint=(0.34, 0.26, 0.18))
 
     parts = []
-    parts.append(geom.box("pf_sty", (0.22, 2.00, 0.0), (1.30, 0.82, 0.60), wall))
-    parts.append(geom.gable("pf_roof", (0.22, 2.00, 0.60), (1.30, 0.82, 0.46),
-                            roof, overhang=0.15))
-    parts.append(geom.arch_doorway("pf_door", (0.72, 1.94, 0.0), 0.36, 0.44, 0.09, dark))
+    parts += geom.timber_frame("pf", (0.22, 2.00, 0.0), (1.30, 0.82, 0.62),
+                               wall, dark, bay=0.44, mid_rail=False)
+    parts += geom.thatch_roof("pf", (0.22, 2.00, 0.62), (1.30, 0.82, 0.50),
+                              roof, overhang=0.18, binder_mat=dark)
+    parts.append(geom.arch_doorway("pf_door", (0.72, 1.94, 0.0), 0.36, 0.44, 0.11, dark))
 
     # muddy pen floor
     parts.append(geom.box("pf_mud", (0.25, 0.28, 0.0), (2.45, 1.55, 0.03), mud))
@@ -625,20 +963,24 @@ def pig_farm():
 
 def slaughterhouse():
     """Slaughterhouse: block, cleaver, barrels and sides of meat on hooks."""
-    wall = M.plaster(tint=(0.76, 0.70, 0.56))
+    wall = M.plaster(tint=(0.92, 0.89, 0.81))
     stone = M.castle_stone()
-    roof = M.thatch()
     timber_l = M.timber()
     timber_d = M.timber(dark=True)
     iron = M.iron()
     meat = M.cloth("Meat", colour=(0.52, 0.20, 0.18))
 
+    shingle = M.shingle_wood()
     parts = []
-    parts.append(geom.box("sl_body", (0.18, 0.95, 0.0), (1.75, 1.30, 0.92), wall))
-    parts.append(geom.gable("sl_roof", (0.18, 0.95, 0.92), (1.75, 1.30, 0.58),
-                            roof, overhang=0.17))
-    parts.append(geom.arch_doorway("sl_door", (0.82, 0.88, 0.0), 0.44, 0.62, 0.10, timber_d))
     parts.append(geom.box("sl_plinth", (0.14, 0.91, 0.0), (1.83, 1.38, 0.10), stone))
+    parts += geom.timber_frame("sl", (0.18, 0.95, 0.08), (1.75, 1.30, 0.94),
+                               wall, timber_d, bay=0.54)
+    parts += geom.shingle_roof("sl", (0.18, 0.95, 1.02), (1.75, 1.30, 0.62),
+                               shingle, overhang=0.19, ridge_mat=timber_d)
+    parts += geom.rafters("sl", (0.18, 0.95, 1.02), (1.75, 1.30, 0.0), timber_d,
+                          overhang=0.19)
+    parts += geom.plank_door("sl_door", (0.82, 0.87, 0.08), 0.46, 0.64,
+                             timber_l, iron)
 
     # open-fronted working area with a rail of hanging meat
     for sx in (0.30, 1.72):
@@ -653,7 +995,7 @@ def slaughterhouse():
     # chopping block with a cleaver
     parts.append(geom.cylinder("sl_block", (1.30, 0.62, 0.0), 0.22, 0.34, timber_l, segments=12))
     parts.append(geom.box("sl_cleaver", (1.24, 0.58, 0.34), (0.16, 0.03, 0.11), iron))
-    parts.append(geom.cylinder("sl_barrel", (0.42, 0.66, 0.0), 0.17, 0.36, timber_l, segments=10))
+    parts += geom.barrel("sl_barrel", (0.42, 0.66, 0.0), 0.17, 0.36, timber_l, iron)
     return geom.join(parts, "slaughterhouse"), (2, 2)
 
 
@@ -715,11 +1057,23 @@ def wall():
     interpenetrate, which at 45 px per tile reads as a continuous battlement.
     """
     stone = M.castle_stone()
+    rough = M.rough_stone("WallFooting")
     parts = []
     h = 0.92
     parts.append(geom.box("wl_body", (0.0, 0.0, 0.0), (1.0, 1.0, h), stone))
     # a slight batter at the foot, so a long run is not a flat slab
     parts.append(geom.box("wl_foot", (-0.03, -0.03, 0.0), (1.06, 1.06, 0.14), stone))
+    # Undressed rubble at the very base. A run of wall meets the ground along
+    # one dead-straight line for its whole length, and at three times tile
+    # scale that line is the most artificial thing on the map.
+    parts += geom.stone_footing("wl", (-0.03, -0.03, 0.0), (1.06, 1.06, h), rough,
+                                height=0.10, block=0.22, proud=0.035)
+    # A string course under the parapet, and a flagged walkway on top: the two
+    # places a wall reads as something men stand on rather than a extruded box.
+    parts.append(geom.box("wl_string", (-0.045, -0.045, h - 0.13),
+                          (1.09, 1.09, 0.06), stone))
+    parts.append(geom.box("wl_walk", (0.14, 0.14, h),
+                          (0.72, 0.72, 0.03), M.flagstone("WallWalk")))
     parts += geom.crenellate("wl_cr", (0.0, 0.0), 1.0, 1.0, stone,
                              merlon=0.24, gap=0.18, height=0.20, thickness=0.14, z=h)
     return geom.join(parts, "wall"), (1, 1)
@@ -736,6 +1090,19 @@ def tower():
     # string course, to break up two units of blank wall
     parts.append(geom.box("tw_band", (-0.05, -0.05, h - 0.42), (2.10, 2.10, 0.09), stone))
     parts.append(geom.box("tw_deck", (-0.09, -0.09, h), (2.18, 2.18, 0.10), stone))
+    # Corbels carrying the projecting deck. The deck already oversails the wall
+    # by nine hundredths of a tile and used to do it on nothing at all, which
+    # at this zoom looks like a shelf floating off a cliff.
+    corbels = geom._Batch()
+    n = 7
+    for i in range(n):
+        t = 0.06 + (i / (n - 1)) * 1.88
+        for (cx, cy, cw, cd) in ((t, -0.09, 0.11, 0.10), (t, 2.0, 0.11, 0.10),
+                                 (-0.09, t, 0.10, 0.11), (2.0, t, 0.10, 0.11)):
+            corbels.box((cx, cy, h - 0.11), (cw, cd, 0.12))
+    parts.append(corbels.finish("tw_corbels", stone))
+    parts.append(geom.box("tw_walk", (0.06, 0.06, h + 0.10),
+                          (1.88, 1.88, 0.03), M.flagstone("TowerWalk")))
     parts += geom.crenellate("tw_cr", (-0.09, -0.09), 2.18, 2.18, stone,
                              merlon=0.26, gap=0.20, height=0.26, thickness=0.16, z=h + 0.10)
     # arrow slits on each face
@@ -772,11 +1139,28 @@ def gatehouse():
     parts.append(geom.box("gh_deck", (-0.10, -0.10, h), (2.20, 2.20, 0.11), stone))
     parts += geom.crenellate("gh_cr", (-0.10, -0.10), 2.20, 2.20, stone,
                              merlon=0.26, gap=0.20, height=0.24, thickness=0.16, z=h + 0.11)
-    # portcullis grilles set back in each opening
+    # Portcullis grilles set back in each opening, with real bars rather than a
+    # solid slab -- a portcullis you cannot see through is just a lintel.
+    steel = M.iron()
+    bars = geom._Batch()
     for i in range(2):
         y = 0.62 + i * 0.74
-        parts.append(geom.box(f"gh_grille_x_{i}", (0.66, y, 0.66), (0.68, 0.04, 0.34), timber_d))
-        parts.append(geom.box(f"gh_grille_y_{i}", (y, 0.66, 0.66), (0.04, 0.68, 0.34), timber_d))
+        for k in range(5):
+            u = 0.68 + k * 0.155
+            bars.box((u, y, 0.62), (0.035, 0.05, 0.40))
+            bars.box((y, u, 0.62), (0.05, 0.035, 0.40))
+        for z in (0.66, 0.94):
+            bars.box((0.66, y, z), (0.68, 0.05, 0.035))
+            bars.box((y, 0.66, z), (0.05, 0.68, 0.035))
+    parts.append(bars.finish("gh_grille", steel))
+    # Arch rings over each opening, so the passage is an arch and not a gap
+    # between two piers.
+    rings = geom._Batch()
+    for i in range(2):
+        y = 0.62 + i * 0.74
+        rings.box((0.62, y - 0.10, 0.98), (0.76, 0.20, 0.10))
+        rings.box((y - 0.10, 0.62, 0.98), (0.20, 0.76, 0.10))
+    parts.append(rings.finish("gh_arch", stone))
     return geom.join(parts, "gatehouse"), (2, 2)
 
 
@@ -784,7 +1168,7 @@ def barracks():
     """Barracks: hall, weapon racks and a pell for practice, behind a low wall."""
     stone = M.castle_stone()
     rough = M.rough_stone("BarracksFooting")
-    roof = M.timber("BarracksRoof", dark=True)
+    roof = M.shingle_wood("BarracksRoof")
     timber_l = M.timber()
     timber_d = M.timber(dark=True)
     steel = M.iron()
@@ -793,8 +1177,10 @@ def barracks():
     parts = []
     parts.append(geom.box("ba_plinth", (0.08, 1.28, 0.0), (2.84, 1.64, 0.12), rough))
     parts.append(geom.box("ba_hall", (0.14, 1.34, 0.0), (2.72, 1.52, 1.02), stone))
-    parts.append(geom.gable("ba_roof", (0.14, 1.34, 1.02), (2.72, 1.52, 0.62),
-                            roof, overhang=0.18))
+    parts += geom.shingle_roof("ba", (0.14, 1.34, 1.02), (2.72, 1.52, 0.68),
+                               roof, overhang=0.20, ridge_mat=timber_d)
+    parts += geom.rafters("ba", (0.14, 1.34, 1.02), (2.72, 1.52, 0.0), timber_d,
+                          overhang=0.20)
     parts.append(geom.arch_doorway("ba_door", (1.28, 1.26, 0.0), 0.50, 0.70, 0.12, timber_d))
 
     # low wall enclosing the training yard at the front
@@ -852,7 +1238,7 @@ def siege_camp():
     rough = M.rough_stone("SiegeFooting")
     timber_l = M.timber("SiegeTimber")
     timber_d = M.timber("SiegeTimberDark", dark=True)
-    roof = M.timber("SiegeRoof", dark=True)
+    roof = M.shingle_wood("SiegeRoof")
     steel = M.iron()
     shot = M.castle_stone()
 
@@ -868,8 +1254,10 @@ def siege_camp():
                                   (0.14, 0.14, 0.94), timber_d))
     parts.append(geom.box("sc_plate_f", (0.12, 1.67, 1.00), (2.72, 0.14, 0.10), timber_d))
     parts.append(geom.box("sc_plate_b", (0.12, 2.69, 1.00), (2.72, 0.14, 0.10), timber_d))
-    parts.append(geom.gable("sc_roof", (0.12, 1.67, 1.10), (2.72, 1.16, 0.44),
-                            roof, overhang=0.17))
+    parts += geom.shingle_roof("sc", (0.12, 1.67, 1.10), (2.72, 1.16, 0.50),
+                               roof, overhang=0.19, ridge_mat=timber_d)
+    parts += geom.rafters("sc", (0.12, 1.67, 1.10), (2.72, 1.16, 0.0), timber_d,
+                          overhang=0.19)
     # planked back wall, so the shelter has a mass to read against
     for i in range(5):
         parts.append(geom.box(f"sc_plank_{i}", (0.14, 2.78, 0.10 + i * 0.19),
@@ -940,9 +1328,10 @@ def fishery():
     net = M.cloth("FishNet", colour=(0.58, 0.55, 0.42))
 
     parts = []
-    parts.append(geom.box("fh_hut", (0.12, 0.98, 0.0), (1.06, 0.88, 0.62), plaster))
-    parts.append(geom.gable("fh_roof", (0.12, 0.98, 0.62), (1.06, 0.88, 0.40),
-                            roof, overhang=0.14))
+    parts += geom.timber_frame("fh", (0.12, 0.98, 0.0), (1.06, 0.88, 0.64),
+                               plaster, timber_d, bay=0.44, mid_rail=False)
+    parts += geom.thatch_roof("fh", (0.12, 0.98, 0.64), (1.06, 0.88, 0.50),
+                              roof, overhang=0.17, binder_mat=timber_d)
     parts.append(geom.box("fh_door", (0.52, 0.92, 0.0), (0.26, 0.08, 0.42), timber_d))
 
     # jetty running out toward the water, on posts
@@ -977,8 +1366,8 @@ def depot():
     things are PUT -- so the load is visible from the road, and a barrow stands
     outside it.
     """
-    plaster = M.plaster(tint=(0.78, 0.72, 0.58))
-    roof = M.timber("DepotRoof", dark=True)
+    plaster = M.plaster(tint=(0.92, 0.89, 0.80))
+    roof = M.shingle_wood("DepotRoof")
     timber_l = M.timber("DepotTimber")
     timber_d = M.timber("DepotTimberDark", dark=True)
     sack = M.cloth("DepotSack", colour=(0.58, 0.52, 0.36))
@@ -994,8 +1383,10 @@ def depot():
                               timber_d))
     parts.append(geom.box("dp_post_l", (0.16, 0.30, 0.08), (0.16, 0.16, 0.86), timber_d))
     parts.append(geom.box("dp_lintel", (0.10, 0.28, 0.94), (1.80, 0.20, 0.12), timber_d))
-    parts.append(geom.gable("dp_roof", (0.10, 0.28, 1.02), (1.80, 1.58, 0.52),
-                            roof, overhang=0.20))
+    parts += geom.shingle_roof("dp", (0.10, 0.28, 1.02), (1.80, 1.58, 0.58),
+                               roof, overhang=0.21, ridge_mat=timber_d)
+    parts += geom.rafters("dp", (0.10, 0.28, 1.02), (1.80, 1.58, 0.0), timber_d,
+                          overhang=0.21)
 
     # the load: crates and sacks under the open front
     for i, (x, y, w_, d_, h) in enumerate([
@@ -1045,12 +1436,25 @@ def church():
     parts.append(geom.dome("cp_lantern_top", (cx, cy, 1.88), 0.15, 0.13, pale))
     parts.append(geom.cylinder("cp_finial", (cx, cy, 2.01), 0.028, 0.14, iron, segments=6))
     parts.append(geom.box("cp_ball", (cx - 0.05, cy - 0.05, 2.11), (0.10, 0.10, 0.10), iron))
-    # arched door on the front (-Y) face
+    # arched door on the front (-Y) face, with boards and a ring handle in it
     parts.append(geom.arch_doorway("cp_door", (cx - 0.22, 0.14, 0.20), 0.44, 0.64, 0.16, dark))
-    # tall window niches on the other faces, so the side rotations aren't blank
-    parts.append(geom.box("cp_win_e", (1.60, cy - 0.15, 0.60), (0.06, 0.30, 0.42), dark))
-    parts.append(geom.box("cp_win_w", (0.28, cy - 0.15, 0.60), (0.06, 0.30, 0.42), dark))
-    parts.append(geom.box("cp_win_n", (cx - 0.15, 1.60, 0.60), (0.30, 0.06, 0.42), dark))
+    parts += geom.plank_door("cp_leaf", (cx - 0.18, 0.10, 0.20), 0.36, 0.46,
+                             M.timber("ChapelLeaf"), iron, planks=3)
+    # tall window niches on the other faces, so the side rotations aren't blank,
+    # each in a stone surround -- an unframed dark rectangle in an ashlar wall
+    # reads as a hole punched in it, not a window
+    for (nm, wx, wy, ww, wd) in (("e", 1.60, cy - 0.15, 0.06, 0.30),
+                                 ("w", 0.28, cy - 0.15, 0.06, 0.30),
+                                 ("n", cx - 0.15, 1.60, 0.30, 0.06)):
+        parts.append(geom.box(f"cp_win_{nm}", (wx, wy, 0.60), (ww, wd, 0.42), dark))
+        parts.append(geom.box(f"cp_sill_{nm}", (wx - 0.03, wy - 0.05, 0.55),
+                              (ww + 0.06, wd + 0.10, 0.05), trim))
+        parts.append(geom.box(f"cp_head_{nm}", (wx - 0.03, wy - 0.05, 1.02),
+                              (ww + 0.06, wd + 0.10, 0.05), trim))
+    # steps up to the door
+    for i in range(2):
+        parts.append(geom.box(f"cp_step_{i}", (cx - 0.42 - i * 0.06, 0.02 - i * 0.11, 0.0),
+                              (0.84 + i * 0.12, 0.14, 0.20 - i * 0.08), stone))
     return geom.join(parts, "church"), (2, 2)
 
 
@@ -1200,20 +1604,22 @@ def _workshop_shell(p, parts, wall, timber_l, timber_d, roof_mat):
     rough = M.rough_stone(f"{p}Footing")
     deck = 0.06
     parts.append(geom.box(f"{p}_pad", (0.06, 0.06, 0.0), (1.88, 1.88, deck), rough))
-    parts.append(geom.box(f"{p}_back", (0.12, 1.50, deck), (1.76, 0.20, 0.90), wall))
-    parts.append(geom.box(f"{p}_side_l", (0.12, 0.58, deck), (0.16, 0.94, 0.84), wall))
-    parts.append(geom.box(f"{p}_side_r", (1.72, 0.58, deck), (0.16, 0.94, 0.84), wall))
-    parts.append(geom.box(f"{p}_post_l", (0.16, 0.26, deck), (0.14, 0.14, 0.92), timber_d))
-    parts.append(geom.box(f"{p}_post_r", (1.70, 0.26, deck), (0.14, 0.14, 0.92), timber_d))
+    # Three half-timbered walls and an open front. `timber_frame` with a `wall`
+    # thickness builds the infill as separate panels on the named sides, so the
+    # front is genuinely missing rather than three loose boxes pretending.
+    parts += geom.timber_frame(p, (0.12, 0.34, deck), (1.76, 1.36, 0.92),
+                               wall, timber_d, bay=0.48, wall=0.18,
+                               sides=('+y', '-x', '+x'))
     parts.append(geom.box(f"{p}_lintel", (0.12, 0.24, deck + 0.92), (1.76, 0.18, 0.10),
                           timber_d))
-    # Plank roof rather than thatch: every food building in the game is thatched
-    # and the weapons row should not read as another bakery.
-    parts.append(geom.gable(f"{p}_roof", (0.10, 0.22, deck + 1.02), (1.80, 1.54, 0.44),
-                            roof_mat, overhang=0.18))
-    for i in range(5):
-        parts.append(geom.box(f"{p}_batten_{i}", (0.10, 0.30 + i * 0.30, deck + 1.05),
-                              (1.80, 0.06, 0.05), timber_d))
+    # Shingles rather than thatch: every food building in the game is thatched
+    # and the weapons row should not read as another bakery. The battens that
+    # used to fake courses on a smooth prism are gone -- the courses are real
+    # boards now, and battens laid over them only showed through.
+    parts += geom.shingle_roof(p, (0.10, 0.22, deck + 1.02), (1.80, 1.54, 0.50),
+                               roof_mat, overhang=0.19, ridge_mat=timber_d)
+    parts += geom.rafters(p, (0.10, 0.22, deck + 1.02), (1.80, 1.54, 0.0),
+                          timber_d, overhang=0.19)
 
     bench = deck + 0.54
     parts.append(geom.box(f"{p}_bench", (0.28, 1.10, bench), (1.34, 0.44, 0.08), timber_l))
@@ -1227,7 +1633,7 @@ def poleturner():
     wall = M.plaster("PoleturnerWall", tint=(0.75, 0.68, 0.55))
     timber_l = M.timber("PoleturnerTimber")
     timber_d = M.timber("PoleturnerTimberDark", dark=True)
-    roof = M.timber("PoleturnerRoof", dark=True)
+    roof = M.shingle_wood("PoleturnerRoof")
     steel = M.iron()
 
     parts = []
@@ -1266,7 +1672,7 @@ def fletcher():
     wall = M.plaster("FletcherWall", tint=(0.77, 0.70, 0.57))
     timber_l = M.timber("FletcherTimber")
     timber_d = M.timber("FletcherTimberDark", dark=True)
-    roof = M.timber("FletcherRoof", dark=True)
+    roof = M.shingle_wood("FletcherRoof")
     string = M.cloth("BowString", colour=(0.86, 0.83, 0.74))
 
     parts = []
@@ -1327,7 +1733,7 @@ def blacksmith():
     wall = M.plaster("SmithWall", tint=(0.70, 0.64, 0.53))
     timber_l = M.timber("SmithTimber")
     timber_d = M.timber("SmithTimberDark", dark=True)
-    roof = M.timber("SmithRoof", dark=True)
+    roof = M.shingle_wood("SmithRoof")
     stone = M.rough_stone("SmithHearth")
     steel = M.iron()
     # Modest strength for the same reason the ram's brazier is: high values clip
@@ -1377,7 +1783,7 @@ def armourer():
     wall = M.plaster("ArmourerWall", tint=(0.72, 0.66, 0.55))
     timber_l = M.timber("ArmourerTimber")
     timber_d = M.timber("ArmourerTimberDark", dark=True)
-    roof = M.timber("ArmourerRoof", dark=True)
+    roof = M.shingle_wood("ArmourerRoof")
     stone = M.rough_stone("ArmourerHearth")
     steel = M.iron()
     mail = M.iron("ArmourerMail")
@@ -1419,7 +1825,7 @@ def armoury():
     """
     stone = M.castle_stone()
     rough = M.rough_stone("ArmouryFooting")
-    roof = M.timber("ArmouryRoof", dark=True)
+    roof = M.shingle_wood("ArmouryRoof")
     timber_l = M.timber("ArmouryTimber")
     timber_d = M.timber("ArmouryTimberDark", dark=True)
     steel = M.iron()
@@ -1429,11 +1835,10 @@ def armoury():
     parts.append(geom.box("am_plinth", (0.08, 0.60, 0.0), (2.84, 2.32, 0.14), rough))
     parts.append(geom.box("am_body", (0.16, 0.68, 0.14), (2.68, 2.16, 1.14), stone))
     parts.append(geom.box("am_band", (0.10, 0.62, 1.20), (2.80, 2.28, 0.10), timber_d))
-    parts.append(geom.gable("am_roof", (0.16, 0.68, 1.30), (2.68, 2.16, 0.72),
-                            roof, overhang=0.22))
-    for i in range(7):
-        parts.append(geom.box(f"am_batten_{i}", (0.16, 0.76 + i * 0.30, 1.33),
-                              (2.68, 0.07, 0.05), timber_d))
+    parts += geom.shingle_roof("am", (0.16, 0.68, 1.30), (2.68, 2.16, 0.80),
+                               roof, overhang=0.23, ridge_mat=timber_d)
+    parts += geom.rafters("am", (0.16, 0.68, 1.30), (2.68, 2.16, 0.0), timber_d,
+                          overhang=0.23)
 
     # Double doors on the front (-Y) face, banded with iron.
     parts.append(geom.box("am_doors", (1.02, 0.60, 0.14), (0.96, 0.10, 0.92), timber_d))

@@ -113,12 +113,23 @@ export interface BuildingAtlas extends PackedAtlas {
 
 export interface UnitAtlas extends PackedAtlas {
   directions: number;
-  clips: Record<string, { frames: number }>;
+  clips: Record<string, ClipMeta>;
 }
+
+/**
+ * `fps` is how fast this clip's frames are meant to be stepped.
+ *
+ * Optional, and absent means the old flat rate. Without it, raising a clip's
+ * frame count stretched the clip in TIME rather than making it smoother --
+ * twelve walk frames stepped at ten a second is a 1.2 second stride, and the
+ * peasant's legs fall behind the speed he is actually travelling at.
+ */
+export interface ClipMeta { frames: number; fps?: number }
 
 interface PackEntry {
   key: string; file: string;
   width: number; height: number; ax: number; ay: number;
+  scale: number;
 }
 
 /**
@@ -151,10 +162,32 @@ async function packFrames(
   }
   const totalH = y + shelfH + padding;
 
-  const pot = (n: number) => Math.pow(2, Math.ceil(Math.log2(Math.max(1, n))));
+  // Exact size, NOT rounded up to a power of two.
+  //
+  // We are WebGL2 only (the sprite shader is GLSL3), where non-power-of-two
+  // textures mipmap and repeat just like any other, so the rounding bought
+  // nothing and cost a great deal: the shelf pack fills the width almost
+  // exactly, so `usedW + padding` lands a pixel or two past the limit and
+  // pot() doubles it. The atlas was allocated 8192 wide to hold 4096 pixels of
+  // sprites -- half the texture, and half of a nine-figure byte count, was
+  // transparent padding. At the render scale this file now loads, paying that
+  // twice over is not affordable.
+  //
+  // Rounded to a multiple of four only, which keeps row strides aligned.
+  const quad = (n: number) => Math.ceil(Math.max(1, n) / 4) * 4;
   const canvas = document.createElement('canvas');
-  canvas.width = pot(usedW + padding);
-  canvas.height = pot(totalH);
+  // Clamped to maxW. Every sprite is placed with its right edge at or inside
+  // maxW, so the clamp cannot cut anything off -- but a full shelf plus the
+  // trailing padding, rounded up, lands a few pixels PAST the limit we chose
+  // maxW to respect, and those few pixels are the difference between fitting a
+  // GPU's maximum texture size and failing to upload at all.
+  canvas.width = Math.min(maxW, quad(usedW + padding));
+  canvas.height = quad(totalH);
+  if (canvas.height > maxW) {
+    console.warn(`[assets] atlas is ${canvas.width}x${canvas.height}; taller `
+      + `than ${maxW} will not upload on some hardware. Trim sprites, drop `
+      + 'animation frames, or split the atlas across texture-array layers.');
+  }
   const ctx = canvas.getContext('2d')!;
 
   const frames: Record<string, Frame> = {};
@@ -162,7 +195,7 @@ async function packFrames(
     ctx.drawImage(p.img, p.px, p.py);
     frames[p.e.key] = {
       x: p.px, y: p.py, w: p.e.width, h: p.e.height,
-      ax: p.e.ax, ay: p.e.ay,
+      ax: p.e.ax, ay: p.e.ay, scale: p.e.scale,
     };
   }
 
@@ -181,6 +214,7 @@ export async function buildSpriteAtlas(
     return {
       key: `${m.name}_${m.rotation}`, file: `${m.name}_${m.rotation}.png`,
       width: m.width, height: m.height, ax: m.anchor_x, ay: m.anchor_y,
+      scale: m.scale,
     };
   });
   const packed = await packFrames(base, entries, meta[0]?.scale ?? 2);
@@ -190,7 +224,7 @@ export async function buildSpriteAtlas(
 export interface CombinedAtlas extends PackedAtlas {
   footprints: Record<string, [number, number]>;
   directions: number;
-  clips: Record<string, { frames: number }>;
+  clips: Record<string, ClipMeta>;
 }
 
 /**
@@ -206,7 +240,7 @@ export async function buildCombinedAtlas(base: string): Promise<CombinedAtlas> {
     fetch(`${base}/buildings.json${V}`).then(r => r.json()) as Promise<SpriteMetaEntry[]>,
     fetch(`${base}/units.json${V}`).then(r => r.json()) as Promise<{
       directions: number;
-      clips: Record<string, { frames: number }>;
+      clips: Record<string, ClipMeta>;
       sprites: UnitMetaEntry[];
     }>,
   ]);
@@ -219,16 +253,23 @@ export async function buildCombinedAtlas(base: string): Promise<CombinedAtlas> {
     entries.push({
       key: `${m.name}_${m.rotation}`, file: `${m.name}_${m.rotation}.png`,
       width: m.width, height: m.height, ax: m.anchor_x, ay: m.anchor_y,
+      scale: m.scale,
     });
   }
   for (const m of uMeta.sprites) {
     entries.push({
       key: `${m.clip}_${m.direction}_${m.frame}`, file: `${m.name}.png`,
       width: m.width, height: m.height, ax: m.anchor_x, ay: m.anchor_y,
+      scale: m.scale,
     });
   }
 
-  const packed = await packFrames(base, entries, bMeta[0]?.scale ?? 2, 2, 4096);
+  // 8192 rather than 4096: at sprite render scale 3 the whole catalogue needs
+  // roughly 40 megapixels, and packing that into a 4096-wide shelf produces a
+  // strip nearly 9000 tall -- past the 8192 texture limit of a good deal of
+  // hardware. Laid out 8192 wide it comes out around 8192x5000, with both
+  // dimensions inside the limit.
+  const packed = await packFrames(base, entries, bMeta[0]?.scale ?? 2, 2, 8192);
   return {
     ...packed, footprints,
     directions: uMeta.directions, clips: uMeta.clips,
@@ -238,13 +279,14 @@ export async function buildCombinedAtlas(base: string): Promise<CombinedAtlas> {
 export async function buildUnitAtlas(base: string, metaFile = 'units.json'): Promise<UnitAtlas> {
   const meta: {
     directions: number;
-    clips: Record<string, { frames: number }>;
+    clips: Record<string, ClipMeta>;
     sprites: UnitMetaEntry[];
   } = await fetch(`${base}/${metaFile}${V}`).then(r => r.json());
 
   const entries: PackEntry[] = meta.sprites.map(m => ({
     key: `${m.clip}_${m.direction}_${m.frame}`, file: `${m.name}.png`,
     width: m.width, height: m.height, ax: m.anchor_x, ay: m.anchor_y,
+    scale: m.scale,
   }));
   const packed = await packFrames(base, entries, meta.sprites[0]?.scale ?? 2);
   return { ...packed, directions: meta.directions, clips: meta.clips };

@@ -31,7 +31,7 @@ from mathutils import Vector
 import rig
 import materials as M
 
-TILE_PX = 128
+TILE_PX = 192            # 128 was sized for a 2x zoom ceiling; the camera now reaches 3x
 VARIANTS = 4
 
 TYPES = {

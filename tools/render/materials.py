@@ -151,9 +151,14 @@ def castle_stone(name="CastleStone"):
     brick = nt.nodes.new("ShaderNodeTexBrick")
     nt.links.new(uv, brick.inputs["Vector"])
     _set(brick, "Scale", 1.0)
-    _set(brick, "Brick Width", 0.40)
-    _set(brick, "Row Height", 0.20)
-    _set(brick, "Mortar Size", 0.014)
+    # 0.40 x 0.20 was measured off the reference at the old zoom ceiling, where
+    # a course was ten screen pixels. At three times tile scale the same block
+    # is nearly forty across and reads as masonry from a toy castle, so the
+    # course is tightened by a fifth: still the reference's proportions, but
+    # enough blocks in a wall that the eye stops counting them.
+    _set(brick, "Brick Width", 0.32)
+    _set(brick, "Row Height", 0.16)
+    _set(brick, "Mortar Size", 0.016)
     _set(brick, "Mortar Smooth", 0.20)
     _set(brick, "Bias", 0.0)
     # block-to-block colour variation lives in Color1/Color2
@@ -274,29 +279,89 @@ def timber(name="Timber", dark=False):
     return mat
 
 
+def shingle_wood(name="Shingle"):
+    """
+    Weathered split shingles -- greyer, cooler and more mottled than structural
+    timber.
+
+    A roof is the largest single surface on most of these buildings and it is
+    seen almost face-on from this camera, so using the same warm `timber()` for
+    the roof as for the posts flattened the two together. Silvered grey against
+    dark oak separates them, and the strong board-to-board value spread keeps
+    the individual shingles readable now that they are real geometry rather
+    than a pattern.
+    """
+    mat, nt, bsdf = _new(name)
+    uv = _uv(nt)
+
+    # grain runs down the slope, i.e. along the short axis of a shingle
+    stretch = nt.nodes.new("ShaderNodeMapping")
+    _set(stretch, "Scale", (4.0, 0.30, 1.0))
+    nt.links.new(uv, stretch.inputs["Vector"])
+    grain = _noise(nt, stretch.outputs["Vector"], scale=7.0, detail=9.0,
+                   roughness=0.6, distortion=0.9)
+    ramp = _ramp(nt, [
+        (0.20, (0.17, 0.12, 0.08, 1.0)),
+        (0.50, (0.32, 0.24, 0.16, 1.0)),
+        (0.78, (0.47, 0.37, 0.25, 1.0)),
+        (1.00, (0.58, 0.47, 0.33, 1.0)),
+    ], grain.outputs["Fac"])
+
+    # board-to-board value shift: cell noise on world position, so neighbouring
+    # shingles differ from each other rather than every board being identical
+    board = nt.nodes.new("ShaderNodeTexVoronoi")
+    nt.links.new(_pos(nt, 1.0), board.inputs["Vector"])
+    _set(board, "Scale", 14.0)
+    board_ramp = _ramp(nt, [
+        (0.00, (0.74, 0.74, 0.74, 1.0)),
+        (1.00, (1.18, 1.16, 1.12, 1.0)),
+    ], board.outputs["Color"])
+
+    nt.links.new(_mulcol(nt, ramp.outputs["Color"], board_ramp.outputs["Color"]),
+                 bsdf.inputs["Base Color"])
+    _set(bsdf, "Roughness", 0.93)
+    _bump(nt, bsdf, grain.outputs["Fac"], strength=0.55, distance=0.010)
+    return mat
+
+
 def thatch(name="Thatch"):
     """Straw roofing. The directional bump is what sells it."""
     mat, nt, bsdf = _new(name)
     uv = _uv(nt)
 
-    # straws run down the slope: stretch hard along one UV axis
+    # Straws run down the slope: stretch hard along one UV axis. Finer and
+    # higher contrast than it used to be -- at three times tile scale the old
+    # frequency put one straw across eight screen pixels, which averaged out to
+    # flat card, and the ramp topped out too pale to read as anything but
+    # bleached paper next to the lime panels below it.
     stretch = nt.nodes.new("ShaderNodeMapping")
-    _set(stretch, "Scale", (14.0, 0.7, 1.0))
+    _set(stretch, "Scale", (34.0, 0.55, 1.0))
     nt.links.new(uv, stretch.inputs["Vector"])
 
-    straw = _noise(nt, stretch.outputs["Vector"], scale=9.0, detail=10.0,
-                   roughness=0.75, distortion=0.8)
+    straw = _noise(nt, stretch.outputs["Vector"], scale=11.0, detail=12.0,
+                   roughness=0.80, distortion=0.9)
     ramp = _ramp(nt, [
-        (0.24, (0.24, 0.17, 0.08, 1.0)),
-        (0.52, (0.52, 0.39, 0.19, 1.0)),
-        (0.86, (0.74, 0.60, 0.33, 1.0)),
+        (0.18, (0.20, 0.13, 0.05, 1.0)),
+        (0.44, (0.46, 0.32, 0.13, 1.0)),
+        (0.72, (0.72, 0.55, 0.24, 1.0)),
+        (0.95, (0.88, 0.72, 0.38, 1.0)),
     ], straw.outputs["Fac"])
-    nt.links.new(ramp.outputs["Color"], bsdf.inputs["Base Color"])
-    _set(bsdf, "Roughness", 0.96)
 
-    clump = _noise(nt, _pos(nt, 1.0), scale=18.0, detail=6.0)
-    h = _add(nt, _mul(nt, straw.outputs["Fac"], 1.0), _mul(nt, clump.outputs["Fac"], 0.5))
-    _bump(nt, bsdf, h, strength=1.0, distance=0.045)
+    # Broad clumping on world position, so one part of a roof is visibly
+    # darker and damper than another rather than the whole slope being one
+    # even tone.
+    clump = _noise(nt, _pos(nt, 1.0), scale=5.5, detail=7.0, roughness=0.6)
+    clump_ramp = _ramp(nt, [
+        (0.30, (0.66, 0.62, 0.55, 1.0)),
+        (0.70, (1.06, 1.04, 1.00, 1.0)),
+    ], clump.outputs["Fac"])
+    nt.links.new(_mulcol(nt, ramp.outputs["Color"], clump_ramp.outputs["Color"]),
+                 bsdf.inputs["Base Color"])
+    _set(bsdf, "Roughness", 0.97)
+
+    fine = _noise(nt, _pos(nt, 1.0), scale=42.0, detail=6.0)
+    h = _add(nt, _mul(nt, straw.outputs["Fac"], 1.0), _mul(nt, fine.outputs["Fac"], 0.45))
+    _bump(nt, bsdf, h, strength=1.15, distance=0.030)
     return mat
 
 

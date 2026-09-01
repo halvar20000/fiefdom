@@ -257,14 +257,36 @@ reference/         Stronghold Crusader screenshots used to calibrate the look
 * **Buildings need 4 renders (one per camera rotation). Units need 8** — eight
   world-space facings, and camera rotation just re-indexes which one is shown.
   Rendering units 8×4 would produce 24 exact duplicates.
+* **The furthest zoom level may never exceed the sprite render scale.**
+  `SPRITE_RENDER_SCALE` in `iso.ts` and in `rig.py` are the same number written
+  twice, and the last entry of `ZOOM_LEVELS` must not be larger than it. Past
+  that point one sprite texel is stretched over more than one screen pixel, and
+  no camera change recovers detail that was never baked.
+* **Anything randomised in a builder must be seeded from its own name.** Every
+  asset is rendered four times, once per camera rotation, and those four
+  renders have to be the same building. `geom.rng_for(name)` exists for this;
+  a bare `random` call makes a roof reshuffle its thatch as the player rotates
+  the map.
 
 ## Rebuilding assets
 
 ```bash
-blender -b -P tools/render/render_buildings.py -- --out "$PWD/public/assets/sprites"
+OUT="$PWD/public/assets/sprites"
+blender -b -P tools/render/render_buildings.py -- --out "$OUT" --samples 96
 blender -b -P tools/render/render_ground.py    -- --out "$PWD/public/assets/tiles"
-blender -b -P tools/render/render_units.py     -- --out "$PWD/public/assets/sprites"
+blender -b -P tools/render/render_units.py     -- --out "$OUT" --body peasant --only idle,walk,dig,mine
+for b in spearman archer swordsman; do
+  blender -b -P tools/render/render_units.py   -- --out "$OUT" --body "$b" --only idle,walk,attack
+done
+blender -b -P tools/render/render_wildlife.py  -- --out "$OUT"
+blender -b -P tools/render/render_siege.py     -- --out "$OUT"
 ```
+
+About forty minutes for the whole set on twenty-four cores. The `--only` lists
+are not decoration: `carry`, `chop`, `fish` and `death` come from the 0 A.D.
+motion set via `render_0ad.py`, which writes the same clip keys, so rendering
+those clips from Mixamo as well silently replaces a hand-picked woodcutting
+swing with a baseball bat.
 
 Units render from the Mixamo rig in `assets/source/mixamo/`. `--body peasant`
 (default) generates a hooded-tunic body onto that skeleton; `--body ybot` uses
@@ -335,6 +357,106 @@ the player cannot yet see.
 Measured across both lists: time spent standing inside a building fell from
 **55% to under 0.3%**, with the opening townsfolk at 0 of 9,600 samples. The
 remainder is momentary corner-clipping during turns.
+
+## Zooming in
+
+The camera used to stop at twice tile scale, and it stopped there for a reason
+rather than out of taste: `SPRITE_RENDER_SCALE` was 2, so at that zoom one
+sprite texel was exactly one screen pixel. A third zoom step would not have
+shown more of the building — it would have stretched the same texels wider and
+gone soft, and no amount of filtering invents detail that was never rendered.
+
+So the ceiling moved by re-rendering rather than by changing the camera.
+`SPRITE_RENDER_SCALE` is 3 in `iso.ts` and in `rig.py`, `ZOOM_LEVELS` gained a
+matching entry, and every sprite in the catalogue was baked again. A tile is 96
+screen pixels across at full zoom, a peasant stands about seventy pixels tall,
+and a 3×3 keep is better than five hundred wide.
+
+### What that exposed
+
+Two-and-a-bit times the linear detail is two-and-a-bit times the room for
+nothing to be there, and most of these buildings had been modelled for a
+sixty-pixel silhouette. A wall was one plaster box. A roof was one smooth
+prism. A cow was five cuboids. All of it survived at 64 pixels a tile and none
+of it survives at 96, so the modelling vocabulary in `geom.py` grew to match:
+
+* `timber_frame` — half-timbered walls, a plaster core caged in posts, rails
+  and diagonal braces. The members stand *proud* of the panel rather than flush
+  with it, which is the difference between a wall that looks built and a wall
+  that looks painted: a proud member throws its own shadow across the panel
+  beside it, and that shadow survives the two camera rotations where the wall
+  is in shade. Pass `wall=` for an open-fronted shed and the infill is built as
+  separate panels on the named sides only, so the shed genuinely has a hole in
+  it.
+* `shingle_roof` — overlapping courses of split boards, staggered half a
+  shingle so the vertical joints never line up into a stripe.
+* `thatch_roof` — a deep mattress of straw bundles with rolled eaves, a rolled
+  ridge and hazel rods pinning it down.
+* `stone_footing`, `rafters`, `plank_door`, `shuttered_window`, `barrel`,
+  `crate`, `ladder`, `log_stack`, `stalks`.
+
+Both roofs are geometry, and the first attempt at thatch is the argument for
+why. It was a smooth prism swollen by a straw thickness, trusting the
+material's directional bump to do the work, and it rendered as two flat panels
+of pale plywood. What the eye reads on a real thatch is not surface roughness,
+it is a deep stack of separate layers each shadowing the one below, and a
+bottom edge thick and ragged enough to break the roofline. Bump does not change
+a silhouette. The second attempt lays real bundles and looks like straw.
+
+The bundles are laid edge to edge, incidentally, not spaced. Giving them a gap
+and a half-bundle stagger — exactly what the shingles want — made the roof look
+*tiled*, a grid of pale rectangles. Straw has no vertical joints; what it has
+is a ragged bottom edge, so the bundles butt up against each other and vary
+only in how far down the slope they reach.
+
+### Everything must be seeded
+
+Every one of those builders jitters something, and every asset is rendered four
+times, once per camera rotation. A shared global RNG makes each of those four
+renders a *different building*, and the symptom is a hovel that reshuffles its
+thatch as the player rotates the map. `geom.rng_for(name)` seeds from a CRC of
+the piece's own name, which is stable across processes in a way Python's
+`hash()` of a string is not.
+
+### One mesh, not many
+
+A shingled roof is a few hundred slabs. Built as individual objects each one
+would pay for a bmesh normal pass and, far worse, a `bpy.ops.uv.cube_project`,
+which toggles edit mode. `geom._Batch` accumulates into a single mesh and
+finishes once, which turns minutes of operator overhead into milliseconds.
+
+### The atlas was twice the size it needed to be
+
+Sprites shelf-pack to almost exactly the 4096-pixel limit. The packer then
+added its padding and rounded the result up to a power of two, so 4098 became
+8192 and half of a very large texture was transparent margin. We are WebGL2
+only — the sprite shader is GLSL3 — and there non-power-of-two textures mipmap
+like any other, so the rounding bought nothing. Sizing the canvas to fit more
+than paid for the sprites getting bigger.
+
+### Sprites may differ in scale
+
+`Frame.scale` is per frame, not per atlas, and the renderer draws each sprite at
+the scale it was baked at. This is not hypothetical tidiness: the four 0 A.D.
+motion clips can only be re-rendered against an archive that is not vendored
+here (see `docs/THIRD-PARTY.md`), so when everything else moved to scale 3 they
+stayed at 2. Reading one atlas-wide scale for all of them would have drawn a
+carrying peasant half again the size of a walking one. As it is they cost a
+little sharpness at full zoom on four clips and nothing else, and re-running
+`render_0ad.py` against the archive closes the gap with no code change.
+
+### More frames must not mean slower
+
+Animation is sampled about half again as finely — a walk cycle is twelve frames
+where it was eight. That is only an improvement because each clip now carries
+its own `fps` in `units.json`. Every clip used to be stepped at a flat ten
+frames a second, so sampling a walk more finely did not make it smoother, it
+made it *longer*: twelve frames at ten a second is a 1.2 second stride, and the
+peasant's legs stop keeping up with the speed he is actually crossing the
+ground at. Each clip's duration in the render scripts is exactly what it played
+at before, so the sampling density is now a pure quality knob. A clip whose
+manifest entry has no `fps` falls back to ten, which is what keeps the older
+0 A.D. sprites playing at precisely their old speed.
 
 ## Sprite anchoring — the axis flip
 

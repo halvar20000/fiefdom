@@ -94,10 +94,11 @@ def main():
     print(f"gazelle frame {w}x{h} anchor=({ax:.1f},{ay:.1f})", flush=True)
 
     metas, clips_meta = [], {}
-    for clip, nframes in wildlife.CLIPS.items():
+    for clip, (nframes, seconds) in wildlife.CLIPS.items():
         if only and clip not in only:
             continue
-        clips_meta[clip] = {"frames": nframes}
+        clips_meta[clip] = {"frames": nframes,
+                            "fps": round(nframes / seconds, 3)}
         for f in range(nframes):
             t = f / nframes
             for d in range(DIRECTIONS):

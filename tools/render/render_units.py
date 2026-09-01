@@ -82,15 +82,29 @@ def retarget_action(act, prefix: str) -> int:
 UNIT_HEIGHT_TILES = 0.52
 DIRECTIONS = 8
 
-# game clip -> (source fbx, frames to sample)
+# game clip -> (source fbx, frames to sample, cycle length in seconds)
+#
+# The third field is what lets the frame counts move at all. The engine used to
+# step every clip at a flat ten frames a second, so sampling a walk more finely
+# did not make it smoother -- it made it LONGER, and a peasant's legs stopped
+# keeping up with the speed he was actually crossing the ground at. Emitting a
+# per-clip rate alongside the frame count fixes the cycle in time and lets the
+# sampling density be a pure quality knob.
+#
+# Every duration below is exactly what that clip already played at (its old
+# frame count over ten fps), so this pass changes how smooth the animation is
+# and nothing else about how it moves.
+#
+# `chop` and `carry` are absent on purpose: those two come from the 0 A.D.
+# motion set via render_0ad.py, which writes the same clip keys. Listing them
+# here as well meant whichever renderer ran last won, and running the Mixamo
+# one silently replaced a hand-picked woodcutting swing with a baseball bat.
 CLIPS = {
-    "idle":  ("Idle.fbx", 4),
-    "walk":  ("Walking.fbx", 8),
-    "carry": ("Carrying.fbx", 8),
-    "dig":   ("Digging.fbx", 6),
-    "mine":  ("Heavy Weapon Swing.fbx", 6),
-    "chop":  ("Baseball Strike.fbx", 6),
-    "attack": ("Heavy Weapon Swing.fbx", 6),
+    "idle":  ("Idle.fbx", 6, 0.4),
+    "walk":  ("Walking.fbx", 12, 0.8),
+    "dig":   ("Digging.fbx", 8, 0.6),
+    "mine":  ("Heavy Weapon Swing.fbx", 8, 0.6),
+    "attack": ("Heavy Weapon Swing.fbx", 8, 0.6),
 }
 
 
@@ -113,7 +127,8 @@ SOLDIERS = {
         # evenly spaced samples land almost all of them on the slow part and
         # miss the loose entirely.
         "attack_src": "Standing Draw Arrow.fbx",
-        "attack_frames": 10,
+        "attack_frames": 14,
+        "attack_seconds": 1.0,
     },
     "swordsman": {
         "palette": {'tunic': (0.55, 0.56, 0.58), 'hood': (0.45, 0.46, 0.48),
@@ -147,7 +162,7 @@ def import_actions(existing_objects):
     a fake user first, or Blender collects them the moment their armature goes.
     """
     actions = {}
-    for clip, (filename, _) in CLIPS.items():
+    for clip, (filename, *_rest) in CLIPS.items():
         path = os.path.join(SRC, filename)
         if not os.path.exists(path):
             print(f"!! missing {filename}, skipping clip '{clip}'", flush=True)
@@ -261,7 +276,8 @@ def main():
     attack_src = spec_clip.get("attack_src")
     if attack_src:
         CLIPS["attack"] = (attack_src,
-                           spec_clip.get("attack_frames", CLIPS["attack"][1]))
+                           spec_clip.get("attack_frames", CLIPS["attack"][1]),
+                           spec_clip.get("attack_seconds", CLIPS["attack"][2]))
 
     actions = import_actions(char_objects)
     if not actions:
@@ -317,13 +333,14 @@ def main():
     for clip, action in actions.items():
         if only and clip not in only:
             continue
-        nframes = CLIPS[clip][1]
+        nframes, seconds = CLIPS[clip][1], CLIPS[clip][2]
         assign_action(arm, action)
         start, end = action.frame_range
         # The atlas key is `${clip}_${dir}_${frame}`, so a soldier reusing the
         # bare clip name 'walk' would silently overwrite the peasant's walk.
         clip_key = clip if body_kind in ("peasant", "ybot") else f"{body_kind}_{clip}"
-        clips_meta[clip_key] = {"frames": nframes}
+        clips_meta[clip_key] = {"frames": nframes,
+                                "fps": round(nframes / seconds, 3)}
 
         for f in range(nframes):
             t = start + (end - start) * (f / nframes)

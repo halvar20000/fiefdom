@@ -42,11 +42,19 @@ DIRECTIONS = 8
 #: `fish` is new: the fishery has been miming a woodcutter's swing since it was
 #: built, for want of anything better. `death` is new too -- soldiers have
 #: simply vanished until now.
+#: Third field is the cycle length in seconds -- see the note on CLIPS in
+#: render_units.py. Frame counts were raised with the rest of the animation in
+#: the zoom pass; the sprites on disk are still the older, coarser sampling,
+#: because these four clips need the 0 A.D. source archive and it is not
+#: vendored (see docs/THIRD-PARTY.md). They keep their own `scale` in the
+#: manifest and the engine draws each sprite at the scale it was baked at, so
+#: the mismatch costs a little sharpness at full zoom on four clips and
+#: nothing else. Re-run this script against the archive to close the gap.
 CLIPS = {
-    "chop":  ("gather_wood.dae", 6),
-    "carry": ("carry_wood_m.dae", 8),
-    "fish":  ("hele_gather_fish.dae", 8),
-    "death": ("death_a.dae", 6),
+    "chop":  ("gather_wood.dae", 8, 0.6),
+    "carry": ("carry_wood_m.dae", 12, 0.8),
+    "fish":  ("hele_gather_fish.dae", 10, 0.8),
+    "death": ("death_a.dae", 8, 0.6),
 }
 
 
@@ -148,7 +156,7 @@ def main():
     scene = bpy.context.scene
     metas, clips_meta = [], {}
 
-    for clip, (dae, nframes) in CLIPS.items():
+    for clip, (dae, nframes, seconds) in CLIPS.items():
         if only and clip not in only:
             continue
         path = os.path.join(src_dir, dae)
@@ -159,7 +167,8 @@ def main():
         pairs = retarget.apply(arm, prefix, loaded, nframes, f"zeroad_{clip}")
         print(f"[{clip}] {dae}: {collada_anim.summary(loaded)}, {pairs} pairs",
               flush=True)
-        clips_meta[clip] = {"frames": nframes}
+        clips_meta[clip] = {"frames": nframes,
+                            "fps": round(nframes / seconds, 3)}
 
         for f in range(nframes):
             scene.frame_set(f + 1)

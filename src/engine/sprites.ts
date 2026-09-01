@@ -3,6 +3,16 @@ import * as THREE from 'three';
 export interface Frame {
   x: number; y: number; w: number; h: number;   // px in the atlas
   ax: number; ay: number;                        // anchor px, from the frame's top-left
+  /**
+   * The render scale this ONE frame was baked at, as a multiple of zoom 1.0.
+   *
+   * Per frame rather than per atlas because the two are genuinely allowed to
+   * differ. The 0 A.D. motion clips can only be re-rendered against an archive
+   * that is not vendored here, so when everything else moved to scale 3 they
+   * stayed at 2; drawing them at the atlas-wide scale would have made a
+   * carrying peasant half again the size of a walking one.
+   */
+  scale: number;
 }
 
 export interface Atlas {
@@ -147,7 +157,8 @@ export class SpriteBatch {
 
   /**
    * Queue one sprite. `worldPos` is the ground point the sprite stands on.
-   * `ppu` is pixels-per-world-unit the atlas was rendered at.
+   * `ppu` is pixels-per-world-unit THIS FRAME was rendered at -- see
+   * `Frame.scale`; callers must not assume one value for the whole atlas.
    */
   add(frame: Frame, atlasSize: [number, number], ppu: number,
       x: number, y: number, z: number, depthBias = 0,

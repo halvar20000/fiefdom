@@ -39,11 +39,20 @@ export const PIXELS_PER_WORLD_UNIT = TILE_PX_W / Math.SQRT2; // 22.627
  */
 export const HEIGHT_STEP = 0.408;
 
-/** Sprites are pre-rendered at this multiple of zoom 1.0 so they stay crisp when zoomed in. */
-export const SPRITE_RENDER_SCALE = 2;
+/**
+ * Sprites are pre-rendered at this multiple of zoom 1.0 so they stay crisp when
+ * zoomed in.
+ *
+ * This is the hard ceiling on how far the camera may zoom: past it a sprite
+ * texel is stretched over more than one screen pixel and the art goes soft, and
+ * no camera change can recover detail that was never rendered. So the last
+ * entry of ZOOM_LEVELS must never exceed this number, and raising one means
+ * raising the other AND re-rendering every sprite (rig.py has its own copy).
+ */
+export const SPRITE_RENDER_SCALE = 3;
 
 /** Available zoom levels, as multipliers of PIXELS_PER_WORLD_UNIT. */
-export const ZOOM_LEVELS = [1, 1.5, 2] as const;
+export const ZOOM_LEVELS = [1, 1.5, 2, 3] as const;
 
 /** The four camera rotations, in azimuth degrees. */
 export const ROTATIONS = [45, 135, 225, 315] as const;

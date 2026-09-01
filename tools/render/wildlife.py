@@ -175,8 +175,11 @@ def build_gazelle():
     return root, objs, parts
 
 
-#: frames per clip, mirroring the peasant's CLIPS table
-CLIPS = {"gazelle_walk": 6, "gazelle_graze": 4, "gazelle_idle": 2}
+#: clip -> (frames, cycle seconds), mirroring the peasant's CLIPS table.
+#: Durations are what these already played at (old frames over ten fps), so
+#: the extra frames buy smoothness without changing the gait's timing.
+CLIPS = {"gazelle_walk": (10, 0.6), "gazelle_graze": (6, 0.4),
+         "gazelle_idle": (4, 0.2)}
 
 
 def pose(parts, clip, t):

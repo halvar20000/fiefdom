@@ -34,8 +34,12 @@ ELEVATION_DEG = 30.0
 AZIMUTHS_DEG = (45.0, 135.0, 225.0, 315.0)
 
 TILE_PX_W = 32
-SPRITE_RENDER_SCALE = 2
-PIXELS_PER_UNIT = (TILE_PX_W / math.sqrt(2.0)) * SPRITE_RENDER_SCALE  # 45.25
+# The multiple of zoom 1.0 every sprite is baked at, and therefore the furthest
+# the game camera may zoom before the art goes soft. Must equal
+# SPRITE_RENDER_SCALE in src/engine/iso.ts, and changing it invalidates every
+# PNG under public/assets/sprites -- re-render all three scripts together.
+SPRITE_RENDER_SCALE = 3
+PIXELS_PER_UNIT = (TILE_PX_W / math.sqrt(2.0)) * SPRITE_RENDER_SCALE  # 67.88
 
 # --- sun -------------------------------------------------------------------
 # Chosen so that at azimuth 45 the light arrives from the upper-right of the
@@ -56,7 +60,11 @@ SKY_STRENGTH = 0.52
 BOUNCE_COLOR = (0.78, 0.63, 0.42)   # warm light kicked back up off hot sand
 BOUNCE_STRENGTH = 1.45
 
-MARGIN_PX = 6                   # transparent breathing room around each sprite
+# Transparent breathing room around each sprite, in FINAL pixels. Kept scaled
+# with the render scale so it stays the same slack in world terms -- at a fixed
+# 6px it would shrink to two thirds of a tile-space margin at scale 3 and the
+# soft outer edge of a cast shadow would clip against the sprite border.
+MARGIN_PX = 3 * SPRITE_RENDER_SCALE
 
 
 @dataclass

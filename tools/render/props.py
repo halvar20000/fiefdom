@@ -143,14 +143,34 @@ def frond(name, base, length, width, droop, angle, mat, segs=8, fold=0.55):
     return geom._finish(name, verts, faces, mat, base, uv_project=True)
 
 
-def blob(name, base, radius, mat, squash=0.75, subdiv=1):
-    """Rough foliage clump."""
+def blob(name, base, radius, mat, squash=0.75, subdiv=2, rough=0.30):
+    """
+    Rough foliage clump.
+
+    The vertices are pushed in and out along their own normals by a
+    deterministic amount before the mesh is finished. Without that this is a
+    subdivided sphere, and a sphere of leaf colour is exactly what a tree must
+    not look like -- at the zoom the game now reaches an oak canopy is a
+    hundred pixels across, easily enough for the eye to notice it is a ball.
+    The displacement costs nothing and turns the silhouette lumpy, which is
+    most of what separates foliage from a balloon.
+
+    Seeded from the clump's name, so every camera rotation gets the SAME tree.
+    """
     bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=subdiv + 1, radius=radius,
                                           location=base)
     obj = bpy.context.active_object
     obj.name = name
     obj.scale = (1.0, 1.0, squash)
     bpy.ops.object.transform_apply(scale=True)
+
+    if rough > 0.0:
+        rnd = geom.rng_for(name)
+        for v in obj.data.vertices:
+            f = 1.0 + (rnd.random() - 0.45) * rough
+            v.co = (v.co[0] * f, v.co[1] * f, v.co[2] * f)
+        obj.data.update()
+
     obj.data.materials.append(mat)
     M.uv_cube_project(obj)
     return obj

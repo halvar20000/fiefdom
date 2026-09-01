@@ -23,6 +23,39 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.34.0',
+    date: '2026-09-01',
+    headline: 'Zoom the whole way in, and find something worth looking at.',
+    sections: [
+      {
+        title: 'Added',
+        items: [
+          'A fourth zoom level, at three times tile scale. A tile is 96 pixels across at full zoom where it used to be 64, a peasant stands about seventy pixels tall, and a keep fills better than five hundred. The camera stopped where it did for a reason — every sprite was baked at exactly twice tile scale, and one step further would have stretched each texel over more than a screen pixel — so the whole catalogue, all 1,700 sprites plus the ground tiles, has been re-rendered at three times instead.',
+          'Half-timbered walls. Every town and workshop building is now a lime-plaster box caged in oak posts, rails and diagonal braces that stand proud of the panel and cast their own shadow across it. It is the single most recognisable thing about the buildings in the reference, and at the old zoom there was simply nowhere to put it.',
+          'Roofs made of real courses. Shingle roofs are laid as overlapping split boards, staggered so the joints never line up; thatch is a deep mattress of straw bundles with rolled eaves, a rolled ridge and hazel rods pinning it down. Both are geometry rather than a texture on a smooth prism — what identifies a roof at a distance is the stepped edge and the lumpy silhouette, and no bump map changes a silhouette.',
+          'Undressed stone footings under the timber buildings and along the curtain wall, rafter ends poking out beneath the eaves, boarded doors with iron bands, shuttered windows, coopered barrels, planked crates, log stacks and stacked firewood. Small things, but they are what the extra pixels are for.',
+        ],
+      },
+      {
+        title: 'Changed',
+        items: [
+          'Animation is sampled roughly half again as finely. A walk cycle is twelve frames where it was eight, an idle six where it was four, a siege engine\'s throw eight where it was six. Each clip now carries its own playback rate, so the cycles take exactly as long as they always did — more frames buys smoothness, not a slower stride.',
+          'The keep gains corner pilasters, a string course dividing its two storeys, a boarded gate with steps up to it and a timber hoarding on the wall head. Towers grow corbels under their projecting decks, gatehouses get arch rings and a portcullis you can see through, and curtain wall gets a flagged walkway and a rubble base so a long run no longer meets the ground along one dead-straight line.',
+          'Ground tiles render at 192 pixels rather than 128, which is what the new zoom needs to stay sharp.',
+          'Oxen, cows and pigs are modelled as tapering barrels with dropped heads, horns and tails instead of stacked cuboids. The eye forgives a blocky building far more readily than a blocky animal.',
+          'Wheat grows as thousands of individual stalks instead of flat yellow strips, hops climb their poles as spiralling bines instead of standing there as cones — the hop garden used to read as a plantation of small conifers — and tree canopies are pushed in and out of round so they are foliage rather than green balloons.',
+          'Market stalls have a sagging ridged awning over a trestle of crates, sacks and a barrel, and the stockpile has a kerb round its paving, round bar stock and a stack of planks slightly out of true.',
+        ],
+      },
+      {
+        title: 'Fixed',
+        items: [
+          'The sprite atlas was allocating twice the texture it needed. Sprites packed to almost exactly 4096 pixels wide, the packer added its padding, and rounding the result up to a power of two doubled it — so half of a very large texture was transparent margin. It is sized to fit now, which more than pays for the sprites getting bigger.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.33.0',
     date: '2026-08-31',
     headline: 'Arm your men: four weapons workshops and an armoury.',

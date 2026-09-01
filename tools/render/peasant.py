@@ -10,8 +10,14 @@ a grey robot we would then have to pretend was a peasant.
 
 Binding is rigid: every piece belongs wholly to one bone, with overlapping
 spheres at the joints to hide the seams. Heat-map auto-weighting fails on
-disjoint geometry, and at the ~16 screen pixels a peasant occupies, rigid limbs
+disjoint geometry, and even at the ~70 screen pixels a peasant occupies once
+the camera is zoomed the whole way in, rigid limbs with a sphere over the joint
 are indistinguishable from smooth skinning.
+
+The segment and subdivision counts here were chosen for a figure sixteen pixels
+tall and are now roughly four times that, so they have gone up to match: an arm
+of eight sides is visibly a prism at this size, and a head of sixty faces is
+visibly a die.
 """
 
 from __future__ import annotations
@@ -49,7 +55,7 @@ def _mesh_from_bm(bm, name, mat, group, arm, prefix=DEFAULT_PREFIX):
     return obj
 
 
-def limb(arm, name, p0, p1, r0, r1, mat, group, segments=8, prefix=DEFAULT_PREFIX):
+def limb(arm, name, p0, p1, r0, r1, mat, group, segments=12, prefix=DEFAULT_PREFIX):
     """Tapered cylinder from p0 to p1, capped with spheres at both joints."""
     from mathutils import Matrix
     bm = bmesh.new()
@@ -89,7 +95,7 @@ def limb(arm, name, p0, p1, r0, r1, mat, group, segments=8, prefix=DEFAULT_PREFI
     return _mesh_from_bm(bm, name, mat, group, arm, prefix)
 
 
-def blob(arm, name, centre, radius, mat, group, squash=1.0, subdiv=2, prefix=DEFAULT_PREFIX):
+def blob(arm, name, centre, radius, mat, group, squash=1.0, subdiv=3, prefix=DEFAULT_PREFIX):
     from mathutils import Matrix
     bm = bmesh.new()
     bmesh.ops.create_icosphere(bm, subdivisions=subdiv, radius=radius,
@@ -101,7 +107,7 @@ def blob(arm, name, centre, radius, mat, group, squash=1.0, subdiv=2, prefix=DEF
     return _mesh_from_bm(bm, name, mat, group, arm)
 
 
-def skirt(arm, name, top_z, bottom_z, r_top, r_bottom, mat, group, segments=12, prefix=DEFAULT_PREFIX):
+def skirt(arm, name, top_z, bottom_z, r_top, r_bottom, mat, group, segments=16, prefix=DEFAULT_PREFIX):
     """The tunic hem -- a flared band that reads as clothing, not bare legs."""
     bm = bmesh.new()
     rings = []

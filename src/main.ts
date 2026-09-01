@@ -70,6 +70,14 @@ const STORE_KINDS: readonly ('stockpile' | 'granary')[] = ['stockpile', 'granary
 
 const MAP_W = 200;
 const MAP_H = 200;
+/**
+ * Fallback frame rate for a clip whose manifest entry carries no `fps`.
+ *
+ * Every clip used to be stepped at this flat rate, which is why it is still
+ * exactly ten: a clip rendered before the pipeline started emitting a rate --
+ * the 0 A.D. motion set, for one -- must keep playing at precisely the speed
+ * it always did.
+ */
 const WALK_FPS = 10;
 /**
  * Which sprite index a model's REST pose (Blender rotation 0) occupies.
@@ -1525,8 +1533,18 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
   iso.setBounds(0, MAP_W, 0, MAP_H);
 
   // --- rendering helpers --------------------------------------------------
-  const atlasPpu = (TILE_PX_W / Math.SQRT2) * atlas.scale;
+  /**
+   * Pixels per world unit for ONE frame, at the scale that frame was baked at.
+   *
+   * Not a single constant for the atlas: sprites are allowed to differ (see
+   * `Frame.scale`), and reading the atlas-wide scale for all of them drew any
+   * sprite baked at a lower one half again too large.
+   */
+  const ppuOf = (f: { scale: number }) =>
+    (TILE_PX_W / Math.SQRT2) * (f.scale || atlas.scale);
   const clipFrames = (clip: string) => atlas.clips[clip]?.frames ?? 1;
+  /** Frames per second for a clip, so its cycle keeps its length. */
+  const clipFps = (clip: string) => atlas.clips[clip]?.fps ?? WALK_FPS;
   /** Must match DEATH_TIME in army.ts -- the death clip's play length. */
   const DEATH_SECONDS = 1.1;
 
@@ -3191,7 +3209,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
                        facingOffset = DIRECTION_OFFSET) => {
       const dir = (unitDirectionIndex(heading, rot) + facingOffset) & 7;
       const n = clipFrames(clip);
-      const f = Math.floor(phase * WALK_FPS) % n;
+      const f = Math.floor(phase * clipFps(clip)) % n;
       const key = atlas.frames[`${clip}_${dir}_${f}`]
         ? `${clip}_${dir}_${f}` : `idle_${dir}_0`;
       if (!atlas.frames[key]) return;
@@ -3212,7 +3230,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       const dir = (unitDirectionIndex(w.heading, rot) + DIRECTION_OFFSET) & 7;
       const clip = enemyWorkers.clipFor(w);
       const n = clipFrames(clip);
-      const f = Math.floor(w.phase * WALK_FPS) % n;
+      const f = Math.floor(w.phase * clipFps(clip)) % n;
       const key = atlas.frames[`${clip}_${dir}_${f}`] ? `${clip}_${dir}_${f}` : `idle_${dir}_0`;
       if (!atlas.frames[key]) continue;
       figures.push({
@@ -3238,7 +3256,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
         const act = sd.swing > 0 ? 'attack' : sd.moving ? 'walk' : 'idle';
         const clip = `${sd.type}_${act}`;
         const n = clipFrames(clip);
-        const f = Math.floor(sd.phase * WALK_FPS) % n;
+        const f = Math.floor(sd.phase * clipFps(clip)) % n;
         key = atlas.frames[`${clip}_${dir}_${f}`] ? `${clip}_${dir}_${f}`
                 : atlas.frames[`${sd.type}_idle_${dir}_0`] ? `${sd.type}_idle_${dir}_0`
                 : `idle_${dir}_0`;
@@ -3313,7 +3331,8 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       const takeStatic = fi >= figures.length
         || (si < staticSorted.length && staticSorted[si].depth <= figures[fi].depth);
       const it = takeStatic ? staticSorted[si++] : figures[fi++];
-      sprites.add(atlas.frames[it.key], atlas.size, atlasPpu,
+      const frame = atlas.frames[it.key];
+      sprites.add(frame, atlas.size, ppuOf(frame),
         it.x, it.y, it.z, it.bias, it.tint);
     }
     sprites.flush();
@@ -3329,7 +3348,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
         const [w, d] = BUILDINGS[placement.selected].footprint;
         const { x, z } = placement.hover;
         const [gx, gz] = spriteAnchor(x, z, d);
-        ghostBatch.add(frame, atlas.size, atlasPpu,
+        ghostBatch.add(frame, atlas.size, ppuOf(frame),
           gx, terrain.heightAt(x, z), gz, footprintDepthBias(w, d, rot) + 6,
           placement.lastCheck.ok ? [0.55, 1.20, 0.55] : [1.30, 0.45, 0.40]);
       }

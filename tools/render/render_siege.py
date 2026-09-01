@@ -93,8 +93,9 @@ def main():
                                         Vector((0.0, 0.0, 0.0)))
         print(f"{engine} frame {w}x{h} anchor=({ax:.1f},{ay:.1f})", flush=True)
 
-        for clip, nframes in clips.items():
-            clips_meta[clip] = {"frames": nframes}
+        for clip, (nframes, seconds) in clips.items():
+            clips_meta[clip] = {"frames": nframes,
+                                "fps": round(nframes / seconds, 3)}
             for f in range(nframes):
                 t = f / nframes
                 for d in range(DIRECTIONS):
