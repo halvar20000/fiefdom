@@ -605,13 +605,6 @@ export const STORE_SPRITES: Partial<Record<Store, { empty: string; prefix: strin
 export const SPRITE_STANDIN: Record<string, string> = {
   stockpile: 'stockpile_deck',
   granary: 'granary_bin',
-  // The weapons chain, pending a render. Footprints match on purpose -- a 2x2
-  // stand-in under a 3x3 building would sit wrong on its own ground.
-  armoury: 'market',
-  fletcher: 'woodcutter',
-  poleturner: 'woodcutter',
-  blacksmith: 'bakery',
-  armourer: 'bakery',
 };
 
 /** The two levels must not meet, or the orders churn and bleed the spread. */

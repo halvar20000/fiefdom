@@ -52,6 +52,110 @@
     "scale": 2
   },
   {
+    "name": "armourer",
+    "rotation": 0,
+    "width": 170,
+    "height": 138,
+    "anchor_x": 34.75,
+    "anchor_y": 98.63,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "armourer",
+    "rotation": 1,
+    "width": 198,
+    "height": 138,
+    "anchor_x": 71.42,
+    "anchor_y": 66.95,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "armourer",
+    "rotation": 2,
+    "width": 170,
+    "height": 166,
+    "anchor_x": 135.25,
+    "anchor_y": 98.99,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "armourer",
+    "rotation": 3,
+    "width": 198,
+    "height": 150,
+    "anchor_x": 126.58,
+    "anchor_y": 129.91,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "armoury",
+    "rotation": 0,
+    "width": 242,
+    "height": 188,
+    "anchor_x": 39.66,
+    "anchor_y": 135.18,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
+    "name": "armoury",
+    "rotation": 1,
+    "width": 280,
+    "height": 188,
+    "anchor_x": 99.73,
+    "anchor_y": 83.99,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
+    "name": "armoury",
+    "rotation": 2,
+    "width": 242,
+    "height": 226,
+    "anchor_x": 202.34,
+    "anchor_y": 132.45,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
+    "name": "armoury",
+    "rotation": 3,
+    "width": 280,
+    "height": 206,
+    "anchor_x": 180.27,
+    "anchor_y": 183.25,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 2
+  },
+  {
     "name": "bakery",
     "rotation": 0,
     "width": 160,
@@ -936,6 +1040,58 @@
     "scale": 2
   },
   {
+    "name": "blacksmith",
+    "rotation": 0,
+    "width": 170,
+    "height": 138,
+    "anchor_x": 34.75,
+    "anchor_y": 98.63,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "blacksmith",
+    "rotation": 1,
+    "width": 198,
+    "height": 138,
+    "anchor_x": 71.42,
+    "anchor_y": 66.95,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "blacksmith",
+    "rotation": 2,
+    "width": 170,
+    "height": 166,
+    "anchor_x": 135.25,
+    "anchor_y": 98.99,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "blacksmith",
+    "rotation": 3,
+    "width": 198,
+    "height": 150,
+    "anchor_x": 126.58,
+    "anchor_y": 129.91,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
     "name": "brewery",
     "rotation": 0,
     "width": 210,
@@ -1345,6 +1501,58 @@
     "height": 114,
     "anchor_x": 108.88,
     "anchor_y": 99.36,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "fletcher",
+    "rotation": 0,
+    "width": 170,
+    "height": 138,
+    "anchor_x": 34.75,
+    "anchor_y": 98.63,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "fletcher",
+    "rotation": 1,
+    "width": 198,
+    "height": 138,
+    "anchor_x": 71.42,
+    "anchor_y": 66.95,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "fletcher",
+    "rotation": 2,
+    "width": 170,
+    "height": 166,
+    "anchor_x": 135.25,
+    "anchor_y": 98.99,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "fletcher",
+    "rotation": 3,
+    "width": 198,
+    "height": 150,
+    "anchor_x": 126.58,
+    "anchor_y": 129.91,
     "footprint": [
       2,
       2
@@ -3997,6 +4205,58 @@
     "height": 84,
     "anchor_x": 73.18,
     "anchor_y": 80.95,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "poleturner",
+    "rotation": 0,
+    "width": 170,
+    "height": 138,
+    "anchor_x": 35.07,
+    "anchor_y": 98.47,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "poleturner",
+    "rotation": 1,
+    "width": 200,
+    "height": 138,
+    "anchor_x": 72.74,
+    "anchor_y": 67.11,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "poleturner",
+    "rotation": 2,
+    "width": 170,
+    "height": 166,
+    "anchor_x": 134.93,
+    "anchor_y": 99.15,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 2
+  },
+  {
+    "name": "poleturner",
+    "rotation": 3,
+    "width": 200,
+    "height": 152,
+    "anchor_x": 127.26,
+    "anchor_y": 130.75,
     "footprint": [
       2,
       2
