@@ -100,8 +100,7 @@ def main():
             # tighter reconstruction filter: the default 1.2 blurs away the
             # pebble-scale detail these tiles exist to provide
             scene.render.filter_size = 0.70
-            scene.render.resolution_x = TILE_PX
-            scene.render.resolution_y = TILE_PX
+            rig.set_exact_resolution(TILE_PX, TILE_PX)
 
             # slide across world space so each variant samples different noise
             centre = (13.7 * v + 3.1 * ti, 9.3 * ti - 5.7 * v)

@@ -66,6 +66,29 @@ BOUNCE_STRENGTH = 1.45
 # soft outer edge of a cast shadow would clip against the sprite border.
 MARGIN_PX = 3 * SPRITE_RENDER_SCALE
 
+# Extra pixels rendered outside the frame and cut off again before the PNG is
+# written.
+#
+# OpenImageDenoise leaves an artefact in the outermost ring of a small render:
+# a single black pixel at about 20% alpha in one corner, byte-identical in
+# every frame of a body and absent from the interior. It is the denoiser and
+# not the scene -- render the same pose one pixel wider and the dot does not
+# move inward, it stops existing -- and which resolutions it bites is a
+# lottery, so it cannot be dodged by choosing a frame size. Turning denoising
+# off does cure it, at the cost of visible speckle in the alpha channel at
+# these sample counts.
+#
+# So give the denoiser a skirt to ruin and throw the skirt away. Costs four
+# pixels of render per axis and nothing at all in the sprite.
+RENDER_BLEED_PX = 2
+
+#: How much skirt the last framing call put on the scene, and therefore how
+#: much render_to() must cut off again. Only the framing helpers below add it;
+#: a caller that sets the resolution itself -- render_ground.py wants exactly
+#: TILE_PX and would be quietly shaved to TILE_PX - 4 -- goes through
+#: set_exact_resolution() and gets no crop.
+_bleed_pending = 0
+
 
 @dataclass
 class SpriteMeta:
@@ -343,12 +366,19 @@ def _frame_from_corners(cam, corners, anchor_world: Vector):
     height_px += height_px % 2
 
     scene = bpy.context.scene
-    scene.render.resolution_x = width_px
-    scene.render.resolution_y = height_px
+    # The bleed is added to the RENDER only. Everything returned from here --
+    # the size the caller records in the atlas, the anchor -- describes the
+    # cropped sprite, and because the skirt is symmetric the crop leaves the
+    # camera centre, and therefore the anchor, exactly where it was.
+    global _bleed_pending
+    _bleed_pending = RENDER_BLEED_PX
+    bleed = 2 * RENDER_BLEED_PX
+    scene.render.resolution_x = width_px + bleed
+    scene.render.resolution_y = height_px + bleed
     scene.render.resolution_percentage = 100
 
     # ortho_scale applies to the LARGER render dimension
-    larger = max(width_px, height_px)
+    larger = max(width_px, height_px) + bleed
     cam.data.ortho_scale = larger / PIXELS_PER_UNIT
 
     # centre the camera on the framed box
@@ -370,10 +400,51 @@ def _frame_from_corners(cam, corners, anchor_world: Vector):
     return width_px, height_px, anchor_x, anchor_y
 
 
+def _crop_bleed(path: str, bleed: int) -> None:
+    """Cut the denoiser's skirt off a rendered PNG, in place."""
+    import numpy as np
+
+    img = bpy.data.images.load(path)
+    try:
+        # Read and write the bytes as they are. Left on 'sRGB' this would
+        # decode to linear on the way in and re-encode on the way out, and the
+        # two 8-bit quantisations do not cancel -- the sprite would come back
+        # a shade off for no reason but the crop.
+        img.colorspace_settings.name = 'Non-Color'
+        w, h = img.size
+        px = np.array(img.pixels[:], dtype=np.float32).reshape(h, w, 4)
+        px = px[bleed:h - bleed, bleed:w - bleed]
+        ch, cw, _ = px.shape
+
+        out = bpy.data.images.new("bleed_crop", width=cw, height=ch, alpha=True)
+        try:
+            out.colorspace_settings.name = 'Non-Color'
+            out.pixels = px.ravel().tolist()
+            out.filepath_raw = path
+            out.file_format = 'PNG'
+            out.save()
+        finally:
+            bpy.data.images.remove(out)
+    finally:
+        bpy.data.images.remove(img)
+
+
+def set_exact_resolution(width_px: int, height_px: int) -> None:
+    """Render at exactly this size, with no bleed to crop off afterwards."""
+    global _bleed_pending
+    _bleed_pending = 0
+    scene = bpy.context.scene
+    scene.render.resolution_x = width_px
+    scene.render.resolution_y = height_px
+    scene.render.resolution_percentage = 100
+
+
 def render_to(path: str) -> None:
     os.makedirs(os.path.dirname(path), exist_ok=True)
     bpy.context.scene.render.filepath = path
     bpy.ops.render.render(write_still=True)
+    if _bleed_pending > 0:
+        _crop_bleed(path, _bleed_pending)
 
 
 def write_meta(path: str, metas) -> None:
