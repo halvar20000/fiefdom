@@ -709,7 +709,12 @@ export const ALE_POPULARITY_MAX = 10;
  * Indexed by how many DIFFERENT foods are in the granary, so the array must
  * have an entry for every possible count -- adding meat made four possible.
  */
-export const FOOD_VARIETY_BONUS = [0, 0, 3, 6, 9];
+// Indexed by how many KINDS of food the granary is issuing, so it needs one
+// slot per food type plus the empty case. FOOD_RESOURCES has grown to five --
+// bread, cheese, apples, meat and fish -- and this stopped at four, so the
+// fifth kind was earning nothing and a fishery could never pay for itself in
+// popularity. Same +3 a kind the rest of the ladder uses.
+export const FOOD_VARIETY_BONUS = [0, 0, 3, 6, 9, 12];
 
 /**
  * What you can buy at the barracks.

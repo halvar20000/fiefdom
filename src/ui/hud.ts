@@ -1219,6 +1219,17 @@ export class Hud {
     }
   }
 
+  /**
+   * A digit key on a category: open it, or close it if it is already open.
+   *
+   * The same behaviour the category buttons have had all along -- clicking the
+   * open one shuts it. The keys only ever opened, so 3 3 3 was three ways of
+   * saying the same thing and there was no key that put the panel away.
+   */
+  toggleCategory(gi: number): void {
+    this.openCategory(gi === this.openGroup ? null : gi);
+  }
+
   /** B: reopen whatever was last open, or the first category on a cold start. */
   toggleBuild(): void {
     this.openCategory(this.openGroup === null ? this.lastGroup : null);

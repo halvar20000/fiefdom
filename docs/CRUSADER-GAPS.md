@@ -1,0 +1,116 @@
+# Crusader gaps — backlog
+
+What Stronghold Crusader has that Fiefdom does not, as an ordered work list.
+
+## Where this came from
+
+The fork at `Dadud/fiefdom` ran a series of Cursor background agents over the
+codebase as it stood on **21 Aug 2026** (`b5d3612`) and produced eleven
+`cursor/*` branches and eight open pull requests of Crusader feature work.
+Its `main` is an ancestor of ours and carries nothing we lack; all of the
+content is on those branches, sourced from its `Dev` branch.
+
+**This is a design backlog, not a merge queue.** The branches are not being
+merged, for two concrete reasons:
+
+1. **Their art is baked for the old zoom.** The fork's `buildings.json` holds
+   516 sprites at `scale: 2`; ours holds 368 at `scale: 3`. Merging the sprite
+   PR alone (206 files) would drop a large block of half-resolution art back
+   into the atlas and undo the mixed-scale cleanup finished in 1.34.2.
+2. **The base has moved.** We are 54+ commits past where they branched, and the
+   drift is concentrated in exactly the files those PRs touch — `defs.ts`,
+   `main.ts`, `assets.ts`, `sprites.ts`, and the whole sprite catalogue.
+
+So each item below gets built our way: a `defs.ts` entry, geometry in
+`tools/render/buildings.py` rendered through `rig.py` at `SPRITE_RENDER_SCALE`,
+and a changelog entry. What the fork gives us is the *inventory* — a
+well-researched list of what is missing — not the code.
+
+## How the list was derived
+
+Building and unit keys in `src/game/defs.ts` on both sides: 96 in their `Dev`
+branch, 46 in ours. Everything below is in theirs and not in ours. Only
+`pharmacy` runs the other way.
+
+Already ours and therefore absent from this list: the weapons chain (fletcher,
+poleturner, blacksmith, armourer, armoury), church, gallows, gatehouse,
+wall-manning via towers, flying arrows and bolts (`src/engine/projectiles.ts`),
+and mobile touch controls (`src/ui/touch.ts`).
+
+## Tranches
+
+Ordered cheapest and most self-contained first. A "simple" building is about
+seventeen lines of geometry plus a registry line and a `defs.ts` entry — see
+`gallows()` in `tools/render/buildings.py` for the shape of one.
+
+### 1. Pure logic — no art *(done, 1.34.3)*
+
+- [x] `FOOD_VARIETY_BONUS` had five slots for a five-item `FOOD_RESOURCES`, so
+      the fifth kind of food earned nothing and a fishery could never pay for
+      itself in popularity. Extended on our own +3-a-kind ladder, not the
+      fork's numbers.
+- [x] Build-menu digits `1`–`6` toggle a category shut again. The category
+      buttons always toggled on click; the keys only ever opened.
+
+### 2. Popularity buildings — simple geometry
+
+Good: `maypole`, `statue`, `pond`, `well`, `dancing_bear`.
+Fear: `stocks`, `gibbet`, `dungeon`, `dunking_stool`, `stretching_rack`,
+`burning_stake`, `dog_cage`.
+
+Both sets extend mechanics we already have — `beauty` for the good ones,
+`fear: { popularity, taxMultiplier }` for the bad — so these are art plus a
+definition each, with no new systems.
+
+### 3. Religion tiers
+
+`chapel`, `shrine`, `cathedral`. We have `church`; these are the rungs below
+and above it. Needs a decision on whether religious coverage scales with
+population the way `beauty` does.
+
+### 4. Economy
+
+`apothecary`, `tanner`. New production chains; `tanner` implies a hide resource
+off the slaughterhouse.
+
+### 5. Castle works
+
+`drawbridge`, `moat`, `killing_pit`, `stairs`, `round_tower`,
+`perimeter_turret`, `lookout_tower`, `oil_smelter`, `water_pot`.
+
+These carry real mechanics, not just art: moats need terrain modification and
+pathing that respects them, drawbridges need an open/shut state, killing pits
+and oil need a trigger and damage model.
+
+### 6. Recruitment
+
+`engineers_guild`, `tunnelers_guild`, `mercenary_post`, `stables`. Each is a
+barracks-alike that recruits a different pool, so the barracks recruitment path
+generalises rather than being copied four times.
+
+### 7. Troops
+
+`knight`, `pikeman`, `maceman`, `crossbowman`, `slinger`, `horse_archer`,
+`arabian_swordsman`, `assassin`, `slave`, `ladderman`, `engineer`, `tunneler`,
+`war_dog`, `lord`.
+
+The `SOLDIERS` dict in `tools/render/render_units.py` already parameterises a
+body by palette, kit and attack clip, so foot troops are comparatively cheap.
+Mounted units (`horse_archer`) and `war_dog` need a new body entirely.
+
+### 8. Siege
+
+`ballista`, `mangonel`, `siege_tower`, `portable_shield`, `fire_thrower`,
+`oil_pot`. `tools/render/siege.py` has the pattern from the catapult, ram,
+trebuchet and fire ballista. Engineer-assembled engines depend on tranche 6.
+
+## Notes
+
+- Their PR #8 adds stones to the missile set; we already have `arrow` and
+  `bolt` in `src/engine/projectiles.ts`, so that is an extension rather than a
+  new system.
+- Their PR #10 (mobile controls) duplicates `src/ui/touch.ts`, which already
+  has the thumb bar, pinch-zoom and tap-to-order. Nothing to take.
+- `tools/render/buildings.py` is large and hand-written; every new building is
+  geometry authored by hand, which is what makes the tranche ordering above
+  matter more than it would in a project with procedural art.

@@ -23,6 +23,20 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.34.3',
+    date: '2026-09-02',
+    headline: 'The fifth kind of food finally counts for something.',
+    sections: [
+      {
+        title: 'Fixed',
+        items: [
+          'A fishery could never pay for itself. Popularity rewards variety at the granary on a ladder of three points a kind, but the ladder had only ever been built four rungs high while the game grew a fifth food -- so bread, cheese, apples and meat earned nine points and adding fish to them earned nine points as well. The rung is there now, and five kinds are worth twelve.',
+          'The build menu\'s digit keys could open a category but never shut one. Clicking a category button has always toggled it; pressing its number only ever opened it, so there was no key that put the panel away and pressing the same digit twice did nothing the second time. The keys and the buttons behave the same way now.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.34.2',
     date: '2026-09-02',
     headline: 'The four borrowed animations catch up with the rest.',

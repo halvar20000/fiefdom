@@ -2620,7 +2620,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       hud.syncSound();
       state.notify(audio.volume > 0 ? 'Sound on' : 'Sound off');
     }
-    if (k >= '1' && k <= '6') hud.openCategory(Number(k) - 1);
+    if (k >= '1' && k <= '6') hud.toggleCategory(Number(k) - 1);
     if (k === 'm') hud.toggleMarket();
     if (k === 't') hud.toggleStats();
     if (k === 'h') toggleHold();
