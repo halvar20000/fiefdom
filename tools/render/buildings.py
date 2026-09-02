@@ -2675,3 +2675,98 @@ REGISTRY.update({
     "water_pot": water_pot,
     "stairs": stairs,
 })
+
+
+# --- the guilds ------------------------------------------------------------
+#
+# Two workshops that recruit rather than produce, so neither can look like a
+# weapons workshop. Both are yards with the work lying about in them: the
+# engineers' a timber-framed shed with a trestle and cut stone, the
+# tunnellers' a spoil heap over a shored hole in the ground.
+
+
+def engineers_guild():
+    """A framing shed: trestle, sawn timber, dressed blocks and a shear-leg."""
+    timber_l = M.timber("EgTimber")
+    timber_d = M.timber("EgPost", dark=True)
+    shingle = M.shingle_wood("EgRoof")
+    plaster = M.plaster("EgPanel", tint=(0.84, 0.79, 0.68))
+    stone = M.castle_stone("EgBlock")
+    rough = M.rough_stone("EgYard")
+    rope = M.cloth("EgRope", colour=(0.56, 0.50, 0.34))
+
+    parts = []
+    parts.append(geom.box("eg_yard", (0.08, 0.08, 0.0), (1.84, 1.84, 0.06), rough))
+    # An open-fronted shed on the back half, so the yard reads as workspace.
+    # timber_frame builds the plaster box as well as the cage, so there is no
+    # separate wall to add underneath it.
+    parts += geom.timber_frame("eg_shed", (0.20, 0.96, 0.06), (1.56, 0.84, 0.66),
+                               plaster, timber_d)
+    parts.append(geom.gable("eg_roof", (0.12, 0.88, 0.72), (1.72, 1.00, 0.42), shingle,
+                            overhang=0.06))
+    # A trestle with a beam being cut on it: the one object that says this is
+    # where things are MADE rather than stored.
+    for i, x in enumerate((0.42, 1.14)):
+        parts.append(geom.box(f"eg_trestle_{i}", (x, 0.36, 0.06), (0.10, 0.42, 0.32), timber_d))
+    parts.append(geom.box("eg_beam", (0.28, 0.44, 0.38), (1.20, 0.16, 0.12), timber_l))
+    parts += geom.log_stack("eg_logs", (1.46, 0.22, 0.06), 4, 0.68, 0.075, timber_l, along='y')
+    for i, (x, y) in enumerate(((0.20, 0.20), (0.44, 0.18))):
+        parts.append(geom.box(f"eg_block_{i}", (x, y, 0.06), (0.22, 0.22, 0.20), stone))
+    # Shear-legs for lifting the blocks, leaning together over the yard.
+    for i, dx in enumerate((-0.16, 0.16)):
+        parts.append(geom.cylinder(f"eg_shear_{i}", (0.92 + dx, 0.70, 0.06), 0.05, 0.92,
+                                   timber_d, segments=6))
+        parts[-1].rotation_euler = (0.0, -dx * 1.9, 0.0)
+    parts.append(geom.cylinder("eg_hoist", (0.92, 0.70, 0.60), 0.016, 0.34, rope, segments=5))
+    return geom.join(parts, "engineers_guild"), (2, 2)
+
+
+def tunnelers_guild():
+    """A shored mine head: spoil heap, a propped mouth and a windlass."""
+    timber_l = M.timber("TgTimber")
+    timber_d = M.timber("TgProp", dark=True)
+    spoil = M.cloth("TgSpoil", colour=(0.36, 0.30, 0.22))
+    dark = M.cloth("TgDark", colour=(0.09, 0.08, 0.07))
+    rough = M.rough_stone("TgYard")
+    rope = M.cloth("TgRope", colour=(0.56, 0.50, 0.34))
+    plank = M.timber("TgPlank")
+
+    parts = []
+    parts.append(geom.box("tg_yard", (0.08, 0.08, 0.0), (1.84, 1.84, 0.06), rough))
+    # The spoil heap: what comes OUT is the whole tell. A hole alone reads as a
+    # cellar; a hole with a mountain of earth beside it reads as a tunnel.
+    # Wide and LOW. Cones at 0.42 tall read as tents pitched in the yard; a
+    # spoil heap is a thing that has been tipped, so it spreads.
+    for i, (x, y, r, h) in enumerate(((1.36, 1.28, 0.52, 0.20), (1.64, 0.84, 0.36, 0.14),
+                                      (1.04, 1.64, 0.34, 0.13))):
+        parts.append(geom.cone(f"tg_spoil_{i}", (x, y, 0.06), r, h, spoil, segments=12))
+    # The mouth: a black pit sunk into the yard, and big enough to see. The
+    # first cut was a thin dark sheet at ground level behind three props, which
+    # from this camera is simply not visible -- and a tunnellers' guild whose
+    # tunnel cannot be seen is a shed with a windlass.
+    parts.append(geom.box("tg_pit", (0.22, 0.22, 0.02), (0.74, 0.62, 0.05), dark))
+    parts.append(geom.box("tg_mouth", (0.28, 0.28, 0.07), (0.62, 0.50, 0.03), dark))
+    for i, (px, py, sx, sy) in enumerate(((0.20, 0.20, 0.78, 0.06),
+                                          (0.20, 0.78, 0.78, 0.06),
+                                          (0.20, 0.20, 0.06, 0.64),
+                                          (0.92, 0.20, 0.06, 0.64))):
+        parts.append(geom.box(f"tg_kerb_{i}", (px, py, 0.06), (sx, sy, 0.07), plank))
+    for i, x in enumerate((0.26, 0.86)):
+        parts.append(geom.box(f"tg_prop_{i}", (x, 0.26, 0.06), (0.10, 0.10, 0.60), timber_d))
+    parts.append(geom.box("tg_lintel", (0.20, 0.26, 0.66), (0.82, 0.10, 0.10), timber_d))
+    for i, y in enumerate((0.34, 0.52, 0.70)):
+        parts.append(geom.box(f"tg_shore_{i}", (0.24, y, 0.10), (0.74, 0.05, 0.05), plank))
+    # A windlass over the mouth for hauling the spoil up.
+    for i, x in enumerate((0.28, 0.84)):
+        parts.append(geom.box(f"tg_wpost_{i}", (x, 0.74, 0.06), (0.09, 0.09, 0.56), timber_d))
+    parts.append(geom.cylinder("tg_drum", (0.32, 0.78, 0.60), 0.07, 0.52, timber_l, segments=8))
+    parts[-1].rotation_euler = (0.0, math.pi / 2.0, 0.0)
+    parts.append(geom.cylinder("tg_rope", (0.60, 0.60, 0.18), 0.015, 0.44, rope, segments=5))
+    parts.append(geom.box("tg_bucket", (0.52, 0.52, 0.06), (0.18, 0.18, 0.16), timber_l))
+    return geom.join(parts, "tunnelers_guild"), (2, 2)
+
+
+REGISTRY.update({
+    "engineers_guild": engineers_guild,
+    "tunnelers_guild": tunnelers_guild,
+})

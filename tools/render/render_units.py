@@ -130,6 +130,21 @@ SOLDIERS = {
         "attack_frames": 14,
         "attack_seconds": 1.0,
     },
+    # The two who do not fight. No weapon in the kit at all, which is the
+    # honest silhouette: at sprite scale a man with empty hands reads as a
+    # workman, and that is exactly what these are. Palette does the rest --
+    # the engineer in tan leather, the tunneller in earth-dark clothes that
+    # separate him from both the engineer and the peasant he was.
+    "engineer": {
+        "palette": {'tunic': (0.64, 0.50, 0.28), 'hood': (0.50, 0.39, 0.22),
+                    'hose': (0.34, 0.28, 0.19)},
+        "kit": {'helmet': True},
+    },
+    "tunneler": {
+        "palette": {'tunic': (0.29, 0.25, 0.21), 'hood': (0.21, 0.18, 0.15),
+                    'hose': (0.19, 0.16, 0.13)},
+        "kit": {},
+    },
     "swordsman": {
         "palette": {'tunic': (0.55, 0.56, 0.58), 'hood': (0.45, 0.46, 0.48),
                     'hose': (0.26, 0.24, 0.22)},

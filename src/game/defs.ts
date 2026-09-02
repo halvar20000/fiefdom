@@ -337,6 +337,16 @@ export const BUILDINGS: Record<string, BuildingDef> = {
                + 'the wall beside them can be manned without spending a tower '
                + 'to anchor it.',
   },
+  engineers_guild: {
+    name: 'engineers_guild', label: "Engineers' Guild", category: 'castle',
+    footprint: [2, 2], cost: { wood: 25, stone: 15 }, workers: 0, terrain: 'any',
+    description: 'Recruits engineers, who mend walls rather than man them.',
+  },
+  tunnelers_guild: {
+    name: 'tunnelers_guild', label: "Tunnellers' Guild", category: 'castle',
+    footprint: [2, 2], cost: { wood: 30, stone: 10 }, workers: 0, terrain: 'any',
+    description: 'Recruits tunnellers, who go under a wall instead of over it.',
+  },
   siege_camp: {
     name: 'siege_camp', label: 'Siege Camp', category: 'castle',
     footprint: [3, 3], cost: { wood: 40, stone: 10 }, workers: 0, terrain: 'any',
@@ -756,7 +766,8 @@ export const BUILD_MENU: { category: Category; label: string; items: string[] }[
   { category: 'castle', label: 'Castle',
     items: ['wall', 'gatehouse', 'tower', 'round_tower', 'perimeter_turret',
             'lookout_tower', 'stairs', 'moat', 'drawbridge', 'pitch_ditch',
-            'killing_pit', 'water_pot', 'barracks', 'siege_camp'] },
+            'killing_pit', 'water_pot', 'barracks', 'engineers_guild',
+            'tunnelers_guild', 'siege_camp'] },
   { category: 'castle', label: 'Stores', items: ['stockpile', 'granary'] },
   { category: 'town', label: 'Town',
     items: ['hovel', 'market', 'garden', 'well', 'pond', 'statue', 'maypole',
@@ -1088,6 +1099,19 @@ export const BURN_DPS = 14;
 export const IGNITE_RADIUS = 1.3;
 
 /**
+ * What an engineer mends and what a tunneller undermines, per second.
+ *
+ * Both are deliberately slow. A wall that comes back as fast as a catapult
+ * knocks it down makes siege pointless, and a tunneller who drops a gatehouse
+ * in ten seconds makes walls pointless. They are attritional: bring several,
+ * or bring time.
+ */
+export const REPAIR_RADIUS = 2.2;
+export const REPAIR_PER_SECOND = 7;
+export const UNDERMINE_RADIUS = 1.8;
+export const UNDERMINE_PER_SECOND = 5;
+
+/**
  * The two sprung defences: a pit that opens under a man, and a pot that puts a
  * fire out. Both are ONE-SHOT and consumed, like a pitch ditch, because a
  * permanent free trap is not a decision -- you would lay one and forget it.
@@ -1142,7 +1166,17 @@ export interface SoldierType {
    */
   siege?: boolean;
   /** Which building must exist to buy this. */
-  from: 'barracks' | 'siege_camp';
+  /**
+   * The building that recruits him, by name.
+   *
+   * Was a union of the only two that existed. A union means every new
+   * recruiting building is a change to this type AND to every place that
+   * switched on it -- and the places that switched on it were writing the
+   * "you need a barracks" message by hand, so a guild would have told the
+   * player to build a barracks. It is the building's name now, and the
+   * message comes from the building's own label.
+   */
+  from: string;
   description: string;
 }
 
@@ -1158,6 +1192,23 @@ export const SOLDIER_TYPES: Record<string, SoldierType> = {
     cost: { bows: 1 },
     hp: 26, speed: 1.6, damage: 5, range: 6.5, cooldown: 1.6,
     description: 'Shoots at range. Helpless once reached. Needs a bow.',
+  },
+  engineer: {
+    name: 'engineer', from: 'engineers_guild', label: 'Engineer', gold: 40,
+    cost: { wood: 2 },
+    // No reach and no bite on purpose: he is a workman with a hammer, and a
+    // unit that both mends and fights would simply replace the swordsman.
+    hp: 45, speed: 1.2, damage: 0, range: 0.9, cooldown: 1.5,
+    description: 'Mends what the enemy knocks down. Stand him by a damaged '
+               + 'building and it comes back up. He will not fight.',
+  },
+  tunneler: {
+    name: 'tunneler', from: 'tunnelers_guild', label: 'Tunneler', gold: 50,
+    cost: { wood: 2 },
+    hp: 40, speed: 1.15, damage: 0, range: 0.9, cooldown: 1.5,
+    description: 'Digs under whatever he is standing beside. Slower than a '
+               + 'catapult and silent — and no wall is thick enough to stop '
+               + 'him from below. He will not fight either.',
   },
   swordsman: {
     name: 'swordsman', from: 'barracks', label: 'Swordsman', gold: 80,
@@ -1219,5 +1270,21 @@ export const SIEGE_TYPES: Record<string, SoldierType> = {
 
 Object.assign(SOLDIER_TYPES, SIEGE_TYPES);
 
-export const SOLDIER_ORDER =
-  ['spearman', 'archer', 'swordsman', 'ram', 'catapult', 'trebuchet', 'fire_ballista'] as const;
+export const SOLDIER_ORDER: string[] =
+  ['spearman', 'archer', 'swordsman', 'engineer', 'tunneler',
+   'ram', 'catapult', 'trebuchet', 'fire_ballista'];
+
+/**
+ * Soldiers that exist but no recruit panel lists.
+ *
+ * The same trap BUILD_MENU sprang: SOLDIER_ORDER is hand-written and it is the
+ * only thing the recruit panel iterates, so a unit missing from it is defined,
+ * costed, sprited and unrecruitable in silence. Reported through the same
+ * startup banner as a stale manifest.
+ */
+export function unlistedSoldiers(): string[] {
+  const listed = new Set(SOLDIER_ORDER);
+  return Object.keys(SOLDIER_TYPES)
+    .filter(n => !listed.has(n))
+    .map(n => `unrecruitable:${n}`);
+}

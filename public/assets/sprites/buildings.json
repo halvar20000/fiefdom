@@ -1924,6 +1924,58 @@
     "scale": 3
   },
   {
+    "name": "engineers_guild",
+    "rotation": 0,
+    "width": 228,
+    "height": 176,
+    "anchor_x": 33.11,
+    "anchor_y": 121.99,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "engineers_guild",
+    "rotation": 1,
+    "width": 260,
+    "height": 176,
+    "anchor_x": 97.65,
+    "anchor_y": 73.51,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "engineers_guild",
+    "rotation": 2,
+    "width": 228,
+    "height": 206,
+    "anchor_x": 194.89,
+    "anchor_y": 120.33,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "engineers_guild",
+    "rotation": 3,
+    "width": 260,
+    "height": 190,
+    "anchor_x": 162.35,
+    "anchor_y": 168.95,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
     "name": "fishery",
     "rotation": 0,
     "width": 224,
@@ -5973,6 +6025,58 @@
     "height": 262,
     "anchor_x": 219.59,
     "anchor_y": 222.72,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "tunnelers_guild",
+    "rotation": 0,
+    "width": 222,
+    "height": 156,
+    "anchor_x": 21.72,
+    "anchor_y": 100.1,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "tunnelers_guild",
+    "rotation": 1,
+    "width": 244,
+    "height": 156,
+    "anchor_x": 101.55,
+    "anchor_y": 50.66,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "tunnelers_guild",
+    "rotation": 2,
+    "width": 222,
+    "height": 176,
+    "anchor_x": 200.28,
+    "anchor_y": 100.12,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "tunnelers_guild",
+    "rotation": 3,
+    "width": 244,
+    "height": 166,
+    "anchor_x": 142.45,
+    "anchor_y": 149.98,
     "footprint": [
       2,
       2

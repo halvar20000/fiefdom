@@ -23,6 +23,28 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.42.0',
+    date: '2026-09-02',
+    headline: 'Two guilds, and two men who will not fight for you.',
+    sections: [
+      {
+        title: 'Added',
+        items: [
+          'The Engineers\' Guild, and the engineer. Stand him beside something the enemy has knocked about and he puts it back up, fastest on whatever is nearest to falling. He carries no weapon and does no damage at all, which is the point: a man who both mends and fights is just a swordsman with extra steps.',
+          'The Tunnellers\' Guild, and the tunneller. Walk him up to an enemy building and he goes under it. No wall is thick enough to matter from below, and nothing he does makes a sound a catapult would. He will not fight either.',
+          'Both work slowly and on purpose. A wall that comes back up as fast as a catapult knocks it down would make siege pointless, and a tunneller who dropped a gatehouse in ten seconds would make walls pointless. Bring several, or bring time.',
+        ],
+      },
+      {
+        title: 'Fixed',
+        items: [
+          'A new recruiting building would have told you to build a barracks. Which building trains a soldier was one of two fixed choices, and the "you need a barracks" and "you need a siege camp" messages were written out by hand beside it — so the first guild would have sent players to entirely the wrong building. The message now comes from the building the soldier actually names.',
+          'A soldier left out of the recruit list was unrecruitable in silence — defined, priced, given sprites, and offered nowhere. The same hole the build menu had. The game now says so on startup, loudly, the way it does about stale artwork.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.41.0',
     date: '2026-09-02',
     headline: 'Choose the ground, then choose who is standing on it.',

@@ -171,11 +171,29 @@ Both new pieces check `army.enemies` rather than every soldier, unlike a pitch
 fire which burns whoever is standing in it — a trap that killed its own
 garrison would be a bug, not a nuance.
 
-### 6. Recruitment
+### 6. Recruitment *(part done, 1.42.0)*
 
-`engineers_guild`, `tunnelers_guild`, `mercenary_post`, `stables`. Each is a
-barracks-alike that recruits a different pool, so the barracks recruitment path
-generalises rather than being copied four times.
+- [x] Recruiting generalised. `SoldierType.from` was a union of the only two
+      buildings that existed, and the two places that switched on it wrote
+      "you need a barracks" by hand -- so a guild would have told the player to
+      build a barracks. It is a building name now and the message comes from
+      that building's own label.
+- [x] `engineers_guild` -> `engineer`, `tunnelers_guild` -> `tunneler`.
+- [ ] `mercenary_post`, `stables`. Both wait on tranche 7: a post that
+      recruits nobody and a stable with nothing to mount are not buildings,
+      they are placeholders.
+
+`SOLDIER_ORDER` was the same trap as `BUILD_MENU` -- hand-written, the only
+thing the recruit panel iterates, so a unit missing from it is defined, costed,
+sprited and unrecruitable in silence. `unlistedSoldiers()` guards it now,
+through the same startup banner.
+
+The two units earn their guilds by doing something no soldier does, rather than
+being more soldiers: the engineer mends the nearest damaged building he is
+standing by, the tunneller undermines whatever enemy building he stands beside.
+Both have zero damage on purpose -- a unit that mends AND fights just replaces
+the swordsman. Both rates are per second and deliberately slow: a wall that
+comes back as fast as a catapult knocks it down makes siege pointless.
 
 ### 7. Troops
 

@@ -1950,8 +1950,7 @@ export class Hud {
         const t = SOLDIER_TYPES[b.dataset.recruit!];
         // Grey out for the reason it cannot be bought, and say which.
         const src = s.buildings.some(b => b.name === t.from);
-        const why = !src ? (t.from === 'siege_camp' ? 'Build a siege camp first'
-                                                    : 'Build a barracks first')
+        const why = !src ? `Build ${(BUILDINGS[t.from]?.label ?? t.from).toLowerCase()} first`
           : s.idle < 1 ? 'No idle peasant to take up arms'
           : s.gold < t.gold ? 'Not enough gold'
           : !s.canAfford(t.cost) ? 'Not enough materials'

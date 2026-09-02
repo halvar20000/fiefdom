@@ -38,9 +38,10 @@ import {
   BUILDINGS, STORE_SPRITES, SPRITE_STANDIN, SOLDIER_TYPES, buildingHp,
   canGarrison, isWeapon,
   GARRISON_HEIGHT, garrisonReach, MARSH_SPEED_FOOT, MARSH_SPEED_SIEGE,
-  BUILD_MENU, unlistedBuildings,
+  BUILD_MENU, unlistedBuildings, unlistedSoldiers,
   BURN_SECONDS, BURN_RADIUS, BURN_DPS, IGNITE_RADIUS, DEMOLISH_REFUND,
   PIT_TRIGGER_RADIUS, PIT_BLAST_RADIUS, PIT_DAMAGE, WATER_POT_RADIUS,
+  REPAIR_RADIUS, REPAIR_PER_SECOND, UNDERMINE_RADIUS, UNDERMINE_PER_SECOND,
   SPEED_LEVELS, RESOURCE_LABELS,
   type Resource,
 } from './game/defs';
@@ -163,6 +164,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       Object.keys(BUILDINGS).filter(n => n !== 'stockpile' && n !== 'granary'),
       atlas.frames),
     ...unlistedBuildings(),
+    ...unlistedSoldiers(),
   ]);
 
   const terrain = new Terrain({ width: MAP_W, height: MAP_H, layers: 20 }, tiles.texture);
@@ -1762,6 +1764,53 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
    * rather than every soldier -- unlike a pitch fire, which burns whoever is
    * in it. A trap that killed its own garrison would be a bug, not a nuance.
    */
+  /**
+   * Engineers mend, tunnellers undermine.
+   *
+   * Both work by standing still beside something, so neither needs an order
+   * system of its own: you walk him there and he gets on with it, which is
+   * also how a worker behaves. Both are per-second rates rather than per-hit,
+   * because a repair that raced a catapult would make siege pointless and a
+   * tunneller who dropped a gatehouse in ten seconds would make walls
+   * pointless.
+   */
+  function updateSappers(dt: number): void {
+    for (const u of army.soldiers) {
+      if (u.hp <= 0 || u.moving) continue;
+
+      if (u.type === 'engineer' && u.side === 0) {
+        // The most damaged thing in reach, so a man between two ruins mends
+        // the one nearer to falling rather than whichever was found first.
+        let worst: PlacedBuilding | null = null;
+        for (const b of state.buildings) {
+          const [w, d] = b.def.footprint;
+          const full = buildingHp(b.def);
+          if (b.hp >= full) continue;
+          if (distToFootprint(u.x, u.z, b.x, b.z, w, d) > REPAIR_RADIUS) continue;
+          if (!worst || b.hp / buildingHp(b.def) < worst.hp / buildingHp(worst.def)) worst = b;
+        }
+        if (worst) {
+          worst.hp = Math.min(buildingHp(worst.def), worst.hp + REPAIR_PER_SECOND * dt);
+        }
+        continue;
+      }
+
+      if (u.type === 'tunneler' && u.side === 0) {
+        for (const f of factions) {
+          if (f.defeated) continue;
+          let hit: EnemyBuilding | null = null;
+          for (const b of f.buildings) {
+            const [w, d] = BUILDINGS[b.name].footprint;
+            if (distToFootprint(u.x, u.z, b.x, b.z, w, d) > UNDERMINE_RADIUS) continue;
+            hit = b;
+            break;
+          }
+          if (hit) { damageEnemyBuilding(f, hit, UNDERMINE_PER_SECOND * dt); break; }
+        }
+      }
+    }
+  }
+
   function updateTraps(): number {
     let sprung = 0;
 
@@ -2759,12 +2808,17 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
    * Siege engines are the exception and go on costing timber and iron directly
    * -- an engine is built at the camp rather than issued from a store.
    */
+  /** "a barracks", "an engineers' guild" -- for the one message that needs it. */
+  function aOrAn(label: string): string {
+    const l = label.toLowerCase();
+    return /^[aeiou]/.test(l) ? `an ${l}` : `a ${l}`;
+  }
+
   function recruit(type: string): string {
     const def = SOLDIER_TYPES[type];
     if (!def) return 'Unknown soldier';
     const from = state.buildings.find(b => b.name === def.from);
-    if (!from) return def.from === 'siege_camp'
-      ? 'You need a siege camp' : 'You need a barracks';
+    if (!from) return `You need ${aOrAn(BUILDINGS[def.from]?.label ?? def.from)}`;
     const barracks = from;
     if (state.idle < 1) return 'No idle peasant to take up arms';
     if (state.gold < def.gold) return 'Not enough gold';
@@ -2937,6 +2991,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     if (standingClock > 6) { standingClock = 0; checkStanding(); }
     updateRaids(dt);
     enemyWorkers.update(dt, factions);
+    updateSappers(dt);
     updateTraps();
     updateFires(dt);
     projectiles.update(dt);
