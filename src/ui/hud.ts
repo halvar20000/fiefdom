@@ -1731,7 +1731,7 @@ export class Hud {
     // the bar, because this list had not been told about it.
     const shown: (Resource | 'gold')[] = [
       'gold', 'wood', 'stone', 'iron', 'pitch', 'wheat', 'flour',
-      'bread', 'cheese', 'apples', 'meat', 'fish', 'hops', 'ale', 'pigs',
+      'bread', 'cheese', 'apples', 'meat', 'fish', 'hops', 'ale', 'pigs', 'hides',
       'spears', 'bows', 'swords', 'armour',
     ];
     // On a phone the summary box is a sheet, so the two numbers you watch

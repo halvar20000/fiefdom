@@ -3328,6 +3328,162 @@
     "scale": 3
   },
   {
+    "name": "pile_hides_1",
+    "rotation": 0,
+    "width": 116,
+    "height": 80,
+    "anchor_x": 13.58,
+    "anchor_y": 47.94,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "pile_hides_1",
+    "rotation": 1,
+    "width": 124,
+    "height": 80,
+    "anchor_x": 54.56,
+    "anchor_y": 23.94,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "pile_hides_1",
+    "rotation": 2,
+    "width": 116,
+    "height": 88,
+    "anchor_x": 102.42,
+    "anchor_y": 48.22,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "pile_hides_1",
+    "rotation": 3,
+    "width": 124,
+    "height": 84,
+    "anchor_x": 69.44,
+    "anchor_y": 72.15,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "pile_hides_2",
+    "rotation": 0,
+    "width": 122,
+    "height": 86,
+    "anchor_x": 18.95,
+    "anchor_y": 53.9,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "pile_hides_2",
+    "rotation": 1,
+    "width": 132,
+    "height": 86,
+    "anchor_x": 55.07,
+    "anchor_y": 29.91,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "pile_hides_2",
+    "rotation": 2,
+    "width": 122,
+    "height": 96,
+    "anchor_x": 103.05,
+    "anchor_y": 52.77,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "pile_hides_2",
+    "rotation": 3,
+    "width": 132,
+    "height": 90,
+    "anchor_x": 76.93,
+    "anchor_y": 76.26,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "pile_hides_3",
+    "rotation": 0,
+    "width": 126,
+    "height": 88,
+    "anchor_x": 20.08,
+    "anchor_y": 54.29,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "pile_hides_3",
+    "rotation": 1,
+    "width": 136,
+    "height": 88,
+    "anchor_x": 58.06,
+    "anchor_y": 30.29,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "pile_hides_3",
+    "rotation": 2,
+    "width": 126,
+    "height": 98,
+    "anchor_x": 105.92,
+    "anchor_y": 54.04,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "pile_hides_3",
+    "rotation": 3,
+    "width": 136,
+    "height": 92,
+    "anchor_x": 77.94,
+    "anchor_y": 77.47,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
     "name": "pile_hops_1",
     "rotation": 0,
     "width": 120,
@@ -5297,6 +5453,58 @@
     "height": 140,
     "anchor_x": 113.96,
     "anchor_y": 130.6,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "tanner",
+    "rotation": 0,
+    "width": 216,
+    "height": 160,
+    "anchor_x": 24.46,
+    "anchor_y": 107.63,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "tanner",
+    "rotation": 1,
+    "width": 244,
+    "height": 160,
+    "anchor_x": 96.12,
+    "anchor_y": 59.63,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "tanner",
+    "rotation": 2,
+    "width": 216,
+    "height": 186,
+    "anchor_x": 191.54,
+    "anchor_y": 107.69,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "tanner",
+    "rotation": 3,
+    "width": 244,
+    "height": 174,
+    "anchor_x": 147.88,
+    "anchor_y": 156.4,
     "footprint": [
       2,
       2

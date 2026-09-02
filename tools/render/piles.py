@@ -315,9 +315,45 @@ def _pigs(level):
     return parts
 
 
+def _hides(level):
+    """
+    Cured hides: stacked FLAT, edges out of true, one draped over the stack.
+
+    First attempt rolled them into bundles and laid them in rows, which put a
+    stack of horizontal cylinders on the deck -- pixel for pixel the log pile
+    two squares away. Shape is the only thing that survives at one tile, so
+    hides are the flat good: thin slabs with their corners askew, which no
+    other pile in the yard looks anything like.
+    """
+    parts = []
+    top = _deck(parts)
+    tans = (M.cloth("PileHideA", colour=(0.55, 0.40, 0.25)),
+            M.cloth("PileHideB", colour=(0.62, 0.47, 0.31)),
+            M.cloth("PileHideC", colour=(0.48, 0.34, 0.21)))
+    b = geom.rng_for(f"hides{level}")
+
+    stacks = {1: [(0.50, 0.50, 4)], 2: [(0.40, 0.44, 6)], 3: [(0.36, 0.40, 6), (0.66, 0.62, 5)]}[level]
+    for si, (cx, cy, count) in enumerate(stacks):
+        z = top
+        for i in range(count):
+            t = 0.032 + b.random() * 0.008
+            w = 0.52 + b.random() * 0.08
+            d = 0.44 + b.random() * 0.08
+            parts.append(geom.box(f"ph_{si}_{i}", (cx - w / 2.0, cy - d / 2.0, z), (w, d, t),
+                                  tans[i % len(tans)], rot_z=(b.random() - 0.5) * 0.5))
+            z += t
+        # One hide hung over the side of the stack, which stops a tidy stack of
+        # slabs reading as planks or cut stone.
+        parts.append(geom.box(f"ph_drape_{si}", (cx - 0.30, cy - 0.26, z - 0.20),
+                              (0.30, 0.42, 0.03), tans[1], rot_z=0.25))
+        parts[-1].rotation_euler = (0.0, -0.85, 0.25)
+    return parts
+
+
 _GOODS = {
     "wood": _wood, "stone": _stone, "iron": _iron, "pitch": _pitch,
     "wheat": _wheat, "flour": _flour, "hops": _hops, "ale": _ale, "pigs": _pigs,
+    "hides": _hides,
 }
 
 

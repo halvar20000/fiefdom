@@ -89,10 +89,27 @@ been built, paid for and counted for nothing. Buildings now declare
 `coverage: 'religion' | 'health'` and the getter sums `def.serves` by kind, so
 tranche 4 onward can add a coverage building without touching `state.ts`.
 
-### 4. Economy
+### 4. Economy *(done, 1.37.0)*
 
-`apothecary`, `tanner`. New production chains; `tanner` implies a hide resource
-off the slaughterhouse.
+- [x] `tanner`, plus `hides` as a real resource and a `byproduct` field on
+      `Production` to make one.
+- [x] ~~`apothecary`~~ — **not a gap.** Their apothecary is our `pharmacy`
+      under another name: same 2x2 town building, same job ("keeps disease off
+      an overcrowded town"). Theirs carries no mechanic at all beyond the
+      description; ours has `serves`/coverage. Nothing to take. Worth checking
+      the remaining tranches for more of these before building anything.
+
+The tanner is a second, iron-free route to `armour` rather than a new weapon
+type: the armourer forges mail from iron, the tanner cures leather from hides,
+and both fill the same rack. That gives pig farming a war use and makes a
+swordsman reachable without an iron mine, without touching the existing
+balance — it adds a path rather than changing one.
+
+`Production` gained a `byproduct`, because butchering yields meat *and* a hide
+from one job and the worker loop carries one load to one store. The byproduct
+is credited when the main load is set down, clamped to the room available, and
+skipped on a drop into a relay shed. Anything else needed a second carry slot
+the state machine has no state for.
 
 ### 5. Castle works
 

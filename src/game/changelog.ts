@@ -23,6 +23,26 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.37.0',
+    date: '2026-09-02',
+    headline: 'Every pig now yields two things, and one of them arms a man.',
+    sections: [
+      {
+        title: 'Added',
+        items: [
+          'Hides, off the back of the slaughterhouse. Butchering a pig has always produced meat; it produces two hides with it now, and they pile up in the stockpile whether you have anything to do with them or not. They are a raw good like any other -- stored, shown in the bar, and sellable if you would rather have the gold.',
+          'The tanner\'s workshop, which cures three hides into a suit of leather armour and racks it in the armoury beside the mail. It is not a new kind of kit: it is a second road to the same one. The armourer forges armour out of iron, the tanner cures it out of hides, and a swordsman does not care which he is handed. Pig farming has a war use now, and an iron-poor map is no longer a map without armoured men.',
+        ],
+      },
+      {
+        title: 'Changed',
+        items: [
+          'A workshop can yield a second good from the same job. Meat and a hide come off one pig and it would be a nonsense to walk them to the yard separately, so the second good rides along with the first and is set down at the same moment. It is held to the room actually available, so a full stockpile stops hides just as it stops anything else.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.36.0',
     date: '2026-09-02',
     headline: 'A shrine at the roadside, a cathedral over the town.',

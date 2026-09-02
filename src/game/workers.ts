@@ -388,6 +388,14 @@ export class WorkerPool {
             } else {
               this.state.deposit(w.carrying, w.carryAmount);
             }
+            // The hide off the same pig. Only on a real store drop, never into
+            // a relay shed, and only for the load this cycle actually made --
+            // clamped to the room there is, so it cannot outrun a full yard.
+            const bp = b.def.produces?.byproduct;
+            if (bp && !w.dropAt?.def.relay) {
+              const put = Math.min(bp.amount, this.state.roomFor(bp.output));
+              if (put > 0) this.state.deposit(bp.output, put);
+            }
             w.carrying = null;
             w.carryAmount = 0;
             w.dropAt = null;

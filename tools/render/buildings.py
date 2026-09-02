@@ -2365,3 +2365,50 @@ REGISTRY.update({
     "chapel": chapel,
     "cathedral": cathedral,
 })
+
+
+def tanner():
+    """
+    A tanner's yard: sunken pits, a scraping beam and hides on stretching frames.
+
+    Deliberately NOT another half-timbered workshop box. The weapons row already
+    has four of those and a fifth would be indistinguishable at sprite scale;
+    what identifies a tannery is the open yard of pits and the frames with skins
+    stretched in them, so the building is mostly yard and the shed is a lean-to
+    in the corner.
+    """
+    timber_l = M.timber("TanTimber")
+    timber_d = M.timber("TanPost", dark=True)
+    shingle = M.shingle_wood("TanRoof")
+    stone = M.rough_stone("TanPit")
+    liquor = M.cloth("TanLiquor", colour=(0.36, 0.28, 0.15))
+    hide = M.cloth("TanHide", colour=(0.62, 0.47, 0.30))
+    pale = M.cloth("TanPaleHide", colour=(0.80, 0.72, 0.58))
+
+    parts = []
+    parts.append(geom.box("tn_yard", (0.10, 0.10, 0.0), (1.80, 1.80, 0.06), stone))
+    # Three tanning pits, sunk and full of dark liquor.
+    for i, (x, y) in enumerate(((0.26, 0.24), (0.78, 0.24), (0.26, 0.76))):
+        parts.append(geom.box(f"tn_kerb_{i}", (x, y, 0.06), (0.44, 0.44, 0.10), stone))
+        parts.append(geom.box(f"tn_liquor_{i}", (x + 0.05, y + 0.05, 0.13), (0.34, 0.34, 0.03), liquor))
+    # The lean-to in the far corner, where the finished leather is kept.
+    parts.append(geom.box("tn_shed", (1.18, 1.06, 0.06), (0.66, 0.76, 0.54), timber_l))
+    parts.append(geom.gable("tn_shedroof", (1.12, 1.00, 0.60), (0.78, 0.88, 0.26), shingle))
+    # Two stretching frames with a skin laced into each -- the silhouette that
+    # says tannery from across the map.
+    for i, (x, y, rz) in enumerate(((0.42, 1.42, 0.0), (0.96, 1.62, -0.5))):
+        for j, dx in enumerate((-0.26, 0.26)):
+            parts.append(geom.box(f"tn_fpost_{i}_{j}", (x + dx - 0.04, y - 0.04, 0.06),
+                                  (0.08, 0.08, 0.86), timber_d, rot_z=rz))
+        parts.append(geom.box(f"tn_ftop_{i}", (x - 0.30, y - 0.04, 0.86), (0.60, 0.08, 0.08),
+                              timber_d, rot_z=rz))
+        parts.append(geom.box(f"tn_skin_{i}", (x - 0.24, y - 0.01, 0.26),
+                              (0.48, 0.02, 0.58), pale if i else hide, rot_z=rz))
+    # A scraping beam and a barrel of bark by the pits.
+    parts.append(geom.cylinder("tn_beam", (0.92, 0.62, 0.34), 0.09, 0.62, timber_l, segments=10))
+    parts[-1].rotation_euler = (0.0, 1.15, 0.5)
+    parts += geom.barrel("tn_bark", (1.62, 0.36, 0.06), 0.17, 0.34, timber_l, timber_d)
+    return geom.join(parts, "tanner"), (2, 2)
+
+
+REGISTRY.update({"tanner": tanner})

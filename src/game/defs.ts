@@ -6,7 +6,8 @@
  */
 
 export const RAW_RESOURCES =
-  ['wood', 'stone', 'iron', 'pitch', 'wheat', 'flour', 'hops', 'ale', 'pigs'] as const;
+  ['wood', 'stone', 'iron', 'pitch', 'wheat', 'flour', 'hops', 'ale', 'pigs',
+   'hides'] as const;
 export const FOOD_RESOURCES = ['bread', 'cheese', 'apples', 'meat', 'fish'] as const;
 /**
  * What the weapons workshops turn raw goods into.
@@ -37,6 +38,7 @@ export const RESOURCE_LABELS: Record<Resource, string> = {
   wood: 'Wood', stone: 'Stone', iron: 'Iron', pitch: 'Pitch',
   wheat: 'Wheat', flour: 'Flour', hops: 'Hops', ale: 'Ale', pigs: 'Pigs',
   bread: 'Bread', cheese: 'Cheese', apples: 'Apples', meat: 'Meat', fish: 'Fish',
+  hides: 'Hides',
   bows: 'Bows', spears: 'Spears', swords: 'Swords', armour: 'Armour',
 };
 
@@ -112,6 +114,17 @@ export interface Production {
   inputs?: Partial<Record<Resource, number>>;
   /** Where the output is delivered. */
   to: Store;
+  /**
+   * A second good that falls out of the same cycle, delivered with the first.
+   *
+   * A butchered pig yields meat AND a hide, and they are one job, not two. The
+   * worker carries one load to one store, so rather than give it a second trip
+   * -- or a second carry slot the loop has no state for -- the byproduct is
+   * credited when the main load is set down. It rides on the same cart. It is
+   * still clamped to the room actually available, so a full stockpile stops
+   * hides accruing exactly as it stops anything else.
+   */
+  byproduct?: { output: Resource; amount: number };
 }
 
 export interface BuildingDef {
@@ -522,9 +535,11 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     produces: {
       output: 'meat', amount: 4, seconds: 12,
       inputs: { pigs: 1 }, to: 'granary',
+      byproduct: { output: 'hides', amount: 2 },
     },
     workClip: 'chop',
-    description: 'Butchers pigs into meat.',
+    description: 'Butchers pigs into meat, and the hides come off with it — '
+               + 'they pile up in the stockpile whether you have a tanner or not.',
   },
 
   hunter: {
@@ -636,6 +651,18 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     },
     workClip: 'mine',
     description: 'Beats iron into swords. Slow, and hungry for ore.',
+  },
+  tanner: {
+    name: 'tanner', label: "Tanner's Workshop", category: 'weapons',
+    footprint: [2, 2], cost: { wood: 18, stone: 6 }, workers: 1, terrain: 'any',
+    produces: {
+      output: 'armour', amount: 1, seconds: 17,
+      inputs: { hides: 3 }, to: 'armoury',
+    },
+    workClip: 'dig',
+    description: 'Cures hides into leather armour. The same rack a swordsman '
+               + 'takes his mail from, filled off the back of your pig farms '
+               + 'instead of your iron mines.',
   },
   armourer: {
     name: 'armourer', label: "Armourer's Workshop", category: 'weapons',
@@ -770,6 +797,7 @@ export const PRICES: Partial<Record<Resource, [number, number]>> = {
   hops:   [24, 15],
   ale:    [44, 28],
   pigs:   [30, 19],
+  hides:  [20, 12],
   meat:   [28, 17],
   bread:  [18, 11],
   cheese: [26, 16],
