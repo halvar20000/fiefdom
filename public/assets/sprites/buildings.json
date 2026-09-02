@@ -2,8 +2,8 @@
   {
     "name": "apple_orchard",
     "rotation": 0,
-    "width": 324,
-    "height": 236,
+    "width": 287,
+    "height": 229,
     "anchor_x": 35.24,
     "anchor_y": 166.4,
     "footprint": [
@@ -263,7 +263,7 @@
     "name": "bin_apples_1",
     "rotation": 0,
     "width": 118,
-    "height": 84,
+    "height": 80,
     "anchor_x": 15.64,
     "anchor_y": 52.29,
     "footprint": [
@@ -275,9 +275,9 @@
   {
     "name": "bin_apples_1",
     "rotation": 1,
-    "width": 128,
-    "height": 84,
-    "anchor_x": 54.36,
+    "width": 126,
+    "height": 81,
+    "anchor_x": 52.36,
     "anchor_y": 28.29,
     "footprint": [
       1,
@@ -315,7 +315,7 @@
     "name": "bin_apples_2",
     "rotation": 0,
     "width": 118,
-    "height": 84,
+    "height": 80,
     "anchor_x": 15.64,
     "anchor_y": 52.29,
     "footprint": [
@@ -327,9 +327,9 @@
   {
     "name": "bin_apples_2",
     "rotation": 1,
-    "width": 128,
-    "height": 84,
-    "anchor_x": 54.36,
+    "width": 126,
+    "height": 81,
+    "anchor_x": 52.36,
     "anchor_y": 28.29,
     "footprint": [
       1,
@@ -367,7 +367,7 @@
     "name": "bin_apples_3",
     "rotation": 0,
     "width": 118,
-    "height": 86,
+    "height": 81,
     "anchor_x": 15.85,
     "anchor_y": 53.76,
     "footprint": [
@@ -379,9 +379,9 @@
   {
     "name": "bin_apples_3",
     "rotation": 1,
-    "width": 130,
-    "height": 86,
-    "anchor_x": 54.92,
+    "width": 126,
+    "height": 82,
+    "anchor_x": 50.92,
     "anchor_y": 29.76,
     "footprint": [
       1,
@@ -392,9 +392,9 @@
   {
     "name": "bin_apples_3",
     "rotation": 2,
-    "width": 118,
+    "width": 117,
     "height": 96,
-    "anchor_x": 102.15,
+    "anchor_x": 101.15,
     "anchor_y": 53.72,
     "footprint": [
       1,
@@ -419,7 +419,7 @@
     "name": "bin_bread_1",
     "rotation": 0,
     "width": 118,
-    "height": 84,
+    "height": 80,
     "anchor_x": 15.64,
     "anchor_y": 52.29,
     "footprint": [
@@ -431,9 +431,9 @@
   {
     "name": "bin_bread_1",
     "rotation": 1,
-    "width": 128,
-    "height": 84,
-    "anchor_x": 54.36,
+    "width": 126,
+    "height": 81,
+    "anchor_x": 52.36,
     "anchor_y": 28.29,
     "footprint": [
       1,
@@ -471,7 +471,7 @@
     "name": "bin_bread_2",
     "rotation": 0,
     "width": 118,
-    "height": 84,
+    "height": 80,
     "anchor_x": 15.64,
     "anchor_y": 52.29,
     "footprint": [
@@ -483,9 +483,9 @@
   {
     "name": "bin_bread_2",
     "rotation": 1,
-    "width": 128,
-    "height": 84,
-    "anchor_x": 54.36,
+    "width": 126,
+    "height": 81,
+    "anchor_x": 52.36,
     "anchor_y": 28.29,
     "footprint": [
       1,
@@ -523,7 +523,7 @@
     "name": "bin_bread_3",
     "rotation": 0,
     "width": 120,
-    "height": 90,
+    "height": 86,
     "anchor_x": 17.83,
     "anchor_y": 57.93,
     "footprint": [
@@ -536,7 +536,7 @@
     "name": "bin_bread_3",
     "rotation": 1,
     "width": 134,
-    "height": 90,
+    "height": 87,
     "anchor_x": 54.88,
     "anchor_y": 33.93,
     "footprint": [
@@ -575,7 +575,7 @@
     "name": "bin_cheese_1",
     "rotation": 0,
     "width": 118,
-    "height": 84,
+    "height": 80,
     "anchor_x": 15.64,
     "anchor_y": 52.29,
     "footprint": [
@@ -587,9 +587,9 @@
   {
     "name": "bin_cheese_1",
     "rotation": 1,
-    "width": 128,
-    "height": 84,
-    "anchor_x": 54.36,
+    "width": 126,
+    "height": 81,
+    "anchor_x": 52.36,
     "anchor_y": 28.29,
     "footprint": [
       1,
@@ -627,7 +627,7 @@
     "name": "bin_cheese_2",
     "rotation": 0,
     "width": 118,
-    "height": 84,
+    "height": 80,
     "anchor_x": 15.64,
     "anchor_y": 52.29,
     "footprint": [
@@ -639,9 +639,9 @@
   {
     "name": "bin_cheese_2",
     "rotation": 1,
-    "width": 128,
-    "height": 84,
-    "anchor_x": 54.36,
+    "width": 126,
+    "height": 81,
+    "anchor_x": 52.36,
     "anchor_y": 28.29,
     "footprint": [
       1,
@@ -679,7 +679,7 @@
     "name": "bin_cheese_3",
     "rotation": 0,
     "width": 118,
-    "height": 84,
+    "height": 80,
     "anchor_x": 15.64,
     "anchor_y": 52.29,
     "footprint": [
@@ -691,9 +691,9 @@
   {
     "name": "bin_cheese_3",
     "rotation": 1,
-    "width": 128,
-    "height": 84,
-    "anchor_x": 54.36,
+    "width": 125,
+    "height": 81,
+    "anchor_x": 51.36,
     "anchor_y": 28.29,
     "footprint": [
       1,
@@ -731,7 +731,7 @@
     "name": "bin_fish_1",
     "rotation": 0,
     "width": 118,
-    "height": 84,
+    "height": 80,
     "anchor_x": 15.64,
     "anchor_y": 52.29,
     "footprint": [
@@ -743,9 +743,9 @@
   {
     "name": "bin_fish_1",
     "rotation": 1,
-    "width": 128,
-    "height": 84,
-    "anchor_x": 54.36,
+    "width": 126,
+    "height": 81,
+    "anchor_x": 52.36,
     "anchor_y": 28.29,
     "footprint": [
       1,
@@ -783,7 +783,7 @@
     "name": "bin_fish_2",
     "rotation": 0,
     "width": 120,
-    "height": 88,
+    "height": 84,
     "anchor_x": 17.33,
     "anchor_y": 55.82,
     "footprint": [
@@ -795,9 +795,9 @@
   {
     "name": "bin_fish_2",
     "rotation": 1,
-    "width": 132,
-    "height": 88,
-    "anchor_x": 54.93,
+    "width": 129,
+    "height": 85,
+    "anchor_x": 51.93,
     "anchor_y": 31.82,
     "footprint": [
       1,
@@ -848,7 +848,7 @@
     "name": "bin_fish_3",
     "rotation": 1,
     "width": 138,
-    "height": 96,
+    "height": 94,
     "anchor_x": 54.35,
     "anchor_y": 39.64,
     "footprint": [
@@ -887,7 +887,7 @@
     "name": "bin_meat_1",
     "rotation": 0,
     "width": 118,
-    "height": 84,
+    "height": 80,
     "anchor_x": 15.64,
     "anchor_y": 52.29,
     "footprint": [
@@ -899,9 +899,9 @@
   {
     "name": "bin_meat_1",
     "rotation": 1,
-    "width": 128,
-    "height": 84,
-    "anchor_x": 54.36,
+    "width": 126,
+    "height": 81,
+    "anchor_x": 52.36,
     "anchor_y": 28.29,
     "footprint": [
       1,
@@ -939,7 +939,7 @@
     "name": "bin_meat_2",
     "rotation": 0,
     "width": 118,
-    "height": 84,
+    "height": 80,
     "anchor_x": 15.64,
     "anchor_y": 52.29,
     "footprint": [
@@ -951,9 +951,9 @@
   {
     "name": "bin_meat_2",
     "rotation": 1,
-    "width": 128,
-    "height": 84,
-    "anchor_x": 54.36,
+    "width": 127,
+    "height": 81,
+    "anchor_x": 53.36,
     "anchor_y": 28.29,
     "footprint": [
       1,
@@ -991,7 +991,7 @@
     "name": "bin_meat_3",
     "rotation": 0,
     "width": 120,
-    "height": 88,
+    "height": 83,
     "anchor_x": 17.37,
     "anchor_y": 55.9,
     "footprint": [
@@ -1003,9 +1003,9 @@
   {
     "name": "bin_meat_3",
     "rotation": 1,
-    "width": 132,
-    "height": 88,
-    "anchor_x": 54.85,
+    "width": 129,
+    "height": 85,
+    "anchor_x": 51.85,
     "anchor_y": 31.9,
     "footprint": [
       1,
@@ -1029,7 +1029,7 @@
   {
     "name": "bin_meat_3",
     "rotation": 3,
-    "width": 132,
+    "width": 126,
     "height": 94,
     "anchor_x": 77.15,
     "anchor_y": 80.22,
@@ -1095,7 +1095,7 @@
     "name": "brewery",
     "rotation": 0,
     "width": 334,
-    "height": 266,
+    "height": 258,
     "anchor_x": 60.22,
     "anchor_y": 188.67,
     "footprint": [
@@ -1134,9 +1134,9 @@
     "name": "brewery",
     "rotation": 3,
     "width": 390,
-    "height": 292,
+    "height": 238,
     "anchor_x": 245.08,
-    "anchor_y": 257.0,
+    "anchor_y": 203.0,
     "footprint": [
       3,
       3
@@ -1146,10 +1146,10 @@
   {
     "name": "burning_stake",
     "rotation": 0,
-    "width": 198,
-    "height": 176,
-    "anchor_x": 22.62,
-    "anchor_y": 131.5,
+    "width": 139,
+    "height": 122,
+    "anchor_x": -13.38,
+    "anchor_y": 93.5,
     "footprint": [
       2,
       2
@@ -1159,10 +1159,10 @@
   {
     "name": "burning_stake",
     "rotation": 1,
-    "width": 240,
-    "height": 176,
-    "anchor_x": 79.25,
-    "anchor_y": 83.5,
+    "width": 179,
+    "height": 124,
+    "anchor_x": 53.25,
+    "anchor_y": 45.5,
     "footprint": [
       2,
       2
@@ -1172,10 +1172,10 @@
   {
     "name": "burning_stake",
     "rotation": 2,
-    "width": 198,
-    "height": 216,
-    "anchor_x": 175.38,
-    "anchor_y": 131.13,
+    "width": 141,
+    "height": 159,
+    "anchor_x": 153.38,
+    "anchor_y": 94.13,
     "footprint": [
       2,
       2
@@ -1185,10 +1185,10 @@
   {
     "name": "burning_stake",
     "rotation": 3,
-    "width": 240,
-    "height": 196,
-    "anchor_x": 160.75,
-    "anchor_y": 179.69,
+    "width": 178,
+    "height": 137,
+    "anchor_x": 123.75,
+    "anchor_y": 141.69,
     "footprint": [
       2,
       2
@@ -1198,9 +1198,9 @@
   {
     "name": "bush",
     "rotation": 0,
-    "width": 98,
-    "height": 80,
-    "anchor_x": 2.6,
+    "width": 91,
+    "height": 70,
+    "anchor_x": -4.4,
     "anchor_y": 53.79,
     "footprint": [
       1,
@@ -1212,7 +1212,7 @@
     "name": "bush",
     "rotation": 1,
     "width": 110,
-    "height": 80,
+    "height": 72,
     "anchor_x": 41.74,
     "anchor_y": 27.24,
     "footprint": [
@@ -1237,10 +1237,10 @@
   {
     "name": "bush",
     "rotation": 3,
-    "width": 110,
-    "height": 86,
+    "width": 97,
+    "height": 67,
     "anchor_x": 68.26,
-    "anchor_y": 79.67,
+    "anchor_y": 60.67,
     "footprint": [
       1,
       1
@@ -1250,9 +1250,9 @@
   {
     "name": "campfire",
     "rotation": 0,
-    "width": 94,
-    "height": 70,
-    "anchor_x": 5.92,
+    "width": 77,
+    "height": 60,
+    "anchor_x": -11.08,
     "anchor_y": 44.25,
     "footprint": [
       1,
@@ -1263,9 +1263,9 @@
   {
     "name": "campfire",
     "rotation": 1,
-    "width": 102,
-    "height": 70,
-    "anchor_x": 41.88,
+    "width": 87,
+    "height": 59,
+    "anchor_x": 26.88,
     "anchor_y": 21.29,
     "footprint": [
       1,
@@ -1276,8 +1276,8 @@
   {
     "name": "campfire",
     "rotation": 2,
-    "width": 94,
-    "height": 78,
+    "width": 78,
+    "height": 64,
     "anchor_x": 88.08,
     "anchor_y": 43.26,
     "footprint": [
@@ -1302,10 +1302,10 @@
   {
     "name": "cathedral",
     "rotation": 0,
-    "width": 380,
-    "height": 336,
+    "width": 363,
+    "height": 252,
     "anchor_x": 79.21,
-    "anchor_y": 259.1,
+    "anchor_y": 180.1,
     "footprint": [
       3,
       3
@@ -1315,10 +1315,10 @@
   {
     "name": "cathedral",
     "rotation": 1,
-    "width": 466,
-    "height": 336,
-    "anchor_x": 144.24,
-    "anchor_y": 180.67,
+    "width": 460,
+    "height": 255,
+    "anchor_x": 138.24,
+    "anchor_y": 111.67,
     "footprint": [
       3,
       3
@@ -1328,10 +1328,10 @@
   {
     "name": "cathedral",
     "rotation": 2,
-    "width": 380,
-    "height": 418,
-    "anchor_x": 300.79,
-    "anchor_y": 252.51,
+    "width": 363,
+    "height": 349,
+    "anchor_x": 283.79,
+    "anchor_y": 183.51,
     "footprint": [
       3,
       3
@@ -1341,10 +1341,10 @@
   {
     "name": "cathedral",
     "rotation": 3,
-    "width": 466,
-    "height": 376,
+    "width": 460,
+    "height": 297,
     "anchor_x": 321.76,
-    "anchor_y": 331.28,
+    "anchor_y": 252.28,
     "footprint": [
       3,
       3
@@ -1355,9 +1355,9 @@
     "name": "chapel",
     "rotation": 0,
     "width": 228,
-    "height": 196,
+    "height": 154,
     "anchor_x": 42.21,
-    "anchor_y": 143.17,
+    "anchor_y": 110.17,
     "footprint": [
       2,
       2
@@ -1367,10 +1367,10 @@
   {
     "name": "chapel",
     "rotation": 1,
-    "width": 274,
-    "height": 196,
-    "anchor_x": 96.35,
-    "anchor_y": 98.3,
+    "width": 262,
+    "height": 149,
+    "anchor_x": 84.35,
+    "anchor_y": 52.3,
     "footprint": [
       2,
       2
@@ -1381,9 +1381,9 @@
     "name": "chapel",
     "rotation": 2,
     "width": 228,
-    "height": 240,
+    "height": 190,
     "anchor_x": 185.79,
-    "anchor_y": 146.41,
+    "anchor_y": 96.41,
     "footprint": [
       2,
       2
@@ -1393,10 +1393,10 @@
   {
     "name": "chapel",
     "rotation": 3,
-    "width": 274,
-    "height": 218,
+    "width": 262,
+    "height": 181,
     "anchor_x": 177.65,
-    "anchor_y": 191.63,
+    "anchor_y": 154.63,
     "footprint": [
       2,
       2
@@ -1407,7 +1407,7 @@
     "name": "church",
     "rotation": 0,
     "width": 258,
-    "height": 238,
+    "height": 229,
     "anchor_x": 69.74,
     "anchor_y": 182.16,
     "footprint": [
@@ -1420,7 +1420,7 @@
     "name": "church",
     "rotation": 1,
     "width": 320,
-    "height": 238,
+    "height": 237,
     "anchor_x": 102.75,
     "anchor_y": 139.68,
     "footprint": [
@@ -1459,7 +1459,7 @@
     "name": "dairy_farm",
     "rotation": 0,
     "width": 336,
-    "height": 246,
+    "height": 241,
     "anchor_x": 42.87,
     "anchor_y": 173.15,
     "footprint": [
@@ -1471,9 +1471,9 @@
   {
     "name": "dairy_farm",
     "rotation": 1,
-    "width": 378,
-    "height": 246,
-    "anchor_x": 135.53,
+    "width": 374,
+    "height": 233,
+    "anchor_x": 131.53,
     "anchor_y": 94.57,
     "footprint": [
       3,
@@ -1484,10 +1484,10 @@
   {
     "name": "dairy_farm",
     "rotation": 2,
-    "width": 336,
-    "height": 288,
-    "anchor_x": 293.13,
-    "anchor_y": 161.42,
+    "width": 276,
+    "height": 218,
+    "anchor_x": 271.13,
+    "anchor_y": 91.42,
     "footprint": [
       3,
       3
@@ -1510,10 +1510,10 @@
   {
     "name": "dancing_bear",
     "rotation": 0,
-    "width": 216,
-    "height": 184,
-    "anchor_x": 31.53,
-    "anchor_y": 135.29,
+    "width": 172,
+    "height": 129,
+    "anchor_x": 11.53,
+    "anchor_y": 94.29,
     "footprint": [
       2,
       2
@@ -1523,10 +1523,10 @@
   {
     "name": "dancing_bear",
     "rotation": 1,
-    "width": 258,
-    "height": 184,
-    "anchor_x": 88.45,
-    "anchor_y": 87.29,
+    "width": 202,
+    "height": 124,
+    "anchor_x": 67.45,
+    "anchor_y": 41.29,
     "footprint": [
       2,
       2
@@ -1536,10 +1536,10 @@
   {
     "name": "dancing_bear",
     "rotation": 2,
-    "width": 216,
-    "height": 224,
-    "anchor_x": 184.47,
-    "anchor_y": 135.01,
+    "width": 171,
+    "height": 167,
+    "anchor_x": 159.47,
+    "anchor_y": 97.01,
     "footprint": [
       2,
       2
@@ -1549,10 +1549,10 @@
   {
     "name": "dancing_bear",
     "rotation": 3,
-    "width": 258,
-    "height": 204,
-    "anchor_x": 169.55,
-    "anchor_y": 183.53,
+    "width": 204,
+    "height": 156,
+    "anchor_x": 136.55,
+    "anchor_y": 149.53,
     "footprint": [
       2,
       2
@@ -1562,8 +1562,8 @@
   {
     "name": "dead_tree",
     "rotation": 0,
-    "width": 126,
-    "height": 138,
+    "width": 116,
+    "height": 121,
     "anchor_x": 32.42,
     "anchor_y": 112.56,
     "footprint": [
@@ -1576,7 +1576,7 @@
     "name": "dead_tree",
     "rotation": 1,
     "width": 168,
-    "height": 138,
+    "height": 122,
     "anchor_x": 42.19,
     "anchor_y": 86.72,
     "footprint": [
@@ -1589,7 +1589,7 @@
     "name": "dead_tree",
     "rotation": 2,
     "width": 126,
-    "height": 178,
+    "height": 168,
     "anchor_x": 93.58,
     "anchor_y": 110.72,
     "footprint": [
@@ -1601,7 +1601,7 @@
   {
     "name": "dead_tree",
     "rotation": 3,
-    "width": 168,
+    "width": 160,
     "height": 158,
     "anchor_x": 125.81,
     "anchor_y": 136.91,
@@ -1680,9 +1680,9 @@
     "name": "dog_cage",
     "rotation": 1,
     "width": 236,
-    "height": 158,
+    "height": 149,
     "anchor_x": 91.84,
-    "anchor_y": 58.92,
+    "anchor_y": 49.92,
     "footprint": [
       2,
       2
@@ -1693,9 +1693,9 @@
     "name": "dog_cage",
     "rotation": 2,
     "width": 210,
-    "height": 184,
+    "height": 176,
     "anchor_x": 188.41,
-    "anchor_y": 106.84,
+    "anchor_y": 98.84,
     "footprint": [
       2,
       2
@@ -1706,9 +1706,9 @@
     "name": "dog_cage",
     "rotation": 3,
     "width": 236,
-    "height": 170,
+    "height": 162,
     "anchor_x": 144.16,
-    "anchor_y": 154.63,
+    "anchor_y": 146.63,
     "footprint": [
       2,
       2
@@ -1718,10 +1718,10 @@
   {
     "name": "drawbridge",
     "rotation": 0,
-    "width": 140,
-    "height": 122,
+    "width": 137,
+    "height": 91,
     "anchor_x": 34.2,
-    "anchor_y": 88.04,
+    "anchor_y": 60.04,
     "footprint": [
       1,
       1
@@ -1731,10 +1731,10 @@
   {
     "name": "drawbridge",
     "rotation": 1,
-    "width": 166,
-    "height": 122,
-    "anchor_x": 57.67,
-    "anchor_y": 64.04,
+    "width": 165,
+    "height": 109,
+    "anchor_x": 56.67,
+    "anchor_y": 56.04,
     "footprint": [
       1,
       1
@@ -1744,10 +1744,10 @@
   {
     "name": "drawbridge",
     "rotation": 2,
-    "width": 140,
-    "height": 146,
-    "anchor_x": 105.8,
-    "anchor_y": 87.38,
+    "width": 136,
+    "height": 133,
+    "anchor_x": 101.8,
+    "anchor_y": 79.38,
     "footprint": [
       1,
       1
@@ -1758,9 +1758,9 @@
     "name": "drawbridge",
     "rotation": 3,
     "width": 166,
-    "height": 134,
+    "height": 106,
     "anchor_x": 108.33,
-    "anchor_y": 111.94,
+    "anchor_y": 83.94,
     "footprint": [
       1,
       1
@@ -1770,10 +1770,10 @@
   {
     "name": "drawbridge_raised",
     "rotation": 0,
-    "width": 150,
-    "height": 134,
-    "anchor_x": 44.21,
-    "anchor_y": 98.57,
+    "width": 145,
+    "height": 109,
+    "anchor_x": 39.21,
+    "anchor_y": 77.57,
     "footprint": [
       1,
       1
@@ -1783,10 +1783,10 @@
   {
     "name": "drawbridge_raised",
     "rotation": 1,
-    "width": 182,
-    "height": 134,
-    "anchor_x": 62.71,
-    "anchor_y": 77.0,
+    "width": 178,
+    "height": 122,
+    "anchor_x": 58.71,
+    "anchor_y": 65.0,
     "footprint": [
       1,
       1
@@ -1797,9 +1797,9 @@
     "name": "drawbridge_raised",
     "rotation": 2,
     "width": 150,
-    "height": 166,
+    "height": 154,
     "anchor_x": 105.79,
-    "anchor_y": 101.64,
+    "anchor_y": 89.64,
     "footprint": [
       1,
       1
@@ -1810,9 +1810,9 @@
     "name": "drawbridge_raised",
     "rotation": 3,
     "width": 182,
-    "height": 150,
+    "height": 123,
     "anchor_x": 119.29,
-    "anchor_y": 123.18,
+    "anchor_y": 101.18,
     "footprint": [
       1,
       1
@@ -1823,9 +1823,9 @@
     "name": "dungeon",
     "rotation": 0,
     "width": 344,
-    "height": 252,
+    "height": 230,
     "anchor_x": 52.28,
-    "anchor_y": 170.05,
+    "anchor_y": 157.05,
     "footprint": [
       3,
       3
@@ -1835,10 +1835,10 @@
   {
     "name": "dungeon",
     "rotation": 1,
-    "width": 388,
-    "height": 252,
-    "anchor_x": 154.65,
-    "anchor_y": 101.65,
+    "width": 375,
+    "height": 229,
+    "anchor_x": 141.65,
+    "anchor_y": 78.65,
     "footprint": [
       3,
       3
@@ -1849,9 +1849,9 @@
     "name": "dungeon",
     "rotation": 2,
     "width": 344,
-    "height": 296,
+    "height": 273,
     "anchor_x": 291.72,
-    "anchor_y": 174.18,
+    "anchor_y": 151.18,
     "footprint": [
       3,
       3
@@ -1861,10 +1861,10 @@
   {
     "name": "dungeon",
     "rotation": 3,
-    "width": 388,
-    "height": 274,
+    "width": 376,
+    "height": 254,
     "anchor_x": 233.36,
-    "anchor_y": 242.71,
+    "anchor_y": 222.71,
     "footprint": [
       3,
       3
@@ -1874,10 +1874,10 @@
   {
     "name": "dunking_stool",
     "rotation": 0,
-    "width": 176,
-    "height": 134,
-    "anchor_x": -2.86,
-    "anchor_y": 88.29,
+    "width": 149,
+    "height": 102,
+    "anchor_x": -9.86,
+    "anchor_y": 70.29,
     "footprint": [
       2,
       2
@@ -1887,10 +1887,10 @@
   {
     "name": "dunking_stool",
     "rotation": 1,
-    "width": 200,
-    "height": 134,
-    "anchor_x": 83.12,
-    "anchor_y": 40.29,
+    "width": 178,
+    "height": 107,
+    "anchor_x": 61.12,
+    "anchor_y": 25.29,
     "footprint": [
       2,
       2
@@ -1900,10 +1900,10 @@
   {
     "name": "dunking_stool",
     "rotation": 2,
-    "width": 176,
-    "height": 158,
-    "anchor_x": 178.86,
-    "anchor_y": 94.73,
+    "width": 157,
+    "height": 116,
+    "anchor_x": 159.86,
+    "anchor_y": 52.73,
     "footprint": [
       2,
       2
@@ -1913,10 +1913,10 @@
   {
     "name": "dunking_stool",
     "rotation": 3,
-    "width": 200,
-    "height": 146,
+    "width": 178,
+    "height": 100,
     "anchor_x": 116.88,
-    "anchor_y": 142.6,
+    "anchor_y": 101.6,
     "footprint": [
       2,
       2
@@ -1926,10 +1926,10 @@
   {
     "name": "engineers_guild",
     "rotation": 0,
-    "width": 228,
-    "height": 176,
-    "anchor_x": 33.11,
-    "anchor_y": 121.99,
+    "width": 208,
+    "height": 146,
+    "anchor_x": 13.11,
+    "anchor_y": 97.99,
     "footprint": [
       2,
       2
@@ -1939,10 +1939,10 @@
   {
     "name": "engineers_guild",
     "rotation": 1,
-    "width": 260,
-    "height": 176,
-    "anchor_x": 97.65,
-    "anchor_y": 73.51,
+    "width": 255,
+    "height": 130,
+    "anchor_x": 92.65,
+    "anchor_y": 27.51,
     "footprint": [
       2,
       2
@@ -1953,9 +1953,9 @@
     "name": "engineers_guild",
     "rotation": 2,
     "width": 228,
-    "height": 206,
+    "height": 160,
     "anchor_x": 194.89,
-    "anchor_y": 120.33,
+    "anchor_y": 74.33,
     "footprint": [
       2,
       2
@@ -1965,10 +1965,10 @@
   {
     "name": "engineers_guild",
     "rotation": 3,
-    "width": 260,
-    "height": 190,
+    "width": 254,
+    "height": 149,
     "anchor_x": 162.35,
-    "anchor_y": 168.95,
+    "anchor_y": 140.95,
     "footprint": [
       2,
       2
@@ -1991,10 +1991,10 @@
   {
     "name": "fishery",
     "rotation": 1,
-    "width": 264,
-    "height": 184,
-    "anchor_x": 75.76,
-    "anchor_y": 91.11,
+    "width": 250,
+    "height": 141,
+    "anchor_x": 61.76,
+    "anchor_y": 48.11,
     "footprint": [
       2,
       2
@@ -2017,7 +2017,7 @@
   {
     "name": "fishery",
     "rotation": 3,
-    "width": 264,
+    "width": 250,
     "height": 202,
     "anchor_x": 188.24,
     "anchor_y": 172.5,
@@ -2083,7 +2083,7 @@
     "name": "gallows",
     "rotation": 0,
     "width": 186,
-    "height": 178,
+    "height": 173,
     "anchor_x": 24.29,
     "anchor_y": 139.95,
     "footprint": [
@@ -2096,7 +2096,7 @@
     "name": "gallows",
     "rotation": 1,
     "width": 234,
-    "height": 178,
+    "height": 175,
     "anchor_x": 66.97,
     "anchor_y": 92.43,
     "footprint": [
@@ -2121,10 +2121,10 @@
   {
     "name": "gallows",
     "rotation": 3,
-    "width": 234,
-    "height": 200,
+    "width": 230,
+    "height": 167,
     "anchor_x": 167.03,
-    "anchor_y": 183.15,
+    "anchor_y": 150.15,
     "footprint": [
       2,
       2
@@ -2134,8 +2134,8 @@
   {
     "name": "garden",
     "rotation": 0,
-    "width": 200,
-    "height": 126,
+    "width": 195,
+    "height": 120,
     "anchor_x": 8.51,
     "anchor_y": 72.99,
     "footprint": [
@@ -2148,7 +2148,7 @@
     "name": "garden",
     "rotation": 1,
     "width": 210,
-    "height": 126,
+    "height": 120,
     "anchor_x": 95.64,
     "anchor_y": 24.99,
     "footprint": [
@@ -2160,10 +2160,10 @@
   {
     "name": "garden",
     "rotation": 2,
-    "width": 200,
-    "height": 134,
-    "anchor_x": 191.49,
-    "anchor_y": 72.31,
+    "width": 185,
+    "height": 102,
+    "anchor_x": 186.49,
+    "anchor_y": 50.31,
     "footprint": [
       2,
       2
@@ -2174,7 +2174,7 @@
     "name": "garden",
     "rotation": 3,
     "width": 210,
-    "height": 130,
+    "height": 121,
     "anchor_x": 114.36,
     "anchor_y": 120.74,
     "footprint": [
@@ -2226,9 +2226,9 @@
     "name": "gatehouse",
     "rotation": 3,
     "width": 322,
-    "height": 244,
+    "height": 238,
     "anchor_x": 206.43,
-    "anchor_y": 207.56,
+    "anchor_y": 201.56,
     "footprint": [
       2,
       2
@@ -2238,10 +2238,10 @@
   {
     "name": "gibbet",
     "rotation": 0,
-    "width": 140,
-    "height": 164,
-    "anchor_x": -3.67,
-    "anchor_y": 135.51,
+    "width": 121,
+    "height": 132,
+    "anchor_x": -9.67,
+    "anchor_y": 122.51,
     "footprint": [
       2,
       2
@@ -2251,10 +2251,10 @@
   {
     "name": "gibbet",
     "rotation": 1,
-    "width": 194,
-    "height": 164,
-    "anchor_x": 48.11,
-    "anchor_y": 87.51,
+    "width": 181,
+    "height": 136,
+    "anchor_x": 35.11,
+    "anchor_y": 76.51,
     "footprint": [
       2,
       2
@@ -2264,10 +2264,10 @@
   {
     "name": "gibbet",
     "rotation": 2,
-    "width": 140,
-    "height": 216,
-    "anchor_x": 143.67,
-    "anchor_y": 138.23,
+    "width": 117,
+    "height": 203,
+    "anchor_x": 130.67,
+    "anchor_y": 125.23,
     "footprint": [
       2,
       2
@@ -2277,10 +2277,10 @@
   {
     "name": "gibbet",
     "rotation": 3,
-    "width": 194,
-    "height": 188,
+    "width": 181,
+    "height": 175,
     "anchor_x": 145.89,
-    "anchor_y": 185.51,
+    "anchor_y": 172.51,
     "footprint": [
       2,
       2
@@ -2343,7 +2343,7 @@
     "name": "granary_bin",
     "rotation": 0,
     "width": 118,
-    "height": 84,
+    "height": 80,
     "anchor_x": 15.64,
     "anchor_y": 52.29,
     "footprint": [
@@ -2355,9 +2355,9 @@
   {
     "name": "granary_bin",
     "rotation": 1,
-    "width": 128,
-    "height": 84,
-    "anchor_x": 54.36,
+    "width": 126,
+    "height": 81,
+    "anchor_x": 52.36,
     "anchor_y": 28.29,
     "footprint": [
       1,
@@ -2499,7 +2499,7 @@
     "name": "hunter",
     "rotation": 0,
     "width": 186,
-    "height": 142,
+    "height": 137,
     "anchor_x": 19.44,
     "anchor_y": 103.41,
     "footprint": [
@@ -2602,8 +2602,8 @@
   {
     "name": "iron_mine",
     "rotation": 0,
-    "width": 310,
-    "height": 220,
+    "width": 306,
+    "height": 215,
     "anchor_x": 27.17,
     "anchor_y": 145.86,
     "footprint": [
@@ -2616,7 +2616,7 @@
     "name": "iron_mine",
     "rotation": 1,
     "width": 346,
-    "height": 220,
+    "height": 215,
     "anchor_x": 139.41,
     "anchor_y": 73.86,
     "footprint": [
@@ -2641,7 +2641,7 @@
   {
     "name": "iron_mine",
     "rotation": 3,
-    "width": 346,
+    "width": 340,
     "height": 236,
     "anchor_x": 206.59,
     "anchor_y": 217.77,
@@ -2667,9 +2667,9 @@
   {
     "name": "keep",
     "rotation": 1,
-    "width": 550,
+    "width": 527,
     "height": 388,
-    "anchor_x": 187.07,
+    "anchor_x": 164.07,
     "anchor_y": 232.07,
     "footprint": [
       3,
@@ -2706,10 +2706,10 @@
   {
     "name": "killing_pit",
     "rotation": 0,
-    "width": 118,
-    "height": 76,
-    "anchor_x": 12.99,
-    "anchor_y": 42.41,
+    "width": 105,
+    "height": 57,
+    "anchor_x": 4.99,
+    "anchor_y": 29.41,
     "footprint": [
       1,
       1
@@ -2719,10 +2719,10 @@
   {
     "name": "killing_pit",
     "rotation": 1,
-    "width": 124,
-    "height": 76,
-    "anchor_x": 57.87,
-    "anchor_y": 18.41,
+    "width": 107,
+    "height": 57,
+    "anchor_x": 51.87,
+    "anchor_y": 5.41,
     "footprint": [
       1,
       1
@@ -2732,10 +2732,10 @@
   {
     "name": "killing_pit",
     "rotation": 2,
-    "width": 118,
-    "height": 80,
-    "anchor_x": 105.01,
-    "anchor_y": 42.34,
+    "width": 105,
+    "height": 59,
+    "anchor_x": 100.01,
+    "anchor_y": 29.34,
     "footprint": [
       1,
       1
@@ -2745,10 +2745,10 @@
   {
     "name": "killing_pit",
     "rotation": 3,
-    "width": 124,
-    "height": 78,
-    "anchor_x": 66.13,
-    "anchor_y": 66.41,
+    "width": 108,
+    "height": 58,
+    "anchor_x": 56.13,
+    "anchor_y": 53.41,
     "footprint": [
       1,
       1
@@ -2759,9 +2759,9 @@
     "name": "lookout_tower",
     "rotation": 0,
     "width": 276,
-    "height": 284,
+    "height": 252,
     "anchor_x": 81.77,
-    "anchor_y": 230.18,
+    "anchor_y": 198.18,
     "footprint": [
       2,
       2
@@ -2772,9 +2772,9 @@
     "name": "lookout_tower",
     "rotation": 1,
     "width": 360,
-    "height": 284,
+    "height": 252,
     "anchor_x": 97.39,
-    "anchor_y": 182.18,
+    "anchor_y": 150.18,
     "footprint": [
       2,
       2
@@ -2785,9 +2785,9 @@
     "name": "lookout_tower",
     "rotation": 2,
     "width": 276,
-    "height": 366,
+    "height": 334,
     "anchor_x": 194.23,
-    "anchor_y": 229.88,
+    "anchor_y": 197.88,
     "footprint": [
       2,
       2
@@ -2798,9 +2798,9 @@
     "name": "lookout_tower",
     "rotation": 3,
     "width": 360,
-    "height": 324,
+    "height": 292,
     "anchor_x": 262.61,
-    "anchor_y": 278.3,
+    "anchor_y": 246.3,
     "footprint": [
       2,
       2
@@ -2862,10 +2862,10 @@
   {
     "name": "maypole",
     "rotation": 0,
-    "width": 248,
-    "height": 218,
-    "anchor_x": 52.53,
-    "anchor_y": 163.38,
+    "width": 202,
+    "height": 169,
+    "anchor_x": 10.53,
+    "anchor_y": 119.38,
     "footprint": [
       2,
       2
@@ -2875,10 +2875,10 @@
   {
     "name": "maypole",
     "rotation": 1,
-    "width": 302,
-    "height": 218,
-    "anchor_x": 100.06,
-    "anchor_y": 115.38,
+    "width": 297,
+    "height": 170,
+    "anchor_x": 95.06,
+    "anchor_y": 71.38,
     "footprint": [
       2,
       2
@@ -2888,10 +2888,10 @@
   {
     "name": "maypole",
     "rotation": 2,
-    "width": 248,
-    "height": 268,
-    "anchor_x": 195.47,
-    "anchor_y": 162.91,
+    "width": 210,
+    "height": 206,
+    "anchor_x": 192.47,
+    "anchor_y": 118.91,
     "footprint": [
       2,
       2
@@ -2901,10 +2901,10 @@
   {
     "name": "maypole",
     "rotation": 3,
-    "width": 302,
-    "height": 242,
-    "anchor_x": 201.94,
-    "anchor_y": 211.12,
+    "width": 260,
+    "height": 176,
+    "anchor_x": 164.94,
+    "anchor_y": 167.12,
     "footprint": [
       2,
       2
@@ -2954,9 +2954,9 @@
     "name": "mill",
     "rotation": 3,
     "width": 340,
-    "height": 292,
+    "height": 241,
     "anchor_x": 237.67,
-    "anchor_y": 274.42,
+    "anchor_y": 223.42,
     "footprint": [
       3,
       3
@@ -2966,10 +2966,10 @@
   {
     "name": "moat",
     "rotation": 0,
-    "width": 116,
-    "height": 70,
-    "anchor_x": 10.66,
-    "anchor_y": 36.47,
+    "width": 107,
+    "height": 58,
+    "anchor_x": 6.66,
+    "anchor_y": 30.47,
     "footprint": [
       1,
       1
@@ -2979,10 +2979,10 @@
   {
     "name": "moat",
     "rotation": 1,
-    "width": 118,
-    "height": 70,
-    "anchor_x": 57.62,
-    "anchor_y": 12.47,
+    "width": 110,
+    "height": 59,
+    "anchor_x": 52.62,
+    "anchor_y": 6.47,
     "footprint": [
       1,
       1
@@ -2992,10 +2992,10 @@
   {
     "name": "moat",
     "rotation": 2,
-    "width": 116,
-    "height": 72,
-    "anchor_x": 105.34,
-    "anchor_y": 36.78,
+    "width": 107,
+    "height": 62,
+    "anchor_x": 100.34,
+    "anchor_y": 30.78,
     "footprint": [
       1,
       1
@@ -3005,10 +3005,10 @@
   {
     "name": "moat",
     "rotation": 3,
-    "width": 118,
-    "height": 70,
-    "anchor_x": 60.38,
-    "anchor_y": 60.14,
+    "width": 111,
+    "height": 60,
+    "anchor_x": 58.38,
+    "anchor_y": 55.14,
     "footprint": [
       1,
       1
@@ -3044,9 +3044,9 @@
   {
     "name": "oak",
     "rotation": 2,
-    "width": 192,
+    "width": 187,
     "height": 264,
-    "anchor_x": 121.55,
+    "anchor_x": 116.55,
     "anchor_y": 165.55,
     "footprint": [
       1,
@@ -3096,9 +3096,9 @@
   {
     "name": "olive_tree",
     "rotation": 2,
-    "width": 160,
+    "width": 155,
     "height": 198,
-    "anchor_x": 115.68,
+    "anchor_x": 110.68,
     "anchor_y": 121.69,
     "footprint": [
       1,
@@ -3123,7 +3123,7 @@
     "name": "ox_tether",
     "rotation": 0,
     "width": 144,
-    "height": 114,
+    "height": 107,
     "anchor_x": -8.96,
     "anchor_y": 76.08,
     "footprint": [
@@ -3136,7 +3136,7 @@
     "name": "ox_tether",
     "rotation": 1,
     "width": 164,
-    "height": 114,
+    "height": 110,
     "anchor_x": 65.61,
     "anchor_y": 32.4,
     "footprint": [
@@ -3149,7 +3149,7 @@
     "name": "ox_tether",
     "rotation": 2,
     "width": 144,
-    "height": 132,
+    "height": 126,
     "anchor_x": 152.96,
     "anchor_y": 78.38,
     "footprint": [
@@ -3174,8 +3174,8 @@
   {
     "name": "palm",
     "rotation": 0,
-    "width": 290,
-    "height": 282,
+    "width": 255,
+    "height": 249,
     "anchor_x": 123.99,
     "anchor_y": 221.72,
     "footprint": [
@@ -3200,10 +3200,10 @@
   {
     "name": "palm",
     "rotation": 2,
-    "width": 290,
-    "height": 358,
-    "anchor_x": 166.01,
-    "anchor_y": 223.83,
+    "width": 255,
+    "height": 308,
+    "anchor_x": 131.01,
+    "anchor_y": 173.83,
     "footprint": [
       1,
       1
@@ -3227,9 +3227,9 @@
     "name": "perimeter_turret",
     "rotation": 0,
     "width": 158,
-    "height": 148,
+    "height": 127,
     "anchor_x": 54.74,
-    "anchor_y": 112.8,
+    "anchor_y": 99.8,
     "footprint": [
       1,
       1
@@ -3239,10 +3239,10 @@
   {
     "name": "perimeter_turret",
     "rotation": 1,
-    "width": 196,
-    "height": 148,
-    "anchor_x": 61.65,
-    "anchor_y": 91.92,
+    "width": 185,
+    "height": 133,
+    "anchor_x": 50.65,
+    "anchor_y": 78.92,
     "footprint": [
       1,
       1
@@ -3253,9 +3253,9 @@
     "name": "perimeter_turret",
     "rotation": 2,
     "width": 158,
-    "height": 186,
+    "height": 172,
     "anchor_x": 103.26,
-    "anchor_y": 113.63,
+    "anchor_y": 99.63,
     "footprint": [
       1,
       1
@@ -3265,10 +3265,10 @@
   {
     "name": "perimeter_turret",
     "rotation": 3,
-    "width": 196,
-    "height": 166,
+    "width": 186,
+    "height": 153,
     "anchor_x": 134.35,
-    "anchor_y": 133.93,
+    "anchor_y": 120.93,
     "footprint": [
       1,
       1
@@ -3305,9 +3305,9 @@
     "name": "pharmacy",
     "rotation": 2,
     "width": 260,
-    "height": 264,
+    "height": 224,
     "anchor_x": 200.27,
-    "anchor_y": 161.42,
+    "anchor_y": 121.42,
     "footprint": [
       2,
       2
@@ -3331,7 +3331,7 @@
     "name": "pig_farm",
     "rotation": 0,
     "width": 318,
-    "height": 228,
+    "height": 225,
     "anchor_x": 34.33,
     "anchor_y": 159.8,
     "footprint": [
@@ -3343,10 +3343,10 @@
   {
     "name": "pig_farm",
     "rotation": 1,
-    "width": 356,
-    "height": 228,
-    "anchor_x": 127.64,
-    "anchor_y": 81.7,
+    "width": 355,
+    "height": 148,
+    "anchor_x": 126.64,
+    "anchor_y": 16.7,
     "footprint": [
       3,
       3
@@ -3356,7 +3356,7 @@
   {
     "name": "pig_farm",
     "rotation": 2,
-    "width": 318,
+    "width": 285,
     "height": 266,
     "anchor_x": 283.67,
     "anchor_y": 146.6,
@@ -3370,9 +3370,9 @@
     "name": "pig_farm",
     "rotation": 3,
     "width": 356,
-    "height": 246,
+    "height": 177,
     "anchor_x": 228.36,
-    "anchor_y": 224.12,
+    "anchor_y": 174.12,
     "footprint": [
       3,
       3
@@ -3383,7 +3383,7 @@
     "name": "pile_ale_1",
     "rotation": 0,
     "width": 120,
-    "height": 88,
+    "height": 82,
     "anchor_x": 17.3,
     "anchor_y": 55.76,
     "footprint": [
@@ -3395,10 +3395,10 @@
   {
     "name": "pile_ale_1",
     "rotation": 1,
-    "width": 132,
-    "height": 88,
-    "anchor_x": 54.99,
-    "anchor_y": 31.76,
+    "width": 126,
+    "height": 70,
+    "anchor_x": 48.99,
+    "anchor_y": 19.76,
     "footprint": [
       1,
       1
@@ -3409,7 +3409,7 @@
     "name": "pile_ale_1",
     "rotation": 2,
     "width": 120,
-    "height": 98,
+    "height": 96,
     "anchor_x": 102.7,
     "anchor_y": 55.25,
     "footprint": [
@@ -3421,7 +3421,7 @@
   {
     "name": "pile_ale_1",
     "rotation": 3,
-    "width": 132,
+    "width": 126,
     "height": 92,
     "anchor_x": 77.01,
     "anchor_y": 79.11,
@@ -3435,7 +3435,7 @@
     "name": "pile_ale_2",
     "rotation": 0,
     "width": 120,
-    "height": 88,
+    "height": 82,
     "anchor_x": 17.3,
     "anchor_y": 55.76,
     "footprint": [
@@ -3447,9 +3447,9 @@
   {
     "name": "pile_ale_2",
     "rotation": 1,
-    "width": 132,
-    "height": 88,
-    "anchor_x": 54.99,
+    "width": 126,
+    "height": 82,
+    "anchor_x": 48.99,
     "anchor_y": 31.76,
     "footprint": [
       1,
@@ -3473,7 +3473,7 @@
   {
     "name": "pile_ale_2",
     "rotation": 3,
-    "width": 132,
+    "width": 126,
     "height": 92,
     "anchor_x": 77.01,
     "anchor_y": 79.11,
@@ -3487,7 +3487,7 @@
     "name": "pile_ale_3",
     "rotation": 0,
     "width": 120,
-    "height": 88,
+    "height": 82,
     "anchor_x": 17.3,
     "anchor_y": 55.76,
     "footprint": [
@@ -3499,9 +3499,9 @@
   {
     "name": "pile_ale_3",
     "rotation": 1,
-    "width": 132,
-    "height": 88,
-    "anchor_x": 54.99,
+    "width": 126,
+    "height": 83,
+    "anchor_x": 48.99,
     "anchor_y": 31.76,
     "footprint": [
       1,
@@ -3525,7 +3525,7 @@
   {
     "name": "pile_ale_3",
     "rotation": 3,
-    "width": 132,
+    "width": 126,
     "height": 92,
     "anchor_x": 77.01,
     "anchor_y": 79.11,
@@ -3539,7 +3539,7 @@
     "name": "pile_flour_1",
     "rotation": 0,
     "width": 120,
-    "height": 82,
+    "height": 76,
     "anchor_x": 15.62,
     "anchor_y": 49.63,
     "footprint": [
@@ -3552,7 +3552,7 @@
     "name": "pile_flour_1",
     "rotation": 1,
     "width": 126,
-    "height": 82,
+    "height": 76,
     "anchor_x": 54.18,
     "anchor_y": 24.96,
     "footprint": [
@@ -3564,9 +3564,9 @@
   {
     "name": "pile_flour_1",
     "rotation": 2,
-    "width": 120,
+    "width": 113,
     "height": 88,
-    "anchor_x": 104.38,
+    "anchor_x": 97.38,
     "anchor_y": 47.53,
     "footprint": [
       1,
@@ -3590,8 +3590,8 @@
   {
     "name": "pile_flour_2",
     "rotation": 0,
-    "width": 124,
-    "height": 92,
+    "width": 118,
+    "height": 87,
     "anchor_x": 20.14,
     "anchor_y": 60.21,
     "footprint": [
@@ -3604,7 +3604,7 @@
     "name": "pile_flour_2",
     "rotation": 1,
     "width": 138,
-    "height": 92,
+    "height": 86,
     "anchor_x": 54.95,
     "anchor_y": 35.54,
     "footprint": [
@@ -3643,7 +3643,7 @@
     "name": "pile_flour_3",
     "rotation": 0,
     "width": 130,
-    "height": 104,
+    "height": 98,
     "anchor_x": 25.66,
     "anchor_y": 71.8,
     "footprint": [
@@ -3655,9 +3655,9 @@
   {
     "name": "pile_flour_3",
     "rotation": 1,
-    "width": 148,
-    "height": 104,
-    "anchor_x": 54.72,
+    "width": 142,
+    "height": 98,
+    "anchor_x": 48.72,
     "anchor_y": 47.13,
     "footprint": [
       1,
@@ -3694,10 +3694,10 @@
   {
     "name": "pile_hides_1",
     "rotation": 0,
-    "width": 116,
-    "height": 80,
-    "anchor_x": 13.58,
-    "anchor_y": 47.94,
+    "width": 104,
+    "height": 59,
+    "anchor_x": 5.58,
+    "anchor_y": 31.94,
     "footprint": [
       1,
       1
@@ -3707,10 +3707,10 @@
   {
     "name": "pile_hides_1",
     "rotation": 1,
-    "width": 124,
-    "height": 80,
-    "anchor_x": 54.56,
-    "anchor_y": 23.94,
+    "width": 111,
+    "height": 58,
+    "anchor_x": 49.56,
+    "anchor_y": 6.94,
     "footprint": [
       1,
       1
@@ -3720,10 +3720,10 @@
   {
     "name": "pile_hides_1",
     "rotation": 2,
-    "width": 116,
-    "height": 88,
-    "anchor_x": 102.42,
-    "anchor_y": 48.22,
+    "width": 104,
+    "height": 66,
+    "anchor_x": 98.42,
+    "anchor_y": 30.22,
     "footprint": [
       1,
       1
@@ -3733,10 +3733,10 @@
   {
     "name": "pile_hides_1",
     "rotation": 3,
-    "width": 124,
-    "height": 84,
-    "anchor_x": 69.44,
-    "anchor_y": 72.15,
+    "width": 109,
+    "height": 59,
+    "anchor_x": 59.44,
+    "anchor_y": 54.15,
     "footprint": [
       1,
       1
@@ -3746,10 +3746,10 @@
   {
     "name": "pile_hides_2",
     "rotation": 0,
-    "width": 122,
-    "height": 86,
-    "anchor_x": 18.95,
-    "anchor_y": 53.9,
+    "width": 106,
+    "height": 63,
+    "anchor_x": 8.95,
+    "anchor_y": 36.9,
     "footprint": [
       1,
       1
@@ -3759,49 +3759,49 @@
   {
     "name": "pile_hides_2",
     "rotation": 1,
-    "width": 132,
-    "height": 86,
-    "anchor_x": 55.07,
-    "anchor_y": 29.91,
-    "footprint": [
-      1,
-      1
-    ],
-    "scale": 3
-  },
-  {
-    "name": "pile_hides_2",
-    "rotation": 2,
-    "width": 122,
-    "height": 96,
-    "anchor_x": 103.05,
-    "anchor_y": 52.77,
-    "footprint": [
-      1,
-      1
-    ],
-    "scale": 3
-  },
-  {
-    "name": "pile_hides_2",
-    "rotation": 3,
-    "width": 132,
-    "height": 90,
-    "anchor_x": 76.93,
-    "anchor_y": 76.26,
-    "footprint": [
-      1,
-      1
-    ],
-    "scale": 3
-  },
-  {
-    "name": "pile_hides_3",
-    "rotation": 0,
     "width": 126,
-    "height": 88,
-    "anchor_x": 20.08,
-    "anchor_y": 54.29,
+    "height": 65,
+    "anchor_x": 49.07,
+    "anchor_y": 13.91,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "pile_hides_2",
+    "rotation": 2,
+    "width": 107,
+    "height": 70,
+    "anchor_x": 98.05,
+    "anchor_y": 31.77,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "pile_hides_2",
+    "rotation": 3,
+    "width": 119,
+    "height": 61,
+    "anchor_x": 69.93,
+    "anchor_y": 54.26,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "pile_hides_3",
+    "rotation": 0,
+    "width": 110,
+    "height": 64,
+    "anchor_x": 11.08,
+    "anchor_y": 37.29,
     "footprint": [
       1,
       1
@@ -3811,10 +3811,10 @@
   {
     "name": "pile_hides_3",
     "rotation": 1,
-    "width": 136,
-    "height": 88,
-    "anchor_x": 58.06,
-    "anchor_y": 30.29,
+    "width": 127,
+    "height": 67,
+    "anchor_x": 49.06,
+    "anchor_y": 15.29,
     "footprint": [
       1,
       1
@@ -3824,72 +3824,72 @@
   {
     "name": "pile_hides_3",
     "rotation": 2,
+    "width": 110,
+    "height": 71,
+    "anchor_x": 98.92,
+    "anchor_y": 34.04,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "pile_hides_3",
+    "rotation": 3,
+    "width": 121,
+    "height": 69,
+    "anchor_x": 71.94,
+    "anchor_y": 61.47,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "pile_hops_1",
+    "rotation": 0,
+    "width": 120,
+    "height": 82,
+    "anchor_x": 17.3,
+    "anchor_y": 55.76,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "pile_hops_1",
+    "rotation": 1,
+    "width": 106,
+    "height": 66,
+    "anchor_x": 48.99,
+    "anchor_y": 15.76,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "pile_hops_1",
+    "rotation": 2,
+    "width": 120,
+    "height": 86,
+    "anchor_x": 102.7,
+    "anchor_y": 55.25,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "pile_hops_1",
+    "rotation": 3,
     "width": 126,
-    "height": 98,
-    "anchor_x": 105.92,
-    "anchor_y": 54.04,
-    "footprint": [
-      1,
-      1
-    ],
-    "scale": 3
-  },
-  {
-    "name": "pile_hides_3",
-    "rotation": 3,
-    "width": 136,
-    "height": 92,
-    "anchor_x": 77.94,
-    "anchor_y": 77.47,
-    "footprint": [
-      1,
-      1
-    ],
-    "scale": 3
-  },
-  {
-    "name": "pile_hops_1",
-    "rotation": 0,
-    "width": 120,
-    "height": 88,
-    "anchor_x": 17.3,
-    "anchor_y": 55.76,
-    "footprint": [
-      1,
-      1
-    ],
-    "scale": 3
-  },
-  {
-    "name": "pile_hops_1",
-    "rotation": 1,
-    "width": 132,
-    "height": 88,
-    "anchor_x": 54.99,
-    "anchor_y": 31.76,
-    "footprint": [
-      1,
-      1
-    ],
-    "scale": 3
-  },
-  {
-    "name": "pile_hops_1",
-    "rotation": 2,
-    "width": 120,
-    "height": 98,
-    "anchor_x": 102.7,
-    "anchor_y": 55.25,
-    "footprint": [
-      1,
-      1
-    ],
-    "scale": 3
-  },
-  {
-    "name": "pile_hops_1",
-    "rotation": 3,
-    "width": 132,
     "height": 92,
     "anchor_x": 77.01,
     "anchor_y": 79.11,
@@ -3903,7 +3903,7 @@
     "name": "pile_hops_2",
     "rotation": 0,
     "width": 120,
-    "height": 88,
+    "height": 82,
     "anchor_x": 17.3,
     "anchor_y": 55.76,
     "footprint": [
@@ -3915,9 +3915,9 @@
   {
     "name": "pile_hops_2",
     "rotation": 1,
-    "width": 132,
-    "height": 88,
-    "anchor_x": 54.99,
+    "width": 126,
+    "height": 82,
+    "anchor_x": 48.99,
     "anchor_y": 31.76,
     "footprint": [
       1,
@@ -3941,7 +3941,7 @@
   {
     "name": "pile_hops_2",
     "rotation": 3,
-    "width": 132,
+    "width": 126,
     "height": 92,
     "anchor_x": 77.01,
     "anchor_y": 79.11,
@@ -3955,7 +3955,7 @@
     "name": "pile_hops_3",
     "rotation": 0,
     "width": 120,
-    "height": 88,
+    "height": 82,
     "anchor_x": 17.3,
     "anchor_y": 55.76,
     "footprint": [
@@ -3967,9 +3967,9 @@
   {
     "name": "pile_hops_3",
     "rotation": 1,
-    "width": 132,
-    "height": 88,
-    "anchor_x": 54.99,
+    "width": 126,
+    "height": 82,
+    "anchor_x": 48.99,
     "anchor_y": 31.76,
     "footprint": [
       1,
@@ -3993,7 +3993,7 @@
   {
     "name": "pile_hops_3",
     "rotation": 3,
-    "width": 132,
+    "width": 126,
     "height": 92,
     "anchor_x": 77.01,
     "anchor_y": 79.11,
@@ -4006,8 +4006,8 @@
   {
     "name": "pile_iron_1",
     "rotation": 0,
-    "width": 116,
-    "height": 78,
+    "width": 110,
+    "height": 72,
     "anchor_x": 13.1,
     "anchor_y": 45.88,
     "footprint": [
@@ -4019,8 +4019,8 @@
   {
     "name": "pile_iron_1",
     "rotation": 1,
-    "width": 122,
-    "height": 78,
+    "width": 112,
+    "height": 72,
     "anchor_x": 54.56,
     "anchor_y": 21.88,
     "footprint": [
@@ -4032,10 +4032,10 @@
   {
     "name": "pile_iron_1",
     "rotation": 2,
-    "width": 116,
-    "height": 84,
-    "anchor_x": 102.9,
-    "anchor_y": 45.66,
+    "width": 106,
+    "height": 63,
+    "anchor_x": 97.9,
+    "anchor_y": 30.66,
     "footprint": [
       1,
       1
@@ -4044,6 +4044,58 @@
   },
   {
     "name": "pile_iron_1",
+    "rotation": 3,
+    "width": 122,
+    "height": 75,
+    "anchor_x": 67.44,
+    "anchor_y": 69.33,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "pile_iron_2",
+    "rotation": 0,
+    "width": 110,
+    "height": 72,
+    "anchor_x": 13.1,
+    "anchor_y": 45.88,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "pile_iron_2",
+    "rotation": 1,
+    "width": 122,
+    "height": 72,
+    "anchor_x": 54.56,
+    "anchor_y": 21.88,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "pile_iron_2",
+    "rotation": 2,
+    "width": 107,
+    "height": 73,
+    "anchor_x": 97.9,
+    "anchor_y": 35.66,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "pile_iron_2",
     "rotation": 3,
     "width": 122,
     "height": 80,
@@ -4056,62 +4108,10 @@
     "scale": 3
   },
   {
-    "name": "pile_iron_2",
-    "rotation": 0,
-    "width": 116,
-    "height": 78,
-    "anchor_x": 13.1,
-    "anchor_y": 45.88,
-    "footprint": [
-      1,
-      1
-    ],
-    "scale": 3
-  },
-  {
-    "name": "pile_iron_2",
-    "rotation": 1,
-    "width": 122,
-    "height": 78,
-    "anchor_x": 54.56,
-    "anchor_y": 21.88,
-    "footprint": [
-      1,
-      1
-    ],
-    "scale": 3
-  },
-  {
-    "name": "pile_iron_2",
-    "rotation": 2,
-    "width": 116,
-    "height": 84,
-    "anchor_x": 102.9,
-    "anchor_y": 45.66,
-    "footprint": [
-      1,
-      1
-    ],
-    "scale": 3
-  },
-  {
-    "name": "pile_iron_2",
-    "rotation": 3,
-    "width": 122,
-    "height": 80,
-    "anchor_x": 67.44,
-    "anchor_y": 69.33,
-    "footprint": [
-      1,
-      1
-    ],
-    "scale": 3
-  },
-  {
     "name": "pile_iron_3",
     "rotation": 0,
-    "width": 116,
-    "height": 78,
+    "width": 111,
+    "height": 72,
     "anchor_x": 13.1,
     "anchor_y": 45.88,
     "footprint": [
@@ -4124,7 +4124,7 @@
     "name": "pile_iron_3",
     "rotation": 1,
     "width": 122,
-    "height": 78,
+    "height": 73,
     "anchor_x": 54.56,
     "anchor_y": 21.88,
     "footprint": [
@@ -4136,10 +4136,10 @@
   {
     "name": "pile_iron_3",
     "rotation": 2,
-    "width": 116,
-    "height": 84,
-    "anchor_x": 102.9,
-    "anchor_y": 45.66,
+    "width": 108,
+    "height": 73,
+    "anchor_x": 98.9,
+    "anchor_y": 35.66,
     "footprint": [
       1,
       1
@@ -4162,9 +4162,9 @@
   {
     "name": "pile_pigs_1",
     "rotation": 0,
-    "width": 116,
-    "height": 80,
-    "anchor_x": 13.71,
+    "width": 112,
+    "height": 75,
+    "anchor_x": 9.71,
     "anchor_y": 48.23,
     "footprint": [
       1,
@@ -4176,7 +4176,7 @@
     "name": "pile_pigs_1",
     "rotation": 1,
     "width": 124,
-    "height": 80,
+    "height": 75,
     "anchor_x": 54.29,
     "anchor_y": 24.23,
     "footprint": [
@@ -4188,10 +4188,10 @@
   {
     "name": "pile_pigs_1",
     "rotation": 2,
-    "width": 116,
-    "height": 88,
-    "anchor_x": 102.29,
-    "anchor_y": 48.38,
+    "width": 111,
+    "height": 63,
+    "anchor_x": 97.29,
+    "anchor_y": 30.38,
     "footprint": [
       1,
       1
@@ -4215,7 +4215,7 @@
     "name": "pile_pigs_2",
     "rotation": 0,
     "width": 116,
-    "height": 80,
+    "height": 75,
     "anchor_x": 13.71,
     "anchor_y": 48.23,
     "footprint": [
@@ -4228,7 +4228,7 @@
     "name": "pile_pigs_2",
     "rotation": 1,
     "width": 124,
-    "height": 80,
+    "height": 75,
     "anchor_x": 54.29,
     "anchor_y": 24.23,
     "footprint": [
@@ -4240,10 +4240,10 @@
   {
     "name": "pile_pigs_2",
     "rotation": 2,
-    "width": 116,
-    "height": 88,
-    "anchor_x": 102.29,
-    "anchor_y": 48.38,
+    "width": 112,
+    "height": 70,
+    "anchor_x": 98.29,
+    "anchor_y": 30.38,
     "footprint": [
       1,
       1
@@ -4267,7 +4267,7 @@
     "name": "pile_pigs_3",
     "rotation": 0,
     "width": 116,
-    "height": 80,
+    "height": 75,
     "anchor_x": 13.71,
     "anchor_y": 48.23,
     "footprint": [
@@ -4280,7 +4280,7 @@
     "name": "pile_pigs_3",
     "rotation": 1,
     "width": 124,
-    "height": 80,
+    "height": 75,
     "anchor_x": 54.29,
     "anchor_y": 24.23,
     "footprint": [
@@ -4292,10 +4292,10 @@
   {
     "name": "pile_pigs_3",
     "rotation": 2,
-    "width": 116,
-    "height": 88,
-    "anchor_x": 102.29,
-    "anchor_y": 48.38,
+    "width": 112,
+    "height": 72,
+    "anchor_x": 98.29,
+    "anchor_y": 32.38,
     "footprint": [
       1,
       1
@@ -4305,10 +4305,10 @@
   {
     "name": "pile_pigs_3",
     "rotation": 3,
-    "width": 124,
-    "height": 84,
+    "width": 119,
+    "height": 68,
     "anchor_x": 69.71,
-    "anchor_y": 72.37,
+    "anchor_y": 56.37,
     "footprint": [
       1,
       1
@@ -4318,8 +4318,8 @@
   {
     "name": "pile_pitch_1",
     "rotation": 0,
-    "width": 120,
-    "height": 86,
+    "width": 115,
+    "height": 81,
     "anchor_x": 17.04,
     "anchor_y": 54.17,
     "footprint": [
@@ -4331,9 +4331,9 @@
   {
     "name": "pile_pitch_1",
     "rotation": 1,
-    "width": 130,
-    "height": 86,
-    "anchor_x": 54.54,
+    "width": 125,
+    "height": 81,
+    "anchor_x": 49.54,
     "anchor_y": 30.17,
     "footprint": [
       1,
@@ -4345,7 +4345,7 @@
     "name": "pile_pitch_1",
     "rotation": 2,
     "width": 120,
-    "height": 96,
+    "height": 94,
     "anchor_x": 102.96,
     "anchor_y": 53.94,
     "footprint": [
@@ -4370,8 +4370,8 @@
   {
     "name": "pile_pitch_2",
     "rotation": 0,
-    "width": 120,
-    "height": 86,
+    "width": 115,
+    "height": 82,
     "anchor_x": 17.04,
     "anchor_y": 54.17,
     "footprint": [
@@ -4384,7 +4384,7 @@
     "name": "pile_pitch_2",
     "rotation": 1,
     "width": 130,
-    "height": 86,
+    "height": 81,
     "anchor_x": 54.54,
     "anchor_y": 30.17,
     "footprint": [
@@ -4409,7 +4409,7 @@
   {
     "name": "pile_pitch_2",
     "rotation": 3,
-    "width": 130,
+    "width": 126,
     "height": 92,
     "anchor_x": 75.46,
     "anchor_y": 78.65,
@@ -4423,7 +4423,7 @@
     "name": "pile_pitch_3",
     "rotation": 0,
     "width": 120,
-    "height": 86,
+    "height": 82,
     "anchor_x": 17.04,
     "anchor_y": 54.17,
     "footprint": [
@@ -4436,7 +4436,7 @@
     "name": "pile_pitch_3",
     "rotation": 1,
     "width": 130,
-    "height": 86,
+    "height": 83,
     "anchor_x": 54.54,
     "anchor_y": 30.17,
     "footprint": [
@@ -4461,7 +4461,7 @@
   {
     "name": "pile_pitch_3",
     "rotation": 3,
-    "width": 130,
+    "width": 126,
     "height": 92,
     "anchor_x": 75.46,
     "anchor_y": 78.65,
@@ -4474,8 +4474,8 @@
   {
     "name": "pile_stone_1",
     "rotation": 0,
-    "width": 114,
-    "height": 76,
+    "width": 110,
+    "height": 71,
     "anchor_x": 11.85,
     "anchor_y": 44.32,
     "footprint": [
@@ -4488,7 +4488,7 @@
     "name": "pile_stone_1",
     "rotation": 1,
     "width": 122,
-    "height": 76,
+    "height": 71,
     "anchor_x": 55.08,
     "anchor_y": 20.32,
     "footprint": [
@@ -4500,10 +4500,10 @@
   {
     "name": "pile_stone_1",
     "rotation": 2,
-    "width": 114,
-    "height": 82,
-    "anchor_x": 102.15,
-    "anchor_y": 44.36,
+    "width": 104,
+    "height": 70,
+    "anchor_x": 98.15,
+    "anchor_y": 32.36,
     "footprint": [
       1,
       1
@@ -4526,8 +4526,8 @@
   {
     "name": "pile_stone_2",
     "rotation": 0,
-    "width": 118,
-    "height": 84,
+    "width": 114,
+    "height": 79,
     "anchor_x": 15.64,
     "anchor_y": 52.29,
     "footprint": [
@@ -4539,9 +4539,9 @@
   {
     "name": "pile_stone_2",
     "rotation": 1,
-    "width": 128,
+    "width": 123,
     "height": 84,
-    "anchor_x": 54.36,
+    "anchor_x": 49.36,
     "anchor_y": 28.29,
     "footprint": [
       1,
@@ -4578,8 +4578,8 @@
   {
     "name": "pile_stone_3",
     "rotation": 0,
-    "width": 122,
-    "height": 92,
+    "width": 118,
+    "height": 87,
     "anchor_x": 19.43,
     "anchor_y": 60.26,
     "footprint": [
@@ -4592,7 +4592,7 @@
     "name": "pile_stone_3",
     "rotation": 1,
     "width": 136,
-    "height": 92,
+    "height": 87,
     "anchor_x": 54.65,
     "anchor_y": 36.26,
     "footprint": [
@@ -4630,8 +4630,8 @@
   {
     "name": "pile_wheat_1",
     "rotation": 0,
-    "width": 126,
-    "height": 100,
+    "width": 121,
+    "height": 94,
     "anchor_x": 22.89,
     "anchor_y": 67.49,
     "footprint": [
@@ -4643,10 +4643,10 @@
   {
     "name": "pile_wheat_1",
     "rotation": 1,
-    "width": 142,
-    "height": 100,
-    "anchor_x": 54.62,
-    "anchor_y": 43.49,
+    "width": 136,
+    "height": 75,
+    "anchor_x": 48.62,
+    "anchor_y": 24.49,
     "footprint": [
       1,
       1
@@ -4656,10 +4656,10 @@
   {
     "name": "pile_wheat_1",
     "rotation": 2,
-    "width": 126,
-    "height": 116,
-    "anchor_x": 103.11,
-    "anchor_y": 67.3,
+    "width": 121,
+    "height": 86,
+    "anchor_x": 98.11,
+    "anchor_y": 49.3,
     "footprint": [
       1,
       1
@@ -4669,7 +4669,7 @@
   {
     "name": "pile_wheat_1",
     "rotation": 3,
-    "width": 142,
+    "width": 137,
     "height": 106,
     "anchor_x": 87.38,
     "anchor_y": 90.55,
@@ -4683,7 +4683,7 @@
     "name": "pile_wheat_2",
     "rotation": 0,
     "width": 126,
-    "height": 100,
+    "height": 94,
     "anchor_x": 22.89,
     "anchor_y": 67.49,
     "footprint": [
@@ -4695,9 +4695,9 @@
   {
     "name": "pile_wheat_2",
     "rotation": 1,
-    "width": 142,
-    "height": 100,
-    "anchor_x": 54.62,
+    "width": 136,
+    "height": 94,
+    "anchor_x": 48.62,
     "anchor_y": 43.49,
     "footprint": [
       1,
@@ -4708,10 +4708,10 @@
   {
     "name": "pile_wheat_2",
     "rotation": 2,
-    "width": 126,
-    "height": 116,
-    "anchor_x": 103.11,
-    "anchor_y": 67.3,
+    "width": 121,
+    "height": 96,
+    "anchor_x": 98.11,
+    "anchor_y": 49.3,
     "footprint": [
       1,
       1
@@ -4721,7 +4721,7 @@
   {
     "name": "pile_wheat_2",
     "rotation": 3,
-    "width": 142,
+    "width": 136,
     "height": 106,
     "anchor_x": 87.38,
     "anchor_y": 90.55,
@@ -4735,7 +4735,7 @@
     "name": "pile_wheat_3",
     "rotation": 0,
     "width": 126,
-    "height": 100,
+    "height": 94,
     "anchor_x": 22.89,
     "anchor_y": 67.49,
     "footprint": [
@@ -4747,10 +4747,10 @@
   {
     "name": "pile_wheat_3",
     "rotation": 1,
-    "width": 142,
-    "height": 100,
-    "anchor_x": 54.62,
-    "anchor_y": 43.49,
+    "width": 136,
+    "height": 76,
+    "anchor_x": 48.62,
+    "anchor_y": 25.49,
     "footprint": [
       1,
       1
@@ -4760,9 +4760,9 @@
   {
     "name": "pile_wheat_3",
     "rotation": 2,
-    "width": 126,
+    "width": 120,
     "height": 116,
-    "anchor_x": 103.11,
+    "anchor_x": 97.11,
     "anchor_y": 67.3,
     "footprint": [
       1,
@@ -4773,7 +4773,7 @@
   {
     "name": "pile_wheat_3",
     "rotation": 3,
-    "width": 142,
+    "width": 136,
     "height": 106,
     "anchor_x": 87.38,
     "anchor_y": 90.55,
@@ -4787,7 +4787,7 @@
     "name": "pile_wood_1",
     "rotation": 0,
     "width": 116,
-    "height": 78,
+    "height": 72,
     "anchor_x": 13.85,
     "anchor_y": 45.44,
     "footprint": [
@@ -4812,10 +4812,10 @@
   {
     "name": "pile_wood_1",
     "rotation": 2,
-    "width": 116,
-    "height": 84,
-    "anchor_x": 102.15,
-    "anchor_y": 46.01,
+    "width": 105,
+    "height": 68,
+    "anchor_x": 98.15,
+    "anchor_y": 32.01,
     "footprint": [
       1,
       1
@@ -4825,8 +4825,8 @@
   {
     "name": "pile_wood_1",
     "rotation": 3,
-    "width": 124,
-    "height": 82,
+    "width": 118,
+    "height": 75,
     "anchor_x": 67.63,
     "anchor_y": 69.9,
     "footprint": [
@@ -4838,8 +4838,8 @@
   {
     "name": "pile_wood_2",
     "rotation": 0,
-    "width": 120,
-    "height": 86,
+    "width": 118,
+    "height": 80,
     "anchor_x": 17.62,
     "anchor_y": 53.38,
     "footprint": [
@@ -4852,7 +4852,7 @@
     "name": "pile_wood_2",
     "rotation": 1,
     "width": 130,
-    "height": 86,
+    "height": 82,
     "anchor_x": 55.68,
     "anchor_y": 30.15,
     "footprint": [
@@ -4891,7 +4891,7 @@
     "name": "pile_wood_3",
     "rotation": 0,
     "width": 124,
-    "height": 94,
+    "height": 88,
     "anchor_x": 21.4,
     "anchor_y": 61.33,
     "footprint": [
@@ -4904,7 +4904,7 @@
     "name": "pile_wood_3",
     "rotation": 1,
     "width": 138,
-    "height": 94,
+    "height": 90,
     "anchor_x": 55.99,
     "anchor_y": 38.1,
     "footprint": [
@@ -4942,9 +4942,9 @@
   {
     "name": "pitch_ditch",
     "rotation": 0,
-    "width": 112,
+    "width": 108,
     "height": 68,
-    "anchor_x": 8.73,
+    "anchor_x": 4.73,
     "anchor_y": 35.62,
     "footprint": [
       1,
@@ -4955,9 +4955,9 @@
   {
     "name": "pitch_ditch",
     "rotation": 1,
-    "width": 114,
-    "height": 68,
-    "anchor_x": 55.49,
+    "width": 109,
+    "height": 63,
+    "anchor_x": 50.49,
     "anchor_y": 11.62,
     "footprint": [
       1,
@@ -4968,9 +4968,9 @@
   {
     "name": "pitch_ditch",
     "rotation": 2,
-    "width": 112,
+    "width": 108,
     "height": 70,
-    "anchor_x": 103.27,
+    "anchor_x": 99.27,
     "anchor_y": 35.86,
     "footprint": [
       1,
@@ -4981,10 +4981,10 @@
   {
     "name": "pitch_ditch",
     "rotation": 3,
-    "width": 114,
-    "height": 70,
-    "anchor_x": 58.51,
-    "anchor_y": 60.25,
+    "width": 107,
+    "height": 59,
+    "anchor_x": 56.51,
+    "anchor_y": 54.25,
     "footprint": [
       1,
       1
@@ -4995,7 +4995,7 @@
     "name": "pitch_fire_1",
     "rotation": 0,
     "width": 116,
-    "height": 90,
+    "height": 84,
     "anchor_x": 16.27,
     "anchor_y": 58.89,
     "footprint": [
@@ -5008,7 +5008,7 @@
     "name": "pitch_fire_1",
     "rotation": 1,
     "width": 130,
-    "height": 90,
+    "height": 84,
     "anchor_x": 51.98,
     "anchor_y": 34.89,
     "footprint": [
@@ -5020,10 +5020,10 @@
   {
     "name": "pitch_fire_1",
     "rotation": 2,
-    "width": 116,
-    "height": 102,
-    "anchor_x": 99.73,
-    "anchor_y": 58.39,
+    "width": 93,
+    "height": 61,
+    "anchor_x": 93.73,
+    "anchor_y": 34.39,
     "footprint": [
       1,
       1
@@ -5033,9 +5033,9 @@
   {
     "name": "pitch_fire_1",
     "rotation": 3,
-    "width": 130,
+    "width": 101,
     "height": 96,
-    "anchor_x": 78.02,
+    "anchor_x": 49.02,
     "anchor_y": 82.76,
     "footprint": [
       1,
@@ -5046,9 +5046,9 @@
   {
     "name": "pitch_fire_2",
     "rotation": 0,
-    "width": 116,
-    "height": 88,
-    "anchor_x": 16.11,
+    "width": 99,
+    "height": 83,
+    "anchor_x": -0.89,
     "anchor_y": 57.54,
     "footprint": [
       1,
@@ -5059,9 +5059,9 @@
   {
     "name": "pitch_fire_2",
     "rotation": 1,
-    "width": 128,
-    "height": 88,
-    "anchor_x": 51.31,
+    "width": 123,
+    "height": 82,
+    "anchor_x": 46.31,
     "anchor_y": 33.54,
     "footprint": [
       1,
@@ -5072,10 +5072,10 @@
   {
     "name": "pitch_fire_2",
     "rotation": 2,
-    "width": 116,
-    "height": 102,
-    "anchor_x": 99.89,
-    "anchor_y": 58.2,
+    "width": 93,
+    "height": 53,
+    "anchor_x": 93.89,
+    "anchor_y": 27.2,
     "footprint": [
       1,
       1
@@ -5086,7 +5086,7 @@
     "name": "pitch_fire_2",
     "rotation": 3,
     "width": 128,
-    "height": 94,
+    "height": 83,
     "anchor_x": 76.69,
     "anchor_y": 81.49,
     "footprint": [
@@ -5099,7 +5099,7 @@
     "name": "pitch_fire_3",
     "rotation": 0,
     "width": 116,
-    "height": 90,
+    "height": 84,
     "anchor_x": 16.28,
     "anchor_y": 58.92,
     "footprint": [
@@ -5112,7 +5112,7 @@
     "name": "pitch_fire_3",
     "rotation": 1,
     "width": 130,
-    "height": 90,
+    "height": 84,
     "anchor_x": 51.96,
     "anchor_y": 34.92,
     "footprint": [
@@ -5124,10 +5124,10 @@
   {
     "name": "pitch_fire_3",
     "rotation": 2,
-    "width": 116,
-    "height": 102,
-    "anchor_x": 99.72,
-    "anchor_y": 58.4,
+    "width": 94,
+    "height": 65,
+    "anchor_x": 94.72,
+    "anchor_y": 38.4,
     "footprint": [
       1,
       1
@@ -5137,9 +5137,9 @@
   {
     "name": "pitch_fire_3",
     "rotation": 3,
-    "width": 130,
-    "height": 96,
-    "anchor_x": 78.04,
+    "width": 102,
+    "height": 84,
+    "anchor_x": 50.04,
     "anchor_y": 82.78,
     "footprint": [
       1,
@@ -5151,7 +5151,7 @@
     "name": "pitch_rig",
     "rotation": 0,
     "width": 186,
-    "height": 120,
+    "height": 114,
     "anchor_x": -0.34,
     "anchor_y": 71.64,
     "footprint": [
@@ -5163,10 +5163,10 @@
   {
     "name": "pitch_rig",
     "rotation": 1,
-    "width": 198,
-    "height": 120,
-    "anchor_x": 88.23,
-    "anchor_y": 22.44,
+    "width": 178,
+    "height": 92,
+    "anchor_x": 82.23,
+    "anchor_y": 0.44,
     "footprint": [
       2,
       2
@@ -5176,9 +5176,9 @@
   {
     "name": "pitch_rig",
     "rotation": 2,
-    "width": 186,
-    "height": 132,
-    "anchor_x": 186.34,
+    "width": 180,
+    "height": 122,
+    "anchor_x": 180.34,
     "anchor_y": 72.37,
     "footprint": [
       2,
@@ -5190,7 +5190,7 @@
     "name": "pitch_rig",
     "rotation": 3,
     "width": 198,
-    "height": 126,
+    "height": 119,
     "anchor_x": 109.77,
     "anchor_y": 121.43,
     "footprint": [
@@ -5254,10 +5254,10 @@
   {
     "name": "pond",
     "rotation": 0,
-    "width": 212,
-    "height": 136,
-    "anchor_x": 15.83,
-    "anchor_y": 80.93,
+    "width": 197,
+    "height": 109,
+    "anchor_x": 4.83,
+    "anchor_y": 58.93,
     "footprint": [
       2,
       2
@@ -5267,10 +5267,10 @@
   {
     "name": "pond",
     "rotation": 1,
-    "width": 224,
-    "height": 136,
-    "anchor_x": 99.88,
-    "anchor_y": 32.93,
+    "width": 205,
+    "height": 105,
+    "anchor_x": 94.88,
+    "anchor_y": 6.93,
     "footprint": [
       2,
       2
@@ -5280,10 +5280,10 @@
   {
     "name": "pond",
     "rotation": 2,
-    "width": 212,
-    "height": 148,
-    "anchor_x": 196.17,
-    "anchor_y": 80.88,
+    "width": 197,
+    "height": 112,
+    "anchor_x": 193.17,
+    "anchor_y": 54.88,
     "footprint": [
       2,
       2
@@ -5293,10 +5293,10 @@
   {
     "name": "pond",
     "rotation": 3,
-    "width": 224,
-    "height": 140,
-    "anchor_x": 124.12,
-    "anchor_y": 128.02,
+    "width": 205,
+    "height": 107,
+    "anchor_x": 109.12,
+    "anchor_y": 103.02,
     "footprint": [
       2,
       2
@@ -5306,9 +5306,9 @@
   {
     "name": "quarry",
     "rotation": 0,
-    "width": 334,
-    "height": 240,
-    "anchor_x": 31.32,
+    "width": 319,
+    "height": 218,
+    "anchor_x": 16.32,
     "anchor_y": 165.49,
     "footprint": [
       3,
@@ -5333,9 +5333,9 @@
     "name": "quarry",
     "rotation": 2,
     "width": 334,
-    "height": 278,
+    "height": 245,
     "anchor_x": 302.68,
-    "anchor_y": 156.99,
+    "anchor_y": 123.99,
     "footprint": [
       3,
       3
@@ -5345,7 +5345,7 @@
   {
     "name": "quarry",
     "rotation": 3,
-    "width": 372,
+    "width": 336,
     "height": 258,
     "anchor_x": 232.9,
     "anchor_y": 238.29,
@@ -5359,7 +5359,7 @@
     "name": "rock",
     "rotation": 0,
     "width": 96,
-    "height": 74,
+    "height": 65,
     "anchor_x": 6.06,
     "anchor_y": 46.95,
     "footprint": [
@@ -5411,9 +5411,9 @@
     "name": "round_tower",
     "rotation": 0,
     "width": 352,
-    "height": 284,
+    "height": 238,
     "anchor_x": 71.22,
-    "anchor_y": 205.96,
+    "anchor_y": 187.96,
     "footprint": [
       3,
       3
@@ -5423,10 +5423,10 @@
   {
     "name": "round_tower",
     "rotation": 1,
-    "width": 414,
-    "height": 284,
-    "anchor_x": 147.21,
-    "anchor_y": 139.24,
+    "width": 371,
+    "height": 258,
+    "anchor_x": 104.21,
+    "anchor_y": 113.24,
     "footprint": [
       3,
       3
@@ -5437,9 +5437,9 @@
     "name": "round_tower",
     "rotation": 2,
     "width": 352,
-    "height": 344,
+    "height": 319,
     "anchor_x": 280.78,
-    "anchor_y": 206.19,
+    "anchor_y": 181.19,
     "footprint": [
       3,
       3
@@ -5449,10 +5449,10 @@
   {
     "name": "round_tower",
     "rotation": 3,
-    "width": 414,
-    "height": 314,
+    "width": 368,
+    "height": 287,
     "anchor_x": 266.79,
-    "anchor_y": 273.47,
+    "anchor_y": 246.47,
     "footprint": [
       3,
       3
@@ -5463,9 +5463,9 @@
     "name": "shrine",
     "rotation": 0,
     "width": 114,
-    "height": 122,
+    "height": 97,
     "anchor_x": 25.73,
-    "anchor_y": 96.58,
+    "anchor_y": 75.58,
     "footprint": [
       1,
       1
@@ -5476,9 +5476,9 @@
     "name": "shrine",
     "rotation": 1,
     "width": 148,
-    "height": 122,
+    "height": 100,
     "anchor_x": 40.97,
-    "anchor_y": 73.14,
+    "anchor_y": 51.14,
     "footprint": [
       1,
       1
@@ -5489,9 +5489,9 @@
     "name": "shrine",
     "rotation": 2,
     "width": 114,
-    "height": 156,
+    "height": 134,
     "anchor_x": 88.27,
-    "anchor_y": 97.34,
+    "anchor_y": 75.34,
     "footprint": [
       1,
       1
@@ -5502,9 +5502,9 @@
     "name": "shrine",
     "rotation": 3,
     "width": 148,
-    "height": 138,
+    "height": 117,
     "anchor_x": 107.03,
-    "anchor_y": 120.49,
+    "anchor_y": 99.49,
     "footprint": [
       1,
       1
@@ -5515,7 +5515,7 @@
     "name": "siege_camp",
     "rotation": 0,
     "width": 366,
-    "height": 268,
+    "height": 259,
     "anchor_x": 54.36,
     "anchor_y": 186.64,
     "footprint": [
@@ -5618,10 +5618,10 @@
   {
     "name": "stairs",
     "rotation": 0,
-    "width": 130,
-    "height": 118,
-    "anchor_x": 29.25,
-    "anchor_y": 87.46,
+    "width": 119,
+    "height": 104,
+    "anchor_x": 18.25,
+    "anchor_y": 79.46,
     "footprint": [
       1,
       1
@@ -5631,10 +5631,10 @@
   {
     "name": "stairs",
     "rotation": 1,
-    "width": 158,
-    "height": 118,
-    "anchor_x": 52.09,
-    "anchor_y": 62.98,
+    "width": 152,
+    "height": 92,
+    "anchor_x": 46.09,
+    "anchor_y": 36.98,
     "footprint": [
       1,
       1
@@ -5645,9 +5645,9 @@
     "name": "stairs",
     "rotation": 2,
     "width": 130,
-    "height": 144,
+    "height": 118,
     "anchor_x": 100.75,
-    "anchor_y": 86.76,
+    "anchor_y": 60.76,
     "footprint": [
       1,
       1
@@ -5657,10 +5657,10 @@
   {
     "name": "stairs",
     "rotation": 3,
-    "width": 158,
-    "height": 130,
+    "width": 152,
+    "height": 122,
     "anchor_x": 105.91,
-    "anchor_y": 111.09,
+    "anchor_y": 103.09,
     "footprint": [
       1,
       1
@@ -5670,10 +5670,10 @@
   {
     "name": "statue",
     "rotation": 0,
-    "width": 240,
-    "height": 212,
-    "anchor_x": 48.26,
-    "anchor_y": 159.79,
+    "width": 195,
+    "height": 161,
+    "anchor_x": 8.26,
+    "anchor_y": 113.79,
     "footprint": [
       2,
       2
@@ -5683,10 +5683,10 @@
   {
     "name": "statue",
     "rotation": 1,
-    "width": 292,
-    "height": 212,
-    "anchor_x": 95.61,
-    "anchor_y": 111.79,
+    "width": 247,
+    "height": 162,
+    "anchor_x": 90.61,
+    "anchor_y": 66.79,
     "footprint": [
       2,
       2
@@ -5696,10 +5696,10 @@
   {
     "name": "statue",
     "rotation": 2,
-    "width": 240,
-    "height": 264,
-    "anchor_x": 191.74,
-    "anchor_y": 160.6,
+    "width": 197,
+    "height": 195,
+    "anchor_x": 186.74,
+    "anchor_y": 114.6,
     "footprint": [
       2,
       2
@@ -5709,10 +5709,10 @@
   {
     "name": "statue",
     "rotation": 3,
-    "width": 292,
-    "height": 238,
-    "anchor_x": 196.39,
-    "anchor_y": 208.66,
+    "width": 248,
+    "height": 169,
+    "anchor_x": 157.39,
+    "anchor_y": 162.66,
     "footprint": [
       2,
       2
@@ -5722,9 +5722,9 @@
   {
     "name": "stockpile",
     "rotation": 0,
-    "width": 330,
-    "height": 212,
-    "anchor_x": 32.14,
+    "width": 314,
+    "height": 207,
+    "anchor_x": 16.14,
     "anchor_y": 130.69,
     "footprint": [
       3,
@@ -5735,10 +5735,10 @@
   {
     "name": "stockpile",
     "rotation": 1,
-    "width": 354,
-    "height": 212,
-    "anchor_x": 153.87,
-    "anchor_y": 58.69,
+    "width": 321,
+    "height": 170,
+    "anchor_x": 149.87,
+    "anchor_y": 20.69,
     "footprint": [
       3,
       3
@@ -5748,8 +5748,8 @@
   {
     "name": "stockpile",
     "rotation": 2,
-    "width": 330,
-    "height": 236,
+    "width": 314,
+    "height": 219,
     "anchor_x": 297.86,
     "anchor_y": 131.13,
     "footprint": [
@@ -5762,7 +5762,7 @@
     "name": "stockpile",
     "rotation": 3,
     "width": 354,
-    "height": 224,
+    "height": 213,
     "anchor_x": 200.13,
     "anchor_y": 203.12,
     "footprint": [
@@ -5774,9 +5774,9 @@
   {
     "name": "stockpile_deck",
     "rotation": 0,
-    "width": 112,
+    "width": 108,
     "height": 68,
-    "anchor_x": 9.06,
+    "anchor_x": 5.06,
     "anchor_y": 36.35,
     "footprint": [
       1,
@@ -5787,10 +5787,10 @@
   {
     "name": "stockpile_deck",
     "rotation": 1,
-    "width": 114,
-    "height": 68,
-    "anchor_x": 54.8,
-    "anchor_y": 12.35,
+    "width": 107,
+    "height": 57,
+    "anchor_x": 48.8,
+    "anchor_y": 6.35,
     "footprint": [
       1,
       1
@@ -5800,9 +5800,9 @@
   {
     "name": "stockpile_deck",
     "rotation": 2,
-    "width": 112,
+    "width": 108,
     "height": 72,
-    "anchor_x": 102.94,
+    "anchor_x": 98.94,
     "anchor_y": 37.25,
     "footprint": [
       1,
@@ -5813,8 +5813,8 @@
   {
     "name": "stockpile_deck",
     "rotation": 3,
-    "width": 114,
-    "height": 70,
+    "width": 109,
+    "height": 65,
     "anchor_x": 59.2,
     "anchor_y": 60.82,
     "footprint": [
@@ -5826,10 +5826,10 @@
   {
     "name": "stocks",
     "rotation": 0,
-    "width": 180,
-    "height": 144,
-    "anchor_x": 7.12,
-    "anchor_y": 101.1,
+    "width": 162,
+    "height": 109,
+    "anchor_x": -4.88,
+    "anchor_y": 71.1,
     "footprint": [
       2,
       2
@@ -5839,10 +5839,10 @@
   {
     "name": "stocks",
     "rotation": 1,
-    "width": 208,
-    "height": 144,
-    "anchor_x": 76.74,
-    "anchor_y": 53.1,
+    "width": 179,
+    "height": 122,
+    "anchor_x": 71.74,
+    "anchor_y": 36.1,
     "footprint": [
       2,
       2
@@ -5852,75 +5852,75 @@
   {
     "name": "stocks",
     "rotation": 2,
-    "width": 180,
-    "height": 172,
-    "anchor_x": 172.87,
-    "anchor_y": 101.47,
-    "footprint": [
-      2,
-      2
-    ],
-    "scale": 3
-  },
-  {
-    "name": "stocks",
-    "rotation": 3,
-    "width": 208,
-    "height": 158,
-    "anchor_x": 131.26,
-    "anchor_y": 149.54,
-    "footprint": [
-      2,
-      2
-    ],
-    "scale": 3
-  },
-  {
-    "name": "stretching_rack",
-    "rotation": 0,
-    "width": 182,
-    "height": 132,
-    "anchor_x": 9.78,
-    "anchor_y": 83.11,
-    "footprint": [
-      2,
-      2
-    ],
-    "scale": 3
-  },
-  {
-    "name": "stretching_rack",
-    "rotation": 1,
-    "width": 202,
-    "height": 132,
-    "anchor_x": 88.04,
-    "anchor_y": 40.87,
-    "footprint": [
-      2,
-      2
-    ],
-    "scale": 3
-  },
-  {
-    "name": "stretching_rack",
-    "rotation": 2,
-    "width": 182,
-    "height": 150,
-    "anchor_x": 172.22,
-    "anchor_y": 88.51,
-    "footprint": [
-      2,
-      2
-    ],
-    "scale": 3
-  },
-  {
-    "name": "stretching_rack",
-    "rotation": 3,
-    "width": 202,
+    "width": 175,
     "height": 140,
-    "anchor_x": 113.96,
-    "anchor_y": 130.6,
+    "anchor_x": 167.87,
+    "anchor_y": 82.47,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "stocks",
+    "rotation": 3,
+    "width": 179,
+    "height": 116,
+    "anchor_x": 108.26,
+    "anchor_y": 116.54,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "stretching_rack",
+    "rotation": 0,
+    "width": 173,
+    "height": 94,
+    "anchor_x": 4.78,
+    "anchor_y": 53.11,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "stretching_rack",
+    "rotation": 1,
+    "width": 181,
+    "height": 103,
+    "anchor_x": 81.04,
+    "anchor_y": 17.87,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "stretching_rack",
+    "rotation": 2,
+    "width": 177,
+    "height": 133,
+    "anchor_x": 167.22,
+    "anchor_y": 71.51,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "stretching_rack",
+    "rotation": 3,
+    "width": 178,
+    "height": 104,
+    "anchor_x": 100.96,
+    "anchor_y": 99.6,
     "footprint": [
       2,
       2
@@ -5930,10 +5930,10 @@
   {
     "name": "tanner",
     "rotation": 0,
-    "width": 216,
-    "height": 160,
-    "anchor_x": 24.46,
-    "anchor_y": 107.63,
+    "width": 189,
+    "height": 139,
+    "anchor_x": -2.54,
+    "anchor_y": 91.63,
     "footprint": [
       2,
       2
@@ -5943,10 +5943,10 @@
   {
     "name": "tanner",
     "rotation": 1,
-    "width": 244,
-    "height": 160,
-    "anchor_x": 96.12,
-    "anchor_y": 59.63,
+    "width": 238,
+    "height": 123,
+    "anchor_x": 90.12,
+    "anchor_y": 22.63,
     "footprint": [
       2,
       2
@@ -5956,10 +5956,10 @@
   {
     "name": "tanner",
     "rotation": 2,
-    "width": 216,
-    "height": 186,
+    "width": 189,
+    "height": 145,
     "anchor_x": 191.54,
-    "anchor_y": 107.69,
+    "anchor_y": 66.69,
     "footprint": [
       2,
       2
@@ -5969,10 +5969,10 @@
   {
     "name": "tanner",
     "rotation": 3,
-    "width": 244,
-    "height": 174,
+    "width": 238,
+    "height": 136,
     "anchor_x": 147.88,
-    "anchor_y": 156.4,
+    "anchor_y": 135.4,
     "footprint": [
       2,
       2
@@ -6034,10 +6034,10 @@
   {
     "name": "tunnelers_guild",
     "rotation": 0,
-    "width": 222,
-    "height": 156,
-    "anchor_x": 21.72,
-    "anchor_y": 100.1,
+    "width": 202,
+    "height": 102,
+    "anchor_x": 13.72,
+    "anchor_y": 54.1,
     "footprint": [
       2,
       2
@@ -6047,10 +6047,10 @@
   {
     "name": "tunnelers_guild",
     "rotation": 1,
-    "width": 244,
-    "height": 156,
-    "anchor_x": 101.55,
-    "anchor_y": 50.66,
+    "width": 192,
+    "height": 134,
+    "anchor_x": 92.55,
+    "anchor_y": 37.66,
     "footprint": [
       2,
       2
@@ -6060,10 +6060,10 @@
   {
     "name": "tunnelers_guild",
     "rotation": 2,
-    "width": 222,
-    "height": 176,
-    "anchor_x": 200.28,
-    "anchor_y": 100.12,
+    "width": 200,
+    "height": 118,
+    "anchor_x": 189.28,
+    "anchor_y": 66.12,
     "footprint": [
       2,
       2
@@ -6073,10 +6073,10 @@
   {
     "name": "tunnelers_guild",
     "rotation": 3,
-    "width": 244,
-    "height": 166,
-    "anchor_x": 142.45,
-    "anchor_y": 149.98,
+    "width": 193,
+    "height": 109,
+    "anchor_x": 100.45,
+    "anchor_y": 99.98,
     "footprint": [
       2,
       2
@@ -6138,10 +6138,10 @@
   {
     "name": "water_pot",
     "rotation": 0,
-    "width": 112,
-    "height": 92,
+    "width": 107,
+    "height": 70,
     "anchor_x": 15.69,
-    "anchor_y": 63.05,
+    "anchor_y": 47.05,
     "footprint": [
       1,
       1
@@ -6151,10 +6151,10 @@
   {
     "name": "water_pot",
     "rotation": 1,
-    "width": 128,
-    "height": 92,
-    "anchor_x": 48.03,
-    "anchor_y": 39.05,
+    "width": 124,
+    "height": 72,
+    "anchor_x": 44.03,
+    "anchor_y": 24.05,
     "footprint": [
       1,
       1
@@ -6164,10 +6164,10 @@
   {
     "name": "water_pot",
     "rotation": 2,
-    "width": 112,
-    "height": 108,
-    "anchor_x": 96.31,
-    "anchor_y": 63.06,
+    "width": 108,
+    "height": 93,
+    "anchor_x": 92.31,
+    "anchor_y": 48.06,
     "footprint": [
       1,
       1
@@ -6177,10 +6177,10 @@
   {
     "name": "water_pot",
     "rotation": 3,
-    "width": 128,
-    "height": 100,
+    "width": 122,
+    "height": 79,
     "anchor_x": 79.97,
-    "anchor_y": 87.2,
+    "anchor_y": 68.2,
     "footprint": [
       1,
       1
@@ -6191,9 +6191,9 @@
     "name": "well",
     "rotation": 0,
     "width": 150,
-    "height": 144,
+    "height": 117,
     "anchor_x": -5.69,
-    "anchor_y": 109.25,
+    "anchor_y": 88.25,
     "footprint": [
       2,
       2
@@ -6203,10 +6203,10 @@
   {
     "name": "well",
     "rotation": 1,
-    "width": 186,
-    "height": 144,
-    "anchor_x": 59.12,
-    "anchor_y": 61.25,
+    "width": 172,
+    "height": 123,
+    "anchor_x": 45.12,
+    "anchor_y": 40.25,
     "footprint": [
       2,
       2
@@ -6217,9 +6217,9 @@
     "name": "well",
     "rotation": 2,
     "width": 150,
-    "height": 180,
+    "height": 157,
     "anchor_x": 155.69,
-    "anchor_y": 111.27,
+    "anchor_y": 88.27,
     "footprint": [
       2,
       2
@@ -6230,9 +6230,9 @@
     "name": "well",
     "rotation": 3,
     "width": 186,
-    "height": 160,
+    "height": 138,
     "anchor_x": 126.88,
-    "anchor_y": 158.55,
+    "anchor_y": 136.55,
     "footprint": [
       2,
       2
@@ -6243,7 +6243,7 @@
     "name": "wheat_farm",
     "rotation": 0,
     "width": 342,
-    "height": 254,
+    "height": 248,
     "anchor_x": 47.97,
     "anchor_y": 181.04,
     "footprint": [
@@ -6256,7 +6256,7 @@
     "name": "wheat_farm",
     "rotation": 1,
     "width": 388,
-    "height": 254,
+    "height": 249,
     "anchor_x": 136.68,
     "anchor_y": 102.46,
     "footprint": [
@@ -6268,7 +6268,7 @@
   {
     "name": "wheat_farm",
     "rotation": 2,
-    "width": 342,
+    "width": 285,
     "height": 300,
     "anchor_x": 294.03,
     "anchor_y": 169.09,
@@ -6281,10 +6281,10 @@
   {
     "name": "wheat_farm",
     "rotation": 3,
-    "width": 388,
-    "height": 276,
+    "width": 382,
+    "height": 229,
     "anchor_x": 251.32,
-    "anchor_y": 247.26,
+    "anchor_y": 200.26,
     "footprint": [
       3,
       3
@@ -6334,9 +6334,9 @@
     "name": "woodcutter",
     "rotation": 3,
     "width": 276,
-    "height": 212,
+    "height": 179,
     "anchor_x": 173.07,
-    "anchor_y": 184.56,
+    "anchor_y": 151.56,
     "footprint": [
       2,
       2

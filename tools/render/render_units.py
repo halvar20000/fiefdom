@@ -107,6 +107,16 @@ CLIPS = {
     "attack": ("Heavy Weapon Swing.fbx", 8, 0.6),
 }
 
+#: Clips only a WORKER ever plays. A soldier is drawn from exactly three --
+#: idle, walk and attack (see the army branch of the draw loop in main.ts) --
+#: and nothing anywhere can ask him to dig or to swing a pick.
+#:
+#: Rendering them anyway is not free. Sixteen frames in eight facings is 128
+#: sprites a body, and every one of them goes into the single texture the whole
+#: scene is drawn from, which has a hardware ceiling. Five soldier bodies had
+#: quietly spent 640 sprites on animations no code path can reach.
+WORKER_ONLY_CLIPS = ("dig", "mine")
+
 
 #: Soldier bodies. Same Mixamo rig and the same clips -- only the palette and
 #: the kit differ, which is the whole reason peasant.build takes both.
@@ -285,6 +295,14 @@ def main():
                                 palette=spec.get("palette"), kit=spec.get("kit"))]
         char_objects |= {m.name for m in meshes}
 
+    # A soldier body renders three clips, not five. CLIPS is module-level and
+    # both import_actions and the framing loop read it, so the trim has to land
+    # before the import -- and trimming it here rather than filtering later is
+    # what stops the labourer clips being imported, posed and measured at all.
+    if body_kind in SOLDIERS:
+        for dead in WORKER_ONLY_CLIPS:
+            CLIPS.pop(dead, None)
+
     # Per-body attack motion. CLIPS is module-level and import_actions reads it,
     # so the override has to land before the import.
     spec_clip = SOLDIERS.get(body_kind, {})
@@ -341,11 +359,14 @@ def main():
     # can -- a spear tip or a drawn bow is included because it was measured,
     # not because somebody remembered to widen a constant.
     #
-    # Note the absence of an `only` filter here. The frame has to be the same
-    # for every clip a body owns or the sprite changes size the moment the unit
-    # stops walking and starts digging, so a `--only walk` run still measures
-    # all five clips and reproduces the frame a full run would have chosen. It
-    # renders one clip; it does not re-frame the body around it.
+    # Note the absence of an `only` filter here. A `--only walk` run still
+    # measures every clip the body owns and reproduces the frame a full run
+    # would have chosen: it renders one clip, it does not re-frame the body
+    # around it. That matters less than it did now that trim_sprites.py crops
+    # each finished sprite to its own content and moves its anchor to match --
+    # but the measured box is still what stops a spear tip or a drawn bow being
+    # rendered off the edge of the frame in the first place, and cropping
+    # cannot bring back a pixel that was never rendered.
     corners = []
     for clip, action in actions.items():
         nframes = CLIPS[clip][1]

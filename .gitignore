@@ -5,6 +5,12 @@ assets/source/**/*.fbx
 assets/source/**/*.zip
 tools/render/_tmp/
 __pycache__/
+
+# FUSE leaves one of these behind for every file deleted while something still
+# holds it open, which on this share is every file a render replaces. They are
+# the old contents of a file that no longer exists and they clean themselves up
+# when the handle closes; they are never ours to commit.
+.fuse_hidden*
 tools/render/_tmp/
 
 # Screenshots of the original Stronghold Crusader, kept locally as visual

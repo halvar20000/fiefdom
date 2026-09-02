@@ -23,6 +23,27 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.43.0',
+    date: '2026-09-02',
+    headline: 'Two thirds of the artwork was transparent air.',
+    sections: [
+      {
+        title: 'Changed',
+        items: [
+          'Every sprite is now cropped to the pixels that can actually be drawn. Each one used to carry the frame of the widest pose in its set — a spearman\'s frame is sized around his spear whatever he is doing — plus the whole soft tail of its cast shadow. A unit sprite was thirty-six per cent picture and sixty-four per cent nothing.',
+          'That nothing was expensive. The entire scene is drawn from a single texture, because sprites split across two of them cannot be sorted against each other, and a single texture runs into a single hardware limit. The catalogue went from 8192x6588 to 8192x4272 without a pixel of it moving on screen: what a sprite carries changed, where it stands did not.',
+          'Nothing looks different. The anchor is what positions a sprite, so cropping the frame and moving the anchor by the same amount is an identity, and the cut is made below the alpha the shader already throws away.',
+        ],
+      },
+      {
+        title: 'Fixed',
+        items: [
+          'Five soldiers were carrying animations of themselves digging and swinging a pick. Nothing in the game can ask a soldier to do either — he is drawn standing, walking or striking, and that is the whole list — but the renderer had been handing every body the labourer\'s clip set anyway. Six hundred and forty sprites of an archer mining an imaginary seam, in the one texture that has a ceiling.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.42.0',
     date: '2026-09-02',
     headline: 'Two guilds, and two men who will not fight for you.',

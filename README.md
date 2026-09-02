@@ -275,12 +275,19 @@ OUT="$PWD/public/assets/sprites"
 blender -b -P tools/render/render_buildings.py -- --out "$OUT" --samples 96
 blender -b -P tools/render/render_ground.py    -- --out "$PWD/public/assets/tiles"
 blender -b -P tools/render/render_units.py     -- --out "$OUT" --body peasant --only idle,walk,dig,mine
-for b in spearman archer swordsman; do
-  blender -b -P tools/render/render_units.py   -- --out "$OUT" --body "$b" --only idle,walk,attack
+for b in spearman archer swordsman engineer tunneler; do
+  blender -b -P tools/render/render_units.py   -- --out "$OUT" --body "$b"
 done
 blender -b -P tools/render/render_wildlife.py  -- --out "$OUT"
 blender -b -P tools/render/render_siege.py     -- --out "$OUT"
+python3 tools/render/trim_sprites.py           --out "$OUT"
 ```
+
+The last line is not optional and not a tidy-up. It crops every sprite to the
+pixels the shader can actually draw and moves its anchor to match, which is
+what keeps the single texture the whole scene is drawn from inside the 8192
+limit. Skipping it costs a third of the atlas in transparent air. It is
+idempotent, so running it after a one-body re-render is the normal thing to do.
 
 About forty minutes for the whole set on twenty-four cores. The `--only` lists
 are not decoration: `carry`, `chop`, `fish` and `death` come from the 0 A.D.
@@ -293,6 +300,12 @@ Units render from the Mixamo rig in `assets/source/mixamo/`. `--body peasant`
 Mixamo's own mesh instead. Six clips -- idle, walk, carry, dig, mine, chop --
 are mapped to worker state and building type, so a hauler walks differently from
 an empty-handed labourer and a miner swings rather than stands.
+
+A SOLDIER body renders three of them: idle, walk and attack. Those are the only
+three the army draw loop can ask for, and a soldier has no worker state to be
+digging in. The renderer drops the other two itself, so `--body archer` with no
+`--only` is now the correct full run rather than 128 sprites of a bowman
+swinging a pick at nothing.
 
 Root motion is stripped at render time by re-centring the hips each frame, so it
 does not matter whether a clip was exported with Mixamo's "In Place" ticked.
@@ -433,6 +446,38 @@ added its padding and rounded the result up to a power of two, so 4098 became
 only — the sprite shader is GLSL3 — and there non-power-of-two textures mipmap
 like any other, so the rounding bought nothing. Sizing the canvas to fit more
 than paid for the sprites getting bigger.
+
+### Sprites carry only the pixels that can be drawn
+
+Every sprite is framed ONCE per body or building, from a box measured over all
+its poses and facings, and that frame is reused for every animation frame and
+every direction. Reframing per pose would make a figure swim around its own
+feet, so the single frame is right — but it means each sprite carries the
+margin of the worst pose in its set plus the soft tail of a cast shadow.
+Measured across the catalogue, a unit sprite was 36% drawable pixels and 64%
+air.
+
+That air is charged for at the only place it hurts: everything packs into ONE
+texture, because the scene is drawn as a single back-to-front batch and sprites
+in two batches cannot be sorted against each other. One texture means one
+hardware limit — 8192 on a good deal of hardware — and the catalogue was
+8192x6588 with nothing new in it.
+
+`tools/render/trim_sprites.py` crops each PNG to its own content and moves its
+anchor by exactly the amount cropped. The anchor is what positions a sprite, so
+that is an identity: 8192x6588 became 8192x4272 and no pixel the shader draws
+moved by so much as a texel. What counts as content is not "alpha above zero" —
+the shadow catcher covers the whole frame in faint pixels, so that bbox finds
+99.9% of it occupied — but alpha above 5, which is the point below which
+`sprites.ts` discards the texel outright and never draws it at any zoom.
+
+The crop keeps a three-pixel band of those undrawable pixels around the content.
+The atlas mipmaps, and a coarse level averages across frame boundaries; cutting
+flush would let a neighbour bleed into a sprite's edge when the camera pulls
+back.
+
+Run it after any render. It is idempotent — a second pass finds the content
+already sitting three pixels from every edge and rewrites nothing.
 
 ### Sprites may differ in scale
 
