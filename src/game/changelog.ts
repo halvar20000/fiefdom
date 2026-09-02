@@ -23,6 +23,29 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.49.0',
+    date: '2026-09-02',
+    headline: 'Oil, boiled, and three ways to set the ground alight.',
+    sections: [
+      {
+        title: 'Added',
+        items: [
+          'The Oil Smelter, which has been owed since the castle works went in. It boils pitch down into oil, and nothing else in the castle has any use for the stuff.',
+          'The Oil Pot. A cauldron kept hot, laid the way you lay a killing pit. It tips over whatever comes to the foot of it — the hardest single blow anything on the ground deals — and then leaves the ground burning for twelve seconds. That second half is what a killing pit has not got: the blast is what it kills, the fire is what it denies.',
+          'The Fire Thrower, at the mercenary post. He lobs pots of burning pitch: what he hits takes the blow and the ground takes the fire. He is the only unit in the game that denies ground rather than merely holding it, and the only one who can cost you the fight you have just won — the fire he lights burns your men as readily as theirs.',
+          'Oil is a real good, made, stored, priced and sellable like any other. It sits in stoppered jars on the yard, which is a different shape from the pitch barrels beside it on purpose.',
+        ],
+      },
+      {
+        title: 'Fixed',
+        items: [
+          'A fire no longer burns the men standing on the wall above it. Fire is on the ground; a man on a walkway is a storey up. That was always slightly wrong and it is what makes an oil pot on your own rampart usable at all — it tips over whoever is at the foot of the wall and leaves your garrison alone.',
+          'A new good with no artwork for the yard used to be stored, counted and spendable while the square it was sitting on drew nothing at all. Startup now checks the yards too, alongside the build menu, the recruit list and the resource ticker.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.48.0',
     date: '2026-09-02',
     headline: 'Two engines that cannot hurt anybody.',

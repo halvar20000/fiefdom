@@ -253,7 +253,7 @@ set and no dog, and retargeting a biped onto four legs does not work -- so
 `tools/render/mounts.py` builds them the gazelle's way, primitives posed per
 frame with no armature.
 
-### 8. Siege *(in progress)*
+### 8. Siege *(done, 1.48.0-1.49.0)*
 
 - [x] `siege_tower`, `portable_shield` (1.48.0). Neither does any damage; what
       each carries is ACCESS. The tower grants `ladders` -- the same flag the
@@ -269,9 +269,24 @@ frame with no armature.
       our own source: `build_catapult` in `tools/render/siege.py` says "a
       torsion mangonel: a single arm cocked back off a rope skein". A mangonel
       IS the catapult we have.
-- [ ] `fire_thrower`, `oil_pot`, and `oil_smelter` deferred from tranche 5.
-      All three are the same feature -- fire as a defence -- and they want the
-      `fires` list in main.ts that the pitch ditch already burns from.
+- [x] `fire_thrower`, `oil_pot`, and `oil_smelter` deferred from tranche 5
+      (1.49.0). All three are the same feature -- fire as a thing you place or
+      throw -- and all three go through the `fires` list in main.ts that the
+      pitch ditch already burns from, via one new hook (`onIncendiary`) and one
+      new function (`lightGround`, which refreshes a tile rather than stacking
+      a second fire on it).
+
+      The tranche 5 note said the smelter "fills pots that ENGINEERS carry and
+      pour", and that carrying step is the one thing here that is compressed:
+      the smelter makes `oil` as an ordinary good and an oil pot is placed with
+      it, rather than a man walking a ladle from one to the other. A carrying
+      state machine for a single building is more machinery than the mechanic
+      earns, and the decision the player makes -- boil pitch, then pay oil for
+      each pot on the wall -- is the same one either way.
+
+      One fix fell out of it that was always slightly wrong: a fire no longer
+      burns the men standing on the wall above it. Fire is on the ground. That
+      is also what makes an oil pot on your own rampart usable at all.
 
 `tools/render/siege.py` has the pattern from the catapult, ram, trebuchet and
 fire ballista. One thing that had been wrong there since the ram: the sprite

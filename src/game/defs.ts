@@ -6,8 +6,8 @@
  */
 
 export const RAW_RESOURCES =
-  ['wood', 'stone', 'iron', 'pitch', 'wheat', 'flour', 'hops', 'ale', 'pigs',
-   'hides'] as const;
+  ['wood', 'stone', 'iron', 'pitch', 'oil', 'wheat', 'flour', 'hops', 'ale',
+   'pigs', 'hides'] as const;
 export const FOOD_RESOURCES = ['bread', 'cheese', 'apples', 'meat', 'fish'] as const;
 /**
  * What the weapons workshops turn raw goods into.
@@ -39,7 +39,7 @@ export const ALL_RESOURCES: Resource[] =
  * manifest, exactly as BUILD_MENU and SOLDIER_ORDER do.
  */
 export const RESOURCE_BAR: Resource[] = [
-  'wood', 'stone', 'iron', 'pitch', 'wheat', 'flour',
+  'wood', 'stone', 'iron', 'pitch', 'oil', 'wheat', 'flour',
   'bread', 'cheese', 'apples', 'meat', 'fish', 'hops', 'ale', 'pigs', 'hides',
   // Kit in pairs, each workshop's two products side by side.
   'spears', 'pikes', 'bows', 'crossbows', 'swords', 'maces', 'armour',
@@ -60,7 +60,7 @@ export function isWeapon(r: Resource): r is WeaponResource {
 }
 
 export const RESOURCE_LABELS: Record<Resource, string> = {
-  wood: 'Wood', stone: 'Stone', iron: 'Iron', pitch: 'Pitch',
+  wood: 'Wood', stone: 'Stone', iron: 'Iron', pitch: 'Pitch', oil: 'Oil',
   wheat: 'Wheat', flour: 'Flour', hops: 'Hops', ale: 'Ale', pigs: 'Pigs',
   bread: 'Bread', cheese: 'Cheese', apples: 'Apples', meat: 'Meat', fish: 'Fish',
   hides: 'Hides',
@@ -400,6 +400,29 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     name: 'tunnelers_guild', label: "Tunnellers' Guild", category: 'castle',
     footprint: [2, 2], cost: { wood: 30, stone: 10 }, workers: 0, terrain: 'any',
     description: 'Recruits tunnellers, who go under a wall instead of over it.',
+  },
+  oil_smelter: {
+    name: 'oil_smelter', label: 'Oil Smelter', category: 'castle',
+    footprint: [2, 2], cost: { wood: 20, stone: 20, iron: 5 }, workers: 1,
+    terrain: 'any',
+    produces: {
+      output: 'oil', amount: 1, seconds: 20,
+      inputs: { pitch: 2 }, to: 'stockpile',
+    },
+    workClip: 'dig',
+    description: 'Boils pitch down into oil for the pots on your walls. '
+               + 'Nothing else in the castle has any use for it.',
+  },
+  oil_pot: {
+    name: 'oil_pot', label: 'Oil Pot', category: 'castle',
+    footprint: [1, 1], cost: { oil: 2, wood: 2 }, workers: 0, terrain: 'any',
+    hp: 30,
+    // Walkable and paintable, like the pit and the water butt beside it: a
+    // trap that blocks the path leading over it is a trap nothing walks into.
+    walkable: true, paintable: true,
+    description: 'A cauldron kept hot. Tips over whatever comes to the foot of '
+               + 'it and leaves the ground burning. One pot, once — and the '
+               + 'fire it leaves burns your own men as readily as theirs.',
   },
   stables: {
     name: 'stables', label: 'Stables', category: 'castle',
@@ -850,7 +873,8 @@ export const BUILD_MENU: { category: Category; label: string; items: string[] }[
   { category: 'castle', label: 'Castle',
     items: ['wall', 'gatehouse', 'tower', 'round_tower', 'perimeter_turret',
             'lookout_tower', 'stairs', 'moat', 'drawbridge', 'pitch_ditch',
-            'killing_pit', 'water_pot', 'barracks', 'stables', 'mercenary_post',
+            'killing_pit', 'water_pot', 'oil_smelter', 'oil_pot',
+            'barracks', 'stables', 'mercenary_post',
             'engineers_guild', 'tunnelers_guild', 'siege_camp'] },
   { category: 'castle', label: 'Stores', items: ['stockpile', 'granary'] },
   { category: 'town', label: 'Town',
@@ -950,6 +974,25 @@ export const STORE_SPRITES: Partial<Record<Store, { empty: string; prefix: strin
 };
 
 /**
+ * Every square-of-goods sprite the two yards can ask for.
+ *
+ * The same trap as BUILD_MENU and the resource ticker, in a third place: a new
+ * stockpile good needs `pile_<good>_1..3` in piles.py, and without them the
+ * square holding it draws NOTHING -- `push` skips a sprite with no frame -- so
+ * the goods are stored, counted and spendable while the yard they are sitting
+ * on looks empty. Fed to the same startup banner as a stale manifest.
+ */
+export function storeSprites(): string[] {
+  const out: string[] = [];
+  for (const r of ALL_RESOURCES) {
+    const art = STORE_SPRITES[storeOf(r)];
+    if (!art) continue;
+    for (const level of [1, 2, 3]) out.push(`${art.prefix}_${r}_${level}`);
+  }
+  return out;
+}
+
+/**
  * Buildings drawn with somebody else's sprite, and why each one is.
  *
  * Two different needs, served by one map because the drawing code only ever
@@ -986,6 +1029,9 @@ export const PRICES: Partial<Record<Resource, [number, number]>> = {
   stone:  [16, 10],
   iron:   [42, 28],
   pitch:  [38, 25],
+  // Dearer than the pitch it is boiled from, and dear enough that a line of
+  // pots is a real decision rather than a default.
+  oil:    [58, 37],
   wheat:  [26, 16],
   flour:  [32, 20],
   hops:   [24, 15],
@@ -1211,6 +1257,22 @@ export const PIT_BLAST_RADIUS = 1.1;
 export const WATER_POT_RADIUS = 3.2;
 
 /**
+ * The oil pot: what tips it, what it kills, and what it leaves burning.
+ *
+ * Deliberately the most damaging thing you can lay on the ground, and the
+ * dearest, because unlike a pit it does not merely hurt what steps on it -- it
+ * leaves a fire, and a fire denies the ground it burns on for twelve seconds.
+ * A line of pots along a wall is a wall of flame that has to be paid for in
+ * pitch, boiled, one pot at a time.
+ *
+ * It burns FRIEND AND FOE once it is alight, exactly like a pitch ditch, which
+ * is the whole reason it is not simply a better killing pit.
+ */
+export const OIL_POT_TRIGGER_RADIUS = 1.0;
+export const OIL_POT_DAMAGE = 45;
+export const OIL_POT_BLAST_RADIUS = 1.5;
+
+/**
  * How near a ladderman a man must be to climb what he is standing under.
  *
  * A tile and a half, which is "at the foot of the same wall he is" and not
@@ -1314,6 +1376,17 @@ export interface SoldierType {
   climbs?: boolean;
   /** He carries a ladder: everyone near him climbs. See LADDER_RADIUS. */
   ladders?: boolean;
+  /**
+   * What he throws is on fire.
+   *
+   * The blow lands as damage like anyone else's and then the ground it landed
+   * on catches, through the same `fires` list a pitch ditch burns from -- so
+   * it burns whoever stands there afterwards, including the man who threw it
+   * if he has closed the distance. That is the trade: the only unit that
+   * denies ground rather than merely holding it, and the only one that can
+   * cost you the fight you have just won.
+   */
+  incendiary?: boolean;
   /**
    * A screen on wheels: everyone behind it takes less from anything shot.
    *
@@ -1569,6 +1642,18 @@ export const SOLDIER_TYPES: Record<string, SoldierType> = {
                + 'falls the fief falls with him — so he is the strongest thing '
                + 'you own and the last thing you should risk.',
   },
+  fire_thrower: {
+    name: 'fire_thrower', from: 'mercenary_post', label: 'Fire Thrower',
+    gold: 105, cost: {},
+    incendiary: true,
+    // Short reach for a thrower -- he is lobbing a pot, not shooting -- and a
+    // long reload, because the ground he sets alight is worth more than the
+    // damage he deals and a fast one would simply burn the whole map.
+    hp: 40, speed: 1.3, damage: 16, range: 4.2, cooldown: 3.0,
+    description: 'Throws pots of burning pitch. What he hits takes the blow '
+               + 'and the ground takes the fire — which then burns whoever '
+               + 'walks through it, yours included. Ground denied, not held.',
+  },
   ladderman: {
     name: 'ladderman', from: 'siege_camp', label: 'Ladderman', gold: 30,
     cost: { wood: 3 },
@@ -1666,7 +1751,8 @@ Object.assign(SOLDIER_TYPES, SIEGE_TYPES);
 export const SOLDIER_ORDER: string[] =
   ['spearman', 'archer', 'crossbowman', 'pikeman', 'maceman', 'swordsman',
    'knight',
-   'slave', 'slinger', 'arabian_swordsman', 'assassin', 'horse_archer',
+   'slave', 'slinger', 'arabian_swordsman', 'assassin', 'fire_thrower',
+   'horse_archer',
    'war_dog',
    'engineer', 'tunneler',
    'ram', 'catapult', 'trebuchet', 'fire_ballista',

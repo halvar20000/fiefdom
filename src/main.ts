@@ -39,9 +39,10 @@ import {
   canGarrison, isWeapon,
   GARRISON_HEIGHT, garrisonReach, MARSH_SPEED_FOOT, MARSH_SPEED_SIEGE,
   BUILD_MENU, SOLDIER_ORDER, unlistedBuildings, unlistedSoldiers,
-  unlistedResources,
+  unlistedResources, storeSprites,
   BURN_SECONDS, BURN_RADIUS, BURN_DPS, IGNITE_RADIUS, DEMOLISH_REFUND,
   PIT_TRIGGER_RADIUS, PIT_BLAST_RADIUS, PIT_DAMAGE, WATER_POT_RADIUS,
+  OIL_POT_TRIGGER_RADIUS, OIL_POT_BLAST_RADIUS, OIL_POT_DAMAGE,
   REPAIR_RADIUS, REPAIR_PER_SECOND, UNDERMINE_RADIUS, UNDERMINE_PER_SECOND,
   SPEED_LEVELS, RESOURCE_LABELS, productionOf, goodName,
   type Resource,
@@ -170,6 +171,9 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     // anywhere says why. The key is `${clip}_${dir}_${frame}`, so asking after
     // `<type>_idle_0` is asking after facing 0, frame 0 of his idle.
     ...missingSprites(SOLDIER_ORDER.map(n => `${n}_idle_0`), atlas.frames),
+    // And the yards. A good with no pile art is stored and counted while the
+    // square it sits on draws nothing at all.
+    ...missingSprites(storeSprites(), atlas.frames),
     ...unlistedBuildings(),
     ...unlistedSoldiers(),
     ...unlistedResources(),
@@ -477,6 +481,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       projectiles.fire(kind, fx, terrain.heightAt(fx, fz), fz,
                              tx, terrain.heightAt(tx, tz), tz);
     },
+    onIncendiary: (x, z) => lightGround(Math.floor(x), Math.floor(z)),
     // A soldier with no soldier to fight may cut down an enemy lord's labourers
     // if any stand within reach. Killing one costs that lord the man and the
     // staffed slot on the building he worked, so the job halts until refilled --
@@ -1839,6 +1844,30 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     }
     if (sprung) state.notify(`${sprung} killing pit${sprung > 1 ? 's' : ''} sprung`, 'info');
 
+    let tipped = 0;
+    for (const b of state.buildings.filter(x => x.name === 'oil_pot')) {
+      const cx = b.x + 0.5, cz = b.z + 0.5;
+      const near = army.enemies.some(
+        e => Math.hypot(e.x - cx, e.z - cz) <= OIL_POT_TRIGGER_RADIUS);
+      if (!near) continue;
+      for (const e of army.enemies) {
+        if (Math.hypot(e.x - cx, e.z - cz) <= OIL_POT_BLAST_RADIUS) e.hp -= OIL_POT_DAMAGE;
+      }
+      // And then the ground burns, which is the half a killing pit has not
+      // got: the blast is what it kills, the fire is what it denies.
+      lightGround(b.x, b.z);
+      state.removeBuilding(b);
+      markArea(b.x, b.z, 1, 1, 0);
+      staticDirty = true;
+      tipped++;
+    }
+    if (tipped) {
+      audio.play('fire');
+      state.notify(`${tipped} oil pot${tipped > 1 ? 's' : ''} tipped — the ground is alight`,
+                   'info');
+    }
+    sprung += tipped;
+
     if (fires.length) {
       let doused = 0;
       for (const b of state.buildings.filter(x => x.name === 'water_pot')) {
@@ -1855,6 +1884,23 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       if (doused) state.notify(`Water pots doused ${doused} fire${doused > 1 ? 's' : ''}`, 'info');
     }
     return sprung;
+  }
+
+  /**
+   * Set one tile alight, or feed a fire already burning on it.
+   *
+   * Refreshing rather than stacking. Fires are keyed on a tile and burn
+   * everyone within BURN_RADIUS once a tick however many overlap, so a second
+   * entry on the same square buys nothing and a fire thrower working one spot
+   * would otherwise leave a hundred of them in the list.
+   */
+  function lightGround(x: number, z: number): void {
+    if (x < 0 || z < 0 || x >= MAP_W || z >= MAP_H) return;
+    const at = fires.find(f => f.x === x && f.z === z);
+    if (at) { at.until = state.elapsed + BURN_SECONDS; return; }
+    fires.push({
+      x, z, until: state.elapsed + BURN_SECONDS, seed: (x * 7 + z * 13) & 7,
+    });
   }
 
   function updateFires(dt: number): void {
@@ -1875,6 +1921,11 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       const cx = f.x + 0.5, cz = f.z + 0.5;
       for (const u of army.soldiers) {
         if (u.hp <= 0 || burning.has(u.id)) continue;
+        // A fire is on the GROUND. A man posted on a walkway is a storey above
+        // it and does not burn -- which is both obviously right and the thing
+        // that makes an oil pot on your own wall usable at all: it tips over
+        // whoever is at the foot of the wall and leaves your garrison alone.
+        if (u.garrison) continue;
         if (Math.hypot(u.x - cx, u.z - cz) <= BURN_RADIUS) burning.add(u.id);
       }
     }

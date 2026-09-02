@@ -227,6 +227,35 @@ def _pitch(level):
     return parts
 
 
+def _oil(level):
+    """Oil in stoppered jars, not barrels.
+
+    Pitch is already barrels and the two goods sit on the same yard a square
+    apart, so a second stack of barrels in a slightly different brown is a
+    stack of barrels. A row of bellied jars with dark stoppers is a different
+    shape at forty-five pixels a tile, which is the only test that matters.
+    """
+    parts = []
+    top = _deck(parts)
+    clay, nt, bsdf = M._new("OilJar")
+    M._set(bsdf, "Base Color", (0.34, 0.22, 0.15, 1.0))
+    M._set(bsdf, "Roughness", 0.62)
+    stopper = M.cloth("OilStopper", colour=(0.09, 0.08, 0.07))
+    n = {1: 3, 2: 5, 3: 8}[level]
+    b = geom.rng_for(f"pile_oil_{level}")
+    for i, (x, y) in enumerate(_grid(n, 3, 0.18, 0.26, 0.28, 0.40)):
+        h = 0.24 + b.random() * 0.05
+        parts.append(geom.cylinder(f"po_body_{i}", (x, y, top), 0.105, h * 0.55,
+                                   clay, segments=10))
+        parts.append(geom.cylinder(f"po_shoulder_{i}", (x, y, top + h * 0.55), 0.085,
+                                   h * 0.30, clay, segments=10))
+        parts.append(geom.cylinder(f"po_neck_{i}", (x, y, top + h * 0.85), 0.042,
+                                   h * 0.15, clay, segments=8))
+        parts.append(geom.cylinder(f"po_cork_{i}", (x, y, top + h), 0.050, 0.028,
+                                   stopper, segments=8))
+    return parts
+
+
 def _wheat(level):
     parts = []
     top = _deck(parts)
@@ -351,7 +380,7 @@ def _hides(level):
 
 
 _GOODS = {
-    "wood": _wood, "stone": _stone, "iron": _iron, "pitch": _pitch,
+    "wood": _wood, "stone": _stone, "iron": _iron, "pitch": _pitch, "oil": _oil,
     "wheat": _wheat, "flour": _flour, "hops": _hops, "ale": _ale, "pigs": _pigs,
     "hides": _hides,
 }

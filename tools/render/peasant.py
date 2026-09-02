@@ -385,6 +385,35 @@ def build(arm, palette=None, prefix=DEFAULT_PREFIX, kit=None):
                                   grip + Vector((-0.075, 0.0, z)),
                                   grip + Vector((0.075, 0.0, z)), 0.010, 0.010,
                                   haft, "RightHand", segments=4, prefix=prefix))
+        elif weapon == 'firepot':
+            # A pot with fire in the neck of it, held out to the side. The
+            # flame is the whole point: at this size a man carrying a dark
+            # sphere is a man carrying nothing, and the one thing a fire
+            # thrower must never be mistaken for is a slave with a rock.
+            clay = M.cloth("FirePotClay", colour=(0.30, 0.20, 0.14))
+            # EMISSIVE, not an orange cloth. The siege engines learned this on
+            # the fire ballista: a lit surface at this size comes back the same
+            # muddy value as everything else lit by the same sun, and the flame
+            # simply is not visible. A flame is a light source.
+            flame = bpy.data.materials.new("FirePotFlame")
+            flame.use_nodes = True
+            _nt = flame.node_tree
+            _nt.nodes.clear()
+            _em = _nt.nodes.new("ShaderNodeEmission")
+            _em.inputs["Color"].default_value = (1.0, 0.55, 0.16, 1.0)
+            _em.inputs["Strength"].default_value = 6.0
+            _out = _nt.nodes.new("ShaderNodeOutputMaterial")
+            _nt.links.new(_em.outputs["Emission"], _out.inputs["Surface"])
+
+            body = grip + Vector((0.0, 0.0, 0.22))
+            parts.append(blob(arm, "pe_firepot", body, 0.068, clay,
+                              "RightHand", squash=1.15, subdiv=2, prefix=prefix))
+            parts.append(limb(arm, "pe_firepot_neck", body + Vector((0.0, 0.0, 0.055)),
+                              body + Vector((0.0, 0.0, 0.094)), 0.034, 0.030,
+                              clay, "RightHand", segments=6, prefix=prefix))
+            parts.append(limb(arm, "pe_firepot_flame", body + Vector((0.0, 0.0, 0.086)),
+                              body + Vector((0.0, 0.0, 0.235)), 0.044, 0.005,
+                              flame, "RightHand", segments=7, prefix=prefix))
         elif weapon == 'bow':
             lh_h, lh_t = bone_points(arm, "LeftHand", prefix=prefix)
             lgrip = (lh_h + lh_t) * 0.5

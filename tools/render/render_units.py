@@ -220,6 +220,16 @@ SOLDIERS = {
                     'hose': (0.13, 0.12, 0.14)},
         "kit": {'weapon': 'dagger'},
     },
+    "fire_thrower": {
+        # Soot and rust: the one man on the field whose clothes look like they
+        # have been near a fire, and the only one carrying a flame.
+        "palette": {'tunic': (0.36, 0.24, 0.19), 'hood': (0.26, 0.17, 0.14),
+                    'hose': (0.30, 0.26, 0.22)},
+        "kit": {'weapon': 'firepot'},
+        # An overarm throw rather than a thrust. The bat swing is the closest
+        # thing in the set to lobbing something heavy.
+        "attack_src": "Heavy Weapon Swing.fbx",
+    },
     "ladderman": {
         "palette": {'tunic': (0.52, 0.46, 0.34), 'hood': (0.40, 0.35, 0.26),
                     'hose': (0.31, 0.27, 0.21)},

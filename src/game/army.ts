@@ -160,6 +160,15 @@ export interface ArmyWorld {
    */
   onShoot?(kind: 'arrow' | 'bolt',
            fromX: number, fromZ: number, toX: number, toZ: number): void;
+  /**
+   * Something burning landed here: set the ground alight.
+   *
+   * A hook rather than a fire pushed from in here, because the fires list, the
+   * tile grid it is keyed on and the burn tick all live in main.ts with the
+   * pitch ditches, and army.ts has never known anything about the map. Called
+   * at the moment of the blow, on the tile the blow landed on.
+   */
+  onIncendiary?(x: number, z: number): void;
 }
 
 /** Tiles from a click within which a soldier counts as clicked. */
@@ -587,6 +596,7 @@ export class Army {
             if (s.cooldown <= 0) {
               const roll = s.def.damage * (0.85 + Math.random() * 0.3);
               civ.hit(Math.max(1, Math.round(roll)));
+              if (s.def.incendiary) this.world.onIncendiary?.(civ.x, civ.z);
               if (Army.reachOf(s) >= RANGED_THRESHOLD) {
                 this.world.onShoot?.(s.def.targetsUnits ? 'bolt' : 'arrow',
                                      s.x, s.z, civ.x, civ.z);
@@ -614,6 +624,7 @@ export class Army {
             on: foe, amount: Math.max(1, Math.round(roll)),
             ranged: Army.reachOf(s) >= RANGED_THRESHOLD,
           });
+          if (s.def.incendiary) this.world.onIncendiary?.(foe.x, foe.z);
           // An arrow to watch, but only for actual ranged fire -- a spearman's
           // reach is melee and wants no projectile.
           if (Army.reachOf(s) >= RANGED_THRESHOLD) {

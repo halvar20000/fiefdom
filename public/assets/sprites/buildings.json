@@ -3120,6 +3120,110 @@
     "scale": 3
   },
   {
+    "name": "oil_pot",
+    "rotation": 0,
+    "width": 109,
+    "height": 73,
+    "anchor_x": 15.05,
+    "anchor_y": 47.91,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "oil_pot",
+    "rotation": 1,
+    "width": 126,
+    "height": 76,
+    "anchor_x": 46.78,
+    "anchor_y": 24.07,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "oil_pot",
+    "rotation": 2,
+    "width": 110,
+    "height": 92,
+    "anchor_x": 93.95,
+    "anchor_y": 47.88,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "oil_pot",
+    "rotation": 3,
+    "width": 128,
+    "height": 82,
+    "anchor_x": 79.22,
+    "anchor_y": 71.96,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "oil_smelter",
+    "rotation": 0,
+    "width": 197,
+    "height": 152,
+    "anchor_x": 8.09,
+    "anchor_y": 104.33,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "oil_smelter",
+    "rotation": 1,
+    "width": 269,
+    "height": 136,
+    "anchor_x": 92.35,
+    "anchor_y": 39.33,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "oil_smelter",
+    "rotation": 2,
+    "width": 230,
+    "height": 185,
+    "anchor_x": 189.91,
+    "anchor_y": 91.5,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "oil_smelter",
+    "rotation": 3,
+    "width": 269,
+    "height": 167,
+    "anchor_x": 176.65,
+    "anchor_y": 160.78,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
     "name": "olive_tree",
     "rotation": 0,
     "width": 160,
@@ -4205,6 +4309,162 @@
     "height": 80,
     "anchor_x": 67.44,
     "anchor_y": 69.33,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "pile_oil_1",
+    "rotation": 0,
+    "width": 108,
+    "height": 56,
+    "anchor_x": 10.0,
+    "anchor_y": 30.08,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "pile_oil_1",
+    "rotation": 1,
+    "width": 107,
+    "height": 68,
+    "anchor_x": 49.62,
+    "anchor_y": 17.08,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "pile_oil_1",
+    "rotation": 2,
+    "width": 111,
+    "height": 69,
+    "anchor_x": 98.0,
+    "anchor_y": 37.89,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "pile_oil_1",
+    "rotation": 3,
+    "width": 105,
+    "height": 62,
+    "anchor_x": 56.38,
+    "anchor_y": 54.58,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "pile_oil_2",
+    "rotation": 0,
+    "width": 108,
+    "height": 65,
+    "anchor_x": 11.22,
+    "anchor_y": 38.57,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "pile_oil_2",
+    "rotation": 1,
+    "width": 125,
+    "height": 67,
+    "anchor_x": 49.16,
+    "anchor_y": 16.57,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "pile_oil_2",
+    "rotation": 2,
+    "width": 108,
+    "height": 78,
+    "anchor_x": 97.78,
+    "anchor_y": 40.15,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "pile_oil_2",
+    "rotation": 3,
+    "width": 121,
+    "height": 61,
+    "anchor_x": 71.84,
+    "anchor_y": 53.96,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "pile_oil_3",
+    "rotation": 0,
+    "width": 108,
+    "height": 75,
+    "anchor_x": 10.48,
+    "anchor_y": 48.46,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "pile_oil_3",
+    "rotation": 1,
+    "width": 134,
+    "height": 67,
+    "anchor_x": 48.97,
+    "anchor_y": 15.9,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "pile_oil_3",
+    "rotation": 2,
+    "width": 107,
+    "height": 86,
+    "anchor_x": 97.52,
+    "anchor_y": 38.66,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "pile_oil_3",
+    "rotation": 3,
+    "width": 134,
+    "height": 72,
+    "anchor_x": 85.03,
+    "anchor_y": 63.94,
     "footprint": [
       1,
       1

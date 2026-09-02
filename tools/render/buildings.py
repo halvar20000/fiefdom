@@ -2977,9 +2977,115 @@ def stables():
     return geom.join(parts, "stables"), (3, 3)
 
 
+def oil_pot():
+    """A black cauldron over a fire, on a tripod. The dark twin of the water pot.
+
+    They sit next to each other on the same wall and do opposite jobs, so the
+    two have to be told apart at a glance and from any facing: the water butt
+    is pale stone with a bright disc of water on top, and this is a black iron
+    belly on three legs with flame under it. Nothing else about the shape is
+    allowed to be similar.
+    """
+    stone = M.rough_stone("OilKerb")
+    iron = M.iron()
+    black = M.cloth("OilIron", colour=(0.10, 0.09, 0.09))
+    # Nearly black. The first cut was a mid brown and it read as a disc of
+    # ale: this pot sits next to the water butt on the same wall and the pale
+    # top surface is exactly the thing that made them look alike.
+    oil = M.cloth("OilSurface", colour=(0.09, 0.07, 0.05))
+    timber_d = M.timber("OilLeg", dark=True)
+    ember = M.cloth("OilEmber", colour=(0.72, 0.26, 0.09))
+
+    parts = []
+    parts.append(geom.box("op_kerb", (0.12, 0.12, 0.0), (0.76, 0.76, 0.05), stone))
+    # The fire under it: embers between three hearth stones.
+    parts.append(geom.cylinder("op_embers", (0.50, 0.50, 0.05), 0.16, 0.03, ember,
+                               segments=8))
+    for i in range(3):
+        a = (i / 3.0) * math.tau
+        parts.append(geom.box(f"op_hearth_{i}",
+                              (0.50 + math.cos(a) * 0.22 - 0.05,
+                               0.50 + math.sin(a) * 0.22 - 0.05, 0.05),
+                              (0.10, 0.10, 0.07), stone))
+    # Three legs leaning in, carrying the pot clear of the flame.
+    for i in range(3):
+        a = (i / 3.0) * math.tau + 0.5
+        leg = geom.box(f"op_leg_{i}", (0.50 + math.cos(a) * 0.26 - 0.03,
+                                       0.50 + math.sin(a) * 0.26 - 0.03, 0.05),
+                       (0.06, 0.06, 0.34), timber_d)
+        leg.rotation_euler = (-math.sin(a) * 0.42, math.cos(a) * 0.42, 0.0)
+        parts.append(leg)
+    # The belly: two stacked cylinders, wider at the shoulder than the base, so
+    # it reads as a cauldron rather than a barrel.
+    parts.append(geom.cylinder("op_base", (0.50, 0.50, 0.30), 0.20, 0.10, black,
+                               segments=12))
+    parts.append(geom.cylinder("op_belly", (0.50, 0.50, 0.38), 0.28, 0.16, black,
+                               segments=12))
+    parts.append(geom.cylinder("op_rim", (0.50, 0.50, 0.53), 0.30, 0.05, black,
+                               segments=12))
+    parts.append(geom.cylinder("op_oil", (0.50, 0.50, 0.575), 0.255, 0.02, oil,
+                               segments=12))
+    # A tipping handle, which is what a pot of oil on a wall is FOR.
+    parts.append(geom.box("op_handle", (0.16, 0.46, 0.40), (0.24, 0.06, 0.06), iron))
+    return geom.join(parts, "oil_pot"), (1, 1)
+
+
+def oil_smelter():
+    """A furnace with a vat over it, a chimney, and barrels of pitch to feed it.
+
+    Its whole job is boiling something black, so the model is built round the
+    one silhouette that says so: a squat stone furnace with a chimney and a
+    great open vat sitting on top of the fire.
+    """
+    stone = M.castle_stone("OsStone")
+    rough = M.rough_stone("OsYard")
+    iron = M.iron()
+    black = M.cloth("OsVat", colour=(0.11, 0.10, 0.10))
+    pitch = M.cloth("OsPitch", colour=(0.15, 0.12, 0.10))
+    timber_l = M.timber("OsTimber")
+    timber_d = M.timber("OsBeam", dark=True)
+    ember = M.cloth("OsEmber", colour=(0.76, 0.30, 0.10))
+
+    parts = []
+    parts.append(geom.box("os_yard", (0.08, 0.08, 0.0), (1.84, 1.84, 0.06), rough))
+
+    # The furnace: a stone block with a stoke hole and a chimney off the back.
+    parts.append(geom.box("os_furnace", (0.24, 0.86, 0.06), (1.00, 0.86, 0.52), stone))
+    parts.append(geom.box("os_mouth", (0.46, 0.82, 0.12), (0.44, 0.06, 0.26), ember))
+    parts.append(geom.box("os_lintel", (0.42, 0.80, 0.38), (0.52, 0.10, 0.10), timber_d))
+    parts.append(geom.box("os_chimney", (1.02, 1.30, 0.58), (0.30, 0.30, 0.78), stone))
+    parts.append(geom.box("os_cap", (0.97, 1.25, 1.36), (0.40, 0.40, 0.08), stone))
+
+    # The vat on top of it, iron-hooped and full to the brim.
+    parts.append(geom.cylinder("os_vat", (0.66, 1.20, 0.58), 0.34, 0.34, black,
+                               segments=14))
+    for i, z in enumerate((0.64, 0.84)):
+        parts.append(geom.cylinder(f"os_hoop_{i}", (0.66, 1.20, z), 0.355, 0.05, iron,
+                                   segments=14, cap=False))
+    parts.append(geom.cylinder("os_oil", (0.66, 1.20, 0.90), 0.31, 0.02, pitch,
+                               segments=14))
+
+    # Barrels of pitch waiting, and the timber to fire it.
+    for i, (x, y) in enumerate(((1.52, 0.42), (1.68, 0.76), (1.36, 0.28))):
+        # geom.barrel returns a LIST -- a body and a hoop pair -- so it extends
+        # rather than appends. geom.join takes objects, not nests of them.
+        parts += geom.barrel(f"os_barrel_{i}", (x, y, 0.06), 0.17, 0.30,
+                             timber_d, iron)
+    parts += geom.log_stack("os_logs", (0.24, 0.24, 0.06), 4, 0.62, 0.070,
+                            timber_l, along='x')
+    # A ladle the length of a man, because somebody has to fill the pots.
+    parts.append(geom.box("os_ladle", (0.30, 0.62, 0.44), (0.06, 0.06, 0.50), timber_d))
+    parts[-1].rotation_euler = (0.38, 0.0, 0.0)
+    parts.append(geom.cylinder("os_scoop", (0.30, 0.44, 0.30), 0.09, 0.09, iron,
+                               segments=8))
+    return geom.join(parts, "oil_smelter"), (2, 2)
+
+
 REGISTRY.update({
     "engineers_guild": engineers_guild,
     "tunnelers_guild": tunnelers_guild,
     "mercenary_post": mercenary_post,
     "stables": stables,
+    "oil_pot": oil_pot,
+    "oil_smelter": oil_smelter,
 })
