@@ -308,23 +308,67 @@ def main():
 
     rig.add_shadow_catcher(size=6.0)
 
-    # One fixed frame for every sprite, sized generously for swinging limbs --
-    # and for kit, which reaches past the body. A spearman now stands a full
-    # 0.52 like everyone else, so his spear tip pokes out at 0.62 and would be
-    # sheared off by the peasant's frame.
+    # One fixed frame for every sprite, MEASURED from the poses that will
+    # actually be rendered.
     #
-    # max() with the peasant's own numbers is deliberate: an unarmed body keeps
-    # exactly the frame it always had (80x66), so the peasant sprites already on
-    # disk stay valid and do not need re-rendering.
-    unit_h = hi.z - lo.z
-    r = max(UNIT_HEIGHT_TILES * 0.85, unit_h * 0.80)
-    top = max(UNIT_HEIGHT_TILES * 1.18, unit_h * 1.15)
-    box = [Vector((sx * r, sy * r, sz))
-           for sx in (-1, 1) for sy in (-1, 1) for sz in (0.0, top)]
+    # This used to be an analytic guess: a cube of half-width 0.85 * the unit
+    # height on both ground axes, plus that cube's cast shadow. It was safe and
+    # enormously wasteful. A peasant came out 24x37 pixels of figure inside a
+    # 120x98 frame -- eight per cent fill, so ninety-two per cent of every
+    # human sprite in the atlas was transparent air, and the atlas is the thing
+    # that decides how big a unit is allowed to be. The waste was invisible
+    # while a unit was fifteen pixels tall and is the whole problem now that
+    # the camera zooms in far enough to look at one.
+    #
+    # So: walk every frame of every clip in every facing, take the union of the
+    # evaluated mesh bounds, and frame that. It is a pose loop with no
+    # rendering in it, a second or two, and it cannot be wrong the way a guess
+    # can -- a spear tip or a drawn bow is included because it was measured,
+    # not because somebody remembered to widen a constant.
+    #
+    # Note the absence of an `only` filter here. The frame has to be the same
+    # for every clip a body owns or the sprite changes size the moment the unit
+    # stops walking and starts digging, so a `--only walk` run still measures
+    # all five clips and reproduces the frame a full run would have chosen. It
+    # renders one clip; it does not re-frame the body around it.
+    corners = []
+    for clip, action in actions.items():
+        nframes = CLIPS[clip][1]
+        assign_action(arm, action)
+        start, end = action.frame_range
+        for f in range(nframes):
+            scene_f = start + (end - start) * (f / nframes)
+            bpy.context.scene.frame_set(int(round(scene_f)))
+            for d in range(DIRECTIONS):
+                arm.rotation_euler = (arm.rotation_euler.x, arm.rotation_euler.y,
+                                      (d / DIRECTIONS) * math.tau)
+                centre_hips(arm, base_z, hips_name)
+                plo, phi = evaluated_bounds(meshes)
+                for sx in (plo.x, phi.x):
+                    for sy in (plo.y, phi.y):
+                        for sz in (min(0.0, plo.z), phi.z):
+                            corners.append(Vector((sx, sy, sz)))
+    if not corners:
+        raise SystemExit("nothing to frame: no clips selected")
+    # A little slack so the render filter's soft edge has somewhere to land.
+    # It does not have to cover the cast shadow's soft tail: rig.MARGIN_PX
+    # already adds nine pixels a side, and the measured content of a finished
+    # peasant sprite -- body, kit and shadow down to one per cent alpha --
+    # occupies 42x39 of the 80x74 frame this produces.
+    pad = 0.02
+    lo_x = min(c.x for c in corners) - pad
+    hi_x = max(c.x for c in corners) + pad
+    lo_y = min(c.y for c in corners) - pad
+    hi_y = max(c.y for c in corners) + pad
+    hi_z = max(c.z for c in corners) + pad
+    box = [Vector((sx, sy, sz)) for sx in (lo_x, hi_x)
+           for sy in (lo_y, hi_y) for sz in (0.0, hi_z)]
     cam = rig.setup_camera(rig.AZIMUTHS_DEG[0])
     w, h, ax, ay = rig.frame_points(cam, box + rig.shadow_projected(box),
                                     Vector((0.0, 0.0, 0.0)))
-    print(f"unit frame {w}x{h} anchor=({ax:.1f},{ay:.1f})", flush=True)
+    print(f"unit frame {w}x{h} anchor=({ax:.1f},{ay:.1f}) "
+          f"from measured box {hi_x - lo_x:.3f} x {hi_y - lo_y:.3f} x {hi_z:.3f}",
+          flush=True)
 
     scene = bpy.context.scene
     metas = []
