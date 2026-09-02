@@ -84,5 +84,19 @@ jobs:
           provenance: false
           sbom: false
           outputs: type=registry,oci-mediatypes=false
+          # mode=min, not max, and the reason is a quota.
+          #
+          # mode=max exports every intermediate layer of both architectures.
+          # Nine releases in one day put 589 entries and 8.1 GB into a cache
+          # GitHub caps at 10 GB per repository, and at that point the export
+          # races eviction: three builds in a row sat in this step for 25-35
+          # minutes against a 2-3 minute norm, with Actions reporting no
+          # incident. mode=min exports only the final image layers, which is a
+          # fraction of the size and cannot refill the quota at this rate.
+          #
+          # The cost is that the build stage -- npm ci and vite build -- is no
+          # longer cached, so a cold build is a few minutes longer. A build
+          # that reliably takes six minutes beats one that usually takes three
+          # and sometimes never finishes.
           cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-to: type=gha,mode=min
