@@ -20,6 +20,21 @@ on:
       - 'reference/**'
   workflow_dispatch:
 
+# One build of a branch at a time, and the newest push wins.
+#
+# Without this, pushing twice in quick succession leaves two builds racing for
+# the same `latest` tag, and whichever finishes LAST wins -- so a slow build of
+# an older commit can quietly republish `latest` as the older image after the
+# newer one has already landed. That happened on 1.38.0/1.39.0: the 1.38.0
+# build sat in buildx for twenty minutes, against a two-to-three minute norm,
+# while 1.39.0 started and passed it.
+#
+# Superseded builds are also just waste: nobody wants the image for a commit
+# that is already two commits old.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   IMAGE: ghcr.io/${{ github.repository_owner }}/fiefdom
 
