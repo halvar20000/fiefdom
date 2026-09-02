@@ -1,6 +1,15 @@
 # Crusader gaps — backlog
 
-What Stronghold Crusader has that Fiefdom does not, as an ordered work list.
+What Stronghold Crusader had that Fiefdom did not, as an ordered work list.
+
+**All eight tranches are done** (1.34.3 through 1.49.0). Everything below is
+kept as the record of what was built and, more usefully, of what each piece
+turned on — the mechanics that had to be generalised first, the three or four
+places where a hand-written list silently swallowed a new thing, and the
+handful of art decisions that only revealed themselves once something was
+actually rendered. Four items are marked **not a gap**: the apothecary, the
+ballista, the mangonel and the fork's stones, each of which is something we
+already had under another name.
 
 ## Where this came from
 
@@ -294,6 +303,38 @@ frame was a GUESS, a cylinder sized so a catapult's arm at full stretch fitted
 inside it, and the siege tower stands over twice that height. It would have
 rendered with its head cut off in all eight facings and nothing would have
 said so. Measured now, like the units and the mounts.
+
+## What it cost, in the end
+
+Twelve new units, seven new buildings, three new weapon goods and one new raw
+good, across sixteen releases. Four things are worth carrying forward:
+
+**The single texture is the budget.** The whole scene is drawn as one
+back-to-front batch, because sprites split across two batches cannot be sorted
+against each other, so everything packs into ONE texture and one hardware limit
+(8192 on a good deal of hardware) caps the entire catalogue. It was already
+8192x6588 before any of this. `trim_sprites.py` is what made room, and it must
+be run after every render.
+
+**Four hand-written lists each swallowed something silently**, and each is now
+guarded through the same startup banner: `BUILD_MENU` (a building that cannot
+be built), `SOLDIER_ORDER` (a unit that cannot be recruited), `RESOURCE_BAR` (a
+good that is invisible), and the yards' `pile_<good>_<level>` sprites (a good
+whose square draws nothing). Assume there is a fifth.
+
+**Generalise the mechanic, then add the unit.** Nearly every unit here cost a
+def entry and a model because the mechanic it needed already existed or was
+made general first: `climbs`/`ladders` serves the assassin, the ladderman and
+the siege tower; `alternate` on a workshop serves all three new European
+troops; `fires` serves the pitch ditch, the oil pot and the fire thrower. The
+two that needed genuinely new machinery -- `shields` and `fourLegged` -- are
+about twenty lines each.
+
+**Render it before you believe it.** A sword in a rider's hand is inside the
+horse from half the facings. An animal in a stall is a brown shape in a brown
+shadow. A stripe under a tent's eaves is hidden by the tent's own skirt. A
+sling at its true size is a man holding nothing. A flame that is not emissive
+is not a flame. None of those were predictable from the numbers.
 
 ## Notes
 
