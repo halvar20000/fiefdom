@@ -1,6 +1,6 @@
 import type { GameState, PlacedBuilding } from './state';
 import {
-  storeOf, STORE_LABELS, DEPOT_BATCH, type Resource, type Store,
+  storeOf, STORE_LABELS, DEPOT_BATCH, productionOf, type Resource, type Store,
 } from './defs';
 import type { PathNode } from './pathfind';
 
@@ -233,7 +233,7 @@ export class WorkerPool {
         this.updateStocker(w, b, b.def.stocks, dt);
         continue;
       }
-      const prod = b.def.produces;
+      const prod = productionOf(b.def, b.alt);
       if (!prod) { w.state = 'idle'; continue; }
 
       switch (w.state) {
@@ -391,7 +391,7 @@ export class WorkerPool {
             // The hide off the same pig. Only on a real store drop, never into
             // a relay shed, and only for the load this cycle actually made --
             // clamped to the room there is, so it cannot outrun a full yard.
-            const bp = b.def.produces?.byproduct;
+            const bp = productionOf(b.def, b.alt)?.byproduct;
             if (bp && !w.dropAt?.def.relay) {
               const put = Math.min(bp.amount, this.state.roomFor(bp.output));
               if (put > 0) this.state.deposit(bp.output, put);

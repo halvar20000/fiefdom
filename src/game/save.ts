@@ -26,6 +26,10 @@ const BOOT = 'fiefdom.boot';
 export interface SavedBuilding {
   n: string; x: number; z: number; staff: number; hp: number;
   held: Record<string, number>;
+  /** A drawbridge that was raised. Absent means down. */
+  up?: number;
+  /** A workshop set to its alternate product. Absent means the default one. */
+  alt?: number;
 }
 
 export interface SavedSoldier {

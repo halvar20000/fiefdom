@@ -243,6 +243,56 @@ def build(arm, palette=None, prefix=DEFAULT_PREFIX, kit=None):
             parts.append(limb(arm, "pe_blade", grip + Vector((0.0, 0.0, 0.04)),
                               grip + Vector((0.0, 0.0, 0.46)), 0.026, 0.012,
                               steel, "RightHand", segments=5, prefix=prefix))
+        elif weapon == 'pike':
+            # A pike is not a longer spear by a little. It is half again the
+            # man's height, and that is the entire silhouette: at sprite scale
+            # the shaft is what tells a pikeman from a spearman across a field,
+            # long before the armour does. The head is SMALLER than a spear's
+            # for the same reason -- a broad head on a shaft this long reads as
+            # a halberd.
+            parts.append(limb(arm, "pe_pike", grip + Vector((0.0, 0.0, -0.42)),
+                              grip + Vector((0.0, 0.0, 0.98)), 0.013, 0.011,
+                              haft, "RightHand", segments=6, prefix=prefix))
+            parts.append(limb(arm, "pe_pikehead", grip + Vector((0.0, 0.0, 0.96)),
+                              grip + Vector((0.0, 0.0, 1.10)), 0.019, 0.003,
+                              steel, "RightHand", segments=6, prefix=prefix))
+        elif weapon == 'mace':
+            # Short haft, heavy head. Nothing about a mace reads at range
+            # except the lump on the end, so the head is deliberately oversized
+            # against a real one and the flanges stick out far enough to break
+            # the circle -- a plain ball comes back as a lollipop.
+            parts.append(limb(arm, "pe_macehaft", grip + Vector((0.0, 0.0, -0.10)),
+                              grip + Vector((0.0, 0.0, 0.26)), 0.016, 0.015,
+                              haft, "RightHand", segments=5, prefix=prefix))
+            head = grip + Vector((0.0, 0.0, 0.32))
+            parts.append(blob(arm, "pe_macehead", head, 0.064, steel,
+                              "RightHand", squash=0.95, subdiv=2, prefix=prefix))
+            for i in range(4):
+                a = (i / 4) * math.tau
+                d = Vector((math.cos(a), math.sin(a), 0.0))
+                parts.append(limb(arm, f"pe_maceflange_{i}", head, head + d * 0.100,
+                                  0.028, 0.009, steel, "RightHand",
+                                  segments=4, prefix=prefix))
+        elif weapon == 'crossbow':
+            # Held across the body, not upright: a crossbow is a stock pointed
+            # at something with a short prod athwart it, and the cross is the
+            # whole reason the shape is recognisable at all. Built on the LEFT
+            # hand like the bow, so the right arm's motion reads as cocking it.
+            lh_h, lh_t = bone_points(arm, "LeftHand", prefix=prefix)
+            lgrip = (lh_h + lh_t) * 0.5
+            parts.append(limb(arm, "pe_xbow_stock",
+                              lgrip + Vector((0.0, 0.0, -0.14)),
+                              lgrip + Vector((0.0, 0.0, 0.34)), 0.026, 0.018,
+                              haft, "LeftHand", segments=5, prefix=prefix))
+            parts.append(limb(arm, "pe_xbow_prod",
+                              lgrip + Vector((-0.27, 0.0, 0.28)),
+                              lgrip + Vector((0.27, 0.0, 0.28)), 0.016, 0.014,
+                              steel, "LeftHand", segments=5, prefix=prefix))
+            parts.append(limb(arm, "pe_xbow_string",
+                              lgrip + Vector((-0.26, 0.05, 0.28)),
+                              lgrip + Vector((0.26, 0.05, 0.28)), 0.006, 0.006,
+                              M.cloth("BowString", colour=(0.86, 0.83, 0.74)),
+                              "LeftHand", segments=4, prefix=prefix))
         elif weapon == 'bow':
             lh_h, lh_t = bone_points(arm, "LeftHand", prefix=prefix)
             lgrip = (lh_h + lh_t) * 0.5

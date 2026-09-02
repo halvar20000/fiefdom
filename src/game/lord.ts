@@ -334,6 +334,11 @@ export class Lord {
   private produce(dt: number): void {
     for (const b of this.world.buildings()) {
       const def = BUILDINGS[b.name];
+      // `def.produces`, deliberately, not `productionOf`. A workshop's second
+      // product -- pikes off the poleturner, maces off the anvil -- is a
+      // switch on the PLACED building, and a lord's buildings are a plan, not
+      // placements he fiddles with. He keeps to the plain kit and fields the
+      // units it arms, which is why his roster in `nextType` is the short one.
       const prod = def?.produces;
       if (!prod || b.staff < (def.workers ?? 0) || (def.workers ?? 0) === 0) continue;
       // A quarry with no ox tether in range has nowhere to put its stone --

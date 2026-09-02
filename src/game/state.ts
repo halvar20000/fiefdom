@@ -32,6 +32,15 @@ export interface PlacedBuilding {
    * placed building rather than the def for exactly that reason.
    */
   raised?: boolean;
+  /**
+   * This workshop is cutting its ALTERNATE product -- pikes rather than
+   * spears, maces rather than swords, crossbows rather than bows.
+   *
+   * On the placed building rather than the def, like `raised`, because two
+   * poleturners either side of a castle are allowed to be making different
+   * things. Read it through `productionOf`, never directly.
+   */
+  alt?: boolean;
 }
 
 export interface Notice {

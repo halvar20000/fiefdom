@@ -161,6 +161,41 @@ SOLDIERS = {
         "kit": {'helmet': True, 'weapon': 'sword', 'shield': True,
                 'shield_colour': (0.58, 0.15, 0.13)},
     },
+    # The three that come off the other side of each weapons workshop. Every
+    # one of them has to be told apart from the man it shares a barracks with,
+    # at about ninety pixels, in eight facings -- so each is separated on BOTH
+    # axes the eye has here: a silhouette the other one has not got, and a
+    # tunic in a different quarter of the wheel.
+    "pikeman": {
+        # Slate blue against the spearman's undyed brown. The pike itself does
+        # most of the work: it stands half again above his own head, and no
+        # other unit has anything like it.
+        "palette": {'tunic': (0.28, 0.34, 0.45), 'hood': (0.22, 0.27, 0.37),
+                    'hose': (0.24, 0.23, 0.24)},
+        "kit": {'helmet': True, 'weapon': 'pike'},
+        "attack_src": "Baseball Strike.fbx",     # a thrust, like the spearman
+    },
+    "maceman": {
+        # Deep red, and no shield -- the swordsman he is measured against is
+        # grey and carries one, which is the fastest read of the two.
+        "palette": {'tunic': (0.46, 0.19, 0.18), 'hood': (0.36, 0.15, 0.14),
+                    'hose': (0.25, 0.21, 0.19)},
+        "kit": {'helmet': True, 'weapon': 'mace'},
+    },
+    "crossbowman": {
+        # Ochre against the archer's green, and helmeted where the archer is
+        # bare-headed. The weapon reads as a cross rather than an arc.
+        "palette": {'tunic': (0.60, 0.47, 0.20), 'hood': (0.47, 0.36, 0.15),
+                    'hose': (0.27, 0.24, 0.19)},
+        "kit": {'helmet': True, 'weapon': 'crossbow'},
+        # The archer's draw. A crossbow is spanned rather than drawn, but the
+        # motion is the same shape at this size -- the right arm hauls back
+        # across a weapon held out in the left -- and it is the only clip in
+        # the set that does anything of the kind.
+        "attack_src": "Standing Draw Arrow.fbx",
+        "attack_frames": 12,
+        "attack_seconds": 1.1,
+    },
 }
 
 

@@ -38,11 +38,12 @@ import {
   BUILDINGS, STORE_SPRITES, SPRITE_STANDIN, SOLDIER_TYPES, buildingHp,
   canGarrison, isWeapon,
   GARRISON_HEIGHT, garrisonReach, MARSH_SPEED_FOOT, MARSH_SPEED_SIEGE,
-  BUILD_MENU, unlistedBuildings, unlistedSoldiers,
+  BUILD_MENU, SOLDIER_ORDER, unlistedBuildings, unlistedSoldiers,
+  unlistedResources,
   BURN_SECONDS, BURN_RADIUS, BURN_DPS, IGNITE_RADIUS, DEMOLISH_REFUND,
   PIT_TRIGGER_RADIUS, PIT_BLAST_RADIUS, PIT_DAMAGE, WATER_POT_RADIUS,
   REPAIR_RADIUS, REPAIR_PER_SECOND, UNDERMINE_RADIUS, UNDERMINE_PER_SECOND,
-  SPEED_LEVELS, RESOURCE_LABELS,
+  SPEED_LEVELS, RESOURCE_LABELS, productionOf, goodName,
   type Resource,
 } from './game/defs';
 
@@ -163,8 +164,15 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     ...missingSprites(
       Object.keys(BUILDINGS).filter(n => n !== 'stockpile' && n !== 'granary'),
       atlas.frames),
+    // Soldiers, checked the same way. A unit with no frames does not vanish --
+    // the draw loop falls back to the bare peasant body -- so a whole new
+    // troop type can ship looking like an unarmed villager and nothing
+    // anywhere says why. The key is `${clip}_${dir}_${frame}`, so asking after
+    // `<type>_idle_0` is asking after facing 0, frame 0 of his idle.
+    ...missingSprites(SOLDIER_ORDER.map(n => `${n}_idle_0`), atlas.frames),
     ...unlistedBuildings(),
     ...unlistedSoldiers(),
+    ...unlistedResources(),
   ]);
 
   const terrain = new Terrain({ width: MAP_W, height: MAP_H, layers: 20 }, tiles.texture);
@@ -2479,10 +2487,19 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
           && Math.abs(e.clientX - lastTapX) < 24 && Math.abs(e.clientY - lastTapY) < 24;
         lastTapT = now; lastTapX = e.clientX; lastTapY = e.clientY;
         if (dbl && selectTypeAt(e.clientX, e.clientY, false)) return;
-        if (!army.selectAt(w.x, w.z, true, true)) army.clearSelection();
+        if (army.selectAt(w.x, w.z, true, true)) return;
+        const shopT = switchableAt(w.x, w.z);
+        if (shopT) { toggleProduct(shopT); return; }
+        army.clearSelection();
         return;
       }
-      if (!army.selectAt(w.x, w.z, e.shiftKey) && !e.shiftKey) army.clearSelection();
+      if (army.selectAt(w.x, w.z, e.shiftKey)) return;
+      // Nobody under the cursor. A workshop that can cut two things is the one
+      // building a bare click means something to; everything else clears the
+      // selection as it always did.
+      const shop = switchableAt(w.x, w.z);
+      if (shop) { toggleProduct(shop); return; }
+      if (!e.shiftKey) army.clearSelection();
       return;
     }
 
@@ -2812,6 +2829,34 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
   function aOrAn(label: string): string {
     const l = label.toLowerCase();
     return /^[aeiou]/.test(l) ? `an ${l}` : `a ${l}`;
+  }
+
+  /**
+   * Flip a workshop between the two things it can make.
+   *
+   * Hung off a plain click on the building rather than a panel of its own,
+   * because there is no building panel to hang it in: the game has a hover
+   * tooltip and no click-to-inspect, and inventing a whole inspector for one
+   * two-state switch is the wrong size of answer. The tooltip already prints
+   * what a workshop is making, so the affordance sits exactly where the player
+   * is already looking when they wonder about it.
+   *
+   * Anything already held or half-made is kept. A lathe part-way through a
+   * spear does not throw the ash away because you asked for a pike next.
+   */
+  function toggleProduct(b: PlacedBuilding): boolean {
+    if (!b.def.alternate) return false;
+    b.alt = !b.alt;
+    const now = productionOf(b.def, b.alt)!;
+    state.notify(`${b.def.label} now makes ${RESOURCE_LABELS[now.output].toLowerCase()}`,
+                 'info');
+    return true;
+  }
+
+  /** The workshop under a world point, if flipping it is a thing you can do. */
+  function switchableAt(wx: number, wz: number): PlacedBuilding | null {
+    const b = buildingAt(Math.floor(wx), Math.floor(wz));
+    return b && b.def.alternate ? b : null;
   }
 
   function recruit(type: string): string {
@@ -3256,9 +3301,18 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       const def = mine.def;
       const bits: string[] = [];
       if (def.workers) bits.push(`${mine.staff}/${def.workers} worker${def.workers > 1 ? 's' : ''}`);
-      if (def.produces) {
-        const p = def.produces;
-        bits.push(`${p.amount} ${p.output} / ${p.seconds}s`);
+      const making = productionOf(def, mine.alt);
+      if (making) {
+        bits.push(`${making.amount} ${goodName(making.output, making.amount)}`
+                  + ` / ${making.seconds}s`);
+      }
+      if (def.alternate) {
+        // The switch has no button anywhere, so the tooltip has to be the
+        // whole instruction manual for it.
+        // Plural here whatever the batch size: this names the product line
+        // ("make pikes"), not a count of them the way the line above does.
+        const other = productionOf(def, !mine.alt)!;
+        bits.push(`click to make ${RESOURCE_LABELS[other.output].toLowerCase()}`);
       }
       if (def.housing) bits.push(`houses ${def.housing}`);
       if (def.storeFor === 'stockpile' || def.storeFor === 'granary') {
@@ -3549,6 +3603,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
         n: b.name, x: b.x, z: b.z, staff: b.staff, hp: b.hp,
         held: { ...b.held } as Record<string, number>,
         up: b.raised ? 1 : undefined,
+        alt: b.alt ? 1 : undefined,
       })),
       factions: factions.map(f => ({
         id: f.id,
@@ -3620,7 +3675,10 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       b.held = { ...sb.held } as typeof b.held;
       markArea(sb.x, sb.z, w, d);
       // A drawbridge saved in the up position is solid, walkable def or not.
-      b.raised = !!(sb as { up?: number }).up;
+      b.raised = !!sb.up;
+      // A workshop keeps what it was set to cut. An older save has no field
+      // here, which reads as the default product -- exactly what it was making.
+      b.alt = !!sb.alt;
       if (!def.walkable || b.raised) markSolid(sb.x, sb.z, w, d);
     }
     for (const sf of sv.factions) {

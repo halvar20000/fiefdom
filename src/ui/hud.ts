@@ -1,6 +1,6 @@
 import {
   BUILDINGS, BUILD_MENU, PRICES, RATIONS, RATION_LEVELS, TAX_LEVELS,
-  RESOURCE_LABELS, ALL_RESOURCES, FOOD_RESOURCES,
+  RESOURCE_LABELS, ALL_RESOURCES, RESOURCE_BAR, FOOD_RESOURCES, goodName,
   SOLDIER_TYPES, SOLDIER_ORDER, SPEED_LEVELS, SPRITE_STANDIN,
   type RationLevel, type Resource,
 } from '../game/defs';
@@ -15,10 +15,7 @@ import type { Audio } from '../engine/audio';
  * way ("2 wood"), whereas a recruit is issued exactly one of a countable thing
  * and "1 bows" looks like a bug in the panel.
  */
-function one(r: Resource, n: number): string {
-  const label = RESOURCE_LABELS[r].toLowerCase();
-  return n === 1 && label.endsWith('s') ? label.slice(0, -1) : label;
-}
+const one = goodName;
 
 /** The views the right-hand panel can show, in dropdown order. */
 const VIEWS = [
@@ -278,13 +275,23 @@ const CSS = `
 #rightpanel td.name { opacity: .82; }
 #rightpanel .hint { font-size: 10px; opacity: .5; margin-top: 6px; line-height: 1.45; }
 /* Soldier rows need their own grid. Reusing #market .r crammed name, price,
-   count and button into one column with no gaps. */
+   count and button into one column with no gaps.
+
+   Two rows, not one. The price is the longest thing in a soldier row and the
+   only one that grows without limit -- "55g + 1 pike + 1 armour" is half again
+   the width of "20g + 1 spear" -- so on one line it pushed the Recruit button
+   off the side of a 268px panel the moment a unit wanted two pieces of kit.
+   Under the name it can be as long as it likes and wrap if it must. */
 #view-barracks .r { display: grid;
-  grid-template-columns: 1fr auto 22px 58px; gap: 8px; align-items: center;
+  grid-template-columns: minmax(0, 1fr) 24px 58px;
+  grid-template-areas: "nm v btn" "cost cost btn";
+  column-gap: 8px; row-gap: 1px; align-items: center;
   padding: 4px 0; border-bottom: 1px solid rgba(196,162,96,.12); }
-#view-barracks .r > .nm { font-size: 11px; }
-#view-barracks .r > .c { font-size: 10px; opacity: .72; white-space: nowrap; }
-#view-barracks .r > .v { font-size: 11px; text-align: right; color: var(--gold); }
+#view-barracks .r > .nm { grid-area: nm; font-size: 11px; }
+#view-barracks .r > .c { grid-area: cost; font-size: 10px; opacity: .72; }
+#view-barracks .r > .v { grid-area: v; font-size: 11px; text-align: right;
+  color: var(--gold); }
+#view-barracks .r > button { grid-area: btn; }
 #view-barracks .tog { padding: 3px 6px; font-size: 10px; width: 100%; }
 #view-barracks .tog.poor { opacity: .40; }
 #view-barracks .row { display: flex; justify-content: space-between;
@@ -1388,10 +1395,7 @@ export class Hud {
    */
   private buildBarracks(): void {
     const panel = this.views['barracks'];
-    this.el('h4', panel).textContent = 'Barracks';
-    const warn = this.el('div', panel, 'warn');
-    warn.dataset.role = 'nobarracks';
-    warn.textContent = 'Build a barracks to recruit.';
+    this.el('h4', panel).textContent = 'Recruitment';
 
     // The rally flag: where a freshly made soldier or engine walks to, instead
     // of milling about at the barracks door. Set here because this is where you
@@ -1408,15 +1412,24 @@ export class Hud {
     rallyHint.textContent = 'New troops gather at the flag. '
                           + 'Plant it on the map, or on the barracks to clear it.';
 
-    let siegeHeaderDone = false;
+    // One heading per recruiting BUILDING, taken from SOLDIER_ORDER's own
+    // grouping rather than written out here. This used to be a single
+    // hand-placed "Siege" header and a hand-written "build a siege camp"
+    // warning beside it, which was exactly wide enough for the two buildings
+    // that existed and says nothing at all about a third. The order of the
+    // headings is the order of the list; keep like with like in SOLDIER_ORDER
+    // and the panel groups itself.
+    let heading = '';
     for (const name of SOLDIER_ORDER) {
       const t = SOLDIER_TYPES[name];
-      if (t.siege && !siegeHeaderDone) {
-        siegeHeaderDone = true;
-        this.el('h4', panel).textContent = 'Siege';
+      if (t.from !== heading) {
+        heading = t.from;
+        const label = BUILDINGS[t.from]?.label ?? t.from;
+        this.el('h4', panel).textContent = label;
         const w2 = this.el('div', panel, 'warn');
-        w2.dataset.role = 'nosiege';
-        w2.textContent = 'Build a siege camp to make engines.';
+        w2.dataset.need = t.from;
+        const l = label.toLowerCase();
+        w2.textContent = `Build ${/^[aeiou]/.test(l) ? 'an' : 'a'} ${l} first.`;
       }
       const row = this.el('div', panel, 'r');
       row.dataset.soldier = name;
@@ -1723,17 +1736,10 @@ export class Hud {
       }
     }
 
-    // resource bar
-    // Ordered by hand rather than taken from ALL_RESOURCES: the bar reads
-    // left to right as raw goods then food, which no declaration order gives
-    // for free. The cost is that a new resource must be added HERE as well --
-    // fish was produced, stored and eaten correctly while being invisible in
-    // the bar, because this list had not been told about it.
-    const shown: (Resource | 'gold')[] = [
-      'gold', 'wood', 'stone', 'iron', 'pitch', 'wheat', 'flour',
-      'bread', 'cheese', 'apples', 'meat', 'fish', 'hops', 'ale', 'pigs', 'hides',
-      'spears', 'bows', 'swords', 'armour',
-    ];
+    // resource bar. The order is RESOURCE_BAR's, in defs.ts, where a startup
+    // check can see a resource that has been left out of it -- which is what
+    // once let fish be produced, stored and eaten while invisible here.
+    const shown: (Resource | 'gold')[] = ['gold', ...RESOURCE_BAR];
     // On a phone the summary box is a sheet, so the two numbers you watch
     // constantly -- how many people, how well liked -- lead the ticker where the
     // eye can keep them without opening anything.
@@ -1931,12 +1937,11 @@ export class Hud {
 
     if (this.view === 'barracks' && !this.rightPanel.classList.contains('hidden')) {
       const panel = this.views.barracks;
-      const has = s.buildings.some(b => b.name === 'barracks');
-      const nowarn = panel.querySelector('[data-role="nobarracks"]') as HTMLElement;
-      if (nowarn) nowarn.style.display = has ? 'none' : '';
-      const hasSiege = s.buildings.some(b => b.name === 'siege_camp');
-      const nosiege = panel.querySelector('[data-role="nosiege"]') as HTMLElement;
-      if (nosiege) nosiege.style.display = hasSiege ? 'none' : '';
+      for (const el of Array.from(panel.querySelectorAll('[data-need]'))) {
+        const need = (el as HTMLElement).dataset.need!;
+        (el as HTMLElement).style.display =
+          s.buildings.some(b => b.name === need) ? 'none' : '';
+      }
       const counts = this.armyCounts();
       let total = 0;
       for (const el of Array.from(panel.querySelectorAll('[data-count]'))) {

@@ -23,6 +23,38 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.44.0',
+    date: '2026-09-02',
+    headline: 'One lathe, one anvil, and now a choice at each of them.',
+    sections: [
+      {
+        title: 'Added',
+        items: [
+          'Three weapons workshops can each make a second thing. The poleturner turns pikes as well as spears, the blacksmith beats maces as well as swords, and the fletcher will build crossbows if you give him a little iron for the lock. Click the workshop to change what it is cutting; the tooltip says what it is on and what the other one is.',
+          'The Pikeman. The front rank — heaviest armour in the game, slowest walk, and a reach of a full tile and a half, so he strikes before anything carrying a sword can answer him. Wants a pike and armour.',
+          'The Maceman. Hits harder and faster than a swordsman on two thirds of his health: he wins the fight he picks and loses the one he is caught in. Send him at something rather than leaving him to hold a gate. Wants a mace and armour.',
+          'The Crossbowman. Out-ranges an archer and each bolt bites nearly three times as deep — then he spends three seconds winding the thing back up, and he walks slower than anyone else on foot. A man for a wall you already hold. Wants a crossbow.',
+          'Because each of the three comes off a workshop that was making something else, a bigger army now costs a decision rather than merely more gold. There is one lathe; spears or pikes, not both.',
+        ],
+      },
+      {
+        title: 'Changed',
+        items: [
+          'The recruit panel groups itself by the building that trains each unit, with its own heading and its own "build one first" line. It used to be one hand-placed "Siege" header, which was exactly wide enough for the two buildings that existed.',
+          'A soldier\'s price sits under his name rather than beside it. "55g + 1 pike + 1 armour" is half again the width of "20g + 1 spear", and on one line it pushed the Recruit button off the edge of the panel.',
+        ],
+      },
+      {
+        title: 'Fixed',
+        items: [
+          'The resource ticker no longer has to be told by hand about a new good. A resource missing from it was produced, stored, eaten and traded perfectly while being invisible — which is how fish shipped once. The game now says so on startup, the way it does about a building left out of the build menu.',
+          'A soldier with no artwork drew as an unarmed peasant and said nothing about it. Startup now checks every recruitable unit has sprites, alongside the same check for buildings.',
+          '"1 bows / 15s" in the fletcher\'s tooltip. Goods are named singular when there is one of them, everywhere, from one place.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.43.0',
     date: '2026-09-02',
     headline: 'Two thirds of the artwork was transparent air.',

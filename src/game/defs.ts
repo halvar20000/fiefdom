@@ -16,7 +16,8 @@ export const FOOD_RESOURCES = ['bread', 'cheese', 'apples', 'meat', 'fish'] as c
  * store. Kit is what the barracks spends: a man is issued a weapon that already
  * cost the timber or the iron, which is why recruiting itself costs only gold.
  */
-export const WEAPON_RESOURCES = ['bows', 'spears', 'swords', 'armour'] as const;
+export const WEAPON_RESOURCES =
+  ['bows', 'crossbows', 'spears', 'pikes', 'swords', 'maces', 'armour'] as const;
 
 export type RawResource = typeof RAW_RESOURCES[number];
 export type FoodResource = typeof FOOD_RESOURCES[number];
@@ -25,6 +26,30 @@ export type Resource = RawResource | FoodResource | WeaponResource;
 
 export const ALL_RESOURCES: Resource[] =
   [...RAW_RESOURCES, ...FOOD_RESOURCES, ...WEAPON_RESOURCES];
+
+/**
+ * The resource ticker, left to right, and the ONLY thing that fills it.
+ *
+ * Hand-ordered rather than taken from ALL_RESOURCES: the bar reads as raw
+ * goods, then food, then kit, which no declaration order gives for free. That
+ * ordering is the whole reason it exists and also its one hazard -- a resource
+ * left out of here is produced, stored, eaten and traded perfectly while being
+ * invisible to the player. Fish shipped that way once. `unlistedResources`
+ * below is the guard; it reports through the same startup banner as a stale
+ * manifest, exactly as BUILD_MENU and SOLDIER_ORDER do.
+ */
+export const RESOURCE_BAR: Resource[] = [
+  'wood', 'stone', 'iron', 'pitch', 'wheat', 'flour',
+  'bread', 'cheese', 'apples', 'meat', 'fish', 'hops', 'ale', 'pigs', 'hides',
+  // Kit in pairs, each workshop's two products side by side.
+  'spears', 'pikes', 'bows', 'crossbows', 'swords', 'maces', 'armour',
+];
+
+/** Resources the game simulates that the ticker never shows. */
+export function unlistedResources(): string[] {
+  const shown = new Set<string>(RESOURCE_BAR);
+  return ALL_RESOURCES.filter(r => !shown.has(r)).map(r => `unshown:${r}`);
+}
 
 export function isFood(r: Resource): r is FoodResource {
   return (FOOD_RESOURCES as readonly string[]).includes(r);
@@ -39,8 +64,22 @@ export const RESOURCE_LABELS: Record<Resource, string> = {
   wheat: 'Wheat', flour: 'Flour', hops: 'Hops', ale: 'Ale', pigs: 'Pigs',
   bread: 'Bread', cheese: 'Cheese', apples: 'Apples', meat: 'Meat', fish: 'Fish',
   hides: 'Hides',
-  bows: 'Bows', spears: 'Spears', swords: 'Swords', armour: 'Armour',
+  bows: 'Bows', crossbows: 'Crossbows', spears: 'Spears', pikes: 'Pikes',
+  swords: 'Swords', maces: 'Maces', armour: 'Armour',
 };
+
+/**
+ * A good's name as it appears in a sentence, singular when there is one of it.
+ *
+ * "1 bows / 15s" had been sitting in the building tooltip since the fletcher
+ * was written, and the recruit panel had its own private copy of this rule to
+ * avoid "20g + 1 spears". One place, so the two cannot disagree and a new good
+ * gets it for free.
+ */
+export function goodName(r: Resource, n: number): string {
+  const label = RESOURCE_LABELS[r].toLowerCase();
+  return n === 1 && label.endsWith('s') ? label.slice(0, -1) : label;
+}
 
 /** Where a produced good is delivered. */
 export type Store = 'stockpile' | 'granary' | 'armoury';
@@ -137,6 +176,21 @@ export interface BuildingDef {
   workers: number;
   terrain: TerrainNeed;
   produces?: Production;
+  /**
+   * A second thing this workshop can make instead, at the player's word.
+   *
+   * A poleturner turns spears or pikes off the same lathe out of the same ash;
+   * which one is a decision about the army being raised, not a decision about
+   * where to put a building. Modelling it as a second workshop would mean a
+   * second Blender model, a second build-menu slot and a second plot of ground
+   * for what is one man changing what he is cutting.
+   *
+   * The choice lives on the PLACED building (`alt`), not here, for the same
+   * reason a raised drawbridge does: two poleturners either side of a castle
+   * are allowed to be making different things. `productionOf` is the only
+   * thing that should ever read `produces` and `alternate` together.
+   */
+  alternate?: Production;
   /** Peasants this building houses. */
   housing?: number;
   /**
@@ -706,8 +760,13 @@ export const BUILDINGS: Record<string, BuildingDef> = {
       output: 'spears', amount: 2, seconds: 13,
       inputs: { wood: 2 }, to: 'armoury',
     },
+    alternate: {
+      output: 'pikes', amount: 1, seconds: 16,
+      inputs: { wood: 3 }, to: 'armoury',
+    },
     workClip: 'chop',
-    description: 'Turns timber into spears. The cheapest way to arm a man.',
+    description: 'Turns timber into spears, or into pikes for a heavier man. '
+               + 'One lathe, one choice — say which and he cuts it.',
   },
   fletcher: {
     name: 'fletcher', label: "Fletcher's Workshop", category: 'weapons',
@@ -716,8 +775,13 @@ export const BUILDINGS: Record<string, BuildingDef> = {
       output: 'bows', amount: 1, seconds: 15,
       inputs: { wood: 2 }, to: 'armoury',
     },
+    alternate: {
+      output: 'crossbows', amount: 1, seconds: 22,
+      inputs: { wood: 3, iron: 1 }, to: 'armoury',
+    },
     workClip: 'chop',
-    description: 'Makes bows from timber. No bow, no archer.',
+    description: 'Makes bows from timber. No bow, no archer — and given a '
+               + 'little iron for the lock, crossbows instead.',
   },
   blacksmith: {
     name: 'blacksmith', label: "Blacksmith's Workshop", category: 'weapons',
@@ -726,8 +790,14 @@ export const BUILDINGS: Record<string, BuildingDef> = {
       output: 'swords', amount: 1, seconds: 19,
       inputs: { iron: 2 }, to: 'armoury',
     },
+    alternate: {
+      output: 'maces', amount: 1, seconds: 15,
+      inputs: { iron: 2 }, to: 'armoury',
+    },
     workClip: 'mine',
-    description: 'Beats iron into swords. Slow, and hungry for ore.',
+    description: 'Beats iron into swords. Slow, and hungry for ore. A mace is '
+               + 'quicker off the same anvil and the same ore — a blunt thing '
+               + 'needs no edge putting on it.',
   },
   tanner: {
     name: 'tanner', label: "Tanner's Workshop", category: 'weapons',
@@ -916,10 +986,13 @@ export const PRICES: Partial<Record<Resource, [number, number]>> = {
   // Kit trades dear. Buying a sword outright costs well over the iron in it,
   // so the market is the expensive way to arm a garrison in a hurry rather
   // than a way to skip the workshops altogether.
-  bows:   [72, 46],
-  spears: [44, 28],
-  swords: [115, 74],
-  armour: [130, 84],
+  bows:      [72, 46],
+  crossbows: [104, 67],
+  spears:    [44, 28],
+  pikes:     [62, 40],
+  swords:    [115, 74],
+  maces:     [98, 63],
+  armour:    [130, 84],
 };
 
 // --- population and popularity --------------------------------------------
@@ -1126,6 +1199,20 @@ export const WATER_POT_RADIUS = 3.2;
 export const MARSH_SPEED_FOOT = 0.48;
 export const MARSH_SPEED_SIEGE = 0.26;
 
+/**
+ * What a workshop is actually making right now.
+ *
+ * The ONE place that resolves `produces` against `alternate`, so a worker, the
+ * building panel and the rival lord's economy can never disagree about what is
+ * coming off the bench. Anything reading `def.produces` directly to decide what
+ * a building outputs is a bug waiting for the first player to flip a switch.
+ */
+export function productionOf(
+  def: BuildingDef, alt?: boolean,
+): Production | undefined {
+  return alt && def.alternate ? def.alternate : def.produces;
+}
+
 export function buildingHp(def: BuildingDef): number {
   if (def.hp !== undefined) return def.hp;
   const [w, d] = def.footprint;
@@ -1218,6 +1305,56 @@ export const SOLDIER_TYPES: Record<string, SoldierType> = {
     hp: 95, speed: 1.15, damage: 13, range: 0.9, cooldown: 1.5,
     description: 'Armoured and slow. Holds a gatehouse. Needs a sword and mail.',
   },
+  /*
+   * The three that make the weapons chain a choice rather than a queue.
+   *
+   * Each one is the same workshop cutting something else, so a player who
+   * wants them gives up the thing that workshop was making -- pikes instead of
+   * spears off the one lathe, maces instead of swords off the one anvil. That
+   * is the whole design: a bigger roster that costs decisions rather than
+   * merely costing more.
+   *
+   * They are spread deliberately along the three axes a foot soldier has:
+   * the pikeman takes punishment and reaches further than anything else on
+   * foot, the maceman deals it and takes little, the crossbowman out-ranges an
+   * archer and hits nearly three times as hard, once every three seconds.
+   */
+  pikeman: {
+    name: 'pikeman', from: 'barracks', label: 'Pikeman', gold: 55,
+    cost: { pikes: 1, armour: 1 },
+    // The longest melee reach in the game, and the only one above 1.0. A pike
+    // is a fourteen-foot weapon; a man holding one strikes a tile before
+    // anything holding a sword can answer, which is the entire reason to have
+    // him in the front rank rather than a swordsman.
+    hp: 125, speed: 0.95, damage: 9, range: 1.5, cooldown: 1.8,
+    description: 'The front rank. Slow, heavily armoured, and he strikes a '
+               + 'full tile before a swordsman can reach him. Needs a pike '
+               + 'and armour.',
+  },
+  maceman: {
+    name: 'maceman', from: 'barracks', label: 'Maceman', gold: 70,
+    cost: { maces: 1, armour: 1 },
+    // Twelve damage a second against the swordsman's nine, on two thirds of
+    // his health. He wins the fight he starts and loses the one he is caught
+    // in, which is what makes him an attacking unit rather than a better one.
+    hp: 78, speed: 1.4, damage: 16, range: 0.9, cooldown: 1.3,
+    description: 'Hits harder and faster than a swordsman and cannot take '
+               + 'what a swordsman takes. Send him at something; do not leave '
+               + 'him holding a gate. Needs a mace and armour.',
+  },
+  crossbowman: {
+    name: 'crossbowman', from: 'barracks', label: 'Crossbowman', gold: 60,
+    cost: { crossbows: 1 },
+    // Deliberately not "a better archer". He out-ranges one and each bolt
+    // bites nearly three times as deep, but at a third of the rate of shooting
+    // and a walking pace slower than anyone else on foot -- so he is a man for
+    // a wall you already hold, and an archer is still the man for a wall you
+    // are still running to.
+    hp: 34, speed: 1.05, damage: 14, range: 7.5, cooldown: 3.4,
+    description: 'Punches through armour at a range no archer has, and winds '
+               + 'the thing back up for three seconds afterwards. Put him on a '
+               + 'wall. Needs a crossbow.',
+  },
 };
 
 /**
@@ -1271,7 +1408,8 @@ export const SIEGE_TYPES: Record<string, SoldierType> = {
 Object.assign(SOLDIER_TYPES, SIEGE_TYPES);
 
 export const SOLDIER_ORDER: string[] =
-  ['spearman', 'archer', 'swordsman', 'engineer', 'tunneler',
+  ['spearman', 'archer', 'crossbowman', 'pikeman', 'maceman', 'swordsman',
+   'engineer', 'tunneler',
    'ram', 'catapult', 'trebuchet', 'fire_ballista'];
 
 /**
