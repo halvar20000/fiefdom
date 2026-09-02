@@ -23,6 +23,28 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.41.0',
+    date: '2026-09-02',
+    headline: 'Choose the ground, then choose who is standing on it.',
+    sections: [
+      {
+        title: 'Added',
+        items: [
+          'Starting a game is two steps now. The first is the maps, and nothing else. The second is a picture of the map you picked, with every lord on it — you and up to three rivals — and you drag them where you want them before a stone is laid.',
+          'How many rivals is yours to decide. It used to be fixed per map: The Quiet Valley was always peaceful and Cedar Ridge always had two, however you felt about it. The map still suggests a number and the screen opens with it, so pressing BEGIN gives you exactly what it always did — but you can now play the green map against three lords, or the crowded one alone.',
+          'Where they start is yours too. Click a lord, click the ground. A keep needs five level tiles and forty-two tiles of distance from the next lord, and the screen says so rather than letting you find out afterwards. The rivals used to be seated automatically at the compass points, the same way every single time you replayed a map.',
+        ],
+      },
+      {
+        title: 'Changed',
+        items: [
+          'The difficulty buttons moved to the second screen, where the lords they describe now live.',
+          'The map the placement screen draws is the map you play. It is produced by the same generator the world is built from rather than a second drawing of it, so a river you placed a keep beside is the river that will be there. A hand-drawn map shows its own painted ground and opens with the keeps its author placed.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.40.0',
     date: '2026-09-02',
     headline: 'Stairs, a pit and a bucket.',

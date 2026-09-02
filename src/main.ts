@@ -7,7 +7,7 @@ import { Audio } from './engine/audio';
 import { Projectiles } from './engine/projectiles';
 import { reportStaleAssets, missingTiles, missingSprites } from './engine/freshness';
 import {
-  generateMap, findSite, isBuildable, findStartSite, GROUND_TYPES,
+  generateMap, findSite, isBuildable, findStartSite, GROUND_TYPES, GROUND_COLOURS,
 } from './game/worldgen';
 import {
   TILE_PX_W, unitDirectionIndex, footprintDepthBias, depthKey, spriteAnchor,
@@ -30,6 +30,8 @@ import { isTouchUi, isPhoneUi, lockPageGestures, makeTouchPad, attachPinch, type
 import { showPause } from './ui/pause';
 import { showGameOver } from './ui/gameover';
 import type { MapDef } from './game/maps';
+import { MAP_W, MAP_H } from './game/maps';
+import type { LordSetup } from './ui/lords';
 import { SAVE_VERSION, takeBootIntent, readSlot, playTime, type SaveGame } from './game/save';
 import { hydrate } from './game/backend';
 import {
@@ -43,25 +45,8 @@ import {
   type Resource,
 } from './game/defs';
 
-/**
- * Ground colours for the minimap, one per GROUND_TYPES entry.
- *
- * The same swatches the editor's brushes use, so the picture in the corner and
- * the palette you painted with agree about what grass looks like.
- *
- * Module scope, not inside main(): the minimap is rasterised as soon as the
- * HUD exists, which is long before the block these once sat in had run, and a
- * const in its temporal dead zone throws rather than reading as undefined.
- */
-const MINI_COLOURS: [number, number, number][] = [
-  [201, 169, 120],  // sand
-  [157, 154, 94],   // scrub
-  [127, 156, 78],   // grass
-  [85, 116, 54],    // lush
-  [142, 139, 131],  // rock
-  [74, 68, 56],     // marsh
-  [74, 124, 150],   // water
-];
+/** The shared palette, aliased: the minimap is one of three users of it. */
+const MINI_COLOURS = GROUND_COLOURS;
 
 /**
  * The stores that are PAINTED a square at a time, for the loops that lay out
@@ -70,8 +55,6 @@ const MINI_COLOURS: [number, number, number][] = [
  */
 const STORE_KINDS: readonly ('stockpile' | 'granary')[] = ['stockpile', 'granary'];
 
-const MAP_W = 200;
-const MAP_H = 200;
 /**
  * Fallback frame rate for a clip whose manifest entry carries no `fps`.
  *
@@ -147,7 +130,8 @@ function hash2(x: number, y: number): number {
 }
 
 async function main(chosen: MapDef, restore: SaveGame | null = null,
-                    difficulty: Difficulty = 'normal') {
+                    difficulty: Difficulty = 'normal',
+                    setup: LordSetup | null = null) {
   const app = document.getElementById('app')!;
   const legacyHud = document.getElementById('hud')!;
   const loading = document.getElementById('loading')!;
@@ -520,7 +504,11 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
   // A hand-placed keep wins over the search. findStartSite scores farmland and
   // rock, which is the right answer for a generated map and the wrong one when
   // the player has said in as many words where they want to begin.
-  const placedStart = chosen.custom?.start;
+  // Three sources, most recently stated first: where the player just put his
+  // keep on the placement screen, then where a hand-drawn map says, then the
+  // generator's own pick. The screen wins because it is the one the player
+  // was looking at a second ago.
+  const placedStart = setup?.you ?? chosen.custom?.start;
   const start = placedStart
     ? { x: Math.max(6, Math.min(MAP_W - 7, placedStart.x)),
         z: Math.max(6, Math.min(MAP_H - 7, placedStart.z)) }
@@ -1128,8 +1116,13 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
    * grinding each other down before the player had laid a wall.
    */
   (function raiseCastles(): void {
-    const want = Math.min(chosen.lords, FACTION_COLOURS.length);
-    if (want < 1) { console.log('[lords] this map has no opposition'); return; }
+    // The placement screen is authoritative when there is one: it says both how
+    // many rivals there are and where each sits. `chosen.lords` survives only
+    // as the default that screen opens with, and for a save being restored.
+    const seats = setup?.rivals ?? null;
+    const want = seats ? Math.min(seats.length, FACTION_COLOURS.length)
+                       : Math.min(chosen.lords, FACTION_COLOURS.length);
+    if (want < 1) { console.log('[lords] no opposition on this map'); return; }
 
     const dirs: [number, number][] = [
       [1, 1], [-1, -1], [1, -1], [-1, 1], [1, 0], [0, 1], [-1, 0], [0, -1],
@@ -1147,7 +1140,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
 
       // A hand-placed keep is taken as an instruction, with only enough search
       // room to find buildable ground under it.
-      const wanted = chosen.custom?.keeps?.[i];
+      const wanted = seats?.[i] ?? chosen.custom?.keeps?.[i];
       const candidates: [number, number, number][] = wanted
         ? [[Math.max(10, Math.min(MAP_W - 11, wanted.x)),
             Math.max(10, Math.min(MAP_H - 11, wanted.z)), 8]]
@@ -3842,7 +3835,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     const choice = await showMenu();
     if (choice.kind === 'play') {
       loading.textContent = `building ${choice.map.name.toLowerCase()}…`;
-      return main(choice.map, null, choice.difficulty);
+      return main(choice.map, null, choice.setup.difficulty, choice.setup);
     }
     // The loading veil sits above the canvas; the editor draws its own world,
     // so it has to come down here and go back up before the game boots.

@@ -39,6 +39,24 @@ export const GROUND_TYPES =
   ['sand', 'scrub', 'grass', 'grass_dark', 'rock', 'marsh', 'water'] as const;
 export type GroundType = typeof GROUND_TYPES[number];
 
+/**
+ * Ground colours, one per GROUND_TYPES entry.
+ *
+ * Beside the types they index rather than in main.ts, because the menu draws a
+ * map preview before main.ts exists. The same swatches the editor's brushes
+ * use, so the picture in the corner, the palette you painted with, and the
+ * preview you place a keep on all agree about what grass looks like.
+ */
+export const GROUND_COLOURS: [number, number, number][] = [
+  [201, 169, 120],  // sand
+  [157, 154, 94],   // scrub
+  [127, 156, 78],   // grass
+  [85, 116, 54],    // lush
+  [142, 139, 131],  // rock
+  [74, 68, 56],     // marsh
+  [74, 124, 150],   // water
+];
+
 export interface GeneratedMap {
   terrain: Terrain;
   /** Flat, buildable tiles, handy for scattering props and placing buildings. */
@@ -48,23 +66,42 @@ export interface GeneratedMap {
 }
 
 /**
- * A Crusader-style desert map: mostly dry earth, drifts of scrub, a green belt
- * along a low wadi, rocky high ground. Terrain is deliberately tiered in whole
- * steps with broad flat plateaus -- Stronghold's ground is not rolling hills,
- * it is tables and ramps, and you need the flat area to build on anyway.
+ * The shape of a map, computed from its settings alone.
+ *
+ * Pulled out of `generateMap` so the MENU can draw a map before the game
+ * exists. It has no Terrain, no textures and no renderer -- just noise and
+ * arithmetic -- which matters for more than convenience: the lord-placement
+ * screen previews a map the player has not entered yet, and if that preview
+ * came from a second implementation the two would drift and the picture you
+ * placed your keep on would not be the map you woke up in. There is one
+ * generator, and both callers run it.
  */
-export function generateMap(
-  terrain: Terrain,
-  layerOf: (type: string, variant: number) => number,
-  settings: MapSettings = { seed: 1337, green: 0, rock: 0, marsh: 0, trees: 1 },
-): GeneratedMap {
+export interface TerrainShape {
+  width: number;
+  height: number;
+  /** Corner heights, row-major over (width + 1) * (height + 1). */
+  corners: Uint8Array;
+  /** Index into GROUND_TYPES per tile. */
+  groundType: Uint8Array;
+  /** Texture variant 0-3 per tile. */
+  variant: Uint8Array;
+  /** 1 where the face is steep enough to draw as cliff rather than its type. */
+  cliff: Uint8Array;
+  /** Flat, buildable tiles, handy for scattering props and placing buildings. */
+  flatTiles: { x: number; z: number }[];
+}
+
+export function shapeTerrain(
+  settings: MapSettings, width: number, height: number,
+): TerrainShape {
   const { seed, green, rock, marsh } = settings;
   const river = settings.river ?? 0;
   const noise = makeNoise(seed);
-  const { width, height } = terrain;
 
   // --- elevation ----------------------------------------------------------
   const MAX_LEVEL = 5;
+  const cw = width + 1;
+  const corners = new Uint8Array(cw * (height + 1));
   for (let z = 0; z <= height; z++) {
     for (let x = 0; x <= width; x++) {
       const n = noise(x, z, 4, 0.018);
@@ -78,22 +115,25 @@ export function generateMap(
       // steps up and down where it crosses higher ground gives a chain of
       // ponds instead.
       if (river > 0 && wadi < river) level = 0;
-      terrain.setCorner(x, z, Math.max(0, Math.min(MAX_LEVEL, level)));
+      corners[z * cw + x] = Math.max(0, Math.min(MAX_LEVEL, level));
     }
   }
+  const cornerHeight = (x: number, z: number) => corners[z * cw + x];
 
   // --- ground cover -------------------------------------------------------
   const flatTiles: { x: number; z: number }[] = [];
   const groundType = new Uint8Array(width * height);
+  const variants = new Uint8Array(width * height);
+  const cliff = new Uint8Array(width * height);
 
   for (let z = 0; z < height; z++) {
     for (let x = 0; x < width; x++) {
       const t = z * width + x;
 
-      const c0 = terrain.cornerHeight(x, z);
-      const c1 = terrain.cornerHeight(x + 1, z);
-      const c2 = terrain.cornerHeight(x + 1, z + 1);
-      const c3 = terrain.cornerHeight(x, z + 1);
+      const c0 = cornerHeight(x, z);
+      const c1 = cornerHeight(x + 1, z);
+      const c2 = cornerHeight(x + 1, z + 1);
+      const c3 = cornerHeight(x, z + 1);
       const lo = Math.min(c0, c1, c2, c3);
       const hi = Math.max(c0, c1, c2, c3);
       const flat = lo === hi;
@@ -159,26 +199,79 @@ export function generateMap(
         type = 'sand';
       }
 
+      variants[t] = variant;
       // Cliff faces are a RENDER-ONLY type, deliberately kept out of
       // GROUND_TYPES: gameplay still sees plain rock here (nothing may be
       // built on a 2-step face anyway, so no placement rule needs to know),
       // while the texture switches to broken rock instead of the flat
       // top-down plateau stone. Reusing the plateau texture on a 39-degree
       // face is what made cliffs read as pale grey ribbons.
-      terrain.layer[t] = layerOf(slope >= 2 ? 'cliff' : type, variant);
+      cliff[t] = slope >= 2 ? 1 : 0;
       groundType[t] = GROUND_TYPES.indexOf(type as GroundType);
       // marsh takes no buildings but a pitch rig, so it is not a build site
       if (flat && type !== 'rock' && type !== 'marsh' && type !== 'water') flatTiles.push({ x, z });
     }
   }
 
+  return { width, height, corners, groundType, variant: variants, cliff, flatTiles };
+}
+
+/**
+ * A Crusader-style desert map: mostly dry earth, drifts of scrub, a green belt
+ * along a low wadi, rocky high ground. Terrain is deliberately tiered in whole
+ * steps with broad flat plateaus -- Stronghold's ground is not rolling hills,
+ * it is tables and ramps, and you need the flat area to build on anyway.
+ */
+export function generateMap(
+  terrain: Terrain,
+  layerOf: (type: string, variant: number) => number,
+  settings: MapSettings = { seed: 1337, green: 0, rock: 0, marsh: 0, trees: 1 },
+): GeneratedMap {
+  // The shape is computed without the renderer; this only pours it in.
+  const shape = shapeTerrain(settings, terrain.width, terrain.height);
+
+  const cw = terrain.width + 1;
+  for (let z = 0; z <= terrain.height; z++) {
+    for (let x = 0; x <= terrain.width; x++) {
+      terrain.setCorner(x, z, shape.corners[z * cw + x]);
+    }
+  }
+  for (let t = 0; t < shape.groundType.length; t++) {
+    const type = shape.cliff[t] ? 'cliff' : GROUND_TYPES[shape.groundType[t]];
+    terrain.layer[t] = layerOf(type, shape.variant[t]);
+  }
+
   terrain.rebuild();
-  return { terrain, flatTiles, groundType };
+  return { terrain, flatTiles: shape.flatTiles, groundType: shape.groundType };
 }
 
 /** Is every tile in this footprint flat and at the same level? */
+/**
+ * The little of a Terrain that the placement rules actually read.
+ *
+ * Widened from `Terrain` so the same functions can be asked about a
+ * `TerrainShape` -- the menu has to know where a keep may stand on a map it
+ * has not built a renderer for. `Terrain` satisfies this structurally, so
+ * every existing caller passes one unchanged.
+ */
+export interface HeightField {
+  width: number;
+  height: number;
+  cornerHeight(x: number, z: number): number;
+}
+
+/** Read a computed shape through the same interface a Terrain offers. */
+export function heightFieldOf(shape: TerrainShape): HeightField {
+  const cw = shape.width + 1;
+  return {
+    width: shape.width,
+    height: shape.height,
+    cornerHeight: (x, z) => shape.corners[z * cw + x],
+  };
+}
+
 export function isBuildable(
-  terrain: Terrain, x: number, z: number, w: number, d: number,
+  terrain: HeightField, x: number, z: number, w: number, d: number,
 ): boolean {
   if (x < 0 || z < 0 || x + w > terrain.width || z + d > terrain.height) return false;
   const base = terrain.cornerHeight(x, z);
@@ -199,7 +292,7 @@ export function isBuildable(
  * Candidates are scored on having a buildable core plus both resources nearby.
  */
 export function findStartSite(
-  terrain: Terrain, groundType: Uint8Array, radius = 26,
+  terrain: HeightField, groundType: Uint8Array, radius = 26,
 ): { x: number; z: number } {
   const { width, height } = terrain;
   const idx = (x: number, z: number) => z * width + x;

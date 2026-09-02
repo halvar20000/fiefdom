@@ -29,6 +29,16 @@ export interface MapSettings {
 
 export type Difficulty = 'Gentle' | 'Fair' | 'Harsh';
 
+/**
+ * The world's size in tiles.
+ *
+ * Here rather than in main.ts because the menu previews a map at exactly the
+ * size the game will build it. A preview drawn at a different size would put
+ * every keep you placed in the wrong place.
+ */
+export const MAP_W = 200;
+export const MAP_H = 200;
+
 export interface MapDef extends MapSettings {
   id: string;
   name: string;

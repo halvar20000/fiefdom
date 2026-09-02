@@ -3,10 +3,10 @@ import { listSlots, setBootIntent, playTime, savedWhen } from '../game/save';
 import { listMaps, deleteMap, defOf, type CustomMap } from '../game/custom';
 import { versionButton, VERSION_CSS } from './whatsnew';
 import { currentUser, isSignedIn, store } from '../game/backend';
-import { DIFFICULTY, type Difficulty } from '../game/lord';
+import { type Difficulty } from '../game/lord';
+import { lordScreen, type LordSetup } from './lords';
 
 const DIFF_KEY = 'fiefdom.difficulty';
-const DIFFS: Difficulty[] = ['easy', 'normal', 'heavy'];
 function readDifficulty(): Difficulty {
   const v = store.getItem(DIFF_KEY);
   return v === 'easy' || v === 'normal' || v === 'heavy' ? v : 'normal';
@@ -23,7 +23,7 @@ function escapeHtml(s: string): string {
  * a game, so it cannot just resolve with a map.
  */
 export type MenuChoice =
-  | { kind: 'play'; map: MapDef; difficulty: Difficulty }
+  | { kind: 'play'; map: MapDef; setup: LordSetup }
   | { kind: 'edit'; edit: CustomMap | null };
 
 /**
@@ -186,11 +186,12 @@ export function showMenu(): Promise<MenuChoice> {
 
       const foe = document.createElement('div');
       foe.className = 'foe' + (m.lords ? '' : ' none');
+      // A suggestion now, not a fact: the next screen decides who turns up.
       foe.innerHTML = m.lords === 0
-        ? 'Opposition: <b>none</b> — build in peace'
+        ? 'Suggested: <b>no opposition</b> — build in peace'
         : m.lords === 1
-          ? 'Opposition: <b>1 rival lord</b>'
-          : `Opposition: <b>${m.lords} rival lords</b> — and they fight each other`;
+          ? 'Suggested: <b>1 rival lord</b>'
+          : `Suggested: <b>${m.lords} rival lords</b> — and they fight each other`;
       card.appendChild(foe);
 
       card.onclick = () => {
@@ -226,8 +227,8 @@ export function showMenu(): Promise<MenuChoice> {
       const foe = document.createElement('div');
       foe.className = 'foe' + (m.lords ? '' : ' none');
       foe.innerHTML = m.lords === 0
-        ? 'Opposition: <b>none</b>'
-        : `Opposition: <b>${m.lords} rival lord${m.lords > 1 ? 's' : ''}</b>`;
+        ? 'Suggested: <b>no opposition</b>'
+        : `Suggested: <b>${m.lords} rival lord${m.lords > 1 ? 's' : ''}</b>`;
       card.appendChild(foe);
 
       const row = document.createElement('div');
@@ -271,31 +272,23 @@ export function showMenu(): Promise<MenuChoice> {
     };
     grid.appendChild(make);
 
-    // How hard the rival lords play. Remembered between games.
-    let difficulty = readDifficulty();
-    const diffWrap = document.createElement('div');
-    diffWrap.className = 'diff';
-    diffWrap.innerHTML = '<span class="lbl">Rival lords</span>';
-    const diffBtns: Record<Difficulty, HTMLButtonElement> = {} as never;
-    for (const d of DIFFS) {
-      const b = document.createElement('button');
-      b.textContent = DIFFICULTY[d].label;
-      b.className = d === difficulty ? 'on' : '';
-      b.onclick = () => {
-        difficulty = d;
-        store.setItem(DIFF_KEY, d);
-        for (const k of DIFFS) diffBtns[k].classList.toggle('on', k === d);
-      };
-      diffBtns[d] = b;
-      diffWrap.appendChild(b);
-    }
-    root.appendChild(diffWrap);
 
     const go = document.createElement('button');
     go.className = 'go';
-    go.textContent = 'BEGIN';
+    go.textContent = 'CHOOSE LORDS →';
     const leave = () => { root.remove(); style.remove(); };
-    go.onclick = () => { leave(); resolve({ kind: 'play', map: chosen, difficulty }); };
+    go.onclick = async () => {
+      // Page one picks the ground; page two decides who is standing on it.
+      // The map list stays alive underneath so "another map" costs nothing --
+      // it is hidden rather than torn down, and a player comparing two maps
+      // does not lose the one he had highlighted.
+      root.style.display = 'none';
+      const setup = await lordScreen(chosen, readDifficulty());
+      if (!setup) { root.style.display = ''; return; }
+      store.setItem(DIFF_KEY, setup.difficulty);
+      leave();
+      resolve({ kind: 'play', map: chosen, setup });
+    };
     root.appendChild(go);
 
     // Saved games, if there are any. Hidden entirely when there are none --
