@@ -253,11 +253,32 @@ set and no dog, and retargeting a biped onto four legs does not work -- so
 `tools/render/mounts.py` builds them the gazelle's way, primitives posed per
 frame with no armature.
 
-### 8. Siege
+### 8. Siege *(in progress)*
 
-`ballista`, `mangonel`, `siege_tower`, `portable_shield`, `fire_thrower`,
-`oil_pot`. `tools/render/siege.py` has the pattern from the catapult, ram,
-trebuchet and fire ballista. Engineer-assembled engines depend on tranche 6.
+- [x] `siege_tower`, `portable_shield` (1.48.0). Neither does any damage; what
+      each carries is ACCESS. The tower grants `ladders` -- the same flag the
+      ladderman has -- so it needed no new mechanic at all, only a def and a
+      model. The mantlet needed one: `shields` on the def, `covered` on the
+      soldier, and a `ranged` flag on the blow so cover is applied when the
+      blow LANDS. A third off arrows and nothing at all off a sword.
+- [ ] ~~`ballista`~~ — **not a gap.** It is our `fire_ballista`: the same
+      engine, the same `targetsUnits` bolt thrower, the same siege camp. Theirs
+      does not burn and ours does, which is a material and a name rather than
+      a machine. Same call as the apothecary in tranche 4.
+- [ ] ~~`mangonel`~~ — **not a gap either,** and this one is written down in
+      our own source: `build_catapult` in `tools/render/siege.py` says "a
+      torsion mangonel: a single arm cocked back off a rope skein". A mangonel
+      IS the catapult we have.
+- [ ] `fire_thrower`, `oil_pot`, and `oil_smelter` deferred from tranche 5.
+      All three are the same feature -- fire as a defence -- and they want the
+      `fires` list in main.ts that the pitch ditch already burns from.
+
+`tools/render/siege.py` has the pattern from the catapult, ram, trebuchet and
+fire ballista. One thing that had been wrong there since the ram: the sprite
+frame was a GUESS, a cylinder sized so a catapult's arm at full stretch fitted
+inside it, and the siege tower stands over twice that height. It would have
+rendered with its head cut off in all eight facings and nothing would have
+said so. Measured now, like the units and the mounts.
 
 ## Notes
 

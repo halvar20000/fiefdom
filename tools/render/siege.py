@@ -47,6 +47,12 @@ def _emissive(name, colour, strength):
 #: sweeps through eight positions instead of six over the same six-tenths of a
 #: second. Durations match what these already played at.
 CLIPS = {
+    # The siege tower and the mantlet have no attack clip: neither damages
+    # anything, and the army draw loop only ever asks for one when a unit has
+    # just swung. Two clips each rather than eight facings of a machine
+    # standing still under a name nothing will ever look up.
+    "siege_tower_idle": (1, 0.1), "siege_tower_walk": (6, 0.4),
+    "portable_shield_idle": (1, 0.1), "portable_shield_walk": (6, 0.4),
     "ram_idle": (1, 0.1), "ram_walk": (6, 0.4), "ram_attack": (8, 0.6),
     "catapult_idle": (1, 0.1), "catapult_walk": (6, 0.4), "catapult_attack": (8, 0.6),
     "trebuchet_idle": (1, 0.1), "trebuchet_walk": (6, 0.4), "trebuchet_attack": (8, 0.6),
@@ -342,6 +348,123 @@ def build_fire_ballista():
     return _finish(objs, parts, "fire_ballista")
 
 
+def build_siege_tower():
+    """A wheeled tower with a drawbridge at the top. Parts: the bridge drops.
+
+    The one engine in the set that is not a weapon. Everything about it has to
+    say HEIGHT -- it exists to put men level with a walkway -- so it is built
+    to well above the 0.92 of a wall's body, and it is the tallest thing on the
+    field that is not made of masonry.
+
+    Hide-covered on the sides it shows to the wall, because that is what a real
+    one is and because a bare timber cage at this size reads as scaffolding.
+    """
+    timber_l = M.timber("StwTimber")
+    timber_d = M.timber("StwPost", dark=True)
+    iron = M.iron()
+    hide = M.cloth("StwHide", colour=(0.46, 0.35, 0.23))
+
+    objs, parts = [], {}
+    p = []
+    deck = _frame_and_wheels(p, timber_d, iron, w=0.44, l=0.52, deck_z=0.16)
+
+    h = 1.30
+    # Four corner posts and the belt rails between them.
+    for i, (sx, sy) in enumerate([(-1, -1), (1, -1), (-1, 1), (1, 1)]):
+        p.append(geom.box(f"stw_post_{i}", (sx * 0.19 - 0.03, sy * 0.23 - 0.03, deck),
+                          (0.06, 0.06, h), timber_d))
+    for i, z in enumerate((deck + 0.34, deck + 0.76, deck + h - 0.06)):
+        p.append(geom.box(f"stw_beltf_{i}", (-0.22, -0.26, z), (0.44, 0.05, 0.05), timber_d))
+        p.append(geom.box(f"stw_beltb_{i}", (-0.22, 0.21, z), (0.44, 0.05, 0.05), timber_d))
+        p.append(geom.box(f"stw_beltl_{i}", (-0.22, -0.26, z), (0.05, 0.52, 0.05), timber_d))
+        p.append(geom.box(f"stw_beltr_{i}", (0.17, -0.26, z), (0.05, 0.52, 0.05), timber_d))
+    # Hide on the two long sides and the back. The FRONT is left open, because
+    # the bridge comes off it and a closed box has no readable front.
+    p.append(geom.box("stw_hide_l", (-0.215, -0.24, deck + 0.04), (0.03, 0.48, h - 0.12), hide))
+    p.append(geom.box("stw_hide_r", (0.185, -0.24, deck + 0.04), (0.03, 0.48, h - 0.12), hide))
+    p.append(geom.box("stw_hide_b", (-0.20, 0.21, deck + 0.04), (0.40, 0.03, h - 0.12), hide))
+    # The fighting platform, and a ladder up the back of the cage.
+    p.append(geom.box("stw_platform", (-0.21, -0.25, deck + h - 0.12),
+                      (0.42, 0.50, 0.05), timber_l))
+    for i in range(6):
+        p.append(geom.box(f"stw_rung_{i}", (-0.06, 0.17, deck + 0.10 + i * 0.19),
+                          (0.12, 0.03, 0.03), timber_l))
+
+    # The bridge, hinged at the platform's front edge. It rides UP, vertical,
+    # and would drop flat against a wall -- which is the whole animation the
+    # thing has, and the reason it uses the shared `swing` part at all.
+    hinge = bpy.data.objects.new("stw_hinge", None)
+    bpy.context.collection.objects.link(hinge)
+    hinge.location = (0.0, -0.25, deck + h - 0.09)
+    bridge = geom.box("stw_bridge", (-0.18, -0.02, 0.0), (0.36, 0.44, 0.04), timber_l)
+    bridge.parent = hinge
+    objs.append(bridge)
+    for i, sx in enumerate((-0.19, 0.15)):
+        rail = geom.box(f"stw_bridgerail_{i}", (sx, -0.02, 0.0), (0.04, 0.44, 0.05), timber_d)
+        rail.parent = hinge
+        objs.append(rail)
+    parts["swing"] = hinge
+    # Standing UP is the rest pose: a lowered bridge on a tower that is not
+    # against anything reads as broken.
+    parts["swing_rest"] = (math.radians(-88.0), 0.0, 0.0)
+
+    objs += p
+    return _finish(objs, parts, "siege_tower")
+
+
+def build_portable_shield():
+    """A wheeled mantlet: a plank screen on two wheels with a prop behind it.
+
+    Deliberately the plainest thing in the file. It is a wall you push, it does
+    nothing but stand between an archer and the man behind it, and any detail
+    added to it makes it look like a machine that does something.
+    """
+    timber_l = M.timber("PsPlank")
+    timber_d = M.timber("PsFrame", dark=True)
+    iron = M.iron()
+    hide = M.cloth("PsHide", colour=(0.50, 0.40, 0.27))
+
+    objs, parts = [], {}
+    p = []
+
+    # No shared chassis: this has two wheels and no deck, and the frame IS the
+    # screen. _frame_and_wheels would have put a cart under a fence.
+    for i, sx in enumerate((-1, 1)):
+        p.append(_wheel(f"ps_wheel_{i}", (sx * 0.28, 0.06, 0.105), 0.105, 0.045, timber_d))
+        p.append(_wheel(f"ps_hub_{i}", (sx * 0.28, 0.06, 0.105), 0.030, 0.055, iron, segments=8))
+    p.append(_beam("ps_axle", (0.0, 0.06, 0.105), 0.62, 0.016, iron))
+    p[-1].rotation_euler = (0.0, math.pi / 2.0, 0.0)
+
+    # The screen itself: upright planks in a frame, leaning back a little.
+    screen = bpy.data.objects.new("ps_screen", None)
+    bpy.context.collection.objects.link(screen)
+    screen.location = (0.0, 0.06, 0.06)
+    for i in range(7):
+        plank = geom.box(f"ps_plank_{i}", (-0.30 + i * 0.086, -0.02, 0.0),
+                         (0.080, 0.04, 0.74), timber_l)
+        plank.parent = screen
+        objs.append(plank)
+    for i, z in enumerate((0.10, 0.62)):
+        rail = geom.box(f"ps_rail_{i}", (-0.31, -0.05, z), (0.62, 0.05, 0.07), timber_d)
+        rail.parent = screen
+        objs.append(rail)
+    facing = geom.box("ps_hide", (-0.30, -0.075, 0.14), (0.60, 0.03, 0.52), hide)
+    facing.parent = screen
+    objs.append(facing)
+    parts["swing"] = screen
+    parts["swing_rest"] = (math.radians(12.0), 0.0, 0.0)
+
+    # Handles to shove it along by. There was a prop leg behind it as well,
+    # to explain how a thing on two wheels stands up; rotated out from a box
+    # whose origin is its own corner it came back as a pole lying in the dirt
+    # beside the screen, so it is gone and the handles do the job.
+    p.append(geom.box("ps_handle_l", (-0.24, 0.14, 0.28), (0.05, 0.30, 0.05), timber_d))
+    p.append(geom.box("ps_handle_r", (0.19, 0.14, 0.28), (0.05, 0.30, 0.05), timber_d))
+
+    objs += p
+    return _finish(objs, parts, "portable_shield")
+
+
 def _finish(objs, parts, name):
     """Centre on the origin, parent everything to a root, scale to size."""
     root = bpy.data.objects.new(f"{name}_root", None)
@@ -362,6 +485,14 @@ def pose(parts, clip, t):
         swing.location = parts["swing_home"]
     root.location.z = 0.0
     a = t * math.tau
+
+    if clip.startswith("siege_tower") or clip.startswith("portable_shield"):
+        # Nothing to animate but the jolt of a heavy frame over rough ground.
+        # The tower's bridge stays UP: it comes down against a wall, and there
+        # is no state anywhere that says "against a wall" for it to read.
+        if clip.endswith("_walk"):
+            root.location.z = abs(math.sin(a)) * 0.014
+        return
 
     if clip.startswith("fire_ballista"):
         # A ballista recoils along its own axis; it does not swing. Snap back
@@ -442,4 +573,6 @@ def pose(parts, clip, t):
 
 
 BUILDERS = {"ram": build_ram, "catapult": build_catapult,
-            "trebuchet": build_trebuchet, "fire_ballista": build_fire_ballista}
+            "trebuchet": build_trebuchet, "fire_ballista": build_fire_ballista,
+            "siege_tower": build_siege_tower,
+            "portable_shield": build_portable_shield}

@@ -1,6 +1,6 @@
 import {
   SOLDIER_TYPES, GARRISON_RANGE_BONUS, RANGED_THRESHOLD, LADDER_RADIUS,
-  ESCALADE_REACH, type SoldierType,
+  ESCALADE_REACH, SHIELD_RADIUS, SHIELD_REDUCTION, type SoldierType,
 } from './defs';
 import type { PathNode } from './pathfind';
 
@@ -105,6 +105,14 @@ export interface Soldier {
    * has earned it going away.
    */
   escalade: boolean;
+  /**
+   * Standing behind a mantlet of his own side, this tick.
+   *
+   * Recomputed alongside `escalade` and for the same reason: cover is a fact
+   * about where a man is standing right now, and it has to stop the instant
+   * the thing he was standing behind is broken.
+   */
+  covered: boolean;
 }
 
 /** What a siege engine has found to knock down. */
@@ -190,6 +198,7 @@ export class Army {
       path: [], tx: x, tz: z,
       target: null, cooldown: Math.random() * 0.4, swing: 0, dying: 0, ordered: false,
       garrison: null, mountAt: null, hold: false, escalade: !!def.climbs,
+      covered: false,
     };
     this.soldiers.push(s);
     return s;
@@ -356,21 +365,24 @@ export class Army {
   }
 
   /**
-   * Work out who can get over a wall this tick.
+   * Work out who can get over a wall this tick, and who is under cover.
    *
    * Done for every side, not only the player's: a rival lord who fields a
-   * ladderman gets the same benefit from him, and writing this as a
-   * player-only pass in main.ts would have quietly made walls a one-way
-   * problem. The scan is soldiers x laddermen and laddermen are few, so it is
-   * cheaper than the combat pass it precedes.
+   * ladderman or a mantlet gets the same benefit from it, and writing this as
+   * a player-only pass in main.ts would have quietly made both of them
+   * one-way. The scan is soldiers x (ladders + shields) and there are never
+   * many of either, so it is far cheaper than the combat pass it precedes.
    */
-  private markEscalade(): void {
+  private markSupport(): void {
     const ladders = this.soldiers.filter(s => s.hp > 0 && s.def.ladders);
+    const shields = this.soldiers.filter(s => s.hp > 0 && s.def.shields);
+    const near = (a: Soldier, b: Soldier, r: number) =>
+      a.side === b.side && (a.x - b.x) ** 2 + (a.z - b.z) ** 2 <= r * r;
     for (const s of this.soldiers) {
       if (s.hp <= 0) continue;
-      s.escalade = !!s.def.climbs || ladders.some(
-        l => l.side === s.side
-          && (l.x - s.x) ** 2 + (l.z - s.z) ** 2 <= LADDER_RADIUS ** 2);
+      s.escalade = !!s.def.climbs
+        || ladders.some(l => near(l, s, LADDER_RADIUS));
+      s.covered = shields.some(m => near(m, s, SHIELD_RADIUS));
     }
   }
 
@@ -445,7 +457,7 @@ export class Army {
 
   update(dt: number): void {
     this.lastFallen = [];
-    this.markEscalade();
+    this.markSupport();
 
     // Combat is resolved in two passes, and damage is applied simultaneously.
     //
@@ -459,7 +471,10 @@ export class Army {
     // So: everyone decides and swings against the SAME snapshot, the blows all
     // land together, and only then does anyone move. Two units that kill each
     // other on the same tick both die, which is the honest outcome.
-    const blows: { on: Soldier; amount: number }[] = [];
+    // `ranged` rides along on the blow because cover is applied when the blow
+    // LANDS, not when it is thrown, and by then the thrower is out of scope.
+    // It is the same test that decides whether an arrow is drawn.
+    const blows: { on: Soldier; amount: number; ranged: boolean }[] = [];
     const wallBlows: { t: SiegeTarget; amount: number }[] = [];
     const engaged = new Set<number>();
 
@@ -497,7 +512,7 @@ export class Army {
         s.heading = Math.atan2(foe.z - s.z, foe.x - s.x);
         if (s.cooldown <= 0) {
           const roll = s.def.damage * (0.85 + Math.random() * 0.3);
-          blows.push({ on: foe, amount: Math.max(1, Math.round(roll)) });
+          blows.push({ on: foe, amount: Math.max(1, Math.round(roll)), ranged: true });
           this.world.onShoot?.('bolt', s.x, s.z, foe.x, foe.z);
           s.cooldown = s.def.cooldown;
           s.swing = SWING_TIME;
@@ -507,6 +522,13 @@ export class Army {
 
       if (s.def.siege) {
         s.target = null;
+        // An engine with no weapon never looks for one. The siege tower and
+        // the mantlet are `siege` for everything else it means -- wheeled,
+        // slow, no wall to stand on, never advances by itself -- but neither
+        // of them damages anything, and without this they would trundle up to
+        // the nearest wall and chip at it for the one point a zero-damage
+        // blow rounds up to.
+        if (s.def.damage <= 0) continue;
         // A ram or catapult under a MOVE order marches past everything, and a
         // held one holds its fire -- so it only ever batters the building you
         // parked it at, and a wrong turn can always be taken back. Without this
@@ -588,7 +610,10 @@ export class Army {
           // tick -- correct, but it makes every even fight play out identically
           // and reads as the simulation being stuck rather than fair.
           const roll = s.def.damage * (0.85 + Math.random() * 0.3);
-          blows.push({ on: foe, amount: Math.max(1, Math.round(roll)) });
+          blows.push({
+            on: foe, amount: Math.max(1, Math.round(roll)),
+            ranged: Army.reachOf(s) >= RANGED_THRESHOLD,
+          });
           // An arrow to watch, but only for actual ranged fire -- a spearman's
           // reach is melee and wants no projectile.
           if (Army.reachOf(s) >= RANGED_THRESHOLD) {
@@ -608,7 +633,12 @@ export class Army {
 
     for (const b of wallBlows) b.t.hit(b.amount);
     for (const b of blows) {
-      b.on.hp -= b.amount;
+      // A mantlet stops arrows and nothing else. A man behind one who is being
+      // cut at with a sword is simply a man behind a plank.
+      const amount = b.ranged && b.on.covered
+        ? Math.max(1, Math.round(b.amount * (1 - SHIELD_REDUCTION)))
+        : b.amount;
+      b.on.hp -= amount;
       // Being hit clears a march order: a column that walks on while being cut
       // down from behind looks broken, whatever the orders say.
       b.on.ordered = false;

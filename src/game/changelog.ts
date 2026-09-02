@@ -23,6 +23,27 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.48.0',
+    date: '2026-09-02',
+    headline: 'Two engines that cannot hurt anybody.',
+    sections: [
+      {
+        title: 'Added',
+        items: [
+          'The Siege Tower. It rolls a stair up to a wall: every man of yours near it can reach whoever is standing on top. That is the ladderman\'s trick on something that takes a catapult stone to stop, and it is the difference between a wall being a problem for one brave man and a wall being a problem for your army.',
+          'The Portable Shield. A plank screen on two wheels. Everything behind it takes a third less from anything shot — and nothing at all off a sword. It buys you the walk up to the wall; it does not buy the fight at the top of it.',
+          'Neither of them damages anything at all. What they carry is access: the tower carries men over a parapet, the screen carries them across the open ground in front of it. Both are as slow and as helpless as every other engine, so both want an escort.',
+        ],
+      },
+      {
+        title: 'Fixed',
+        items: [
+          'Siege engines were framed by a guess — a box just big enough for a catapult\'s arm at full stretch. That is fine while every engine is a cart with something on top and wrong the moment one of them is a tower: the siege tower stands over twice that height and would have been rendered with its head cut off, silently, in all eight facings. The frame is measured from the poses that will actually be drawn now.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.47.0',
     date: '2026-09-02',
     headline: 'There is a man in the keep now, and he can be killed.',

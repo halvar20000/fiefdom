@@ -61,6 +61,22 @@ def merge_units(out_dir, clips_meta, metas):
     return len(index["sprites"]), len(index["clips"])
 
 
+def evaluated_bounds(meshes):
+    """World-space bounds of the posed meshes, modifiers and parents applied."""
+    deps = bpy.context.evaluated_depsgraph_get()
+    lo = Vector((1e9, 1e9, 1e9))
+    hi = Vector((-1e9, -1e9, -1e9))
+    for m in meshes:
+        ev = m.evaluated_get(deps)
+        mesh = ev.to_mesh()
+        for v in mesh.vertices:
+            w = ev.matrix_world @ v.co
+            lo = Vector((min(lo.x, w.x), min(lo.y, w.y), min(lo.z, w.z)))
+            hi = Vector((max(hi.x, w.x), max(hi.y, w.y), max(hi.z, w.z)))
+        ev.to_mesh_clear()
+    return lo, hi
+
+
 def main():
     out_dir, samples, only = parse_args()
     os.makedirs(out_dir, exist_ok=True)
@@ -83,11 +99,36 @@ def main():
 
         root, objs, parts = builder()
 
-        # One fixed frame per engine, sized for the yaw sweep and the arm at
-        # full stretch -- a catapult arm reaches well past the chassis.
-        r, top = siege.SCALE * 1.05, siege.SCALE * 1.55
-        box = [Vector((sx * r, sy * r, sz))
-               for sx in (-1, 1) for sy in (-1, 1) for sz in (0.0, top)]
+        # One fixed frame per engine, MEASURED over every pose and facing it
+        # will be drawn in.
+        #
+        # It used to be a guess -- a cylinder of SCALE*1.05 by SCALE*1.55,
+        # sized so a catapult's arm at full stretch fitted inside it. That is
+        # fine while every engine is a cart with something on top and wrong the
+        # moment one of them is a tower: a siege tower stands well over twice
+        # that height and the guess would have cut its head off, silently, in
+        # all eight facings. A measured box cannot be wrong the way a constant
+        # can, and trim_sprites.py takes back whatever slack it leaves.
+        meshes = [o for o in objs if o.type == 'MESH']
+        corners = []
+        for clip, (nframes, _sec) in clips.items():
+            for f in range(nframes):
+                for d in range(DIRECTIONS):
+                    siege.pose(parts, clip, f / nframes)
+                    root.rotation_euler = (0.0, 0.0, (d / DIRECTIONS) * math.tau)
+                    bpy.context.view_layer.update()
+                    lo, hi = evaluated_bounds(meshes)
+                    for sx in (lo.x, hi.x):
+                        for sy in (lo.y, hi.y):
+                            for sz in (min(0.0, lo.z), hi.z):
+                                corners.append(Vector((sx, sy, sz)))
+        pad = 0.02
+        box = [Vector((sx, sy, sz))
+               for sx in (min(c.x for c in corners) - pad,
+                          max(c.x for c in corners) + pad)
+               for sy in (min(c.y for c in corners) - pad,
+                          max(c.y for c in corners) + pad)
+               for sz in (0.0, max(c.z for c in corners) + pad)]
         cam = rig.setup_camera(rig.AZIMUTHS_DEG[0])
         w, h, ax, ay = rig.frame_points(cam, box + rig.shadow_projected(box),
                                         Vector((0.0, 0.0, 0.0)))
@@ -112,7 +153,6 @@ def main():
                     })
             print(f"[{clip}] {nframes} x {DIRECTIONS} dirs "
                   f"{time.time() - t_all:.1f}s", flush=True)
-        _ = objs
 
     total, nclips = merge_units(out_dir, clips_meta, metas)
     print(f"units.json holds {total} sprites across {nclips} clips", flush=True)

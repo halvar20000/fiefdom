@@ -1234,6 +1234,18 @@ export const LADDER_RADIUS = 2.6;
  */
 export const ESCALADE_REACH = 1.6;
 
+/**
+ * The mantlet's cover: how near it protects, and by how much.
+ *
+ * Wider than a ladder's reach, because a screen shelters a column walking
+ * behind it rather than one man at the foot of one wall. A third off is
+ * deliberately not half: two mantlets and a mob should still lose to a manned
+ * wall, and what the shield buys is the time to arrive rather than the fight
+ * once you are there.
+ */
+export const SHIELD_RADIUS = 3.2;
+export const SHIELD_REDUCTION = 0.34;
+
 export const MARSH_SPEED_FOOT = 0.48;
 export const MARSH_SPEED_SIEGE = 0.26;
 
@@ -1302,6 +1314,14 @@ export interface SoldierType {
   climbs?: boolean;
   /** He carries a ladder: everyone near him climbs. See LADDER_RADIUS. */
   ladders?: boolean;
+  /**
+   * A screen on wheels: everyone behind it takes less from anything shot.
+   *
+   * Ranged fire only. A mantlet stops an arrow and does nothing whatsoever
+   * about the man who has walked round it with a sword, which is the entire
+   * bargain -- it buys an approach, not a fight.
+   */
+  shields?: boolean;
   /**
    * There is exactly one of him and nobody buys him.
    *
@@ -1599,6 +1619,36 @@ export const SIEGE_TYPES: Record<string, SoldierType> = {
     description: 'Hurls great stones farther than any catapult and hits far '
                + 'harder — but slow to move and slow to reload.',
   },
+  /*
+   * The two engines that do no damage at all.
+   *
+   * Both are `siege` -- wheeled, slow, cannot man a wall, never advance on
+   * their own -- and neither has a weapon. What they carry is ACCESS: the
+   * tower carries men over a parapet and the mantlet carries them across the
+   * open ground in front of it. Priced against what they replace: a siege
+   * tower is a ladderman who cannot be killed by one archer, and it costs
+   * eight of him.
+   */
+  siege_tower: {
+    name: 'siege_tower', from: 'siege_camp', label: 'Siege Tower', gold: 240,
+    cost: { wood: 40, iron: 5 },
+    hp: 260, speed: 0.4, damage: 0, range: 0.9, cooldown: 2.0,
+    siege: true, ladders: true,
+    description: 'Rolls a stair up to a wall. Every man of yours near it can '
+               + 'reach whoever is standing on top — the ladderman\'s trick, '
+               + 'on something that takes a catapult stone to stop. Slow, and '
+               + 'it cannot fight back.',
+  },
+  portable_shield: {
+    name: 'portable_shield', from: 'siege_camp', label: 'Portable Shield',
+    gold: 60, cost: { wood: 15 },
+    hp: 120, speed: 0.6, damage: 0, range: 0.9, cooldown: 2.0,
+    siege: true, shields: true,
+    description: 'A plank screen on two wheels. Everything behind it takes a '
+               + 'third less from anything shot — and nothing at all off a '
+               + 'sword. It buys you the walk up to the wall, not the fight '
+               + 'at the top of it.',
+  },
   fire_ballista: {
     name: 'fire_ballista', from: 'siege_camp', label: 'Fire Ballista', gold: 150,
     cost: { wood: 20, iron: 5 },
@@ -1619,7 +1669,8 @@ export const SOLDIER_ORDER: string[] =
    'slave', 'slinger', 'arabian_swordsman', 'assassin', 'horse_archer',
    'war_dog',
    'engineer', 'tunneler',
-   'ram', 'catapult', 'trebuchet', 'fire_ballista', 'ladderman'];
+   'ram', 'catapult', 'trebuchet', 'fire_ballista',
+   'ladderman', 'siege_tower', 'portable_shield'];
 
 /**
  * Soldiers that exist but no recruit panel lists.
