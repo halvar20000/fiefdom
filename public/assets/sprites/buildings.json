@@ -2912,6 +2912,58 @@
     "scale": 3
   },
   {
+    "name": "mercenary_post",
+    "rotation": 0,
+    "width": 191,
+    "height": 139,
+    "anchor_x": 0.97,
+    "anchor_y": 89.62,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "mercenary_post",
+    "rotation": 1,
+    "width": 242,
+    "height": 132,
+    "anchor_x": 94.75,
+    "anchor_y": 34.62,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "mercenary_post",
+    "rotation": 2,
+    "width": 191,
+    "height": 150,
+    "anchor_x": 191.03,
+    "anchor_y": 74.0,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "mercenary_post",
+    "rotation": 3,
+    "width": 242,
+    "height": 136,
+    "anchor_x": 148.25,
+    "anchor_y": 133.14,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
     "name": "mill",
     "rotation": 0,
     "width": 268,

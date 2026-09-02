@@ -2766,7 +2766,89 @@ def tunnelers_guild():
     return geom.join(parts, "tunnelers_guild"), (2, 2)
 
 
+def mercenary_post():
+    """A hiring camp: a striped pavilion, a bell tent, a fire and a spear rack.
+
+    Deliberately the only building in the game made of CLOTH. Everything the
+    player raises is timber, plaster and stone, so a tent reads as "these men
+    are not from here" before a single sprite of one is recruited -- which is
+    the whole point of the post, and cheaper to say in the silhouette than in
+    a tooltip nobody reads twice.
+    """
+    sandy = M.rough_stone("MpGround")
+    canvas = M.cloth("MpCanvas", colour=(0.80, 0.74, 0.60))
+    stripe = M.cloth("MpStripe", colour=(0.50, 0.21, 0.18))
+    timber_d = M.timber("MpPole", dark=True)
+    steel = M.iron()
+    ash = M.cloth("MpAsh", colour=(0.13, 0.12, 0.11))
+    stone = M.rough_stone("MpHearth")
+    rug = M.cloth("MpRug", colour=(0.34, 0.28, 0.40))
+
+    parts = []
+    parts.append(geom.box("mp_ground", (0.06, 0.06, 0.0), (1.88, 1.88, 0.05), sandy))
+
+    # The pavilion. A drum of canvas with a conical roof over it, and a band of
+    # colour where the two meet -- three pieces, because a bare cone at this
+    # size reads as a spoil heap and a bare drum as a barrel.
+    cx, cy = 0.74, 1.16
+    # Coloured WALL, pale roof, rather than a band between the two: a stripe
+    # under the eaves is hidden by the roof's own skirt from every one of the
+    # four camera angles, which is a thing you only find out by rendering it.
+    parts.append(geom.cylinder("mp_wall", (cx, cy, 0.05), 0.56, 0.36, stripe, segments=14))
+    parts.append(geom.cone("mp_roof", (cx, cy, 0.38), 0.66, 0.62, canvas, segments=14))
+    parts.append(geom.cylinder("mp_finial", (cx, cy, 0.98), 0.022, 0.30, timber_d, segments=6))
+    # A pennant, so the tallest thing on the plot is not a bare stick.
+    parts.append(geom.box("mp_pennant", (cx + 0.02, cy - 0.01, 1.14), (0.26, 0.02, 0.11), stripe))
+    # The doorway: two flaps pinned back off a dark opening.
+    parts.append(geom.box("mp_door", (cx - 0.16, cy - 0.585, 0.05), (0.32, 0.03, 0.32), ash))
+    for i, dx in enumerate((-0.25, 0.11)):
+        parts.append(geom.box(f"mp_flap_{i}", (cx + dx, cy - 0.60, 0.05),
+                              (0.14, 0.04, 0.34), canvas))
+
+    # A bell tent behind it, smaller and plainer -- one tent is a curiosity,
+    # two are a camp.
+    parts.append(geom.cone("mp_tent", (1.50, 0.62, 0.05), 0.40, 0.56, canvas, segments=12))
+    parts.append(geom.cylinder("mp_tent_pole", (1.50, 0.62, 0.05), 0.018, 0.68,
+                               timber_d, segments=5))
+    for i, (dx, dy) in enumerate(((-0.42, 0.0), (0.42, 0.0), (0.0, -0.42), (0.0, 0.42))):
+        parts.append(geom.cylinder(f"mp_guy_{i}", (1.50 + dx, 0.62 + dy, 0.05),
+                                   0.012, 0.14, timber_d, segments=4))
+
+    # The fire they are sitting round, and the ring of stones that says it is a
+    # hearth rather than a scorch mark.
+    parts.append(geom.cylinder("mp_fire", (0.62, 0.36, 0.05), 0.20, 0.03, ash, segments=10))
+    for i in range(7):
+        a = (i / 7.0) * math.tau
+        parts.append(geom.box(f"mp_hearth_{i}",
+                              (0.62 + math.cos(a) * 0.22 - 0.045,
+                               0.36 + math.sin(a) * 0.22 - 0.045, 0.05),
+                              (0.09, 0.09, 0.07), stone))
+    for i, (dx, dy, h) in enumerate(((-0.04, 0.02, 0.16), (0.05, -0.03, 0.13),
+                                     (0.01, 0.06, 0.11))):
+        parts.append(geom.cylinder(f"mp_log_{i}", (0.62 + dx, 0.36 + dy, 0.06),
+                                   0.022, h, timber_d, segments=5))
+        parts[-1].rotation_euler = (0.5, 0.0, i * 2.1)
+
+    # A rack of their own weapons, leaning. They arrive armed; this is the
+    # building saying so.
+    parts.append(geom.box("mp_rack_base", (1.28, 1.44, 0.05), (0.56, 0.10, 0.08), timber_d))
+    for i in range(5):
+        parts.append(geom.cylinder(f"mp_spear_{i}", (1.34 + i * 0.12, 1.48, 0.10),
+                                   0.014, 0.62, timber_d, segments=5))
+        parts[-1].rotation_euler = (-0.24, 0.0, 0.0)
+        parts.append(geom.cone(f"mp_tip_{i}", (1.34 + i * 0.12 + 0.0, 1.63, 0.70),
+                               0.028, 0.10, steel, segments=6))
+
+    # A rug and a couple of bales outside the pavilion door.
+    parts.append(geom.box("mp_rug", (0.24, 0.60, 0.05), (0.50, 0.34, 0.02), rug))
+    for i, (x, y) in enumerate(((0.20, 1.62), (0.44, 1.66))):
+        parts.append(geom.cylinder(f"mp_bale_{i}", (x, y, 0.05), 0.13, 0.20,
+                                   canvas, segments=8))
+    return geom.join(parts, "mercenary_post"), (2, 2)
+
+
 REGISTRY.update({
     "engineers_guild": engineers_guild,
     "tunnelers_guild": tunnelers_guild,
+    "mercenary_post": mercenary_post,
 })

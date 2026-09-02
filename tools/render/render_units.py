@@ -182,6 +182,49 @@ SOLDIERS = {
                     'hose': (0.25, 0.21, 0.19)},
         "kit": {'helmet': True, 'weapon': 'mace'},
     },
+    # --- the mercenary post, and the ladderman -------------------------
+    #
+    # These are meant to read as a DIFFERENT army from across the map, not
+    # merely as different men: pale desert cloth against the barracks'
+    # dyed wools, and no helmet on any of them. That is a real distinction
+    # to make at ninety pixels, and it is also true -- none of them has been
+    # near your armoury.
+    "slave": {
+        # Undyed sacking, bare head, a stick. Everything about him should say
+        # that nobody spent anything on him.
+        "palette": {'tunic': (0.66, 0.61, 0.50), 'hood': (0.58, 0.53, 0.43),
+                    'hose': (0.44, 0.40, 0.33)},
+        "kit": {'weapon': 'club'},
+    },
+    "slinger": {
+        # Terracotta, because the only other bare-headed man in pale cloth on
+        # this list is the slave, and the two of them are the same shape.
+        "palette": {'tunic': (0.60, 0.33, 0.23), 'hood': (0.47, 0.26, 0.18),
+                    'hose': (0.38, 0.32, 0.25)},
+        "kit": {'weapon': 'sling'},
+    },
+    "arabian_swordsman": {
+        # Near-white robe with a dark head cloth: the strongest silhouette
+        # separation available from the grey European swordsman, who is the
+        # unit he will constantly be mistaken for otherwise.
+        "palette": {'tunic': (0.86, 0.82, 0.72), 'hood': (0.24, 0.22, 0.20),
+                    'hose': (0.60, 0.56, 0.47)},
+        "kit": {'weapon': 'scimitar', 'shield': True,
+                'shield_colour': (0.30, 0.34, 0.24)},
+    },
+    "assassin": {
+        # The only figure in the game dressed in one colour, and that colour
+        # nearly black. He carries a dagger, which is to say he reads as
+        # unarmed until he is on top of something.
+        "palette": {'tunic': (0.16, 0.15, 0.17), 'hood': (0.11, 0.10, 0.12),
+                    'hose': (0.13, 0.12, 0.14)},
+        "kit": {'weapon': 'dagger'},
+    },
+    "ladderman": {
+        "palette": {'tunic': (0.52, 0.46, 0.34), 'hood': (0.40, 0.35, 0.26),
+                    'hose': (0.31, 0.27, 0.21)},
+        "kit": {'weapon': 'ladder'},
+    },
     "crossbowman": {
         # Ochre against the archer's green, and helmeted where the archer is
         # bare-headed. The weapon reads as a cross rather than an arc.

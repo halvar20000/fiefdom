@@ -23,6 +23,31 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.45.0',
+    date: '2026-09-02',
+    headline: 'Gold buys men who brought their own swords.',
+    sections: [
+      {
+        title: 'Added',
+        items: [
+          'The Mercenary Post. Hires fighting men from across the sand, and gold is the whole price — no workshop, no armoury, no rack. Dearer per man than the barracks charges for his near-equivalent, and available the moment the treasury can pay. It is the answer to having no iron, and to having just lost your armoury.',
+          'The Slave. Twelve gold. Barely armed, barely willing, and worth exactly what he costs: a wall\'s worth of arrows spent on slaves is a wall\'s worth not spent on your swordsmen.',
+          'The Slinger. Throws stones quickly from not quite as far as an archer, and runs faster than anyone else on the field.',
+          'The Arabian Swordsman. A swordsman who brought his own sword — quicker on his feet, thinner in the skin, and beholden to no blacksmith.',
+          'The Assassin. Goes over a wall as though it were not there and kills what is standing on it. The hardest single blow any man deals, on forty-six health: send one at a tower, not at a battle.',
+          'The Ladderman, from the siege camp. He carries a ladder and nothing else, and every man of yours standing near him can reach the enemy on a wall. Until now that was the assassin\'s trick alone, and one man at a time.',
+          'Which means a wall is no longer simply a thing catapults answer. It can be climbed — but only where somebody is standing holding a ladder, and killing him takes the ladder away again that same instant.',
+        ],
+      },
+      {
+        title: 'Changed',
+        items: [
+          'The mercenaries read as a different army from across the map: pale desert cloth, no helmets, and not a piece of kit among them that came out of your armoury. Because none of it did.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.44.0',
     date: '2026-09-02',
     headline: 'One lathe, one anvil, and now a choice at each of them.',

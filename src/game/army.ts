@@ -1,5 +1,6 @@
 import {
-  SOLDIER_TYPES, GARRISON_RANGE_BONUS, RANGED_THRESHOLD, type SoldierType,
+  SOLDIER_TYPES, GARRISON_RANGE_BONUS, RANGED_THRESHOLD, LADDER_RADIUS,
+  ESCALADE_REACH, type SoldierType,
 } from './defs';
 import type { PathNode } from './pathfind';
 
@@ -94,6 +95,16 @@ export interface Soldier {
    * pursuit.
    */
   hold: boolean;
+  /**
+   * A wall is not in this man's way, this tick.
+   *
+   * True for anything that climbs by nature (the assassin) and for anyone
+   * standing near a ladderman of his own side. Recomputed each tick rather
+   * than set when the ladder arrives, because it has to go away again the
+   * moment the ladderman is killed -- which is exactly the moment the defence
+   * has earned it going away.
+   */
+  escalade: boolean;
 }
 
 /** What a siege engine has found to knock down. */
@@ -178,7 +189,7 @@ export class Army {
       hp: def.hp, moving: false, selected: false,
       path: [], tx: x, tz: z,
       target: null, cooldown: Math.random() * 0.4, swing: 0, dying: 0, ordered: false,
-      garrison: null, mountAt: null, hold: false,
+      garrison: null, mountAt: null, hold: false, escalade: !!def.climbs,
     };
     this.soldiers.push(s);
     return s;
@@ -325,10 +336,42 @@ export class Army {
     return s.def.range + (s.garrison ? (s.garrison.reach ?? GARRISON_RANGE_BONUS) : 0);
   }
 
+  /**
+   * How far `s` can strike `o` -- which is not always how far `s` can strike.
+   *
+   * A climber going over a parapet is reaching further than his arm: the wall
+   * is solid, so he is standing a whole tile from the man on top of it and a
+   * sword's 0.9 does not span that. See ESCALADE_REACH.
+   */
+  private strikeReach(s: Soldier, o: Soldier): number {
+    const base = Army.reachOf(s);
+    return o.garrison && s.escalade ? Math.max(base, ESCALADE_REACH) : base;
+  }
+
   /** Can `s` touch `o` at all? A wall puts a man out of a swordsman's reach. */
   private canHit(s: Soldier, o: Soldier): boolean {
     if (!o.garrison) return true;
-    return Army.reachOf(s) >= RANGED_THRESHOLD;
+    // Reach past the threshold shoots over the parapet; escalade goes up it.
+    return Army.reachOf(s) >= RANGED_THRESHOLD || s.escalade;
+  }
+
+  /**
+   * Work out who can get over a wall this tick.
+   *
+   * Done for every side, not only the player's: a rival lord who fields a
+   * ladderman gets the same benefit from him, and writing this as a
+   * player-only pass in main.ts would have quietly made walls a one-way
+   * problem. The scan is soldiers x laddermen and laddermen are few, so it is
+   * cheaper than the combat pass it precedes.
+   */
+  private markEscalade(): void {
+    const ladders = this.soldiers.filter(s => s.hp > 0 && s.def.ladders);
+    for (const s of this.soldiers) {
+      if (s.hp <= 0) continue;
+      s.escalade = !!s.def.climbs || ladders.some(
+        l => l.side === s.side
+          && (l.x - s.x) ** 2 + (l.z - s.z) ** 2 <= LADDER_RADIUS ** 2);
+    }
   }
 
   /** Nearest living unit of the other side, within `reach`. */
@@ -399,6 +442,7 @@ export class Army {
 
   update(dt: number): void {
     this.lastFallen = [];
+    this.markEscalade();
 
     // Combat is resolved in two passes, and damage is applied simultaneously.
     //
@@ -531,7 +575,7 @@ export class Army {
       }
 
       s.heading = Math.atan2(foe.z - s.z, foe.x - s.x);
-      if (Math.hypot(foe.x - s.x, foe.z - s.z) <= reach) {
+      if (Math.hypot(foe.x - s.x, foe.z - s.z) <= this.strikeReach(s, foe)) {
         engaged.add(s.id);
         s.moving = false;
         s.path = [];

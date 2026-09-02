@@ -401,6 +401,14 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     footprint: [2, 2], cost: { wood: 30, stone: 10 }, workers: 0, terrain: 'any',
     description: 'Recruits tunnellers, who go under a wall instead of over it.',
   },
+  mercenary_post: {
+    name: 'mercenary_post', label: 'Mercenary Post', category: 'castle',
+    footprint: [2, 2], cost: { wood: 25, stone: 10 }, workers: 0, terrain: 'any',
+    description: 'Hires fighting men from across the sand. They come armed, so '
+               + 'gold is the whole price — no workshop, no armoury, no rack. '
+               + 'Dearer than the barracks for the same man, and available the '
+               + 'moment you can pay.',
+  },
   siege_camp: {
     name: 'siege_camp', label: 'Siege Camp', category: 'castle',
     footprint: [3, 3], cost: { wood: 40, stone: 10 }, workers: 0, terrain: 'any',
@@ -836,8 +844,8 @@ export const BUILD_MENU: { category: Category; label: string; items: string[] }[
   { category: 'castle', label: 'Castle',
     items: ['wall', 'gatehouse', 'tower', 'round_tower', 'perimeter_turret',
             'lookout_tower', 'stairs', 'moat', 'drawbridge', 'pitch_ditch',
-            'killing_pit', 'water_pot', 'barracks', 'engineers_guild',
-            'tunnelers_guild', 'siege_camp'] },
+            'killing_pit', 'water_pot', 'barracks', 'mercenary_post',
+            'engineers_guild', 'tunnelers_guild', 'siege_camp'] },
   { category: 'castle', label: 'Stores', items: ['stockpile', 'granary'] },
   { category: 'town', label: 'Town',
     items: ['hovel', 'market', 'garden', 'well', 'pond', 'statue', 'maypole',
@@ -1196,6 +1204,30 @@ export const PIT_DAMAGE = 70;
 export const PIT_BLAST_RADIUS = 1.1;
 export const WATER_POT_RADIUS = 3.2;
 
+/**
+ * How near a ladderman a man must be to climb what he is standing under.
+ *
+ * A tile and a half, which is "at the foot of the same wall he is" and not
+ * "somewhere in this fight". The ladder is a real object in the fiction and it
+ * leans against one stretch of wall, not a district.
+ */
+export const LADDER_RADIUS = 2.6;
+
+/**
+ * How far a climbing man can strike a posted one.
+ *
+ * Not the same as his own reach, and it has to be stated separately. A wall is
+ * SOLID, so an attacker cannot stand on it -- he stands on the tile beside it,
+ * a full tile from where the defender is standing, which is already further
+ * than a sword's 0.9 will go. Left at his ordinary reach an assassin could
+ * scale anything and then never quite touch anybody, which is the sort of bug
+ * that reads as the feature simply not working.
+ *
+ * It applies ONLY against a garrisoned target, so climbing does not quietly
+ * lengthen a man's arm in an ordinary fight on open ground.
+ */
+export const ESCALADE_REACH = 1.6;
+
 export const MARSH_SPEED_FOOT = 0.48;
 export const MARSH_SPEED_SIEGE = 0.26;
 
@@ -1252,6 +1284,18 @@ export interface SoldierType {
    * escorting, since they cannot defend themselves at all.
    */
   siege?: boolean;
+  /**
+   * A wall is not in his way.
+   *
+   * Everything else swinging from the ground cannot touch a man posted above
+   * it -- that is what a wall is FOR -- and only reach past RANGED_THRESHOLD
+   * gets round it. A climber goes up instead. One flag rather than a special
+   * case per unit, because the ladderman grants exactly the same thing to
+   * everyone standing near him.
+   */
+  climbs?: boolean;
+  /** He carries a ladder: everyone near him climbs. See LADDER_RADIUS. */
+  ladders?: boolean;
   /** Which building must exist to buy this. */
   /**
    * The building that recruits him, by name.
@@ -1290,7 +1334,9 @@ export const SOLDIER_TYPES: Record<string, SoldierType> = {
                + 'building and it comes back up. He will not fight.',
   },
   tunneler: {
-    name: 'tunneler', from: 'tunnelers_guild', label: 'Tunneler', gold: 50,
+    // "Tunneller", to match the Tunnellers' Guild that trains him. The KEY
+    // stays `tunneler`: it names his sprite clips and his atlas frames.
+    name: 'tunneler', from: 'tunnelers_guild', label: 'Tunneller', gold: 50,
     cost: { wood: 2 },
     hp: 40, speed: 1.15, damage: 0, range: 0.9, cooldown: 1.5,
     description: 'Digs under whatever he is standing beside. Slower than a '
@@ -1355,6 +1401,72 @@ export const SOLDIER_TYPES: Record<string, SoldierType> = {
                + 'the thing back up for three seconds afterwards. Put him on a '
                + 'wall. Needs a crossbow.',
   },
+
+  /*
+   * The mercenary post's roster, and the ladderman.
+   *
+   * Every one of these costs gold and NOTHING ELSE, which is their whole reason
+   * to exist. A player with no iron, no fletcher and no armoury has, until now,
+   * had no army at all -- and a player whose armoury has just been burnt has had
+   * no way to replace one quickly. Mercenaries are that way: dearer per man than
+   * the barracks charges for his near-equivalent, available the instant the
+   * treasury can pay, and beholden to no workshop.
+   *
+   * They are otherwise deliberately not better. The arabian swordsman is a
+   * swordsman who costs fifteen gold more and wears less; the slinger is an archer
+   * with less reach. What you buy is speed and independence, not quality.
+   */
+
+  slave: {
+    name: 'slave', from: 'mercenary_post', label: 'Slave', gold: 12,
+    cost: {},
+    // The cheapest thing on the field by a wide margin, and it shows in every
+    // number. He exists to be in front of somebody who matters -- a wall's
+    // worth of arrows spent on slaves is a wall's worth not spent on your
+    // swordsmen.
+    hp: 22, speed: 1.55, damage: 3, range: 0.9, cooldown: 1.3,
+    description: 'Barely armed and barely willing. Twelve gold buys a body '
+               + 'between the enemy and someone who cost you eighty.',
+  },
+  slinger: {
+    name: 'slinger', from: 'mercenary_post', label: 'Slinger', gold: 25,
+    cost: {},
+    hp: 24, speed: 1.7, damage: 4, range: 5.0, cooldown: 1.5,
+    description: 'Throws stones, quickly, from not quite as far as an archer. '
+               + 'Cheap enough to lose and fast enough to get away.',
+  },
+  arabian_swordsman: {
+    name: 'arabian_swordsman', from: 'mercenary_post', label: 'Arabian Swordsman',
+    gold: 95, cost: {},
+    // A swordsman's blow at a swordsman's reach, quicker on his feet and
+    // thinner in the skin, for fifteen gold more and no workshop at all.
+    hp: 82, speed: 1.4, damage: 14, range: 0.9, cooldown: 1.4,
+    description: 'A swordsman who brought his own sword. Faster than yours and '
+               + 'less armoured, and he wants no armoury behind him.',
+  },
+  assassin: {
+    name: 'assassin', from: 'mercenary_post', label: 'Assassin', gold: 115,
+    cost: {},
+    climbs: true,
+    // The hardest single blow any man deals, and the only one that does not
+    // care about a wall. He dies to two swordsmen. He is a key, not an army.
+    hp: 46, speed: 1.5, damage: 22, range: 0.9, cooldown: 1.8,
+    description: 'Goes over a wall as though it were not there and kills what '
+               + 'is standing on it. Send one at a tower, not a battle — '
+               + 'anything that gets its hands on him wins.',
+  },
+  ladderman: {
+    name: 'ladderman', from: 'siege_camp', label: 'Ladderman', gold: 30,
+    cost: { wood: 3 },
+    ladders: true,
+    // Zero damage, like the engineer and the tunneller, and for the same
+    // reason: what he does is worth having on its own, and a man who did it
+    // AND fought would simply be a better soldier.
+    hp: 32, speed: 1.5, damage: 0, range: 0.9, cooldown: 1.5,
+    description: 'Carries a ladder and nothing else. Every man of yours near '
+               + 'him can reach the enemy standing on a wall — which is the '
+               + 'only way anything but an assassin ever can. He will not fight.',
+  },
 };
 
 /**
@@ -1409,8 +1521,9 @@ Object.assign(SOLDIER_TYPES, SIEGE_TYPES);
 
 export const SOLDIER_ORDER: string[] =
   ['spearman', 'archer', 'crossbowman', 'pikeman', 'maceman', 'swordsman',
+   'slave', 'slinger', 'arabian_swordsman', 'assassin',
    'engineer', 'tunneler',
-   'ram', 'catapult', 'trebuchet', 'fire_ballista'];
+   'ram', 'catapult', 'trebuchet', 'fire_ballista', 'ladderman'];
 
 /**
  * Soldiers that exist but no recruit panel lists.

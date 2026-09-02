@@ -293,6 +293,80 @@ def build(arm, palette=None, prefix=DEFAULT_PREFIX, kit=None):
                               lgrip + Vector((0.26, 0.05, 0.28)), 0.006, 0.006,
                               M.cloth("BowString", colour=(0.86, 0.83, 0.74)),
                               "LeftHand", segments=4, prefix=prefix))
+        elif weapon == 'club':
+            # A length of wood with a heavier end. Nothing about a slave should
+            # read as equipment -- this is the only "weapon" in the set that is
+            # plainly just a stick.
+            parts.append(limb(arm, "pe_club", grip + Vector((0.0, 0.0, -0.08)),
+                              grip + Vector((0.0, 0.0, 0.30)), 0.016, 0.028,
+                              haft, "RightHand", segments=5, prefix=prefix))
+        elif weapon == 'scimitar':
+            # Curved, in three straight segments -- the same trick the bow uses,
+            # and for the same reason: at this size a curve is three lines and
+            # the eye supplies the rest. The sweep is what tells him from the
+            # swordsman he otherwise matches.
+            parts.append(limb(arm, "pe_scim_grip", grip + Vector((0.0, 0.0, -0.09)),
+                              grip + Vector((0.0, 0.0, 0.02)), 0.017, 0.017,
+                              haft, "RightHand", segments=5, prefix=prefix))
+            pts = [(0.03, 0.00), (0.18, 0.03), (0.32, 0.10), (0.43, 0.21)]
+            for i in range(len(pts) - 1):
+                (z0, y0), (z1, y1) = pts[i], pts[i + 1]
+                parts.append(limb(arm, f"pe_scim_{i}",
+                                  grip + Vector((0.0, y0, z0)),
+                                  grip + Vector((0.0, y1, z1)),
+                                  0.026 - i * 0.005, 0.021 - i * 0.005,
+                                  steel, "RightHand", segments=5, prefix=prefix))
+        elif weapon == 'dagger':
+            # Short enough that the silhouette is a man with empty hands until
+            # you look, which is the whole idea of him.
+            parts.append(limb(arm, "pe_dag_grip", grip + Vector((0.0, 0.0, -0.06)),
+                              grip + Vector((0.0, 0.0, 0.02)), 0.014, 0.014,
+                              haft, "RightHand", segments=5, prefix=prefix))
+            parts.append(limb(arm, "pe_dag_blade", grip + Vector((0.0, 0.0, 0.02)),
+                              grip + Vector((0.0, 0.0, 0.20)), 0.018, 0.004,
+                              steel, "RightHand", segments=5, prefix=prefix))
+        elif weapon == 'sling':
+            # A sling is a cord and a pouch, and neither is visible at ninety
+            # pixels. What IS visible is the loop of it hanging from the hand,
+            # so that is what gets built: an open arc of cord with the pouch at
+            # the bottom of it, hanging where a weapon would be.
+            cord = M.cloth("SlingCord", colour=(0.74, 0.68, 0.52))
+            # Big, and hanging clear of the body. The first cut was a tight
+            # loop the size of a real one and it was invisible -- at this size
+            # a slinger with a correctly proportioned sling is a man with
+            # nothing in his hands, which is already what the slave is.
+            n = 10
+            for i in range(n):
+                a0 = (i / n) * math.tau
+                a1 = ((i + 1) / n) * math.tau
+                r, cz = 0.17, -0.24
+                parts.append(limb(arm, f"pe_sling_{i}",
+                                  grip + Vector((0.0, math.sin(a0) * r,
+                                                 cz + math.cos(a0) * r)),
+                                  grip + Vector((0.0, math.sin(a1) * r,
+                                                 cz + math.cos(a1) * r)),
+                                  0.009, 0.009, cord, "RightHand",
+                                  segments=4, prefix=prefix))
+            parts.append(blob(arm, "pe_sling_pouch",
+                              grip + Vector((0.0, 0.0, -0.41)), 0.042,
+                              M.cloth("SlingPouch", colour=(0.42, 0.33, 0.22)),
+                              "RightHand", squash=0.8, subdiv=2, prefix=prefix))
+        elif weapon == 'ladder':
+            # The one piece of kit in the game that is bigger than the man
+            # carrying it, and deliberately: a ladderman has to be findable in
+            # a crowd from across the map, because everything he is for happens
+            # where he is standing.
+            for i, dx in enumerate((-0.075, 0.075)):
+                parts.append(limb(arm, f"pe_ladder_rail_{i}",
+                                  grip + Vector((dx, 0.0, -0.40)),
+                                  grip + Vector((dx, 0.0, 0.74)), 0.014, 0.014,
+                                  haft, "RightHand", segments=5, prefix=prefix))
+            for i in range(7):
+                z = -0.34 + i * 0.18
+                parts.append(limb(arm, f"pe_ladder_rung_{i}",
+                                  grip + Vector((-0.075, 0.0, z)),
+                                  grip + Vector((0.075, 0.0, z)), 0.010, 0.010,
+                                  haft, "RightHand", segments=4, prefix=prefix))
         elif weapon == 'bow':
             lh_h, lh_t = bone_points(arm, "LeftHand", prefix=prefix)
             lgrip = (lh_h + lh_t) * 0.5
