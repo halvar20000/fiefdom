@@ -401,6 +401,12 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     footprint: [2, 2], cost: { wood: 30, stone: 10 }, workers: 0, terrain: 'any',
     description: 'Recruits tunnellers, who go under a wall instead of over it.',
   },
+  stables: {
+    name: 'stables', label: 'Stables', category: 'castle',
+    footprint: [3, 3], cost: { wood: 40, stone: 15 }, workers: 0, terrain: 'any',
+    description: 'Keeps horses, and the only place a knight can be raised. A '
+               + 'barracks can arm a man; it cannot mount one.',
+  },
   mercenary_post: {
     name: 'mercenary_post', label: 'Mercenary Post', category: 'castle',
     footprint: [2, 2], cost: { wood: 25, stone: 10 }, workers: 0, terrain: 'any',
@@ -844,7 +850,7 @@ export const BUILD_MENU: { category: Category; label: string; items: string[] }[
   { category: 'castle', label: 'Castle',
     items: ['wall', 'gatehouse', 'tower', 'round_tower', 'perimeter_turret',
             'lookout_tower', 'stairs', 'moat', 'drawbridge', 'pitch_ditch',
-            'killing_pit', 'water_pot', 'barracks', 'mercenary_post',
+            'killing_pit', 'water_pot', 'barracks', 'stables', 'mercenary_post',
             'engineers_guild', 'tunnelers_guild', 'siege_camp'] },
   { category: 'castle', label: 'Stores', items: ['stockpile', 'granary'] },
   { category: 'town', label: 'Town',
@@ -1296,6 +1302,15 @@ export interface SoldierType {
   climbs?: boolean;
   /** He carries a ladder: everyone near him climbs. See LADDER_RADIUS. */
   ladders?: boolean;
+  /**
+   * A horse or a hound.
+   *
+   * Four legs, and not one set of stairs in this castle was built for them --
+   * so these never man a wall and never climb one, whatever else they can do.
+   * It also decides how they die: the death animation is the bare peasant body
+   * falling over, which is exactly right for a man and absurd for a dog.
+   */
+  fourLegged?: boolean;
   /** Which building must exist to buy this. */
   /**
    * The building that recruits him, by name.
@@ -1455,6 +1470,53 @@ export const SOLDIER_TYPES: Record<string, SoldierType> = {
                + 'is standing on it. Send one at a tower, not a battle — '
                + 'anything that gets its hands on him wins.',
   },
+  /*
+   * The four-legged three, and the two buildings that were placeholders until
+   * they existed.
+   *
+   * Cavalry is bought with SPEED, which is the one axis nothing else in the
+   * game moves along: everything on foot walks between 0.95 and 1.7 tiles a
+   * second and these do 2.3 to 2.6. That is what they are for -- running down
+   * an engine, catching an archer, arriving somewhere before the thing that
+   * left first. Not one of them can be put on a wall.
+   */
+  knight: {
+    name: 'knight', from: 'stables', label: 'Knight', gold: 140,
+    cost: { swords: 1, armour: 1 },
+    fourLegged: true,
+    // The most expensive man in the game, and he should be: he outruns
+    // everything, reaches further than a swordsman off the end of a lance, and
+    // takes more punishment than anything else on the field.
+    hp: 130, speed: 2.6, damage: 16, range: 1.3, cooldown: 1.5,
+    description: 'Fast, armoured and dear. He runs down what runs away — an '
+               + 'archer who has loosed, an engine left unguarded — and no '
+               + 'wall in the world will hold him, because he cannot get on '
+               + 'one. Needs a sword, armour and a stables.',
+  },
+  horse_archer: {
+    name: 'horse_archer', from: 'mercenary_post', label: 'Horse Archer',
+    gold: 140, cost: {},
+    fourLegged: true,
+    // He brings his own horse, like every other mercenary brings his own kit,
+    // which is why he does not want the stables. Thin: two blows from
+    // anything that catches him.
+    hp: 42, speed: 2.4, damage: 6, range: 6.0, cooldown: 1.7,
+    description: 'Shoots at an archer\'s range and rides away faster than '
+               + 'anything can follow. He brought his own horse. Anything that '
+               + 'lays a hand on him kills him.',
+  },
+  war_dog: {
+    name: 'war_dog', from: 'dog_cage', label: 'War Dog', gold: 18,
+    cost: { meat: 2 },
+    fourLegged: true,
+    // Bites more often than anything else swings -- eight damage every nine
+    // tenths of a second is nine a second, more than a swordsman -- on the
+    // health of a slave. A pack is a real threat and a single dog is a snack.
+    hp: 30, speed: 2.3, damage: 8, range: 0.7, cooldown: 0.9,
+    description: 'Off the cage, and fed on your own meat. Bites faster than '
+               + 'anything else strikes and dies to almost anything. Loose '
+               + 'several or none.',
+  },
   ladderman: {
     name: 'ladderman', from: 'siege_camp', label: 'Ladderman', gold: 30,
     cost: { wood: 3 },
@@ -1521,7 +1583,9 @@ Object.assign(SOLDIER_TYPES, SIEGE_TYPES);
 
 export const SOLDIER_ORDER: string[] =
   ['spearman', 'archer', 'crossbowman', 'pikeman', 'maceman', 'swordsman',
-   'slave', 'slinger', 'arabian_swordsman', 'assassin',
+   'knight',
+   'slave', 'slinger', 'arabian_swordsman', 'assassin', 'horse_archer',
+   'war_dog',
    'engineer', 'tunneler',
    'ram', 'catapult', 'trebuchet', 'fire_ballista', 'ladderman'];
 

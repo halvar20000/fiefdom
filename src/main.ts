@@ -2622,8 +2622,17 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
                                    post.x + bw / 2, post.z + bd / 2,
                                    Math.max(bw, bd) * 0.3,
                                    garrisonReach(post.name));
-      state.notify(n ? `${n} to the ${post.def.label.toLowerCase()}`
-                     : 'They cannot reach it', n ? 'info' : 'warn');
+      // "They cannot reach it" is the wrong answer when the truth is that
+      // every man selected is a horse. Nothing about a failed order should
+      // leave the player checking the stairs for a fault that is not there.
+      const sel = army.selected;
+      const noStairs = sel.length > 0
+        && sel.every(sd => sd.def.siege || sd.def.fourLegged);
+      state.notify(
+        n ? `${n} to the ${post.def.label.toLowerCase()}`
+          : noStairs ? 'Nothing on four legs or wheels goes up there'
+          : 'They cannot reach it',
+        n ? 'info' : 'warn');
       return true;
     }
 
@@ -3445,7 +3454,14 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
         const dn = clipFrames('death');
         const prog = 1 - Math.max(0, sd.dying) / DEATH_SECONDS;
         const f = Math.min(dn - 1, Math.floor(prog * dn));
-        key = atlas.frames[`death_${dir}_${f}`] ? `death_${dir}_${f}` : `idle_${dir}_0`;
+        // A horse or a dog does not fall over like a man. The clip is a human
+        // body and there is no animal version of it, so the four-legged hold
+        // their own idle for the second and a bit they lie there instead of
+        // turning into a dying peasant on the way out.
+        key = sd.def.fourLegged
+          ? (atlas.frames[`${sd.type}_idle_${dir}_0`]
+              ? `${sd.type}_idle_${dir}_0` : `idle_${dir}_0`)
+          : atlas.frames[`death_${dir}_${f}`] ? `death_${dir}_${f}` : `idle_${dir}_0`;
       } else {
         const act = sd.swing > 0 ? 'attack' : sd.moving ? 'walk' : 'idle';
         const clip = `${sd.type}_${act}`;

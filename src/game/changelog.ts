@@ -23,6 +23,30 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.46.0',
+    date: '2026-09-02',
+    headline: 'Four legs, and nothing else on the field can keep up.',
+    sections: [
+      {
+        title: 'Added',
+        items: [
+          'The Stables, and the Knight. A barracks can arm a man; it cannot mount one. He is the dearest soldier in the game and he earns it — he outruns everything on the field by half again, reaches further off the end of a lance than a swordsman does off a blade, and takes more punishment than anything else standing up.',
+          'The Horse Archer, from the mercenary post. He brought his own horse, like every other mercenary brings his own everything. Shoots at an archer\'s range and rides away faster than anything can follow, and dies to almost any hand that reaches him.',
+          'The War Dog, off the dog cage — which until now only frightened your own people. Eighteen gold and two of your own meat. Bites faster than anything else strikes, on the health of a slave. Loose several or none.',
+          'Speed is the axis none of the rest of the army moves along. Everything on foot walks between 0.95 and 1.7 tiles a second; these three do 2.3 to 2.6. That is what cavalry is for — running down an engine, catching an archer who has just loosed, arriving somewhere before the thing that set off first.',
+          'Not one of them goes up a wall. No stair in this castle was built for four legs, and the order now says so instead of claiming they cannot reach it.',
+        ],
+      },
+      {
+        title: 'Changed',
+        items: [
+          'A horse or a dog no longer dies by turning into a falling peasant. The death animation is a human body and there is no animal version of it, so the four-legged hold their own pose for the moment they lie there.',
+          'The mercenary post now sells five kinds of man, and every one of them still costs nothing but gold. Tranche 6 of the backlog is finished: both buildings that were waiting on troops to exist have them.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.45.0',
     date: '2026-09-02',
     headline: 'Gold buys men who brought their own swords.',

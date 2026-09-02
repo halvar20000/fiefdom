@@ -394,7 +394,7 @@ export class Army {
    */
   orderGarrison(x: number, z: number, cx: number, cz: number,
                 spread = 0.55, reach = GARRISON_RANGE_BONUS): number {
-    const sel = this.selected.filter(s => !s.def.siege);
+    const sel = this.selected.filter(s => !s.def.siege && !s.def.fourLegged);
     let sent = 0;
     for (const s of sel) if (this.postTo(s, x, z, cx, cz, spread, reach)) sent++;
     return sent;
@@ -403,7 +403,10 @@ export class Army {
   /** Send one man to a post. Used by the player's orders and by the lord. */
   postTo(s: Soldier, x: number, z: number, cx: number, cz: number,
          spread = 0.55, reach = GARRISON_RANGE_BONUS): boolean {
-    if (s.def.siege) return false;
+    // An engine has no legs for the stair and a horse has four of the wrong
+    // sort. Checked here as well as in the caller's filter, because the lord
+    // mans his walls through this method directly.
+    if (s.def.siege || s.def.fourLegged) return false;
     if (!this.send(s, cx, cz)) return false;
     const n = this.garrisonOf(x, z).length
       + this.soldiers.filter(o => o.mountAt

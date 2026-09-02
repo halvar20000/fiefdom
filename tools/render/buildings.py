@@ -2847,8 +2847,139 @@ def mercenary_post():
     return geom.join(parts, "mercenary_post"), (2, 2)
 
 
+def _yard_horse(prefix, x, y, coat, dark, hoof, face=-1.0):
+    """A horse standing in the yard, in the same boxes the mounted units use.
+
+    This is the whole building. A plastered range with a shingle roof is a barn
+    at this camera, and the plot already competes with a slaughterhouse, a
+    dairy and a hunter's hut that are all barns. An animal standing in it is
+    not ambiguous about anything.
+
+    It stands in the OPEN, not in a stall. Inside a bay it was behind a breast
+    bar, between two dividers and under a roof, and the four renders came back
+    with a brown shape in a brown shadow -- correct, and invisible. `face` is
+    +1 for head toward +Y and -1 for head toward the front of the plot.
+    """
+    parts = []
+    back = 0.44
+    f = face
+
+    def yy(a, b):
+        """Span from a to b along Y, mirrored by `face`."""
+        lo, hi = sorted((a * f, b * f))
+        return lo, hi - lo
+
+    y0, dy = yy(-0.28, 0.28)
+    parts.append(geom.box(f"{prefix}_body", (x - 0.085, y + y0, back - 0.19),
+                          (0.17, dy, 0.19), coat))
+    y0, dy = yy(-0.36, -0.26)
+    parts.append(geom.box(f"{prefix}_rump", (x - 0.095, y + y0, back - 0.16),
+                          (0.19, dy, 0.16), coat))
+    y0, dy = yy(0.18, 0.295)
+    parts.append(geom.box(f"{prefix}_neck", (x - 0.049, y + y0, back - 0.09),
+                          (0.098, dy, 0.22), coat))
+    y0, dy = yy(0.20, 0.375)
+    parts.append(geom.box(f"{prefix}_head", (x - 0.052, y + y0, back + 0.09),
+                          (0.104, dy, 0.105), coat))
+    y0, dy = yy(0.33, 0.405)
+    parts.append(geom.box(f"{prefix}_muzzle", (x - 0.040, y + y0, back + 0.055),
+                          (0.080, dy, 0.075), dark))
+    y0, dy = yy(0.175, 0.29)
+    parts.append(geom.box(f"{prefix}_mane", (x - 0.026, y + y0, back + 0.055),
+                          (0.052, dy, 0.075), dark))
+    y0, dy = yy(-0.36, -0.30)
+    parts.append(geom.box(f"{prefix}_tail", (x - 0.025, y + y0, back - 0.20),
+                          (0.050, dy, 0.20), dark))
+    for i, (dx, ly) in enumerate(((-0.055, 0.20), (0.055, 0.20),
+                                  (-0.055, -0.20), (0.055, -0.20))):
+        ly = ly * f
+        parts.append(geom.box(f"{prefix}_leg_{i}", (x + dx - 0.024, y + ly - 0.026, 0.0),
+                              (0.048, 0.052, back - 0.17), coat))
+        parts.append(geom.box(f"{prefix}_hoof_{i}", (x + dx - 0.028, y + ly - 0.030, 0.0),
+                              (0.056, 0.060, 0.030), hoof))
+    return parts
+
+
+def stables():
+    """An open stable range with three stalls, a horse in one, and a paddock.
+
+    Open-fronted on purpose, like the siege camp's shelter and for the same
+    reason: a closed range reads as one more barn, and what has to be legible
+    here is three dark stalls in a row with an animal standing in the middle
+    one. The plaster and the roof are the back half only.
+    """
+    rough = M.rough_stone("StTrampled")
+    timber_l = M.timber("StTimber")
+    timber_d = M.timber("StPost", dark=True)
+    roof = M.shingle_wood("StRoof")
+    dark = M.cloth("StStallDark", colour=(0.09, 0.08, 0.07))
+    hay = M.thatch("StHay")
+    water = M.cloth("StWater", colour=(0.24, 0.31, 0.34))
+    coat = M.cloth("StHorse", colour=(0.50, 0.37, 0.25))
+    muzzle = M.cloth("StHorseDark", colour=(0.14, 0.12, 0.10))
+    hoof = M.cloth("StHoof", colour=(0.16, 0.14, 0.12))
+
+    parts = []
+    parts.append(geom.box("st_yard", (0.06, 0.06, 0.0), (2.88, 2.88, 0.06), rough))
+
+    # The shelter: posts along the front, a planked wall along the back, a
+    # pitched roof over both. Nothing closes the front.
+    for i, x in enumerate((0.26, 1.05, 1.85, 2.64)):
+        parts.append(geom.box(f"st_post_{i}", (x - 0.075, 1.72, 0.06),
+                              (0.15, 0.15, 1.00), timber_d))
+    parts.append(geom.box("st_plate_f", (0.14, 1.70, 1.06), (2.72, 0.16, 0.11), timber_d))
+    parts.append(geom.box("st_plate_b", (0.14, 2.70, 1.06), (2.72, 0.16, 0.11), timber_d))
+    for i in range(6):
+        parts.append(geom.box(f"st_plank_{i}", (0.16, 2.78, 0.10 + i * 0.17),
+                              (2.68, 0.06, 0.15), timber_l))
+    # The back is a blank planked wall from two of the four camera angles, so
+    # it gets a loft door and the hoist beam over it. A featureless slab is
+    # what makes a building read as "a barn" from behind.
+    parts.append(geom.box("st_loft", (1.14, 2.83, 0.70), (0.66, 0.05, 0.46), dark))
+    parts.append(geom.box("st_loft_sill", (1.10, 2.82, 0.66), (0.74, 0.08, 0.06), timber_d))
+    parts.append(geom.box("st_hoist", (1.42, 2.80, 1.20), (0.10, 0.34, 0.10), timber_d))
+    parts += geom.shingle_roof("st", (0.14, 1.70, 1.17), (2.72, 1.16, 0.50),
+                               roof, overhang=0.18, ridge_mat=timber_d)
+    parts += geom.rafters("st", (0.14, 1.70, 1.17), (2.72, 1.16, 0.0), timber_d,
+                          overhang=0.18)
+    # The stalls themselves: a dark back to each bay and a breast bar across it.
+    for i, x in enumerate((0.34, 1.13, 1.93)):
+        parts.append(geom.box(f"st_stall_{i}", (x, 2.60, 0.06), (0.66, 0.14, 0.86), dark))
+        parts.append(geom.box(f"st_bar_{i}", (x, 1.80, 0.40), (0.66, 0.08, 0.09), timber_l))
+        parts.append(geom.box(f"st_litter_{i}", (x - 0.02, 1.86, 0.06),
+                              (0.70, 0.72, 0.05), hay))
+    # Partitions, not walls: at 0.78 tall and the full depth of the bay they
+    # closed the shelter in again from every angle it was opened for.
+    for i, x in enumerate((0.26, 1.05, 1.85, 2.64)):
+        parts.append(geom.box(f"st_div_{i}", (x - 0.06, 2.06, 0.06),
+                              (0.12, 0.64, 0.56), timber_d))
+
+    # A horse in the yard, tethered to the rail, head toward the front.
+    parts += _yard_horse("st_h", 0.92, 1.20, coat, muzzle, hoof)
+
+    # Paddock rail across the front, with a gap in the middle to walk through.
+    for i, x in enumerate((0.20, 0.72, 1.24, 1.86, 2.38, 2.78)):
+        parts.append(geom.box(f"st_rail_post_{i}", (x, 0.22, 0.06),
+                              (0.10, 0.10, 0.54), timber_d))
+    for i, z in enumerate((0.26, 0.44)):
+        parts.append(geom.box(f"st_railA_{i}", (0.22, 0.25, z), (1.06, 0.06, 0.08), timber_l))
+        parts.append(geom.box(f"st_railB_{i}", (1.88, 0.25, z), (0.96, 0.06, 0.08), timber_l))
+
+    # Trough, hay rick and a saddle over the rail: worked in, not swept.
+    parts.append(geom.box("st_trough", (0.30, 0.66, 0.06), (0.94, 0.32, 0.24), timber_d))
+    parts.append(geom.box("st_water", (0.34, 0.70, 0.26), (0.86, 0.24, 0.03), water))
+    parts.append(geom.box("st_rick", (1.74, 0.58, 0.06), (0.88, 0.64, 0.36), hay))
+    parts.append(geom.gable("st_rickcap", (1.70, 0.54, 0.42), (0.96, 0.72, 0.28), hay,
+                            overhang=0.04))
+    parts.append(geom.box("st_saddle", (1.44, 0.18, 0.48), (0.34, 0.22, 0.17), timber_l))
+    parts.append(geom.cylinder("st_bucket", (2.62, 0.94, 0.06), 0.11, 0.18,
+                               timber_l, segments=8))
+    return geom.join(parts, "stables"), (3, 3)
+
+
 REGISTRY.update({
     "engineers_guild": engineers_guild,
     "tunnelers_guild": tunnelers_guild,
     "mercenary_post": mercenary_post,
+    "stables": stables,
 })

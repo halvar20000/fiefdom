@@ -280,6 +280,7 @@ for b in spearman archer swordsman engineer tunneler \
          slave slinger arabian_swordsman assassin ladderman; do
   blender -b -P tools/render/render_units.py   -- --out "$OUT" --body "$b"
 done
+blender -b -P tools/render/render_mounts.py    -- --out "$OUT"
 blender -b -P tools/render/render_wildlife.py  -- --out "$OUT"
 blender -b -P tools/render/render_siege.py     -- --out "$OUT"
 python3 tools/render/trim_sprites.py           --out "$OUT"
@@ -311,6 +312,21 @@ swinging a pick at nothing.
 
 Root motion is stripped at render time by re-centring the hips each frame, so it
 does not matter whether a clip was exported with Mixamo's "In Place" ticked.
+
+The knight, the horse archer and the war dog do NOT come from that rig, because
+there is no horse in the Mixamo set and no dog, and retargeting a biped's walk
+onto four legs is not a thing that works. `mounts.py` builds them the way the
+gazelle and the siege engines are built -- primitives with a few parts posed
+per frame from a phase in 0..1 and no armature at all. The rider is part of the
+mount rather than a peasant standing on one, because the one thing a rider must
+never do is slide about on the saddle.
+
+Everything in `mounts.py` is authored facing +Y and turned half a turn at render
+time (`BASE_YAW_DEG = 180`). The Mixamo body faces -Y, and a mounted unit is
+drawn through the same code path as a foot soldier -- same `${type}_${clip}`
+keys, same direction index -- so facing 0 has to mean the same thing for both or
+the cavalry rides backwards. The gazelle predates that rule and compensates in
+`main.ts` instead; do not copy it.
 
 ## Movement
 

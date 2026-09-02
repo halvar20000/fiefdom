@@ -5668,6 +5668,58 @@
     "scale": 3
   },
   {
+    "name": "stables",
+    "rotation": 0,
+    "width": 328,
+    "height": 230,
+    "anchor_x": 20.98,
+    "anchor_y": 154.9,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "stables",
+    "rotation": 1,
+    "width": 401,
+    "height": 197,
+    "anchor_x": 143.89,
+    "anchor_y": 39.1,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "stables",
+    "rotation": 2,
+    "width": 327,
+    "height": 244,
+    "anchor_x": 307.02,
+    "anchor_y": 110.44,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "stables",
+    "rotation": 3,
+    "width": 401,
+    "height": 234,
+    "anchor_x": 257.11,
+    "anchor_y": 220.51,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
     "name": "stairs",
     "rotation": 0,
     "width": 119,
