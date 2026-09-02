@@ -22,6 +22,15 @@ export interface GarrisonPost {
   /** Exactly where the man stands, so a tower's crew does not stack up. */
   sx: number;
   sz: number;
+  /**
+   * What this post adds to his reach, from `garrisonReach`.
+   *
+   * Carried on the post rather than looked up, because army.ts has no map of
+   * buildings and a man's reach is asked for every frame of every fight. Old
+   * saves have no value here and fall back to the flat bonus, which is what
+   * they were playing with anyway.
+   */
+  reach?: number;
 }
 
 /** How long a killed soldier lies dying before he is removed, in seconds. */
@@ -313,7 +322,7 @@ export class Army {
 
   /** A man's reach, longer when he is standing on something. */
   static reachOf(s: Soldier): number {
-    return s.def.range + (s.garrison ? GARRISON_RANGE_BONUS : 0);
+    return s.def.range + (s.garrison ? (s.garrison.reach ?? GARRISON_RANGE_BONUS) : 0);
   }
 
   /** Can `s` touch `o` at all? A wall puts a man out of a swordsman's reach. */
@@ -341,16 +350,16 @@ export class Army {
    * They walk to the foot of it and climb on arrival. Returns how many set off.
    */
   orderGarrison(x: number, z: number, cx: number, cz: number,
-                spread = 0.55): number {
+                spread = 0.55, reach = GARRISON_RANGE_BONUS): number {
     const sel = this.selected.filter(s => !s.def.siege);
     let sent = 0;
-    for (const s of sel) if (this.postTo(s, x, z, cx, cz, spread)) sent++;
+    for (const s of sel) if (this.postTo(s, x, z, cx, cz, spread, reach)) sent++;
     return sent;
   }
 
   /** Send one man to a post. Used by the player's orders and by the lord. */
   postTo(s: Soldier, x: number, z: number, cx: number, cz: number,
-         spread = 0.55): boolean {
+         spread = 0.55, reach = GARRISON_RANGE_BONUS): boolean {
     if (s.def.siege) return false;
     if (!this.send(s, cx, cz)) return false;
     const n = this.garrisonOf(x, z).length
@@ -358,7 +367,7 @@ export class Army {
           && o.mountAt.x === x && o.mountAt.z === z).length;
     const a = (n % 8) / 8 * Math.PI * 2;
     const r = n === 0 ? 0 : spread * (1 + Math.floor(n / 8) * 0.5);
-    s.mountAt = { x, z, sx: cx + Math.cos(a) * r, sz: cz + Math.sin(a) * r };
+    s.mountAt = { x, z, sx: cx + Math.cos(a) * r, sz: cz + Math.sin(a) * r, reach };
     s.garrison = null;
     s.ordered = true;
     s.target = null;

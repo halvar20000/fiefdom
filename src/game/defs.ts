@@ -305,6 +305,26 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     footprint: [2, 2], cost: { stone: 20 }, workers: 0, terrain: 'any', hp: 420,
     description: 'Stands above the curtain wall.',
   },
+  perimeter_turret: {
+    name: 'perimeter_turret', label: 'Perimeter Turret', category: 'castle',
+    footprint: [1, 1], cost: { stone: 14 }, workers: 0, terrain: 'any', hp: 150,
+    description: 'A one-tile watch post with a stair of its own, so it can be '
+               + 'manned standing alone on ground you only want watched. It '
+               + 'anchors a wall like a tower does — but barely rises above '
+               + 'one, and falls to a third of the punishment.',
+  },
+  round_tower: {
+    name: 'round_tower', label: 'Round Tower', category: 'castle',
+    footprint: [3, 3], cost: { stone: 55 }, workers: 0, terrain: 'any', hp: 900,
+    description: 'A stone drum. Twice a square tower\'s punishment before it '
+               + 'falls, because there is no corner for a stone to break off.',
+  },
+  lookout_tower: {
+    name: 'lookout_tower', label: 'Lookout Tower', category: 'castle',
+    footprint: [2, 2], cost: { wood: 20, stone: 25 }, workers: 0, terrain: 'any', hp: 260,
+    description: 'Tall and thin, and lightly built with it. Archers on top '
+               + 'shoot further than from anything else you can raise.',
+  },
   hovel: {
     name: 'hovel', label: 'Hovel', category: 'town',
     footprint: [2, 2], cost: { wood: 6 }, workers: 0, terrain: 'any',
@@ -915,15 +935,45 @@ export const FOOD_VARIETY_BONUS = [0, 0, 3, 6, 9, 12];
  * Taken straight from the Blender models: a wall's body is 0.92 with the
  * merlons above it, a tower's deck sits at 1.55 + 0.10, a gatehouse's at
  * 1.30 + 0.11. Anything not listed here cannot be manned.
+ *
+ * The three below are read off tools/render/buildings.py the same way, and the
+ * number is the top of the surface a man actually stands on, not the top of
+ * the merlons or the rail above it: the turret's corbel at 1.06 + 0.08, the
+ * round tower's flagged deck at 1.84 + 0.08, the lookout's nest floor at
+ * 2.20 + 0.10. Change a model and change these.
  */
 export const GARRISON_HEIGHT: Record<string, number> = {
   wall: 0.92,
   tower: 1.65,
   gatehouse: 1.41,
+  perimeter_turret: 1.14,
+  round_tower: 1.92,
+  lookout_tower: 2.30,
 };
 
 /** Extra reach a man gains from standing on a wall. */
 export const GARRISON_RANGE_BONUS = 2.5;
+
+/**
+ * Further reach per tile of deck ABOVE a plain tower's.
+ *
+ * A flat bonus made every posting identical, which is fine while a wall, a
+ * tower and a gatehouse are the only things to stand on -- and makes a lookout
+ * tower pointless the moment one exists, since its entire reason to be built
+ * is that it is tall. Measured from the tower rather than from the ground so
+ * that walls and gatehouses, which sit below it, keep exactly the bonus they
+ * have always had. Nothing existing moves; only things taller than a tower
+ * gain.
+ */
+export const GARRISON_RANGE_PER_TILE = 2.0;
+
+/** What a man posted on `name` adds to his reach. 0 if it cannot be manned. */
+export function garrisonReach(name: string): number {
+  const h = GARRISON_HEIGHT[name];
+  if (h === undefined) return 0;
+  return GARRISON_RANGE_BONUS
+    + Math.max(0, h - GARRISON_HEIGHT.tower) * GARRISON_RANGE_PER_TILE;
+}
 
 /**
  * Reach at which an attacker counts as ranged.

@@ -2412,3 +2412,102 @@ def tanner():
 
 
 REGISTRY.update({"tanner": tanner})
+
+
+# --- the rest of the castle: three more things to stand on -----------------
+#
+# Deck heights here are load-bearing, not decoration: GARRISON_HEIGHT in
+# defs.ts is copied from these models, and reach above a plain tower's 1.65 is
+# what the lookout tower is FOR. Change a height here and change it there.
+
+
+def perimeter_turret():
+    """A one-tile watch post: a squat drum with a crenellated rim."""
+    stone = M.castle_stone("TurretStone")
+    rough = M.rough_stone("TurretFooting")
+
+    parts = []
+    parts.append(geom.box("pt_footing", (0.02, 0.02, 0.0), (0.96, 0.96, 0.12), rough))
+    parts.append(geom.cylinder("pt_drum", (0.50, 0.50, 0.12), 0.42, 0.94, stone, segments=12))
+    parts.append(geom.cylinder("pt_corbel", (0.50, 0.50, 1.06), 0.46, 0.08, stone, segments=12))
+    # Merlons round the rim by hand: crenellate() lays a rectangle, and this is
+    # the one thing on the wall line that is round.
+    for i in range(8):
+        a = (i / 8.0) * math.tau
+        parts.append(geom.box(f"pt_merlon_{i}", (0.50 + math.cos(a) * 0.40 - 0.07,
+                                                 0.50 + math.sin(a) * 0.40 - 0.07, 1.14),
+                              (0.14, 0.14, 0.18), stone, rot_z=a))
+    return geom.join(parts, "perimeter_turret"), (1, 1)
+
+
+def round_tower():
+    """A stone drum on a battered plinth. The heavy corner of a curtain."""
+    stone = M.castle_stone("RoundStone")
+    rough = M.rough_stone("RoundFooting")
+    dark = M.timber("RoundSlit", dark=True)
+    flag = M.flagstone("RoundDeck")
+
+    parts = []
+    parts.append(geom.cylinder("rt_batter", (1.50, 1.50, 0.0), 1.32, 0.30, rough, segments=20))
+    parts.append(geom.cylinder("rt_drum", (1.50, 1.50, 0.30), 1.18, 1.42, stone, segments=20))
+    # A string course two thirds up, which is what keeps a plain drum from
+    # reading as a grain silo.
+    parts.append(geom.cylinder("rt_course", (1.50, 1.50, 1.14), 1.22, 0.09, rough, segments=20))
+    parts.append(geom.cylinder("rt_corbel", (1.50, 1.50, 1.72), 1.30, 0.12, stone, segments=20))
+    parts.append(geom.cylinder("rt_deck", (1.50, 1.50, 1.84), 1.24, 0.08, flag, segments=20))
+    for i in range(14):
+        a = (i / 14.0) * math.tau
+        parts.append(geom.box(f"rt_merlon_{i}", (1.50 + math.cos(a) * 1.20 - 0.11,
+                                                 1.50 + math.sin(a) * 1.20 - 0.11, 1.92),
+                              (0.22, 0.22, 0.26), stone, rot_z=a))
+    for i in range(6):
+        a = (i / 6.0) * math.tau + 0.3
+        parts.append(geom.box(f"rt_slit_{i}", (1.50 + math.cos(a) * 1.17 - 0.05,
+                                               1.50 + math.sin(a) * 1.17 - 0.05, 0.62),
+                              (0.10, 0.10, 0.34), dark, rot_z=a))
+    return geom.join(parts, "round_tower"), (3, 3)
+
+
+def lookout_tower():
+    """A tall timber-framed shaft on a stone base, with a railed crow's nest."""
+    stone = M.castle_stone("LookStone")
+    rough = M.rough_stone("LookFooting")
+    timber_l = M.timber("LookTimber")
+    timber_d = M.timber("LookPost", dark=True)
+    shingle = M.shingle_wood("LookRoof")
+
+    parts = []
+    parts.append(geom.box("lt_footing", (0.08, 0.08, 0.0), (1.84, 1.84, 0.14), rough))
+    parts.append(geom.box("lt_base", (0.30, 0.30, 0.14), (1.40, 1.40, 0.62), stone))
+    # Four raking posts, cross-braced. Timber above the base is the point: it
+    # is why this stands 2.46 and costs a fraction of a stone tower, and why
+    # it has a quarter of the tower's hp.
+    for i, (dx, dy) in enumerate(((0.0, 0.0), (1.0, 0.0), (0.0, 1.0), (1.0, 1.0))):
+        x0 = 0.44 + dx * 1.02
+        y0 = 0.44 + dy * 1.02
+        parts.append(geom.box(f"lt_post_{i}", (x0 - 0.07, y0 - 0.07, 0.76), (0.14, 0.14, 1.44),
+                              timber_d))
+        parts[-1].rotation_euler = ((0.5 - dy) * 0.13, (dx - 0.5) * 0.13, 0.0)
+    for j, z in enumerate((1.12, 1.60)):
+        parts.append(geom.box(f"lt_braceA_{j}", (0.40, 0.44, z), (1.20, 0.08, 0.07), timber_l))
+        parts.append(geom.box(f"lt_braceB_{j}", (0.40, 1.46, z), (1.20, 0.08, 0.07), timber_l))
+        parts.append(geom.box(f"lt_braceC_{j}", (0.44, 0.40, z), (0.08, 1.20, 0.07), timber_l))
+        parts.append(geom.box(f"lt_braceD_{j}", (1.46, 0.40, z), (0.08, 1.20, 0.07), timber_l))
+    # The nest, oversailing the shaft so the silhouette flares at the top.
+    parts.append(geom.box("lt_deck", (0.26, 0.26, 2.20), (1.48, 1.48, 0.10), timber_l))
+    for i, (px, py, sx, sy) in enumerate(((0.26, 0.26, 1.48, 0.10),
+                                          (0.26, 1.64, 1.48, 0.10),
+                                          (0.26, 0.26, 0.10, 1.48),
+                                          (1.64, 0.26, 0.10, 1.48))):
+        parts.append(geom.box(f"lt_rail_{i}", (px, py, 2.30), (sx, sy, 0.30), timber_l))
+    parts.append(geom.gable("lt_roof", (0.34, 0.34, 2.60), (1.32, 1.32, 0.40), shingle,
+                            overhang=0.10))
+    parts += geom.ladder("lt_ladder", (1.02, 0.22, 0.14), 2.06, 0.34, timber_d, lean=0.16)
+    return geom.join(parts, "lookout_tower"), (2, 2)
+
+
+REGISTRY.update({
+    "perimeter_turret": perimeter_turret,
+    "round_tower": round_tower,
+    "lookout_tower": lookout_tower,
+})

@@ -111,14 +111,35 @@ is credited when the main load is set down, clamped to the room available, and
 skipped on a drop into a relay shed. Anything else needed a second carry slot
 the state machine has no state for.
 
-### 5. Castle works
+### 5. Castle works *(part done, 1.38.0)*
 
-`drawbridge`, `moat`, `killing_pit`, `stairs`, `round_tower`,
-`perimeter_turret`, `lookout_tower`, `oil_smelter`, `water_pot`.
+- [x] `perimeter_turret` (1x1, deck 1.14), `round_tower` (3x3, deck 1.92, hp
+      900), `lookout_tower` (2x2, deck 2.30, timber and fragile with it).
+- [ ] `moat`, `drawbridge`, `killing_pit`, `stairs`, `oil_smelter`,
+      `water_pot`.
 
-These carry real mechanics, not just art: moats need terrain modification and
-pathing that respects them, drawbridges need an open/shut state, killing pits
-and oil need a trigger and damage model.
+The three towers reused the garrison system, but reusing it meant fixing two
+things that were correct only because there had been exactly one tower.
+
+`GARRISON_RANGE_BONUS` was flat, so a lookout tower would have seen no further
+than a wall and had no reason to exist. Reach is now the base bonus plus
+`GARRISON_RANGE_PER_TILE` for every tile of deck **above a plain tower's**,
+measured from the tower rather than the ground so wall, tower and gatehouse
+keep exactly the reach they always had. Nothing existing moved.
+
+`STAIR_SOURCES` in `access.ts` listed the buildings a man can climb --
+`tower`, `gatehouse` -- so a new tower not remembered there would be built,
+look like a tower, and quietly refuse a garrison. It is inverted now:
+`WALKWAY_ONLY` names the one thing that is a walkway rather than a building,
+and everything else that can be garrisoned has its own stair.
+
+Deck heights in `GARRISON_HEIGHT` are read off the Blender models and are the
+top of the surface a man stands on, not the merlons above it. Changing a model
+means changing that table.
+
+Still to come is the hard half: moats need terrain modification and pathing
+that respects them, drawbridges an open/shut state, killing pits and oil a
+trigger and a damage model.
 
 ### 6. Recruitment
 

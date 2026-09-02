@@ -35,7 +35,7 @@ import { hydrate } from './game/backend';
 import {
   BUILDINGS, STORE_SPRITES, SPRITE_STANDIN, SOLDIER_TYPES, buildingHp,
   canGarrison, isWeapon,
-  GARRISON_HEIGHT, MARSH_SPEED_FOOT, MARSH_SPEED_SIEGE,
+  GARRISON_HEIGHT, garrisonReach, MARSH_SPEED_FOOT, MARSH_SPEED_SIEGE,
   BURN_SECONDS, BURN_RADIUS, BURN_DPS, IGNITE_RADIUS, DEMOLISH_REFUND,
   SPEED_LEVELS, RESOURCE_LABELS,
   type Resource,
@@ -2090,7 +2090,8 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
           const inbound = army.soldiers.filter(u => u.mountAt
             && u.mountAt.x === b.x && u.mountAt.z === b.z).length;
           if (army.garrisonOf(b.x, b.z).length + inbound >= cap) continue;
-          return { x: b.x, z: b.z, cx: b.x + w / 2, cz: b.z + d / 2 };
+          return { x: b.x, z: b.z, cx: b.x + w / 2, cz: b.z + d / 2,
+                   reach: garrisonReach(b.name) };
         }
         return null;
       },
@@ -2484,7 +2485,8 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       const [bw, bd] = post.def.footprint;
       const n = army.orderGarrison(post.x, post.z,
                                    post.x + bw / 2, post.z + bd / 2,
-                                   Math.max(bw, bd) * 0.3);
+                                   Math.max(bw, bd) * 0.3,
+                                   garrisonReach(post.name));
       state.notify(n ? `${n} to the ${post.def.label.toLowerCase()}`
                      : 'They cannot reach it', n ? 'info' : 'warn');
       return true;
@@ -3582,7 +3584,15 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       if (!u) continue;
       u.hp = su.hp;
       if (su.h) u.hold = true;
-      if (su.g) u.garrison = { x: su.g[0], z: su.g[1], sx: su.g[2], sz: su.g[3] };
+      if (su.g) {
+        // Recomputed from the building rather than serialised: a save made
+        // before posts carried a reach would otherwise put a man on a lookout
+        // tower with a plain tower's sight.
+        u.garrison = {
+          x: su.g[0], z: su.g[1], sx: su.g[2], sz: su.g[3],
+          reach: garrisonReach(buildingNameAt(su.g[0], su.g[1])),
+        };
+      }
     }
 
     herd.animals.length = 0;

@@ -23,6 +23,33 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.38.0',
+    date: '2026-09-02',
+    headline: 'Three more things to stand on, and height that finally counts.',
+    sections: [
+      {
+        title: 'Added',
+        items: [
+          'A perimeter turret: one tile, its own stair, and manned standing alone. Scatter them across ground you want watched rather than walled. It anchors a curtain the way a tower does, but rises barely above the wall itself and falls to a third of the punishment, so it is a watch post and not a cheap tower.',
+          'A round tower: a stone drum on a battered plinth, three tiles across, and twice a square tower\'s punishment before it falls — there is no corner on it for a stone to break off.',
+          'A lookout tower: a timber shaft on a stone base with a railed nest on top, standing half a tile higher than anything else in the castle. Lightly built to match, at a quarter of a round tower\'s endurance.',
+        ],
+      },
+      {
+        title: 'Changed',
+        items: [
+          'Height on the walls now buys reach. A man posted anywhere used to gain the same fixed distance whether he stood on a wall or a tower, which would have made a lookout tower an expensive way to see nothing further. He now gains that same bonus plus more for every tile his deck stands above a plain tower\'s. Walls, towers and gatehouses all sit at or below that mark, so every one of them shoots exactly as far as it did before; only the two new tall ones gain.',
+        ],
+      },
+      {
+        title: 'Fixed',
+        items: [
+          'A tower the code had not been told about could not be manned. Which buildings a man can climb was a list of names — tower, gatehouse — so anything new would have been built, would have looked like a tower, and would have silently refused a garrison. The list is the other way round now: it names the curtain wall, the one thing that is a walkway rather than a building, and everything else that can be garrisoned is assumed to have its own stair.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.37.0',
     date: '2026-09-02',
     headline: 'Every pig now yields two things, and one of them arms a man.',

@@ -27,7 +27,7 @@ export interface LordWorld {
   /** What he marches on. Null if the player has no keep. */
   target(): { x: number; z: number } | null;
   /** An unmanned wall or tower of his, for the garrison to stand on. */
-  garrisonPost(): { x: number; z: number; cx: number; cz: number } | null;
+  garrisonPost(): { x: number; z: number; cx: number; cz: number; reach: number } | null;
   notify(text: string): void;
 }
 
@@ -454,7 +454,7 @@ export class Lord {
       if (s.garrison || s.mountAt || s.def.siege) continue;
       const post = this.world.garrisonPost();
       if (!post) return;                       // nothing built to stand on yet
-      this.army.postTo(s, post.x, post.z, post.cx, post.cz, 0.3);
+      this.army.postTo(s, post.x, post.z, post.cx, post.cz, 0.3, post.reach);
     }
   }
 
@@ -522,7 +522,8 @@ export class Lord {
             // builds battlements and then leaves his men milling about at the
             // foot of them is not playing the same game as the player.
             const post = this.world.garrisonPost();
-            if (!post || !this.army.postTo(s, post.x, post.z, post.cx, post.cz, 0.3)) {
+            if (!post || !this.army.postTo(s, post.x, post.z, post.cx, post.cz, 0.3,
+                                            post.reach)) {
               const h = this.world.home();
               this.army.send(s, h.x + (Math.random() - 0.5) * 5,
                                 h.z + (Math.random() - 0.5) * 5);

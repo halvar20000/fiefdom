@@ -2548,6 +2548,58 @@
     "scale": 3
   },
   {
+    "name": "lookout_tower",
+    "rotation": 0,
+    "width": 276,
+    "height": 284,
+    "anchor_x": 81.77,
+    "anchor_y": 230.18,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "lookout_tower",
+    "rotation": 1,
+    "width": 360,
+    "height": 284,
+    "anchor_x": 97.39,
+    "anchor_y": 182.18,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "lookout_tower",
+    "rotation": 2,
+    "width": 276,
+    "height": 366,
+    "anchor_x": 194.23,
+    "anchor_y": 229.88,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "lookout_tower",
+    "rotation": 3,
+    "width": 360,
+    "height": 324,
+    "anchor_x": 262.61,
+    "anchor_y": 278.3,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
     "name": "market",
     "rotation": 0,
     "width": 288,
@@ -2905,6 +2957,58 @@
     "height": 318,
     "anchor_x": 259.29,
     "anchor_y": 251.48,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "perimeter_turret",
+    "rotation": 0,
+    "width": 158,
+    "height": 148,
+    "anchor_x": 54.74,
+    "anchor_y": 112.8,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "perimeter_turret",
+    "rotation": 1,
+    "width": 196,
+    "height": 148,
+    "anchor_x": 61.65,
+    "anchor_y": 91.92,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "perimeter_turret",
+    "rotation": 2,
+    "width": 158,
+    "height": 186,
+    "anchor_x": 103.26,
+    "anchor_y": 113.63,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "perimeter_turret",
+    "rotation": 3,
+    "width": 196,
+    "height": 166,
+    "anchor_x": 134.35,
+    "anchor_y": 133.93,
     "footprint": [
       1,
       1
@@ -5040,6 +5144,58 @@
     "footprint": [
       1,
       1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "round_tower",
+    "rotation": 0,
+    "width": 352,
+    "height": 284,
+    "anchor_x": 71.22,
+    "anchor_y": 205.96,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "round_tower",
+    "rotation": 1,
+    "width": 414,
+    "height": 284,
+    "anchor_x": 147.21,
+    "anchor_y": 139.24,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "round_tower",
+    "rotation": 2,
+    "width": 352,
+    "height": 344,
+    "anchor_x": 280.78,
+    "anchor_y": 206.19,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "round_tower",
+    "rotation": 3,
+    "width": 414,
+    "height": 314,
+    "anchor_x": 266.79,
+    "anchor_y": 273.47,
+    "footprint": [
+      3,
+      3
     ],
     "scale": 3
   },
