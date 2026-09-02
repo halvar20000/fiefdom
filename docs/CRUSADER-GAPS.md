@@ -72,11 +72,22 @@ that ordering. The `dancing_bear` took three attempts — stacked cylinders read
 as a burnt stump every time, and it only worked once it was built the way
 `_ox()` builds livestock, as one lofted skin through tapering rings.
 
-### 3. Religion tiers
+### 3. Religion tiers *(done, 1.36.0)*
 
-`chapel`, `shrine`, `cathedral`. We have `church`; these are the rungs below
-and above it. Needs a decision on whether religious coverage scales with
-population the way `beauty` does.
+- [x] `shrine` (serves 8, 1x1), `chapel` (16), `cathedral` (72, 3x3, and the
+      only building that is also worth `beauty`). `church` stays at 24.
+
+The open question was whether religious coverage should scale with population
+the way `beauty` erodes. It turned out not to need deciding: coverage is
+already `sum(serves) / population`, so it thins on its own as a town grows and
+a second mechanic would have been double-counting. The tiers only change how
+much ground one plot buys.
+
+`state.ts` matched `b.name === 'church'` to count coverage, which was correct
+for exactly one building and silently wrong for a second -- a chapel would have
+been built, paid for and counted for nothing. Buildings now declare
+`coverage: 'religion' | 'health'` and the getter sums `def.serves` by kind, so
+tranche 4 onward can add a coverage building without touching `state.ts`.
 
 ### 4. Economy
 

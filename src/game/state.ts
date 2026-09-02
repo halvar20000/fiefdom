@@ -2,7 +2,7 @@ import {
   ALL_RESOURCES, BUILDINGS, RAW_RESOURCES, FOOD_RESOURCES, RATIONS, TAX_LEVELS,
   FOOD_VARIETY_BONUS, PRICES, buildingHp, TRADE_BATCH, TRADE_INTERVAL, TRADE_MIN_BAND,
   INN_CAPACITY, ALE_PER_PERSON_PER_MIN, ALE_POPULARITY_MAX,
-  CHURCH_SERVES, RELIGION_POPULARITY_MAX, PHARMACY_SERVES, HEALTH_POPULARITY_MAX,
+  RELIGION_POPULARITY_MAX, HEALTH_POPULARITY_MAX,
   BEAUTY_CAP, BEAUTY_PER, SPEED_LEVELS, NORMAL_SPEED,
   RESOURCE_LABELS, STOCKPILE_TILE_CAPACITY, STOCKPILE_LEVELS,
   GRANARY_TILE_CAPACITY, ARMOURY_CAPACITY, WEAPON_RESOURCES, storeOf, STORE_LABELS,
@@ -253,21 +253,26 @@ export class GameState {
     return this.buildings.filter(b => b.name === 'inn').length * INN_CAPACITY;
   }
 
-  /** Fraction of the town within reach of a church, 0..1. */
-  get religionCoverage(): number {
-    const served = this.buildings.reduce(
-      (n, b) => n + (b.name === 'church' ? CHURCH_SERVES : 0), 0);
+  /**
+   * Fraction of the town a coverage lever reaches, 0..1.
+   *
+   * Reads `def.serves` off whatever declares the right `coverage` kind rather
+   * than matching one building by name. The name match was correct while there
+   * was exactly one church and silently wrong the moment a chapel existed --
+   * it would have been built, paid for, and counted for nothing.
+   */
+  private coverageOf(kind: 'religion' | 'health'): number {
     if (this.population <= 0) return 0;
+    const served = this.buildings.reduce(
+      (n, b) => n + (b.def.coverage === kind ? (b.def.serves ?? 0) : 0), 0);
     return Math.min(1, served / this.population);
   }
 
-  /** Fraction of the town within reach of a pharmacy, 0..1. Mirrors the church. */
-  get healthCoverage(): number {
-    const served = this.buildings.reduce(
-      (n, b) => n + (b.name === 'pharmacy' ? PHARMACY_SERVES : 0), 0);
-    if (this.population <= 0) return 0;
-    return Math.min(1, served / this.population);
-  }
+  /** Fraction of the town within reach of a shrine, chapel, church or cathedral. */
+  get religionCoverage(): number { return this.coverageOf('religion'); }
+
+  /** Fraction of the town within reach of a pharmacy. Mirrors the church. */
+  get healthCoverage(): number { return this.coverageOf('health'); }
 
   /**
    * Popularity from aesthetic buildings, already capped and eroded by size.

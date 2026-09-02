@@ -1300,6 +1300,110 @@
     "scale": 3
   },
   {
+    "name": "cathedral",
+    "rotation": 0,
+    "width": 380,
+    "height": 336,
+    "anchor_x": 79.21,
+    "anchor_y": 259.1,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "cathedral",
+    "rotation": 1,
+    "width": 466,
+    "height": 336,
+    "anchor_x": 144.24,
+    "anchor_y": 180.67,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "cathedral",
+    "rotation": 2,
+    "width": 380,
+    "height": 418,
+    "anchor_x": 300.79,
+    "anchor_y": 252.51,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "cathedral",
+    "rotation": 3,
+    "width": 466,
+    "height": 376,
+    "anchor_x": 321.76,
+    "anchor_y": 331.28,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "chapel",
+    "rotation": 0,
+    "width": 228,
+    "height": 196,
+    "anchor_x": 42.21,
+    "anchor_y": 143.17,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "chapel",
+    "rotation": 1,
+    "width": 274,
+    "height": 196,
+    "anchor_x": 96.35,
+    "anchor_y": 98.3,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "chapel",
+    "rotation": 2,
+    "width": 228,
+    "height": 240,
+    "anchor_x": 185.79,
+    "anchor_y": 146.41,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "chapel",
+    "rotation": 3,
+    "width": 274,
+    "height": 218,
+    "anchor_x": 177.65,
+    "anchor_y": 191.63,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
     "name": "church",
     "rotation": 0,
     "width": 258,
@@ -4777,6 +4881,58 @@
     "height": 74,
     "anchor_x": 64.53,
     "anchor_y": 66.79,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "shrine",
+    "rotation": 0,
+    "width": 114,
+    "height": 122,
+    "anchor_x": 25.73,
+    "anchor_y": 96.58,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "shrine",
+    "rotation": 1,
+    "width": 148,
+    "height": 122,
+    "anchor_x": 40.97,
+    "anchor_y": 73.14,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "shrine",
+    "rotation": 2,
+    "width": 114,
+    "height": 156,
+    "anchor_x": 88.27,
+    "anchor_y": 97.34,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "shrine",
+    "rotation": 3,
+    "width": 148,
+    "height": 138,
+    "anchor_x": 107.03,
+    "anchor_y": 120.49,
     "footprint": [
       1,
       1

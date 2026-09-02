@@ -141,6 +141,13 @@ export interface BuildingDef {
   needsWater?: boolean;
   /** People one of these reaches, for coverage levers like the church. */
   serves?: number;
+  /**
+   * Which coverage `serves` feeds. Both levers used to be a name match in
+   * `state.ts` -- `b.name === 'church'` -- which is fine for exactly one
+   * building and wrong the moment there is a second, because a chapel would
+   * have been built, staffed, paid for and counted for nothing.
+   */
+  coverage?: 'religion' | 'health';
   /** Flat popularity-per-minute an aesthetic building adds (before the cap). */
   beauty?: number;
   /** A fear building: lowers popularity, raises tax yield. See the gallows. */
@@ -183,6 +190,23 @@ export interface BuildingDef {
  * rises with the fraction of the town covered.
  */
 export const CHURCH_SERVES = 24;
+/**
+ * The rest of the religion ladder.
+ *
+ * Coverage is `sum(serves) / population`, so it already thins as a town grows
+ * -- a church that blanketed a hamlet covers a third of a city. That is the
+ * whole population-scaling story and these tiers do not add a second one; they
+ * only change how much ground one plot buys.
+ *
+ * Value per head improves as you go DOWN and value per tile improves as you go
+ * UP: three churches serve 72 on twelve tiles for 60 wood and 90 stone, and a
+ * cathedral serves the same 72 on nine tiles for less wood and much more
+ * stone. Stone is the currency of grandeur here, and land is the thing a
+ * cramped castle actually runs out of.
+ */
+export const SHRINE_SERVES = 8;
+export const CHAPEL_SERVES = 16;
+export const CATHEDRAL_SERVES = 72;
 export const RELIGION_POPULARITY_MAX = 8;
 
 /**
@@ -279,17 +303,39 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     footprint: [3, 3], cost: { wood: 10 }, workers: 0, terrain: 'any',
     description: 'Buy and sell goods for gold.',
   },
+  shrine: {
+    name: 'shrine', label: 'Wayside Shrine', category: 'town',
+    footprint: [1, 1], cost: { stone: 6, wood: 6 }, workers: 0, terrain: 'any',
+    serves: SHRINE_SERVES, coverage: 'religion',
+    description: 'A niche and a lamp at the roadside. Reaches few, costs '
+               + 'almost nothing, and fits where nothing else will.',
+  },
+  chapel: {
+    name: 'chapel', label: 'Chapel', category: 'town',
+    footprint: [2, 2], cost: { wood: 12, stone: 18 }, workers: 0, terrain: 'any',
+    serves: CHAPEL_SERVES, coverage: 'religion',
+    description: 'A single vaulted hall under a bellcote. Two thirds of a '
+               + 'church for two thirds of the price.',
+  },
+  cathedral: {
+    name: 'cathedral', label: 'Cathedral', category: 'town',
+    footprint: [3, 3], cost: { wood: 50, stone: 140 }, workers: 2, terrain: 'any',
+    serves: CATHEDRAL_SERVES, coverage: 'religion', beauty: 5,
+    description: 'A great dome between two towers. Reaches three churches\' '
+               + 'worth of souls on less ground — and is the only building '
+               + 'that is both a mercy and an ornament.',
+  },
   church: {
     name: 'church', label: 'Church', category: 'town',
     footprint: [2, 2], cost: { wood: 20, stone: 30 }, workers: 0, terrain: 'any',
-    serves: CHURCH_SERVES,
+    serves: CHURCH_SERVES, coverage: 'religion',
     description: 'Tends the town\'s soul. Popularity rises with how much of '
                + 'your people it reaches.',
   },
   pharmacy: {
     name: 'pharmacy', label: 'Pharmacy', category: 'town',
     footprint: [2, 2], cost: { wood: 20, stone: 15 }, workers: 0, terrain: 'any',
-    serves: PHARMACY_SERVES,
+    serves: PHARMACY_SERVES, coverage: 'health',
     description: 'Tends the town\'s health. Popularity rises with how much of '
                + 'your people it reaches — and it stacks with the church.',
   },

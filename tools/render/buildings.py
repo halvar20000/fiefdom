@@ -2237,3 +2237,131 @@ REGISTRY.update({
     "burning_stake": burning_stake,
     "dungeon": dungeon,
 })
+
+
+# --- religion: the rungs either side of the church -------------------------
+#
+# One family, four sizes, and the hard part is that they must never be mistaken
+# for each other on a crowded map. The church is already a domed octagon, so
+# copying it at two scales would give three buildings with one silhouette. Each
+# rung gets its OWN roofline instead: the shrine a niche with a pitched cap,
+# the chapel a gabled hall under a bellcote, the cathedral a great dome held
+# between two towers. Same stone, same pale plaster, four outlines.
+
+
+def shrine():
+    """A wayside niche: a stone pier, an arched recess, a lamp and a cap."""
+    stone = M.castle_stone("ShrineStone")
+    rough = M.rough_stone("ShrineFooting")
+    pale = M.plaster("ShrinePale", tint=(0.87, 0.84, 0.76))
+    dark = M.timber("ShrineNiche", dark=True)
+    lamp = M.cloth("ShrineLamp", colour=(0.92, 0.78, 0.36))
+
+    parts = []
+    parts.append(geom.box("sh_footing", (0.18, 0.18, 0.0), (0.64, 0.64, 0.12), rough))
+    parts.append(geom.box("sh_pier", (0.26, 0.26, 0.12), (0.48, 0.48, 0.72), stone))
+    # The recess is a dark inset with a pale figure in it -- at one tile the
+    # dark hole is the only thing that says "shrine" and not "gatepost".
+    parts.append(geom.box("sh_niche", (0.34, 0.22, 0.34), (0.32, 0.10, 0.38), dark))
+    parts.append(geom.cylinder("sh_figure", (0.50, 0.30, 0.38), 0.055, 0.24, pale, segments=8))
+    parts.append(geom.box("sh_cornice", (0.22, 0.22, 0.84), (0.56, 0.56, 0.08), pale))
+    parts.append(geom.pyramid("sh_cap", (0.24, 0.24, 0.92), (0.52, 0.52, 0.30), pale))
+    parts.append(geom.cylinder("sh_lamp", (0.50, 0.20, 0.80), 0.05, 0.07, lamp, segments=6))
+    return geom.join(parts, "shrine"), (1, 1)
+
+
+def chapel():
+    """A single vaulted hall with an apse and a bellcote over the west end."""
+    stone = M.castle_stone("ChapelStone")
+    rough = M.rough_stone("ChapelFoot")
+    pale = M.plaster("ChapelPale", tint=(0.87, 0.84, 0.76))
+    shingle = M.shingle_wood("ChapelRoof")
+    dark = M.timber("ChapelDoor", dark=True)
+    iron = M.iron("ChapelBell")
+
+    parts = []
+    parts.append(geom.box("ch_footing", (0.16, 0.16, 0.0), (1.68, 1.68, 0.14), rough))
+    parts.append(geom.box("ch_nave", (0.28, 0.40, 0.14), (1.30, 1.06, 0.74), stone))
+    parts.append(geom.gable("ch_roof", (0.22, 0.34, 0.88), (1.42, 1.18, 0.46), shingle))
+    # A half-round apse on the east end, which is what makes it a chapel rather
+    # than a shed with a bell on it.
+    parts.append(geom.cylinder("ch_apse", (0.93, 0.40, 0.14), 0.36, 0.66, stone, segments=12))
+    parts.append(geom.dome("ch_apseroof", (0.93, 0.40, 0.80), 0.38, 0.26, pale, segments=14, rings=5))
+    # Bellcote: two piers and a lintel with a bell hung between them.
+    # Narrow: at 0.96 wide this was as broad as the hall and read as a gateway
+    # standing in front of the chapel rather than a bellcote sitting on it.
+    for i, x in enumerate((0.70, 1.14)):
+        parts.append(geom.box(f"ch_cotepier_{i}", (x - 0.05, 1.38, 1.08), (0.10, 0.12, 0.28), pale))
+    parts.append(geom.box("ch_cotetop", (0.63, 1.38, 1.36), (0.58, 0.12, 0.09), pale))
+    parts.append(geom.pyramid("ch_cotecap", (0.66, 1.38, 1.45), (0.52, 0.12, 0.14), pale))
+    parts.append(geom.cone("ch_bell", (0.92, 1.44, 1.16), 0.07, 0.13, iron, segments=8))
+    parts.append(geom.box("ch_door", (0.74, 1.36, 0.14), (0.32, 0.08, 0.52), dark))
+    for i, y in enumerate((0.62, 0.94, 1.24)):
+        parts.append(geom.box(f"ch_win_{i}", (0.24, y, 0.44), (0.08, 0.14, 0.30), dark))
+    return geom.join(parts, "chapel"), (2, 2)
+
+
+def cathedral():
+    """A great dome between two towers over an arcaded west front."""
+    stone = M.castle_stone("CathStone")
+    rough = M.rough_stone("CathFooting")
+    pale = M.plaster("CathPale", tint=(0.89, 0.86, 0.78))
+    trim = M.plaster("CathTrim", tint=(0.80, 0.77, 0.70))
+    dark = M.timber("CathDoor", dark=True)
+    gold = M.cloth("CathFinial", colour=(0.82, 0.68, 0.30))
+
+    parts = []
+    parts.append(geom.box("ca_apron", (0.10, 0.10, 0.0), (2.80, 2.80, 0.08), rough))
+    parts.append(geom.box("ca_plinth", (0.30, 0.22, 0.08), (2.40, 2.56, 0.22), stone))
+
+    # Cruciform, and roofed with real pitches. The first attempt capped the
+    # whole plan with one 2.3-square slab as a "cornice"; at this camera that
+    # is not a cornice, it is a table top, and it hid every roof under it.
+    parts.append(geom.box("ca_nave", (1.00, 0.30, 0.30), (1.00, 2.40, 1.06), stone))
+    parts.append(geom.gable("ca_naveroof", (0.96, 0.28, 1.36), (1.08, 2.44, 0.44), pale))
+    parts.append(geom.box("ca_transept", (0.45, 1.15, 0.30), (2.10, 0.70, 0.94), stone))
+    # Ridge along +X: a gable's ridge runs +Y, so it is turned a quarter and
+    # anchored at its far corner, since rot_z pivots about the object origin.
+    parts.append(geom.gable("ca_transeptroof", (2.59, 1.13, 1.24),
+                            (0.74, 2.18, 0.36), pale, rot_z=math.pi / 2.0))
+
+    # The crossing: drum, dome, lantern, finial. Rises clear of both ridges,
+    # so the dome is the silhouette and the roofs are what it sits on.
+    parts.append(geom.cylinder("ca_drum", (1.50, 1.50, 1.44), 0.56, 0.46, stone, segments=16))
+    for i in range(8):
+        a = (i / 8.0) * math.tau
+        parts.append(geom.box(f"ca_drumwin_{i}", (1.50 + math.cos(a) * 0.54 - 0.05,
+                                                  1.50 + math.sin(a) * 0.54 - 0.05, 1.58),
+                              (0.10, 0.10, 0.22), dark))
+    parts.append(geom.dome("ca_dome", (1.50, 1.50, 1.90), 0.60, 0.60, pale, segments=20, rings=8))
+    parts.append(geom.cylinder("ca_lantern", (1.50, 1.50, 2.48), 0.15, 0.18, trim, segments=10))
+    parts.append(geom.dome("ca_lanterncap", (1.50, 1.50, 2.66), 0.16, 0.13, pale, segments=10, rings=4))
+    parts.append(geom.cylinder("ca_finial", (1.50, 1.50, 2.79), 0.028, 0.20, gold, segments=6))
+
+    # Twin west towers flanking the door, capped below the dome so the
+    # hierarchy is unambiguous from any of the four camera angles.
+    for i, x in enumerate((0.70, 2.30)):
+        parts.append(geom.box(f"ca_tower_{i}", (x - 0.25, 0.30, 0.30), (0.50, 0.56, 1.62), stone))
+        parts.append(geom.box(f"ca_towercorn_{i}", (x - 0.29, 0.26, 1.92), (0.58, 0.64, 0.08), trim))
+        parts.append(geom.dome(f"ca_towercap_{i}", (x, 0.58, 2.00), 0.27, 0.32, pale,
+                               segments=12, rings=5))
+        for j, z in enumerate((0.94, 1.36)):
+            parts.append(geom.box(f"ca_towerwin_{i}_{j}", (x - 0.08, 0.26, z), (0.16, 0.08, 0.24), dark))
+
+    # West front: a great door under an arch, between two columns.
+    parts.append(geom.box("ca_door", (1.30, 0.26, 0.30), (0.40, 0.10, 0.70), dark))
+    parts.append(geom.cylinder("ca_arch", (1.50, 0.31, 1.00), 0.20, 0.09, trim, segments=12))
+    parts[-1].rotation_euler = (math.pi / 2.0, 0.0, 0.0)
+    for i, x in enumerate((1.12, 1.88)):
+        parts.append(geom.cylinder(f"ca_col_{i}", (x, 0.34, 0.30), 0.07, 0.70, trim, segments=8))
+    # Apse on the east end, which is what stops the plan reading as a barn.
+    parts.append(geom.cylinder("ca_apse", (1.50, 2.70, 0.30), 0.46, 0.86, stone, segments=14))
+    parts.append(geom.dome("ca_apseroof", (1.50, 2.70, 1.16), 0.48, 0.34, pale, segments=14, rings=5))
+    return geom.join(parts, "cathedral"), (3, 3)
+
+
+REGISTRY.update({
+    "shrine": shrine,
+    "chapel": chapel,
+    "cathedral": cathedral,
+})

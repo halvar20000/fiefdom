@@ -23,6 +23,26 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.36.0',
+    date: '2026-09-02',
+    headline: 'A shrine at the roadside, a cathedral over the town.',
+    sections: [
+      {
+        title: 'Added',
+        items: [
+          'Three more rungs of religion either side of the church. A wayside shrine is a single tile, costs almost nothing and reaches eight souls -- it fits in the gaps nothing else will. A chapel is a vaulted hall under a bellcote at two thirds of a church. A cathedral is a great dome between two towers, reaching seventy-two, and it is the only building in the game that is both a mercy and an ornament: it counts toward beauty as well.',
+          'Small is better value per head and large is better value per plot. Three churches and one cathedral both reach seventy-two people; the churches cost less stone and twelve tiles, the cathedral costs much more stone and nine. Stone is the currency of grandeur here, and land is what a cramped castle actually runs out of.',
+        ],
+      },
+      {
+        title: 'Fixed',
+        items: [
+          'Coverage was counted by name. The religion lever looked for buildings called \'church\' and nothing else, which was right while there was exactly one of them and would have been quietly wrong the moment a chapel existed -- it would have been built, paid for, and reached nobody. Buildings declare which coverage they feed now, and the tally reads that, so the next one to be added cannot repeat it.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.35.0',
     date: '2026-09-02',
     headline: 'Twelve ways to be loved, or feared.',
