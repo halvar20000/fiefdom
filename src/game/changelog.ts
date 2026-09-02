@@ -23,6 +23,28 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.40.0',
+    date: '2026-09-02',
+    headline: 'Stairs, a pit and a bucket.',
+    sections: [
+      {
+        title: 'Added',
+        items: [
+          'Wall stairs. A flight of timber steps that nobody stands on and that lets the curtain beside it be manned — so a long wall no longer needs a tower every few spans purely to give the archers a way up. Towers still earn their place by being stone, by being manned themselves, and by shooting from higher.',
+          'Killing pits. Stakes under a brushwood lid, laid in runs and walkable, because a trap that blocks the path is a trap nobody walks into. The first man onto one goes in and takes whoever is beside him, and then it is spent — a hole in the ground and nothing more.',
+          'Water pots. A stone butt that douses every fire near it and is emptied doing so. The answer to a fire ballista, and to your own pitch when it burns back towards your hovels.',
+        ],
+      },
+      {
+        title: 'Changed',
+        items: [
+          'Both new defences are consumed when they go off, like a pitch ditch. A trap you lay once and never think about again is not a decision; a line of them is a line you have to keep paying for.',
+          'Neither will touch your own men. Pitch burns whoever is standing in it, on the reasoning that you lit it — but a pit under your own garrison would be a bug rather than a nuance, so the pit and the pot look only at the enemy.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.39.0',
     date: '2026-09-02',
     headline: 'Twenty-one buildings you could not build, and a moat to dig.',

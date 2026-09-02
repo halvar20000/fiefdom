@@ -61,6 +61,18 @@ export function manableTiles(buildings: Iterable<Footprint>): Set<string> {
     }
   }
 
+  // Stairs are not garrison tiles -- nobody stands on a staircase -- so they
+  // are not in the map above at all. They work by making the garrison tiles
+  // NEXT to them into sources, which is the whole building: a way up that is
+  // not itself a place to fight from.
+  for (const b of buildings) {
+    if (b.name !== 'stairs') continue;
+    for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
+      const k = key(b.x + dx, b.z + dz);
+      if (tiles.has(k)) tiles.set(k, true);
+    }
+  }
+
   const reached = new Set<string>();
   const queue: [number, number][] = [];
   for (const [k, isSource] of tiles) {

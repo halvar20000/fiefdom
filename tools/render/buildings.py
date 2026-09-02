@@ -2588,3 +2588,90 @@ REGISTRY.update({
     "drawbridge": lambda: _drawbridge(False),
     "drawbridge_raised": lambda: _drawbridge(True),
 })
+
+
+# --- the sprung defences, and a way up ------------------------------------
+
+
+def killing_pit():
+    """
+    A lidded pit: brushwood over stakes, with the stakes just showing.
+
+    The whole job is to be crossable and to look crossable, so it sits FLAT --
+    anything standing proud of the ground would be walked around by a player
+    who could see it, which defeats a trap. It is painted in runs like the
+    pitch ditch, so it tiles the same way: full-bleed, nothing inset.
+    """
+    earth = M.cloth("PitEarth", colour=(0.34, 0.29, 0.21))
+    brush = M.thatch("PitBrush")
+    stake = M.timber("PitStake", dark=True)
+
+    parts = []
+    parts.append(geom.box("kp_ground", (0.0, 0.0, 0.0), (1.0, 1.0, 0.03), earth))
+    # Brushwood laid in two crossed courses, which reads as a lid rather than
+    # as bare dirt, and is the only tell.
+    for i in range(5):
+        t = 0.10 + i * 0.20
+        parts.append(geom.box(f"kp_lidA_{i}", (0.04, t - 0.035, 0.03), (0.92, 0.07, 0.02), brush))
+        parts.append(geom.box(f"kp_lidB_{i}", (t - 0.035, 0.04, 0.05), (0.07, 0.92, 0.02), brush))
+    # Two stake tips through the gaps. Enough to notice, not enough to avoid.
+    for i, (x, y) in enumerate(((0.30, 0.62), (0.68, 0.34))):
+        parts.append(geom.cone(f"kp_stake_{i}", (x, y, 0.05), 0.035, 0.10, stake, segments=5))
+    return geom.join(parts, "killing_pit"), (1, 1)
+
+
+def water_pot():
+    """A stone butt brimming with water, on a low kerb. Reads at a glance."""
+    stone = M.rough_stone("PotStone")
+    rim = M.castle_stone("PotRim")
+    water = M.ground_water("PotWater")
+    timber_d = M.timber("PotYoke", dark=True)
+
+    parts = []
+    parts.append(geom.box("wp_kerb", (0.10, 0.10, 0.0), (0.80, 0.80, 0.06), stone))
+    parts.append(geom.cylinder("wp_butt", (0.50, 0.50, 0.06), 0.32, 0.40, stone, segments=12))
+    parts.append(geom.cylinder("wp_rim", (0.50, 0.50, 0.44), 0.34, 0.06, rim, segments=12))
+    # ON TOP of the rim, not below it. The rim is a solid disc rather than a
+    # ring, so water tucked under it was capped over completely and the pot
+    # read as a basket -- the one feature that says what the building is,
+    # invisible. Brimming, too: a full pot is the one that still works.
+    parts.append(geom.cylinder("wp_water", (0.50, 0.50, 0.495), 0.285, 0.02, water,
+                               segments=12))
+    parts.append(geom.box("wp_yoke", (0.44, 0.14, 0.06), (0.12, 0.10, 0.52), timber_d))
+    parts.append(geom.cylinder("wp_pail", (0.22, 0.24, 0.06), 0.10, 0.15, timber_d, segments=8))
+    return geom.join(parts, "water_pot"), (1, 1)
+
+
+def stairs():
+    """
+    Timber steps against a wall: a flight rising to about a curtain's height.
+
+    Deliberately NOT stone. It has to read as an addition bolted onto the
+    curtain rather than as a piece of it, or the player cannot see at a glance
+    which stretch of wall he has actually made reachable.
+    """
+    timber_l = M.timber("StairTread")
+    timber_d = M.timber("StairStringer", dark=True)
+    rough = M.rough_stone("StairFooting")
+
+    parts = []
+    parts.append(geom.box("sr_footing", (0.06, 0.06, 0.0), (0.88, 0.88, 0.07), rough))
+    # Seven treads climbing to 0.92, which is the wall's walkway height in
+    # GARRISON_HEIGHT -- they must arrive level with what they serve.
+    n = 7
+    for i in range(n):
+        z = 0.07 + (i / n) * 0.85
+        y = 0.10 + (i / n) * 0.72
+        parts.append(geom.box(f"sr_tread_{i}", (0.20, y, z), (0.56, 0.14, 0.05), timber_l))
+    for i, x in enumerate((0.18, 0.72)):
+        parts.append(geom.box(f"sr_stringer_{i}", (x, 0.10, 0.07), (0.10, 0.10, 0.88), timber_d))
+        parts[-1].rotation_euler = (-0.70, 0.0, 0.0)
+    parts.append(geom.box("sr_landing", (0.18, 0.80, 0.90), (0.64, 0.16, 0.06), timber_l))
+    return geom.join(parts, "stairs"), (1, 1)
+
+
+REGISTRY.update({
+    "killing_pit": killing_pit,
+    "water_pot": water_pot,
+    "stairs": stairs,
+})

@@ -312,6 +312,31 @@ export const BUILDINGS: Record<string, BuildingDef> = {
                + 'G: down it is a road, up it is a wall, and the enemy walks '
                + 'straight over it while you forget.',
   },
+  killing_pit: {
+    name: 'killing_pit', label: 'Killing Pit', category: 'castle',
+    footprint: [1, 1], cost: { wood: 6 }, workers: 0, terrain: 'any', hp: 30,
+    // Walkable, and that is the trick, exactly as with the pitch ditch: it has
+    // to be crossed to work, so it must not block the path that leads over it.
+    walkable: true, paintable: true,
+    description: 'Stakes under a thin lid. The first man onto it goes in and '
+               + 'takes whoever is beside him — once. Then it is a hole.',
+  },
+  water_pot: {
+    name: 'water_pot', label: 'Water Pot', category: 'castle',
+    footprint: [1, 1], cost: { wood: 4, stone: 4 }, workers: 0, terrain: 'any', hp: 30,
+    walkable: true, paintable: true,
+    description: 'A butt of water against fire. It douses everything burning '
+               + 'near it and is emptied doing so — the answer to a fire '
+               + 'ballista, and to your own pitch when the wind turns.',
+  },
+  stairs: {
+    name: 'stairs', label: 'Wall Stairs', category: 'castle',
+    footprint: [1, 1], cost: { wood: 8 }, workers: 0, terrain: 'any', hp: 60,
+    walkable: true,
+    description: 'Timber steps against a curtain. Nobody stands on them, but '
+               + 'the wall beside them can be manned without spending a tower '
+               + 'to anchor it.',
+  },
   siege_camp: {
     name: 'siege_camp', label: 'Siege Camp', category: 'castle',
     footprint: [3, 3], cost: { wood: 40, stone: 10 }, workers: 0, terrain: 'any',
@@ -730,8 +755,8 @@ export const BUILDINGS: Record<string, BuildingDef> = {
 export const BUILD_MENU: { category: Category; label: string; items: string[] }[] = [
   { category: 'castle', label: 'Castle',
     items: ['wall', 'gatehouse', 'tower', 'round_tower', 'perimeter_turret',
-            'lookout_tower', 'moat', 'drawbridge', 'pitch_ditch', 'barracks',
-            'siege_camp'] },
+            'lookout_tower', 'stairs', 'moat', 'drawbridge', 'pitch_ditch',
+            'killing_pit', 'water_pot', 'barracks', 'siege_camp'] },
   { category: 'castle', label: 'Stores', items: ['stockpile', 'granary'] },
   { category: 'town', label: 'Town',
     items: ['hovel', 'market', 'garden', 'well', 'pond', 'statue', 'maypole',
@@ -1061,6 +1086,18 @@ export const BURN_RADIUS = 1.6;
 export const BURN_DPS = 14;
 /** How close an enemy must be to a ditch before lighting it is worth doing. */
 export const IGNITE_RADIUS = 1.3;
+
+/**
+ * The two sprung defences: a pit that opens under a man, and a pot that puts a
+ * fire out. Both are ONE-SHOT and consumed, like a pitch ditch, because a
+ * permanent free trap is not a decision -- you would lay one and forget it.
+ * A line of them is a line you have to keep paying for.
+ */
+export const PIT_TRIGGER_RADIUS = 0.7;
+export const PIT_DAMAGE = 70;
+/** Radius the pit hurts, wider than it triggers, so a tight column suffers. */
+export const PIT_BLAST_RADIUS = 1.1;
+export const WATER_POT_RADIUS = 3.2;
 
 export const MARSH_SPEED_FOOT = 0.48;
 export const MARSH_SPEED_SIEGE = 0.26;

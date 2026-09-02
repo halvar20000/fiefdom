@@ -2652,6 +2652,58 @@
     "scale": 3
   },
   {
+    "name": "killing_pit",
+    "rotation": 0,
+    "width": 118,
+    "height": 76,
+    "anchor_x": 12.99,
+    "anchor_y": 42.41,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "killing_pit",
+    "rotation": 1,
+    "width": 124,
+    "height": 76,
+    "anchor_x": 57.87,
+    "anchor_y": 18.41,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "killing_pit",
+    "rotation": 2,
+    "width": 118,
+    "height": 80,
+    "anchor_x": 105.01,
+    "anchor_y": 42.34,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "killing_pit",
+    "rotation": 3,
+    "width": 124,
+    "height": 78,
+    "anchor_x": 66.13,
+    "anchor_y": 66.41,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
     "name": "lookout_tower",
     "rotation": 0,
     "width": 276,
@@ -5512,6 +5564,58 @@
     "scale": 3
   },
   {
+    "name": "stairs",
+    "rotation": 0,
+    "width": 130,
+    "height": 118,
+    "anchor_x": 29.25,
+    "anchor_y": 87.46,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "stairs",
+    "rotation": 1,
+    "width": 158,
+    "height": 118,
+    "anchor_x": 52.09,
+    "anchor_y": 62.98,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "stairs",
+    "rotation": 2,
+    "width": 130,
+    "height": 144,
+    "anchor_x": 100.75,
+    "anchor_y": 86.76,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "stairs",
+    "rotation": 3,
+    "width": 158,
+    "height": 130,
+    "anchor_x": 105.91,
+    "anchor_y": 111.09,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
     "name": "statue",
     "rotation": 0,
     "width": 240,
@@ -5921,6 +6025,58 @@
     "height": 154,
     "anchor_x": 126.2,
     "anchor_y": 126.35,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "water_pot",
+    "rotation": 0,
+    "width": 112,
+    "height": 92,
+    "anchor_x": 15.69,
+    "anchor_y": 63.05,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "water_pot",
+    "rotation": 1,
+    "width": 128,
+    "height": 92,
+    "anchor_x": 48.03,
+    "anchor_y": 39.05,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "water_pot",
+    "rotation": 2,
+    "width": 112,
+    "height": 108,
+    "anchor_x": 96.31,
+    "anchor_y": 63.06,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "water_pot",
+    "rotation": 3,
+    "width": 128,
+    "height": 100,
+    "anchor_x": 79.97,
+    "anchor_y": 87.2,
     "footprint": [
       1,
       1

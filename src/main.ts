@@ -38,6 +38,7 @@ import {
   GARRISON_HEIGHT, garrisonReach, MARSH_SPEED_FOOT, MARSH_SPEED_SIEGE,
   BUILD_MENU, unlistedBuildings,
   BURN_SECONDS, BURN_RADIUS, BURN_DPS, IGNITE_RADIUS, DEMOLISH_REFUND,
+  PIT_TRIGGER_RADIUS, PIT_BLAST_RADIUS, PIT_DAMAGE, WATER_POT_RADIUS,
   SPEED_LEVELS, RESOURCE_LABELS,
   type Resource,
 } from './game/defs';
@@ -1760,6 +1761,52 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
    * pull his own men clear is making a real decision rather than pressing a
    * free win button.
    */
+  /**
+   * Spring any pit an enemy has walked onto, and empty any water pot standing
+   * near a fire.
+   *
+   * Both are one-shot and both are the player's, so they check `army.enemies`
+   * rather than every soldier -- unlike a pitch fire, which burns whoever is
+   * in it. A trap that killed its own garrison would be a bug, not a nuance.
+   */
+  function updateTraps(): number {
+    let sprung = 0;
+
+    for (const b of state.buildings.filter(x => x.name === 'killing_pit')) {
+      const cx = b.x + 0.5, cz = b.z + 0.5;
+      const trod = army.enemies.some(
+        e => Math.hypot(e.x - cx, e.z - cz) <= PIT_TRIGGER_RADIUS);
+      if (!trod) continue;
+      // Blast wider than it triggers: a column marching in file loses more
+      // than the one man who found it.
+      for (const e of army.enemies) {
+        if (Math.hypot(e.x - cx, e.z - cz) <= PIT_BLAST_RADIUS) e.hp -= PIT_DAMAGE;
+      }
+      state.removeBuilding(b);
+      markArea(b.x, b.z, 1, 1, 0);
+      staticDirty = true;
+      sprung++;
+    }
+    if (sprung) state.notify(`${sprung} killing pit${sprung > 1 ? 's' : ''} sprung`, 'info');
+
+    if (fires.length) {
+      let doused = 0;
+      for (const b of state.buildings.filter(x => x.name === 'water_pot')) {
+        const cx = b.x + 0.5, cz = b.z + 0.5;
+        const near = fires.filter(
+          f => Math.hypot(f.x + 0.5 - cx, f.z + 0.5 - cz) <= WATER_POT_RADIUS);
+        if (!near.length) continue;
+        for (const f of near) fires.splice(fires.indexOf(f), 1);
+        state.removeBuilding(b);
+        markArea(b.x, b.z, 1, 1, 0);
+        staticDirty = true;
+        doused += near.length;
+      }
+      if (doused) state.notify(`Water pots doused ${doused} fire${doused > 1 ? 's' : ''}`, 'info');
+    }
+    return sprung;
+  }
+
   function updateFires(dt: number): void {
     if (!fires.length) return;
     for (let i = fires.length - 1; i >= 0; i--) {
@@ -2897,6 +2944,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     if (standingClock > 6) { standingClock = 0; checkStanding(); }
     updateRaids(dt);
     enemyWorkers.update(dt, factions);
+    updateTraps();
     updateFires(dt);
     projectiles.update(dt);
 

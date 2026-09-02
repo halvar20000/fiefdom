@@ -111,13 +111,19 @@ is credited when the main load is set down, clamped to the room available, and
 skipped on a drop into a relay shed. Anything else needed a second carry slot
 the state machine has no state for.
 
-### 5. Castle works *(part done, 1.38.0)*
+### 5. Castle works *(done, 1.40.0)*
 
 - [x] `perimeter_turret` (1x1, deck 1.14), `round_tower` (3x3, deck 1.92, hp
       900), `lookout_tower` (2x2, deck 2.30, timber and fragile with it).
 - [x] `moat` (paintable, blocks, nobody mans it) and `drawbridge` (walkable
       down, solid up, G toggles them all).
-- [ ] `killing_pit`, `stairs`, `oil_smelter`, `water_pot`.
+- [x] `stairs` (a way up that is not a place to fight from), `killing_pit`
+      and `water_pot` (both one-shot and consumed, like a pitch ditch).
+- [ ] ~~`oil_smelter`~~ — **deferred to tranche 7, on purpose.** In Crusader
+      the smelter fills pots that ENGINEERS carry and pour. Without engineers
+      there is nobody to man it, and a smelter that boils oil onto passers-by
+      by itself is a different building wearing the name. It waits for the
+      troops.
 
 The three towers reused the garrison system, but reusing it meant fixing two
 things that were correct only because there had been exactly one tower.
@@ -151,9 +157,19 @@ and completely unreachable because nothing added them to it, and nothing
 anywhere said so. `unlistedBuildings()` now reports it through the same loud
 banner as a stale asset manifest. Keep it passing.
 
-Still to come: killing pits and oil need a trigger and a damage model, and
-`stairs` needs a decision about whether it is a building at all or a property
-of the wall.
+`stairs` turned out to be a building rather than a property of the wall, and a
+useful one: it is not garrisonable, so it never appears in `GARRISON_HEIGHT`
+and nobody stands on it. It works by making the garrison tiles NEXT to it into
+stair sources, which is the whole idea — a way up that is not itself a place to
+fight from. That keeps the perimeter turret's niche intact: the turret is
+stone, is manned, and defends; stairs are timber, cheaper, and only grant
+access.
+
+The traps needed no new systems. `updateFires` was already the pattern for a
+per-tick proximity scan, so `updateTraps` sits beside it in the same tick.
+Both new pieces check `army.enemies` rather than every soldier, unlike a pitch
+fire which burns whoever is standing in it — a trap that killed its own
+garrison would be a bug, not a nuance.
 
 ### 6. Recruitment
 
