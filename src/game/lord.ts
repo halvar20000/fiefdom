@@ -236,7 +236,18 @@ export class Lord {
   }
 
   /** His own men only -- `army.enemies` would sweep in the other rivals too. */
-  get troops(): Soldier[] { return this.army.of(this.side); }
+  /**
+   * Everyone he can give orders to.
+   *
+   * His own LORD is not in it. That man is placed with the keep, he is the
+   * only one whose death ends this faction, and the mustering code would
+   * otherwise pack him into the next wave and walk him across the map to be
+   * killed by the player's archers -- which would make every rival trivially
+   * beatable by standing still.
+   */
+  get troops(): Soldier[] {
+    return this.army.of(this.side).filter(s => !s.def.unique);
+  }
   get mustering(): Soldier[] {
     return this.troops.filter(s => !this.garrisonIds.has(s.id) && !this.sentIds.has(s.id));
   }

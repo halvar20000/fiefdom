@@ -43,6 +43,8 @@ const CSS = `
 `;
 
 export interface GameOverOpts {
+  /** One line under the verdict, saying how it happened. */
+  reason?: string;
   win: boolean;
   /** Rows for the tally, in display order. */
   stats: { label: string; value: string | number }[];
@@ -75,9 +77,12 @@ export function showGameOver(opts: GameOverOpts): void {
 
   const sub = document.createElement('div');
   sub.className = 'sub';
-  sub.textContent = opts.win
+  // The caller says WHY, because there are now two ways to lose: the keep can
+  // be pulled down, or the man in it can be killed. A screen that names the
+  // wrong one is worse than a screen that names neither.
+  sub.textContent = opts.reason ?? (opts.win
     ? 'The last rival keep has fallen. The field is yours.'
-    : 'Your keep has fallen. The fief is lost.';
+    : 'Your keep has fallen. The fief is lost.');
   box.appendChild(sub);
 
   const table = document.createElement('table');

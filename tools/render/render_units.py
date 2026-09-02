@@ -225,6 +225,16 @@ SOLDIERS = {
                     'hose': (0.31, 0.27, 0.21)},
         "kit": {'weapon': 'ladder'},
     },
+    # The lord. Not recruited, not replaceable, and the one figure on the
+    # field the player must be able to find instantly -- so he is the only man
+    # in the game wearing purple, the only one wearing gold, and the only one
+    # with anything on his head that is not a helmet or a hood.
+    "lord": {
+        "palette": {'tunic': (0.32, 0.18, 0.40), 'hood': (0.22, 0.12, 0.28),
+                    'hose': (0.20, 0.17, 0.22)},
+        "kit": {'crown': True, 'weapon': 'sword', 'shield': True,
+                'shield_colour': (0.72, 0.58, 0.22)},
+    },
     "crossbowman": {
         # Ochre against the archer's green, and helmeted where the archer is
         # bare-headed. The weapon reads as a cross rather than an arc.

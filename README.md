@@ -277,7 +277,7 @@ blender -b -P tools/render/render_ground.py    -- --out "$PWD/public/assets/tile
 blender -b -P tools/render/render_units.py     -- --out "$OUT" --body peasant --only idle,walk,dig,mine
 for b in spearman archer swordsman engineer tunneler \
          pikeman maceman crossbowman \
-         slave slinger arabian_swordsman assassin ladderman; do
+         slave slinger arabian_swordsman assassin ladderman lord; do
   blender -b -P tools/render/render_units.py   -- --out "$OUT" --body "$b"
 done
 blender -b -P tools/render/render_mounts.py    -- --out "$OUT"

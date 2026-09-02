@@ -1303,6 +1303,15 @@ export interface SoldierType {
   /** He carries a ladder: everyone near him climbs. See LADDER_RADIUS. */
   ladders?: boolean;
   /**
+   * There is exactly one of him and nobody buys him.
+   *
+   * He is placed with the keep and dies with the fief. `from` is meaningless
+   * for such a unit, and so is a line in the recruit panel, so `unlistedSoldiers`
+   * lets him alone -- he is not a soldier somebody forgot to list, he is a
+   * soldier there is no list for.
+   */
+  unique?: boolean;
+  /**
    * A horse or a hound.
    *
    * Four legs, and not one set of stairs in this castle was built for them --
@@ -1517,6 +1526,29 @@ export const SOLDIER_TYPES: Record<string, SoldierType> = {
                + 'anything else strikes and dies to almost anything. Loose '
                + 'several or none.',
   },
+  /*
+   * The lord himself.
+   *
+   * Not recruited, not replaceable, and the only unit on the field whose death
+   * ends the game -- which is the point of him. Until now a fief fell when its
+   * keep was pulled down, and a keep is 900 health behind whatever walls the
+   * player has built. The lord is a second way in and a far more interesting
+   * one: he can be got at, but only by getting through to him.
+   *
+   * Strong enough to be worth using and slow enough that using him is a
+   * decision. He hits harder than anything else that walks and he takes more
+   * than anything except a battering ram -- so a lord sent out to break a
+   * skirmish usually wins it, and a lord sent out to break a siege usually
+   * ends the game.
+   */
+  lord: {
+    name: 'lord', from: 'keep', label: 'Lord', gold: 0, cost: {},
+    unique: true,
+    hp: 240, speed: 1.2, damage: 26, range: 1.0, cooldown: 1.4,
+    description: 'You. He stands at your keep unless you move him, and if he '
+               + 'falls the fief falls with him — so he is the strongest thing '
+               + 'you own and the last thing you should risk.',
+  },
   ladderman: {
     name: 'ladderman', from: 'siege_camp', label: 'Ladderman', gold: 30,
     cost: { wood: 3 },
@@ -1600,6 +1632,6 @@ export const SOLDIER_ORDER: string[] =
 export function unlistedSoldiers(): string[] {
   const listed = new Set(SOLDIER_ORDER);
   return Object.keys(SOLDIER_TYPES)
-    .filter(n => !listed.has(n))
+    .filter(n => !listed.has(n) && !SOLDIER_TYPES[n].unique)
     .map(n => `unrecruitable:${n}`);
 }

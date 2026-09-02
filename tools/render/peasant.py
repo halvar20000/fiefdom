@@ -214,6 +214,24 @@ def build(arm, palette=None, prefix=DEFAULT_PREFIX, kit=None):
     steel = M.iron()
     haft = M.timber("HaftWood", dark=True)
 
+    if k.get('crown'):
+        # A band with points on it, over the hood rather than instead of it.
+        # A crown is the ONE piece of kit in the game that has to be legible at
+        # a glance from any facing, because the man wearing it is the man you
+        # lose the game by losing -- so it is gold, it sits proud of the head,
+        # and its points break the silhouette.
+        gold = M.cloth("Crown", colour=(0.86, 0.68, 0.24))
+        band = head_c + Vector((0.0, 0.0, 0.070))
+        parts.append(limb(arm, "pe_crown", band - Vector((0.0, 0.0, 0.018)),
+                          band + Vector((0.0, 0.0, 0.022)), 0.104, 0.104,
+                          gold, "Head", segments=10, prefix=prefix))
+        for i in range(6):
+            a = (i / 6) * math.tau
+            d = Vector((math.cos(a) * 0.088, math.sin(a) * 0.088, 0.0))
+            parts.append(limb(arm, f"pe_crownpt_{i}", band + d,
+                              band + d + Vector((0.0, 0.0, 0.052)),
+                              0.020, 0.006, gold, "Head", segments=4, prefix=prefix))
+
     if k.get('helmet'):
         parts.append(blob(arm, "pe_helm", head_c + Vector((0.0, 0.0, 0.012)), 0.109,
                           steel, "Head", squash=0.92, prefix=prefix))

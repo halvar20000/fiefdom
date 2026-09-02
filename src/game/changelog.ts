@@ -23,6 +23,29 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.47.0',
+    date: '2026-09-02',
+    headline: 'There is a man in the keep now, and he can be killed.',
+    sections: [
+      {
+        title: 'Added',
+        items: [
+          'The Lord. Yours stands at your keep from the first second of the game — purple, crowned, and the only figure on the field you can find at a glance. Every rival has one too, standing in his own.',
+          'He is the strongest thing that walks: two hundred and forty health and a blow harder than any soldier\'s. He takes orders like anyone else, and he holds his ground until you tell him not to.',
+          'And if he dies, the fief dies with him. That is the point of him. A keep is nine hundred health behind whatever wall you built around it; the man inside it is two hundred and forty and can be got at — which cuts both ways. You can win a war now by reaching one man instead of by knocking down a building, and so can the lord across the sand.',
+          'The end screen says which of the two it was.',
+        ],
+      },
+      {
+        title: 'Changed',
+        items: [
+          'A rival lord is out of his own muster. He is not packed into the next wave and walked across the map to be shot by your archers, which would have made every opponent beatable by standing still.',
+          'Both lords start holding ground rather than aggressive. The default stance chases anything it notices, and for the one unit whose death ends the game that is a trap — a fief lost to a stance nobody chose. One keypress changes it when you mean to.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.46.0',
     date: '2026-09-02',
     headline: 'Four legs, and nothing else on the field can keep up.',

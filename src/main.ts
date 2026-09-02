@@ -1936,17 +1936,30 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     if (b.name === 'barracks') {
       state.notify(`${f.name}'s barracks is destroyed — no more troops!`, 'info');
     }
-    if (b.name === 'keep' && !f.defeated) {
-      f.defeated = true;
-      f.lord.defeated = true;
-      const left = factions.filter(o => !o.defeated).length;
-      if (left) {
-        state.notify(
-          `${f.name}'s keep has fallen. ${left} rival${left === 1 ? '' : 's'} left.`, 'info');
-      } else {
-        state.notify(`${f.name}'s keep has fallen. The field is yours!`, 'info');
-        endGame(true);
-      }
+    if (b.name === 'keep') defeatFaction(f, `${f.name}'s keep has fallen.`);
+  }
+
+  /**
+   * A rival is finished, however it happened.
+   *
+   * Two ways in now -- pull his keep down, or kill the man in it -- so the
+   * "and then what" was extracted out of the keep's own destruction handler
+   * rather than written twice and left to drift apart the first time either
+   * one changed.
+   */
+  function defeatFaction(f: Faction, why: string): void {
+    if (f.defeated) return;
+    f.defeated = true;
+    f.lord.defeated = true;
+    // A rival's name starts lower case -- "the Red Lord" -- and this is the
+    // start of a sentence.
+    const line = why.charAt(0).toUpperCase() + why.slice(1);
+    const left = factions.filter(o => !o.defeated).length;
+    if (left) {
+      state.notify(`${line} ${left} rival${left === 1 ? '' : 's'} left.`, 'info');
+    } else {
+      state.notify(`${line} The field is yours!`, 'info');
+      endGame(true, `${line} The field is yours.`);
     }
   }
 
@@ -2004,7 +2017,9 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     state.notify(`Your ${b.def.label.toLowerCase()} has been destroyed!`, 'warn');
     workers.sync();
     // Lose your keep and the fief is lost.
-    if (b.name === 'keep') endGame(false);
+    if (b.name === 'keep') {
+      endGame(false, 'Your keep has fallen. The fief is lost.');
+    }
   }
 
   /** Roll the peaks and the kill tally forward. Called each tick after combat. */
@@ -2013,6 +2028,17 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     if (state.gold > peakGold) peakGold = state.gold;
     for (const s of army.lastFallen) {
       if (s.side === PLAYER) troopsLost++; else enemyKilled++;
+      // The other way a fief ends. A keep is 900 health behind whatever wall
+      // its owner has built; the man inside it is 240 and can be got at, which
+      // is the whole reason to have him on the field rather than in a stat.
+      if (s.type !== 'lord') continue;
+      if (s.side === PLAYER) {
+        state.notify('Your lord is dead. The fief is lost.', 'warn');
+        endGame(false, 'Your lord is dead. A fief without a lord is no fief.');
+      } else {
+        const f = factionOf(s.side);
+        if (f) defeatFaction(f, `${f.name} is dead.`);
+      }
     }
   }
 
@@ -2079,7 +2105,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
    * so the field the player surveys is genuinely theirs rather than a frozen
    * enemy town they can no longer touch.
    */
-  function endGame(win: boolean): void {
+  function endGame(win: boolean, reason?: string): void {
     if (gameEnded) return;
     gameEnded = true;
     nextRaid = Infinity;
@@ -2121,6 +2147,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     }
     showGameOver({
       win,
+      reason,
       stats: [
         { label: 'Time', value: playTime(state.elapsed) },
         { label: 'Title earned', value: TITLES[titleIdx][1] },
@@ -3851,6 +3878,52 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
   }
 
   if (restore) applySave(restore);
+
+  /**
+   * Put a lord at every keep that has not got one.
+   *
+   * Called after the save is applied rather than at placement, and written as
+   * "seat anyone missing" rather than "seat everyone", because it has three
+   * callers' worth of situations to cover with one rule: a fresh game where
+   * nobody has one, a save made after this release where everybody already
+   * does, and a save made BEFORE it where the keeps are there and the lords
+   * are not. The last of those is the reason it cannot simply spawn.
+   */
+  function seatLords(): void {
+    const seated = (side: number) => army.soldiers.some(
+      s => s.type === 'lord' && s.side === side && s.hp > 0);
+    const free = (x: number, z: number) => {
+      for (let r = 0; r <= 5; r++) {
+        for (let k = 0; k < 8; k++) {
+          const a = (k / 8) * Math.PI * 2;
+          const nx = x + Math.cos(a) * r, nz = z + Math.sin(a) * r;
+          if (!paths.isBlocked(Math.floor(nx), Math.floor(nz))) return { x: nx, z: nz };
+        }
+      }
+      return { x, z };
+    };
+    const seat = (side: number, kx: number, kz: number) => {
+      if (seated(side)) return;
+      const at = free(kx, kz);
+      const s = army.recruit('lord', at.x, at.z, side);
+      // Every lord holds his ground to begin with, the player's included.
+      // The default stance is aggressive -- chase anything you notice -- and
+      // for the one unit whose death ends the game that is a trap: he would
+      // set off after the first raider to come within sight of the gate and
+      // the player would lose a fief to a stance they never chose. The order
+      // is one keypress away when they do choose it.
+      if (s) s.hold = true;
+    };
+
+    const mine = state.buildings.find(b => b.name === 'keep');
+    if (mine) seat(PLAYER, mine.x + 1.5, mine.z + 3.4);
+    for (const f of factions) {
+      if (f.defeated) continue;
+      const k = f.buildings.find(b => b.name === 'keep');
+      if (k) seat(f.id, k.x + 1.5, k.z + 3.4);
+    }
+  }
+  seatLords();
 
   // With the keeps final -- placed fresh or restored from a save -- make sure a
   // land route joins every one of them, carving a ford across any dividing river.

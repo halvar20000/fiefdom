@@ -171,7 +171,7 @@ Both new pieces check `army.enemies` rather than every soldier, unlike a pitch
 fire which burns whoever is standing in it — a trap that killed its own
 garrison would be a bug, not a nuance.
 
-### 6. Recruitment *(part done, 1.42.0)*
+### 6. Recruitment *(done, 1.42.0 and 1.45.0-1.46.0)*
 
 - [x] Recruiting generalised. `SoldierType.from` was a union of the only two
       buildings that existed, and the two places that switched on it wrote
@@ -179,9 +179,21 @@ garrison would be a bug, not a nuance.
       build a barracks. It is a building name now and the message comes from
       that building's own label.
 - [x] `engineers_guild` -> `engineer`, `tunnelers_guild` -> `tunneler`.
-- [ ] `mercenary_post`, `stables`. Both wait on tranche 7: a post that
-      recruits nobody and a stable with nothing to mount are not buildings,
-      they are placeholders.
+- [x] `mercenary_post` (1.45.0) and `stables` (1.46.0). Both waited on tranche
+      7, exactly as written here: a post that recruits nobody and a stable with
+      nothing to mount are not buildings, they are placeholders. They were
+      built in the same releases as the men they sell.
+
+The mercenary post turned out to be the more interesting of the two, because
+the thing that makes it worth having is not its roster but its BILL. Every
+unit it sells costs gold and nothing else, which is the one shape of army the
+game could not previously field: a player with no iron, no fletcher and no
+armoury had no soldiers at all, and a player whose armoury had just burned had
+no way to raise any quickly. Priced above the barracks for the near-equivalent
+man, so what gold buys is speed and independence rather than quality.
+
+The stables is one building for one unit and it earns it: a barracks can arm a
+man, it cannot mount one.
 
 `SOLDIER_ORDER` was the same trap as `BUILD_MENU` -- hand-written, the only
 thing the recruit panel iterates, so a unit missing from it is defined, costed,
@@ -195,15 +207,51 @@ Both have zero damage on purpose -- a unit that mends AND fights just replaces
 the swordsman. Both rates are per second and deliberately slow: a wall that
 comes back as fast as a catapult knocks it down makes siege pointless.
 
-### 7. Troops
+### 7. Troops *(done, 1.44.0-1.47.0)*
 
-`knight`, `pikeman`, `maceman`, `crossbowman`, `slinger`, `horse_archer`,
-`arabian_swordsman`, `assassin`, `slave`, `ladderman`, `engineer`, `tunneler`,
-`war_dog`, `lord`.
+- [x] `pikeman`, `maceman`, `crossbowman` (1.44.0). Each needed a weapon we did
+      not make, and the honest way to make one was Crusader's own: the
+      poleturner turns spears OR pikes off the same lathe, the blacksmith beats
+      swords OR maces off the same anvil, the fletcher builds bows OR
+      crossbows. `alternate` on the def, `alt` on the placed building,
+      `productionOf` to resolve the two. That is what makes the new units cost
+      a decision rather than merely more gold: there is one lathe.
+- [x] `slave`, `slinger`, `arabian_swordsman`, `assassin` (1.45.0), and
+      `ladderman` at the siege camp.
+- [x] `knight`, `horse_archer`, `war_dog` (1.46.0).
+- [x] `lord` (1.47.0), which is not a troop at all: he is placed with the keep,
+      he is the only unit whose death ends a fief, and he needed `unique` on
+      the def so the "unrecruitable soldier" guard leaves him alone.
+- [x] `engineer`, `tunneler` were already done in 1.42.0.
 
-The `SOLDIERS` dict in `tools/render/render_units.py` already parameterises a
-body by palette, kit and attack clip, so foot troops are comparatively cheap.
-Mounted units (`horse_archer`) and `war_dog` need a new body entirely.
+Three things worth knowing before the next unit goes in.
+
+**The atlas was the real constraint, not the modelling.** Every sprite goes
+into ONE texture -- the scene is a single back-to-front batch and sprites in
+two batches cannot be sorted against each other -- so a hardware limit of 8192
+is a hard cap on the whole catalogue, and at scale 3 it was already 8192x6588
+with none of this in it. Twelve new bodies would not have fitted. What made
+room was `trim_sprites.py` (1.43.0): crop every sprite to the pixels above the
+alpha the shader already discards, move its anchor by the crop, which is an
+identity. 8192x6588 became 8192x4272. Run it after every render.
+
+**A soldier renders three clips, not five.** The army draw loop asks for idle,
+walk and attack and there is no fourth case; five bodies had been carrying 640
+sprites of themselves digging and swinging a pick.
+
+**The two silhouette rules that came out of actually rendering things.** A
+weapon in a rider's hand hangs at the level of the horse's barrel and is inside
+the animal from half the facings -- the knight carries a lance for that reason
+and no other. And an animal inside a building is a brown shape in a brown
+shadow: the stables' horse stands in the open yard, which is the only place
+any of the four renders can see it.
+
+`SOLDIERS` in `tools/render/render_units.py` parameterises a body by palette,
+kit and attack clip, so a foot soldier really is about ten lines. The mounted
+units and the dog are not on that rig at all -- there is no horse in the Mixamo
+set and no dog, and retargeting a biped onto four legs does not work -- so
+`tools/render/mounts.py` builds them the gazelle's way, primitives posed per
+frame with no armature.
 
 ### 8. Siege
 
