@@ -23,6 +23,26 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.35.0',
+    date: '2026-09-02',
+    headline: 'Twelve ways to be loved, or feared.',
+    sections: [
+      {
+        title: 'Added',
+        items: [
+          'Five things to be liked for: a well, an ornamental pond with reeds and ducks, a statue of yourself twice life size, a ribboned maypole on the green, and a dancing bear with its keeper. Beauty is summed and then eroded by the size of the town, so these are not a purchase you make once -- a fief that doubles needs more of them to stay as charmed as it was.',
+          'Seven new ways to be feared, filling in the ladder either side of the gallows: stocks, a dunking stool, a stretching rack, a gibbet, a dog cage, a burning stake and a dungeon. Only the harshest one you own counts for anything, so they are rungs to climb rather than a set to collect -- building a gibbet beside your stocks buys you the gibbet\'s terms and wastes the stocks. Each rung trades more popularity for more tax than the one below it, from a thirty per cent tax rise for a day in the pillory to a hundred and forty for a dungeon and the gaolers to run it.',
+        ],
+      },
+      {
+        title: 'Changed',
+        items: [
+          'The pond and the maypole want green ground, and the statue is stone only. A pond in the sand fools nobody, and the one building that says permanence ought to cost quarried stone to say it.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.34.3',
     date: '2026-09-02',
     headline: 'The fifth kind of food finally counts for something.',

@@ -300,6 +300,105 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     description: 'A pleasant thing to look at. Raises popularity — but a '
                + 'growing town needs more of them to stay charmed.',
   },
+  // --- the carrot ---------------------------------------------------------
+  //
+  // `beauty` is summed across every one of these and then eroded by
+  // floor(population / BEAUTY_PER), so they are not a one-off purchase: a town
+  // that doubles needs more of them to stay as charmed as it was. The ladder
+  // below runs cheap-and-plain to dear-and-showy.
+  well: {
+    name: 'well', label: 'Well', category: 'town',
+    footprint: [2, 2], cost: { wood: 6, stone: 10 }, workers: 0, terrain: 'any',
+    beauty: 2,
+    description: 'Clean water within reach of the hovels. A small kindness, '
+               + 'and the cheapest one you can buy.',
+  },
+  pond: {
+    name: 'pond', label: 'Ornamental Pond', category: 'town',
+    footprint: [2, 2], cost: { wood: 6, stone: 14 }, workers: 0, terrain: 'green',
+    beauty: 5,
+    description: 'A dug pool with reeds and ducks. Needs green ground — a '
+               + 'pond in the sand fools nobody.',
+  },
+  statue: {
+    name: 'statue', label: 'Statue', category: 'town',
+    footprint: [2, 2], cost: { stone: 30 }, workers: 0, terrain: 'any',
+    beauty: 6,
+    description: 'Yourself, in stone, twice life size. Stone only, and it '
+               + 'shows: nothing else you build says permanence so plainly.',
+  },
+  maypole: {
+    name: 'maypole', label: 'Maypole', category: 'town',
+    footprint: [2, 2], cost: { wood: 20 }, workers: 0, terrain: 'green',
+    beauty: 7,
+    description: 'Ribbons on a pole on the green. Cheap in materials and '
+               + 'loved out of all proportion to what it cost.',
+  },
+  dancing_bear: {
+    name: 'dancing_bear', label: 'Dancing Bear', category: 'town',
+    footprint: [2, 2], cost: { wood: 24, iron: 4 }, workers: 1, terrain: 'any',
+    beauty: 9,
+    description: 'A keeper, a chain and a bear on its hind legs. The finest '
+               + 'entertainment in the fief, and the only one that eats.',
+  },
+
+  // --- the stick ----------------------------------------------------------
+  //
+  // Only the STRONGEST fear building applies -- see `fearEffect`, which picks
+  // by taxMultiplier and ignores the rest -- so these are a ladder to climb,
+  // not a set to collect. Building a gibbet beside your stocks buys you the
+  // gibbet's terms and wastes the stocks. Each rung trades more popularity for
+  // more tax than the one below it.
+  stocks: {
+    name: 'stocks', label: 'Stocks', category: 'town',
+    footprint: [2, 2], cost: { wood: 8 }, workers: 0, terrain: 'any',
+    fear: { popularity: -4, taxMultiplier: 1.3 },
+    description: 'A day in the pillory and a face full of turnips. The '
+               + 'gentlest rung: a little resented, a little more tax.',
+  },
+  dunking_stool: {
+    name: 'dunking_stool', label: 'Dunking Stool', category: 'town',
+    footprint: [2, 2], cost: { wood: 14, stone: 8 }, workers: 0, terrain: 'any',
+    fear: { popularity: -6, taxMultiplier: 1.45 },
+    description: 'A beam, a chair and a cold pond. Humiliation rather than '
+               + 'injury, and the town pays a little better for watching.',
+  },
+  stretching_rack: {
+    name: 'stretching_rack', label: 'Stretching Rack', category: 'town',
+    footprint: [2, 2], cost: { wood: 20, iron: 6 }, workers: 0, terrain: 'any',
+    fear: { popularity: -10, taxMultiplier: 1.75 },
+    description: 'Rollers, rope and a ratchet. Past this rung nobody pretends '
+               + 'it is about shame any more.',
+  },
+  gibbet: {
+    name: 'gibbet', label: 'Gibbet', category: 'town',
+    footprint: [2, 2], cost: { wood: 16, iron: 10 }, workers: 0, terrain: 'any',
+    fear: { popularity: -12, taxMultiplier: 1.9 },
+    description: 'An iron cage on an arm, and whoever was in it left there. '
+               + 'A warning that keeps working long after the man stopped.',
+  },
+  dog_cage: {
+    name: 'dog_cage', label: 'Dog Cage', category: 'town',
+    footprint: [2, 2], cost: { wood: 22, iron: 12 }, workers: 1, terrain: 'any',
+    fear: { popularity: -14, taxMultiplier: 2.05 },
+    description: 'A barred pen of half-starved hounds by the road. Everyone '
+               + 'who passes it walks a little faster and pays a little more.',
+  },
+  burning_stake: {
+    name: 'burning_stake', label: 'Burning Stake', category: 'town',
+    footprint: [2, 2], cost: { wood: 26, iron: 6 }, workers: 0, terrain: 'any',
+    fear: { popularity: -16, taxMultiplier: 2.2 },
+    description: 'A charred post in a ring of ash and faggots. Nobody needs '
+               + 'telling what it is for.',
+  },
+  dungeon: {
+    name: 'dungeon', label: 'Dungeon', category: 'town',
+    footprint: [3, 3], cost: { wood: 20, stone: 60, iron: 15 }, workers: 2, terrain: 'any',
+    fear: { popularity: -18, taxMultiplier: 2.4 },
+    description: 'A sunken blockhouse with a grated pit. The last rung, the '
+               + 'largest, and the only one that needs gaolers to run it.',
+  },
+
   gallows: {
     name: 'gallows', label: 'Gallows', category: 'town',
     footprint: [2, 2], cost: { wood: 12 }, workers: 0, terrain: 'any',

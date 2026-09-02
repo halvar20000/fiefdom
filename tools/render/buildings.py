@@ -1873,3 +1873,367 @@ REGISTRY.update({
     "blacksmith": blacksmith,
     "armourer": armourer,
 })
+
+
+# --- popularity: the carrot and the stick ----------------------------------
+#
+# Two families that share one job, which is to move popularity without
+# producing anything. They are small, they are numerous, and the player sees
+# several at once, so each has to be legible as ITSELF at sprite scale rather
+# than as "some timber on a plinth". The good ones lean on colour -- a bloom, a
+# ribbon, water -- because at forty pixels a silhouette of sticks reads the
+# same whatever it is; the fear ones lean on silhouette, because a gibbet and a
+# stake are the same palette and only their shape tells them apart.
+
+
+def well():
+    """A stone ring, a windlass under a little shingle roof, a bucket."""
+    stone = M.rough_stone("WellStone")
+    timber_l = M.timber("WellTimber")
+    timber_d = M.timber("WellPost", dark=True)
+    shingle = M.shingle_wood("WellRoof")
+    rope = M.cloth("WellRope", colour=(0.58, 0.52, 0.36))
+    water = M.ground_water("WellWater")
+
+    parts = []
+    parts.append(geom.cylinder("we_ring", (1.00, 1.00, 0.0), 0.46, 0.34, stone, segments=12))
+    parts.append(geom.cylinder("we_water", (1.00, 1.00, 0.26), 0.38, 0.02, water, segments=12))
+    for i, (x, y) in enumerate(((0.62, 1.00), (1.38, 1.00))):
+        parts.append(geom.box(f"we_post_{i}", (x - 0.05, y - 0.05, 0.34), (0.10, 0.10, 0.66), timber_d))
+    parts.append(geom.cylinder("we_windlass", (0.62, 1.00, 0.92), 0.06, 0.76, timber_l, segments=8))
+    parts[-1].rotation_euler = (0.0, math.pi / 2.0, 0.0)
+    parts.append(geom.box("we_handle", (1.42, 0.96, 0.88), (0.16, 0.06, 0.06), timber_d))
+    parts.append(geom.gable("we_roof", (0.50, 0.66, 1.00), (1.00, 0.68, 0.30), shingle))
+    parts.append(geom.cylinder("we_rope", (1.00, 1.00, 0.44), 0.015, 0.48, rope, segments=6))
+    parts.append(geom.cylinder("we_bucket", (1.00, 1.00, 0.36), 0.10, 0.14, timber_l, segments=8))
+    return geom.join(parts, "well"), (2, 2)
+
+
+def pond():
+    """A dug pool with a stone kerb, reeds and a duck or two."""
+    kerb = M.rough_stone("PondKerb")
+    water = M.ground_water("PondWater")
+    grass = M.ground_grass("PondBank")
+    reed = M.cloth("PondReed", colour=(0.34, 0.46, 0.20))
+    duck = M.cloth("PondDuck", colour=(0.92, 0.90, 0.86))
+
+    parts = []
+    parts.append(geom.box("po_bank", (0.06, 0.06, 0.0), (1.88, 1.88, 0.10), grass))
+    parts.append(geom.cylinder("po_kerb", (1.00, 1.00, 0.04), 0.82, 0.12, kerb, segments=16))
+    parts.append(geom.cylinder("po_water", (1.00, 1.00, 0.10), 0.72, 0.03, water, segments=16))
+    # Reeds round the rim, thickest on the shaded side so the pool has a front.
+    for i, (x, y, h) in enumerate(((0.34, 1.52, 0.34), (0.46, 1.66, 0.26), (1.60, 1.40, 0.30),
+                                   (1.70, 1.22, 0.22), (0.30, 1.20, 0.24))):
+        parts.append(geom.box(f"po_reed_{i}", (x, y, 0.10), (0.05, 0.05, h), reed))
+    for i, (x, y) in enumerate(((0.86, 1.10), (1.22, 0.84))):
+        parts.append(geom.cylinder(f"po_duck_{i}", (x, y, 0.11), 0.09, 0.08, duck, segments=8))
+        parts.append(geom.cylinder(f"po_duckhead_{i}", (x + 0.07, y, 0.17), 0.04, 0.09, duck, segments=6))
+    return geom.join(parts, "pond"), (2, 2)
+
+
+def statue():
+    """A robed figure on a stepped plinth. Stone, so it reads pale and still."""
+    plinth = M.castle_stone("StatuePlinth")
+    pale = M.plaster("StatueMarble", tint=(0.88, 0.86, 0.80))
+    flag = M.flagstone("StatueApron")
+
+    parts = []
+    parts.append(geom.box("st_apron", (0.10, 0.10, 0.0), (1.80, 1.80, 0.06), flag))
+    parts.append(geom.box("st_step0", (0.44, 0.44, 0.06), (1.12, 1.12, 0.16), plinth))
+    parts.append(geom.box("st_step1", (0.56, 0.56, 0.22), (0.88, 0.88, 0.16), plinth))
+    parts.append(geom.box("st_pedestal", (0.70, 0.70, 0.38), (0.60, 0.60, 0.42), plinth))
+    # The figure: a tapering robe rather than legs, which at this size reads as
+    # a person where two thin cylinders read as a stool.
+    parts.append(geom.cylinder("st_robe", (1.00, 1.00, 0.80), 0.21, 0.62, pale, segments=12))
+    parts.append(geom.cylinder("st_torso", (1.00, 1.00, 1.42), 0.15, 0.24, pale, segments=10))
+    parts.append(geom.cylinder("st_head", (1.00, 1.00, 1.66), 0.085, 0.17, pale, segments=8))
+    parts.append(geom.box("st_arm", (0.86, 0.96, 1.44), (0.34, 0.09, 0.09), pale, rot_z=-0.5))
+    return geom.join(parts, "statue"), (2, 2)
+
+
+def maypole():
+    """A ribboned pole on a green. The ribbons are the whole silhouette."""
+    timber_d = M.timber("MaypolePole", dark=True)
+    grass = M.ground_grass("MaypoleGreen")
+    kerb = M.rough_stone("MaypoleKerb")
+    ribbons = [
+        M.cloth("Ribbon0", colour=(0.86, 0.22, 0.20)),
+        M.cloth("Ribbon1", colour=(0.92, 0.80, 0.26)),
+        M.cloth("Ribbon2", colour=(0.24, 0.44, 0.74)),
+        M.cloth("Ribbon3", colour=(0.94, 0.94, 0.90)),
+    ]
+
+    parts = []
+    parts.append(geom.box("mp_green", (0.06, 0.06, 0.0), (1.88, 1.88, 0.08), grass))
+    parts.append(geom.cylinder("mp_kerb", (1.00, 1.00, 0.06), 0.34, 0.10, kerb, segments=12))
+    parts.append(geom.cylinder("mp_pole", (1.00, 1.00, 0.14), 0.07, 1.70, timber_d, segments=8))
+    parts.append(geom.cylinder("mp_crown", (1.00, 1.00, 1.78), 0.20, 0.07, timber_d, segments=12))
+    # Ribbons fall from the crown to the ground at eight points, alternating
+    # colour. Modelled as leaning slabs: a hanging curve is invisible here, the
+    # cone of colour is not.
+    for i in range(8):
+        a = (i / 8.0) * math.tau
+        x = 1.00 + math.cos(a) * 0.19
+        y = 1.00 + math.sin(a) * 0.19
+        r = ribbons[i % len(ribbons)]
+        parts.append(geom.box(f"mp_ribbon_{i}", (x - 0.03, y - 0.03, 0.30), (0.06, 0.06, 1.48), r))
+        parts[-1].rotation_euler = (math.cos(a) * 0.16, math.sin(a) * 0.16, 0.0)
+    return geom.join(parts, "maypole"), (2, 2)
+
+
+def dancing_bear():
+    """A muzzled bear on a chain beside its keeper's post and a drum."""
+    timber_l = M.timber("BearTimber")
+    timber_d = M.timber("BearPost", dark=True)
+    fur = M.cloth("BearFur", colour=(0.15, 0.11, 0.08))
+    iron = M.iron("BearChain")
+    drum = M.cloth("BearDrum", colour=(0.74, 0.60, 0.34))
+    dirt = M.rough_stone("BearRing")
+
+    parts = []
+    parts.append(geom.cylinder("db_ring", (1.00, 1.00, 0.0), 0.82, 0.05, dirt, segments=16))
+    parts.append(geom.cylinder("db_post", (0.42, 0.46, 0.05), 0.08, 0.90, timber_d, segments=8))
+    parts.append(geom.cylinder("db_chain", (0.42, 0.46, 0.62), 0.02, 0.52, iron, segments=6))
+    parts[-1].rotation_euler = (0.0, 1.05, 0.6)
+    # The bear reared on its hind legs.
+    #
+    # Two earlier attempts stacked cylinders and both read as a burnt stump:
+    # every segment leaves a visible rim, and a column of rimmed drums is a
+    # stump no matter what you put on top of it. This is the ox's trick from
+    # _ox() instead -- one lofted skin through tapering rings, so the mass is
+    # continuous and the shoulder narrows into the head without a seam. The
+    # comment there applies exactly: the eye forgives a blocky building far
+    # more readily than a blocky animal.
+    body = geom._Batch()
+    # (height, radius) up the animal: heavy haunches, waist, deep chest,
+    # shoulders, then the neck pinching in under the skull.
+    rings = ((0.00, 0.20), (0.16, 0.265), (0.42, 0.245), (0.66, 0.215),
+             (0.86, 0.175), (0.98, 0.125), (1.04, 0.135), (1.18, 0.155),
+             (1.30, 0.125), (1.38, 0.055))
+    seg, prev = 12, None
+    for (t, r) in rings:
+        n0 = len(body.verts)
+        for i in range(seg):
+            a = (i / seg) * math.tau
+            # Slightly deeper front-to-back than side-to-side, so the bear has
+            # a chest rather than being round in plan.
+            body.verts.append((math.cos(a) * r * 1.12, math.sin(a) * r, t))
+        if prev is not None:
+            for i in range(seg):
+                j = (i + 1) % seg
+                body.faces.append((prev + i, prev + j, n0 + j, n0 + i))
+        prev = n0
+    body.faces.append(tuple(range(seg - 1, -1, -1)))
+    body.faces.append(tuple(range(prev, prev + seg)))
+    # Muzzle pushed out of the skull, and forelegs held in against the chest.
+    body.slab((0.10, -0.07, 1.16), (0.19, 0.0, -0.02), (0.0, 0.14, 0.0), (0.0, 0.0, 0.11))
+    for dy in (-0.20, 0.20):
+        body.slab((0.10, dy - 0.055, 0.62), (0.10, 0.0, 0.0), (0.0, 0.11, 0.0), (0.06, 0.0, 0.34))
+    at = (1.22, 1.16, 0.04)
+    parts.append(body.finish("db_bear", fur, at, 0.5))
+
+    ears = geom._Batch()
+    for dy in (-0.115, 0.115):
+        ears.rod((0.0, dy, 1.30), (0.0, dy * 1.25, 1.42), 0.055, segments=7)
+    parts.append(ears.finish("db_ears", fur, at, 0.5))
+    parts.append(geom.cylinder("db_drum", (1.62, 0.54, 0.05), 0.17, 0.22, drum, segments=12))
+    parts.append(geom.box("db_stick", (1.56, 0.50, 0.27), (0.22, 0.04, 0.04), timber_l, rot_z=0.4))
+    return geom.join(parts, "dancing_bear"), (2, 2)
+
+
+def stocks():
+    """A pillory board between two posts. The mildest of the punishments."""
+    timber_l = M.timber("StocksTimber")
+    timber_d = M.timber("StocksPost", dark=True)
+    iron = M.iron("StocksIron")
+    dirt = M.rough_stone("StocksGround")
+
+    parts = []
+    parts.append(geom.box("sk_ground", (0.20, 0.40, 0.0), (1.60, 1.20, 0.05), dirt))
+    parts.append(geom.box("sk_step", (0.50, 1.10, 0.05), (1.00, 0.34, 0.14), timber_l))
+    for i, x in enumerate((0.46, 1.42)):
+        parts.append(geom.box(f"sk_post_{i}", (x - 0.06, 0.66, 0.05), (0.12, 0.12, 0.94), timber_d))
+    parts.append(geom.box("sk_board", (0.40, 0.62, 0.72), (1.20, 0.09, 0.22), timber_l))
+    # Three holes read as three notches along the top edge; at sprite scale the
+    # notch is what says "stocks" rather than "fence".
+    for i, x in enumerate((0.66, 0.96, 1.26)):
+        parts.append(geom.box(f"sk_notch_{i}", (x - 0.06, 0.60, 0.86), (0.12, 0.13, 0.09), dirt))
+    parts.append(geom.cylinder("sk_ring", (1.42, 0.60, 0.52), 0.05, 0.03, iron, segments=8))
+    return geom.join(parts, "stocks"), (2, 2)
+
+
+def dunking_stool():
+    """A beam on a fulcrum over a pond, with a chair at the wet end."""
+    timber_l = M.timber("DunkTimber")
+    timber_d = M.timber("DunkPost", dark=True)
+    water = M.ground_water("DunkWater")
+    kerb = M.rough_stone("DunkKerb")
+    iron = M.iron("DunkPin")
+
+    parts = []
+    parts.append(geom.cylinder("ds_kerb", (1.34, 1.00, 0.0), 0.60, 0.10, kerb, segments=14))
+    parts.append(geom.cylinder("ds_water", (1.34, 1.00, 0.08), 0.50, 0.03, water, segments=14))
+    for i, y in enumerate((0.84, 1.16)):
+        parts.append(geom.box(f"ds_frame_{i}", (0.36, y - 0.06, 0.0), (0.12, 0.12, 0.78), timber_d))
+    parts.append(geom.cylinder("ds_pin", (0.42, 1.00, 0.78), 0.04, 0.30, iron, segments=8))
+    parts[-1].rotation_euler = (math.pi / 2.0, 0.0, 0.0)
+    # The beam tips down toward the water: the diagonal IS the machine.
+    parts.append(geom.box("ds_beam", (0.30, 0.96, 0.74), (1.44, 0.09, 0.09), timber_l))
+    parts[-1].rotation_euler = (0.0, 0.42, 0.0)
+    parts.append(geom.box("ds_seat", (1.44, 0.88, 0.16), (0.30, 0.26, 0.05), timber_l))
+    parts.append(geom.box("ds_back", (1.68, 0.88, 0.21), (0.05, 0.26, 0.28), timber_l))
+    return geom.join(parts, "dunking_stool"), (2, 2)
+
+
+def stretching_rack():
+    """A low frame with a roller at each end and a ratchet handle."""
+    timber_l = M.timber("RackTimber")
+    timber_d = M.timber("RackFrame", dark=True)
+    iron = M.iron("RackIron")
+    rope = M.cloth("RackRope", colour=(0.58, 0.52, 0.36))
+    dirt = M.rough_stone("RackGround")
+
+    parts = []
+    parts.append(geom.box("sr_ground", (0.16, 0.44, 0.0), (1.68, 1.12, 0.05), dirt))
+    for i, y in enumerate((0.60, 1.28)):
+        parts.append(geom.box(f"sr_rail_{i}", (0.34, y - 0.06, 0.30), (1.32, 0.12, 0.10), timber_d))
+    for i, (x, y) in enumerate(((0.38, 0.60), (0.38, 1.28), (1.56, 0.60), (1.56, 1.28))):
+        parts.append(geom.box(f"sr_leg_{i}", (x - 0.06, y - 0.06, 0.05), (0.12, 0.12, 0.27), timber_d))
+    for i, x in enumerate((0.44, 1.52)):
+        parts.append(geom.cylinder(f"sr_roller_{i}", (x, 0.94, 0.40), 0.10, 0.74, timber_l, segments=10))
+        parts[-1].rotation_euler = (math.pi / 2.0, 0.0, 0.0)
+    parts.append(geom.box("sr_bed", (0.56, 0.72, 0.36), (0.90, 0.44, 0.04), timber_l))
+    parts.append(geom.cylinder("sr_rope0", (0.62, 0.94, 0.42), 0.02, 0.24, rope, segments=6))
+    parts[-1].rotation_euler = (0.0, math.pi / 2.0, 0.0)
+    parts.append(geom.cylinder("sr_ratchet", (1.52, 0.50, 0.40), 0.15, 0.05, iron, segments=10))
+    parts[-1].rotation_euler = (math.pi / 2.0, 0.0, 0.0)
+    parts.append(geom.box("sr_handle", (1.50, 0.40, 0.40), (0.05, 0.05, 0.28), iron))
+    return geom.join(parts, "stretching_rack"), (2, 2)
+
+
+def gibbet():
+    """A hanging iron cage on a gallows arm. Taller and thinner than the gallows."""
+    timber_d = M.timber("GibbetPost", dark=True)
+    iron = M.iron("GibbetCage")
+    rough = M.rough_stone("GibbetFooting")
+
+    parts = []
+    parts.append(geom.box("gi_footing", (0.52, 0.78, 0.0), (0.44, 0.44, 0.18), rough))
+    parts.append(geom.box("gi_post", (0.64, 0.90, 0.18), (0.14, 0.14, 1.68), timber_d))
+    parts.append(geom.box("gi_arm", (0.64, 0.94, 1.72), (0.86, 0.10, 0.12), timber_d))
+    parts.append(geom.box("gi_brace", (0.76, 0.94, 1.54), (0.20, 0.08, 0.20), timber_d))
+    parts.append(geom.cylinder("gi_hook", (1.40, 0.99, 1.60), 0.02, 0.14, iron, segments=6))
+    # The cage: a barrel of bars, wider at the shoulder, hanging clear of the
+    # ground. Bars rather than a solid drum, or it reads as a bucket.
+    for i in range(8):
+        a = (i / 8.0) * math.tau
+        x = 1.40 + math.cos(a) * 0.16
+        y = 0.99 + math.sin(a) * 0.16
+        parts.append(geom.cylinder(f"gi_bar_{i}", (x, y, 0.96), 0.017, 0.52, iron, segments=4))
+    for i, z in enumerate((0.96, 1.22, 1.46)):
+        parts.append(geom.cylinder(f"gi_hoop_{i}", (1.40, 0.99, z), 0.17, 0.03, iron,
+                                   segments=10, cap=False))
+    return geom.join(parts, "gibbet"), (2, 2)
+
+
+def dog_cage():
+    """A barred pen with a gate and a gnawed bone. Kennels for the war dogs."""
+    timber_d = M.timber("CagePost", dark=True)
+    iron = M.iron("CageBar")
+    straw = M.thatch("CageStraw")
+    dirt = M.rough_stone("CageGround")
+    bone = M.plaster("CageBone", tint=(0.86, 0.84, 0.76))
+
+    parts = []
+    parts.append(geom.box("dc_ground", (0.14, 0.14, 0.0), (1.72, 1.72, 0.05), dirt))
+    parts.append(geom.box("dc_straw", (0.34, 0.34, 0.05), (1.00, 1.00, 0.07), straw))
+    for i, (x, y) in enumerate(((0.24, 0.24), (1.64, 0.24), (0.24, 1.64), (1.64, 1.64))):
+        parts.append(geom.box(f"dc_post_{i}", (x - 0.07, y - 0.07, 0.05), (0.14, 0.14, 0.86), timber_d))
+    # Bars on three sides; the fourth is the gate, which gets a frame and a
+    # heavier bar so the front of the pen is obvious.
+    for i in range(6):
+        t = 0.24 + i * 0.28
+        parts.append(geom.cylinder(f"dc_barx_{i}", (t, 0.24, 0.05), 0.022, 0.82, iron, segments=5))
+        parts.append(geom.cylinder(f"dc_bary_{i}", (0.24, t, 0.05), 0.022, 0.82, iron, segments=5))
+        parts.append(geom.cylinder(f"dc_barz_{i}", (t, 1.64, 0.05), 0.022, 0.82, iron, segments=5))
+    parts.append(geom.box("dc_gate", (1.58, 0.30, 0.05), (0.08, 1.30, 0.88), timber_d))
+    # A FRAME along the top edges, not a lid. A slab here roofed the pen over
+    # and turned a cage into a shed -- the bars are the whole point, and they
+    # have to stay visible from above at this camera angle.
+    for i, (px, py, sx, sy) in enumerate(((0.20, 0.20, 1.62, 0.10),
+                                          (0.20, 1.72, 1.62, 0.10),
+                                          (0.20, 0.20, 0.10, 1.62),
+                                          (1.72, 0.20, 0.10, 1.62))):
+        parts.append(geom.box(f"dc_frame_{i}", (px, py, 0.87), (sx, sy, 0.08), timber_d))
+    parts.append(geom.cylinder("dc_bone", (0.86, 0.72, 0.12), 0.035, 0.26, bone, segments=6))
+    parts[-1].rotation_euler = (0.0, math.pi / 2.0, 0.7)
+    return geom.join(parts, "dog_cage"), (2, 2)
+
+
+def burning_stake():
+    """A stake in a faggot pile, scorched. No fire: the char tells the story."""
+    timber_d = M.timber("StakePost", dark=True)
+    faggot = M.timber("StakeFaggot")
+    char = M.cloth("StakeChar", colour=(0.10, 0.09, 0.08))
+    ash = M.rough_stone("StakeAsh")
+    iron = M.iron("StakeChain")
+
+    parts = []
+    parts.append(geom.cylinder("bs_ash", (1.00, 1.00, 0.0), 0.74, 0.06, ash, segments=14))
+    parts.append(geom.cylinder("bs_stake", (1.00, 1.00, 0.06), 0.09, 1.42, timber_d, segments=8))
+    parts.append(geom.cylinder("bs_char", (1.00, 1.00, 0.06), 0.10, 0.52, char, segments=8))
+    # Faggots stacked as a ring of short logs leaning inward on the stake.
+    for i in range(10):
+        a = (i / 10.0) * math.tau
+        x = 1.00 + math.cos(a) * 0.34
+        y = 1.00 + math.sin(a) * 0.34
+        parts.append(geom.cylinder(f"bs_faggot_{i}", (x, y, 0.06), 0.055, 0.60, faggot, segments=5))
+        parts[-1].rotation_euler = (-math.sin(a) * 0.42, math.cos(a) * 0.42, 0.0)
+    parts.append(geom.cylinder("bs_chain", (1.00, 1.00, 0.86), 0.115, 0.04, iron,
+                               segments=10, cap=False))
+    return geom.join(parts, "burning_stake"), (2, 2)
+
+
+def dungeon():
+    """A sunken stone blockhouse with a grated pit and a barred door."""
+    stone = M.castle_stone("DungeonStone")
+    rough = M.rough_stone("DungeonRubble")
+    iron = M.iron("DungeonGrate")
+    timber_d = M.timber("DungeonDoor", dark=True)
+    flag = M.flagstone("DungeonApron")
+
+    parts = []
+    parts.append(geom.box("du_apron", (0.06, 0.06, 0.0), (2.88, 2.88, 0.06), flag))
+    parts.append(geom.box("du_base", (0.24, 0.24, 0.06), (2.52, 2.52, 0.26), rough))
+    parts.append(geom.box("du_block", (0.40, 0.40, 0.32), (2.20, 2.20, 1.02), stone))
+    parts += geom.crenellate("du_crown", (0.34, 0.34), 2.32, 2.32, stone,
+                             merlon=0.24, gap=0.20, height=0.22, thickness=0.14,
+                             z=1.34)
+    # The pit: a grated hole in the apron, which is the one feature that says
+    # "they are UNDER there" rather than "this is a small keep".
+    parts.append(geom.box("du_pit", (1.00, 0.06, 0.06), (0.90, 0.34, 0.04), rough))
+    for i in range(5):
+        parts.append(geom.cylinder(f"du_grate_{i}", (1.08 + i * 0.18, 0.23, 0.10), 0.022, 0.32, iron,
+                                   segments=5))
+        parts[-1].rotation_euler = (math.pi / 2.0, 0.0, 0.0)
+    parts.append(geom.box("du_door", (1.20, 0.36, 0.32), (0.60, 0.10, 0.78), timber_d))
+    for i in range(3):
+        parts.append(geom.box(f"du_bar_{i}", (1.18, 0.34, 0.44 + i * 0.24), (0.64, 0.05, 0.06), iron))
+    parts.append(geom.box("du_step", (1.22, 0.20, 0.06), (0.56, 0.20, 0.14), rough))
+    return geom.join(parts, "dungeon"), (3, 3)
+
+
+REGISTRY.update({
+    "well": well,
+    "pond": pond,
+    "statue": statue,
+    "maypole": maypole,
+    "dancing_bear": dancing_bear,
+    "stocks": stocks,
+    "dunking_stool": dunking_stool,
+    "stretching_rack": stretching_rack,
+    "gibbet": gibbet,
+    "dog_cage": dog_cage,
+    "burning_stake": burning_stake,
+    "dungeon": dungeon,
+})

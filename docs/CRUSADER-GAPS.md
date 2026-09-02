@@ -52,15 +52,25 @@ seventeen lines of geometry plus a registry line and a `defs.ts` entry — see
 - [x] Build-menu digits `1`–`6` toggle a category shut again. The category
       buttons always toggled on click; the keys only ever opened.
 
-### 2. Popularity buildings — simple geometry
+### 2. Popularity buildings — simple geometry *(done, 1.35.0)*
 
-Good: `maypole`, `statue`, `pond`, `well`, `dancing_bear`.
-Fear: `stocks`, `gibbet`, `dungeon`, `dunking_stool`, `stretching_rack`,
-`burning_stake`, `dog_cage`.
+- [x] Good: `well` (2), `pond` (5), `statue` (6), `maypole` (7),
+      `dancing_bear` (9) — the number is `beauty`.
+- [x] Fear: `stocks`, `dunking_stool`, `stretching_rack`, `gibbet`, `dog_cage`,
+      `burning_stake`, `dungeon`, slotted around the existing `gallows` as a
+      monotonic ladder from 1.3x to 2.4x tax.
 
-Both sets extend mechanics we already have — `beauty` for the good ones,
-`fear: { popularity, taxMultiplier }` for the bad — so these are art plus a
+Both sets extended mechanics we already had — `beauty` for the good ones,
+`fear: { popularity, taxMultiplier }` for the bad — so these were art plus a
 definition each, with no new systems.
+
+Worth knowing for the tranches below: `fearEffect` picks the single strongest
+fear building and ignores the rest, so those seven are a ladder to climb rather
+than a set to collect, and each rung has to cost more popularity than the one
+under it or it is strictly worse than its predecessor. There is a check for
+that ordering. The `dancing_bear` took three attempts — stacked cylinders read
+as a burnt stump every time, and it only worked once it was built the way
+`_ox()` builds livestock, as one lofted skin through tapering rings.
 
 ### 3. Religion tiers
 
