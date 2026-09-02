@@ -1012,9 +1012,31 @@ export function storeSprites(): string[] {
  * entry becomes dead weight to delete.
  */
 export const SPRITE_STANDIN: Record<string, string> = {
-  stockpile: 'stockpile_deck',
-  granary: 'granary_bin',
+  // Empty, and that is the healthy state. The two entries that used to live
+  // here -- stockpile and granary -- were the PERMANENT case, and expressing
+  // them as a fallback was the bug: a fallback only applies when the building
+  // has no art of its own, and both of them still had a 3x3 shed sitting in
+  // the atlas from before the yards became painted squares. The shed won every
+  // time. `storeSquare` states the rule positively instead.
 };
+
+/**
+ * The square a painted store draws, or null if this is not one.
+ *
+ * A stockpile and a granary are not buildings that happen to be small: they
+ * are a tile of yard laid one at a time, and there IS no building. So this is
+ * not a fallback to be consulted when a lookup fails -- it is the answer, and
+ * it has to beat any sprite that shares the building's name.
+ *
+ * Derived from STORE_SPRITES so the ghost, the build-menu icon, the map and a
+ * rival lord's yard cannot disagree about what a square looks like. They did:
+ * the ghost and the icon showed a shed nobody can build, and every one of a
+ * rival's store squares drew a whole 3x3 shed on a 1x1 footprint.
+ */
+export function storeSquare(def: BuildingDef): string | null {
+  const art = def.storeFor ? STORE_SPRITES[def.storeFor] : undefined;
+  return art ? art.empty : null;
+}
 
 /** The two levels must not meet, or the orders churn and bleed the spread. */
 export const TRADE_MIN_BAND = 5;

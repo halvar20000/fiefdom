@@ -23,6 +23,21 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.49.1',
+    date: '2026-09-02',
+    headline: 'The stockpile is a yard, not a shed.',
+    sections: [
+      {
+        title: 'Fixed',
+        items: [
+          'Picking up a stockpile square or a granary bay showed a whole 3x3 shed hanging off the cursor, and the build menu drew the same shed as its icon — then laid down the single square it was always going to lay. The sheds are how the two stores looked before either became a yard painted a square at a time, and nothing has been able to build one for a long while; the artwork simply outlived the change and sat in the atlas, and every lookup that asked for a building called "stockpile" got it.',
+          'A rival lord\'s yard had the same fault and worse: every one of his store squares was drawing a full 3x3 shed on a one-tile footprint.',
+          'What a store draws now comes from one place and beats anything that merely shares its name. The sheds are gone from the atlas, which is also 0.8 megapixels back.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.49.0',
     date: '2026-09-02',
     headline: 'Oil, boiled, and three ways to set the ground alight.',

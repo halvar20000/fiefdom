@@ -180,46 +180,6 @@ def woodcutter():
     return geom.join(parts, "woodcutter"), (2, 2)
 
 
-def stockpile():
-    """3x3 flagged platform with goods stacked on it."""
-    flag = M.castle_stone()
-    timber_l = M.timber()
-    iron = M.iron()
-
-    parts = []
-    parts.append(geom.box("sp_deck", (0.0, 0.0, 0.0), (3.0, 3.0, 0.10), flag))
-    # A kerb round the paving, so the yard has an edge instead of ending
-    # wherever the terrain happens to be.
-    kerb = geom._Batch()
-    for (kx, ky, kw, kd) in ((0.0, 0.0, 3.0, 0.10), (0.0, 2.90, 3.0, 0.10),
-                             (0.0, 0.10, 0.10, 2.80), (2.90, 0.10, 0.10, 2.80)):
-        kerb.box((kx, ky, 0.10), (kw, kd, 0.06))
-    parts.append(kerb.finish("sp_kerb", M.rough_stone("StockpileKerb")))
-
-    # sawn planks, stacked and slightly out of true
-    planks = geom._Batch()
-    rnd = geom.rng_for("stockpile_planks")
-    for i in range(5):
-        planks.box((0.25 + (rnd.random() - 0.5) * 0.05, 0.30, 0.16 + i * 0.072),
-                   (1.05, 0.62, 0.065))
-    parts.append(planks.finish("sp_planks", timber_l))
-    # dressed stone blocks, courses offset
-    for i, (bx, by, bz) in enumerate(((1.75, 0.35, 0.16), (2.30, 0.35, 0.16),
-                                      (1.75, 0.92, 0.16), (1.98, 0.52, 0.50))):
-        parts.append(geom.box(f"sp_stone_{i}", (bx, by, bz), (0.48, 0.48, 0.34), flag))
-    # iron bars, round bar stock rather than flat slabs
-    bars = geom._Batch()
-    for row in range(3):
-        for col in range(4 - row):
-            bars.rod((0.35 + row * 0.06 + col * 0.115, 1.85, 0.19 + row * 0.10),
-                     (0.35 + row * 0.06 + col * 0.115, 2.72, 0.19 + row * 0.10),
-                     0.055, segments=6)
-    parts.append(bars.finish("sp_iron", iron))
-    parts += geom.barrel("sp_barrel", (2.42, 2.30, 0.16), 0.16, 0.36, timber_l, iron)
-    parts += geom.crate("sp_crate", (2.28, 1.62, 0.16), (0.42, 0.38, 0.32), timber_l)
-    return geom.join(parts, "stockpile"), (3, 3)
-
-
 def quarry_rock():
     """Scatter prop: a rubble outcrop, 1x1."""
     stone = M.rough_stone()
@@ -231,11 +191,19 @@ def quarry_rock():
     return geom.join(parts, "rock"), (1, 1)
 
 
+# `stockpile` and `granary` used to be here, as 3x3 sheds. They were how the
+# two stores looked before either became a yard painted a square at a time, and
+# they outlived that change by a long way: nothing could build one, but the art
+# stayed in the atlas, and every lookup that asked for a building called
+# "stockpile" got a shed. The build-menu icon, the placement ghost and every one
+# of a rival lord's store squares drew it. The squares live in piles.py --
+# `stockpile_deck` and `granary_bin` -- and defs.ts `storeSquare` is now the one
+# thing that answers "what does a store draw". Recover the sheds from git if a
+# building-shaped store is ever wanted; do not re-register these names.
 REGISTRY = {
     "keep": keep,
     "hovel": hovel,
     "woodcutter": woodcutter,
-    "stockpile": stockpile,
     "rock": quarry_rock,
 }
 
@@ -462,49 +430,6 @@ def market():
     return geom.join(parts, "market"), (3, 3)
 
 
-def granary():
-    """Granary: stone-walled food store with a wide loading arch."""
-    stone = M.castle_stone()
-    roof = M.thatch()
-    dark = M.timber(dark=True)
-    plaster = M.plaster(tint=(0.92, 0.89, 0.81))
-    sack = M.cloth("Sack", colour=(0.66, 0.58, 0.40))
-
-    shingle = M.shingle_wood()
-    x, y, w, d, h = 0.10, 0.25, 2.80, 2.30, 1.05
-
-    parts = []
-    parts.append(geom.box("gr_plinth", (x - 0.07, y - 0.07, 0.0),
-                          (w + 0.14, d + 0.14, 0.13), stone))
-    parts.append(geom.box("gr_body", (x, y, 0.11), (w, d, h), stone))
-    # Timber upper storey over the stone base -- the reference granary is a
-    # stone ground floor carrying a jettied timber loft, and the change of
-    # material halfway up is most of what makes it read as a big building
-    # rather than a big box.
-    parts += geom.timber_frame("gr_loft", (x - 0.06, y - 0.06, h + 0.11),
-                               (w + 0.12, d + 0.12, 0.46), plaster, dark,
-                               bay=0.62, mid_rail=False)
-    parts += geom.shingle_roof("gr", (x - 0.06, y - 0.06, h + 0.57),
-                               (w + 0.12, d + 0.12, 0.74), shingle,
-                               overhang=0.22, ridge_mat=dark)
-    parts += geom.rafters("gr", (x - 0.06, y - 0.06, h + 0.57),
-                          (w + 0.12, d + 0.12, 0.0), dark, overhang=0.22)
-
-    parts.append(geom.arch_doorway("gr_door", (1.15, y - 0.10, 0.11),
-                                   0.78, 0.82, 0.14, dark))
-    # loading hatch and hoist beam in the gable
-    parts.append(geom.box("gr_hoist", (1.38, y - 0.42, h + 0.44),
-                          (0.10, 0.52, 0.10), dark))
-    parts += geom.shuttered_window("gr_hatch", (1.24, y - 0.08, h + 0.16),
-                                   0.38, 0.30, dark, dark)
-    for i, (sx, sy) in enumerate(((0.30, 0.05), (0.62, 0.02), (2.45, 0.06))):
-        parts.append(geom.box(f"gr_sack_{i}", (sx, sy, 0.0), (0.26, 0.22, 0.28), sack,
-                              rot_z=0.3 * i))
-    parts += geom.barrel("gr_barrel", (2.62, 0.42, 0.0), 0.13, 0.34,
-                         M.timber(), M.iron())
-    return geom.join(parts, "granary"), (3, 3)
-
-
 def wheat_farm():
     """Farmstead: cottage plus a ploughed strip of field."""
     wall = M.plaster(tint=(0.92, 0.89, 0.80))
@@ -726,7 +651,6 @@ REGISTRY.update({
     "iron_mine": iron_mine,
     "pitch_rig": pitch_rig,
     "market": market,
-    "granary": granary,
     "wheat_farm": wheat_farm,
     "mill": mill,
     "bakery": bakery,

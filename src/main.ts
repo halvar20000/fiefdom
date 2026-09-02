@@ -35,7 +35,7 @@ import type { LordSetup } from './ui/lords';
 import { SAVE_VERSION, takeBootIntent, readSlot, playTime, type SaveGame } from './game/save';
 import { hydrate } from './game/backend';
 import {
-  BUILDINGS, STORE_SPRITES, SPRITE_STANDIN, SOLDIER_TYPES, buildingHp,
+  BUILDINGS, STORE_SPRITES, SPRITE_STANDIN, storeSquare, SOLDIER_TYPES, buildingHp,
   canGarrison, isWeapon,
   GARRISON_HEIGHT, garrisonReach, MARSH_SPEED_FOOT, MARSH_SPEED_SIEGE,
   BUILD_MENU, SOLDIER_ORDER, unlistedBuildings, unlistedSoldiers,
@@ -162,8 +162,13 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
   // frame is skipped, so the game renders a plausible wrong world in silence.
   reportStaleAssets([
     ...missingTiles(GROUND_TYPES, tiles.index.types),
+    // Every building that is expected to have art of its own. A painted store
+    // has none by design and is named by its square instead, so it is asked
+    // after through storeSquare rather than skipped by name.
     ...missingSprites(
-      Object.keys(BUILDINGS).filter(n => n !== 'stockpile' && n !== 'granary'),
+      Object.entries(BUILDINGS)
+        .filter(([, def]) => !storeSquare(def))
+        .map(([n]) => n),
       atlas.frames),
     // Soldiers, checked the same way. A unit with no frames does not vanish --
     // the draw loop falls back to the bare peasant body -- so a whole new
@@ -2306,6 +2311,17 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
    * why a building might not have its own art.
    */
   function spriteKey(name: string, rot: number): string | null {
+    // A painted store draws its square, and that beats a sprite of the same
+    // name -- see storeSquare. Checked FIRST, not as a fallback, which is the
+    // whole fix: the stockpile had a 3x3 shed left in the atlas from before it
+    // became a yard, so the ghost, the menu icon and every rival's store
+    // square drew a building nobody can build.
+    const def = BUILDINGS[name];
+    const square = def ? storeSquare(def) : null;
+    if (square) {
+      const k = `${square}_${rot}`;
+      return atlas.frames[k] ? k : null;
+    }
     const own = `${name}_${rot}`;
     if (atlas.frames[own]) return own;
     const alias = SPRITE_STANDIN[name];

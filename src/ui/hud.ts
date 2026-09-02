@@ -1,7 +1,7 @@
 import {
   BUILDINGS, BUILD_MENU, PRICES, RATIONS, RATION_LEVELS, TAX_LEVELS,
   RESOURCE_LABELS, ALL_RESOURCES, RESOURCE_BAR, FOOD_RESOURCES, goodName,
-  SOLDIER_TYPES, SOLDIER_ORDER, SPEED_LEVELS, SPRITE_STANDIN,
+  SOLDIER_TYPES, SOLDIER_ORDER, SPEED_LEVELS, SPRITE_STANDIN, storeSquare,
   type RationLevel, type Resource,
 } from '../game/defs';
 import type { GameState } from '../game/state';
@@ -1262,9 +1262,13 @@ export class Hud {
     for (const el of Array.from(this.buildPanel.querySelectorAll('canvas'))) {
       const cv = el as HTMLCanvasElement;
       const name = cv.dataset.name!;
-      // Its own art if it has been rendered, else whatever stands in for it --
-      // the same fallback the map draws with, from the same declaration.
-      const f = atlas.frames[`${name}_0`]
+      // A painted store draws its square, whatever else shares its name; then
+      // its own art if it has been rendered; then whatever stands in for it.
+      // The same order the map draws in, from the same declarations.
+      const def = BUILDINGS[name];
+      const square = def ? storeSquare(def) : null;
+      const f = (square ? atlas.frames[`${square}_0`] : undefined)
+             ?? atlas.frames[`${name}_0`]
              ?? atlas.frames[`${SPRITE_STANDIN[name]}_0`];
       if (!f) { cv.style.display = 'none'; continue; }
       const W = cv.clientWidth || 46, H = cv.clientHeight || 34;
