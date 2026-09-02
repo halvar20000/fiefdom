@@ -23,6 +23,27 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.34.2',
+    date: '2026-09-02',
+    headline: 'The four borrowed animations catch up with the rest.',
+    sections: [
+      {
+        title: 'Fixed',
+        items: [
+          'Carrying, chopping, fishing and dying were still drawn from sprites baked for the old zoom. Those four clips come from 0 A.D. animation rather than the Mixamo set, they need a source archive that is not kept in the repository, and so they were quietly left behind when everything else was re-rendered at three times tile scale. They were being stretched half again beyond what they were baked for, which at full zoom is the difference between a figure and a smudge. Carrying is the one that showed: half the workforce is hauling something at any moment.',
+          'A bug waiting in the renderer for whoever closed that gap. The script wrote a hard-coded scale of 2 into the manifest while the rig had already moved to 3, and the engine draws each sprite at the scale its manifest claims -- so a correct re-render would have produced correct sprites and then drawn every one of them half again too large. It reads the rig\'s own value now.',
+        ],
+      },
+      {
+        title: 'Changed',
+        items: [
+          'Those four clips are sampled as finely as everything else. Carrying goes from eight frames to twelve, chopping and dying from six to eight, fishing from eight to ten, each keeping the cycle length it always had. The finer sampling had already been written into the renderer during the zoom pass; only the sprites were missing.',
+          'They are framed by measurement too, so a shouldered log and a fisherman\'s reach are inside the frame because they were measured rather than allowed for. Every sprite in the game is now baked at the same scale -- there is no longer a mixed-resolution corner of the atlas.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.34.1',
     date: '2026-09-02',
     headline: 'Stop paying for empty air around every peasant.',

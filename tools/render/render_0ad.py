@@ -144,21 +144,34 @@ def main():
     bpy.context.view_layer.update()
 
     rig.add_shadow_catcher(size=6.0)
-    r, top = UNIT_HEIGHT_TILES * 0.85, UNIT_HEIGHT_TILES * 1.18
-    box = [Vector((sx * r, sy * r, sz))
-           for sx in (-1, 1) for sy in (-1, 1) for sz in (0.0, top)]
-    cam = rig.setup_camera(rig.AZIMUTHS_DEG[0])
-    w, h, ax, ay = rig.frame_points(cam, box + rig.shadow_projected(box),
-                                    Vector((0.0, 0.0, 0.0)))
-    print(f"[frame] {w}x{h} anchor=({ax:.1f},{ay:.1f})", flush=True)
 
     hips = prefix + "Hips"
     scene = bpy.context.scene
     metas, clips_meta = [], {}
 
+    def centre_hips_xy():
+        """Slide the hips back over the origin -- see the note in the render
+        loop; the figure leans as it turns and a sprite whose feet wander is a
+        sprite that slides across the ground when the clip plays."""
+        bpy.context.view_layer.update()
+        pb = arm.pose.bones[hips]
+        world = (arm.matrix_world @ pb.matrix).translation
+        arm.location.x -= world.x
+        arm.location.y -= world.y
+        bpy.context.view_layer.update()
+
+    # Load and retarget everything first, so the frame can be MEASURED from the
+    # poses that will actually be rendered rather than guessed from a cube of
+    # 0.85 * the unit height -- the same change render_units.py got, and worth
+    # as much here: a carried log and a fisherman's reach both sit inside the
+    # measurement because they were measured, not allowed for.
+    #
+    # Note this pass ignores `only`. A frame must be identical across all four
+    # clips or the peasant changes size the moment he stops chopping and starts
+    # hauling, so `--only carry` still measures whatever sources are present
+    # and reproduces the frame a full run would have chosen.
+    prepared = []
     for clip, (dae, nframes, seconds) in CLIPS.items():
-        if only and clip not in only:
-            continue
         path = os.path.join(src_dir, dae)
         if not os.path.exists(path):
             print(f"  !! missing {path}, skipping {clip}", flush=True)
@@ -167,6 +180,47 @@ def main():
         pairs = retarget.apply(arm, prefix, loaded, nframes, f"zeroad_{clip}")
         print(f"[{clip}] {dae}: {collada_anim.summary(loaded)}, {pairs} pairs",
               flush=True)
+        prepared.append((clip, nframes, seconds, arm.animation_data.action))
+
+    if not prepared:
+        raise SystemExit(f"no source clips found under {src_dir}")
+
+    corners = []
+    for clip, nframes, seconds, action in prepared:
+        arm.animation_data.action = action
+        for f in range(nframes):
+            scene.frame_set(f + 1)
+            for d in range(DIRECTIONS):
+                arm.rotation_euler = (arm.rotation_euler.x, arm.rotation_euler.y,
+                                      (d / DIRECTIONS) * math.tau)
+                centre_hips_xy()
+                plo, phi = bounds([mesh])
+                for sx in (plo.x, phi.x):
+                    for sy in (plo.y, phi.y):
+                        for sz in (min(0.0, plo.z), phi.z):
+                            corners.append(Vector((sx, sy, sz)))
+                arm.location.x = 0.0
+                arm.location.y = 0.0
+
+    pad = 0.02
+    lo_x = min(c.x for c in corners) - pad
+    hi_x = max(c.x for c in corners) + pad
+    lo_y = min(c.y for c in corners) - pad
+    hi_y = max(c.y for c in corners) + pad
+    hi_z = max(c.z for c in corners) + pad
+    box = [Vector((sx, sy, sz)) for sx in (lo_x, hi_x)
+           for sy in (lo_y, hi_y) for sz in (0.0, hi_z)]
+    cam = rig.setup_camera(rig.AZIMUTHS_DEG[0])
+    w, h, ax, ay = rig.frame_points(cam, box + rig.shadow_projected(box),
+                                    Vector((0.0, 0.0, 0.0)))
+    print(f"[frame] {w}x{h} anchor=({ax:.1f},{ay:.1f}) "
+          f"from measured box {hi_x - lo_x:.3f} x {hi_y - lo_y:.3f} x {hi_z:.3f}",
+          flush=True)
+
+    for clip, nframes, seconds, action in prepared:
+        if only and clip not in only:
+            continue
+        arm.animation_data.action = action
         clips_meta[clip] = {"frames": nframes,
                             "fps": round(nframes / seconds, 3)}
 
@@ -175,15 +229,10 @@ def main():
             for d in range(DIRECTIONS):
                 arm.rotation_euler = (arm.rotation_euler.x, arm.rotation_euler.y,
                                       (d / DIRECTIONS) * math.tau)
-                # Re-centre after turning: the hips drift off the origin as the
-                # figure leans, and a sprite whose feet wander is a sprite that
-                # slides across the ground when the clip plays.
-                bpy.context.view_layer.update()
-                pb = arm.pose.bones[hips]
-                world = (arm.matrix_world @ pb.matrix).translation
-                arm.location.x -= world.x
-                arm.location.y -= world.y
-                bpy.context.view_layer.update()
+                # The same call the measuring pass used, and it has to stay the
+                # same call: a frame measured against one centring and rendered
+                # against another is a frame that fits nothing.
+                centre_hips_xy()
 
                 name = f"{OUT_SUBDIR}/peasant_{clip}_{d}_{f}"
                 rig.render_to(os.path.join(out_dir, f"{name}.png"))
@@ -191,7 +240,13 @@ def main():
                     "name": name, "clip": clip, "direction": d, "frame": f,
                     "width": w, "height": h,
                     "anchor_x": round(ax, 2), "anchor_y": round(ay, 2),
-                    "scale": 2,
+                    # rig.SPRITE_RENDER_SCALE, never a literal. This said 2
+                    # while the rig had already moved to 3, so a re-render
+                    # would have produced correct sprites and then told the
+                    # engine to draw them half again too big -- the one bug
+                    # the note above ("re-run this script to close the gap")
+                    # would have walked straight into.
+                    "scale": rig.SPRITE_RENDER_SCALE,
                 })
                 arm.location.x = 0.0
                 arm.location.y = 0.0
