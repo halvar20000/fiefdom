@@ -23,6 +23,26 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.34.1',
+    date: '2026-09-02',
+    headline: 'Stop paying for empty air around every peasant.',
+    sections: [
+      {
+        title: 'Fixed',
+        items: [
+          'Unit sprites were framed by a guess and mostly contained nothing. The renderer sized each frame from a cube derived from the unit\'s height, which had to be generous enough for the widest swing of the longest weapon and so was far too big for everything else — a peasant came out as twenty-four by thirty-seven pixels of figure inside a frame of one hundred and twenty by ninety-eight. The frame is now measured: the renderer walks every frame of every clip in every facing, takes the union of the actual mesh bounds, and fits to that. A peasant\'s frame drops to eighty by seventy-four, a spearman\'s to one hundred and four by ninety, and the four human bodies together take forty-one per cent less of the atlas — which is what decides how big a unit is allowed to be in the first place. Nothing on screen changes size; there is simply far less transparent margin behind it.',
+          'A single black pixel in the corner of every peasant sprite. All three hundred and thirty-six of them carried one, in the same corner and at the same value, in all five clips and all eight facings. It was the denoiser rather than the scene — it damages the outermost ring of a small render, and which frame sizes it spoils is a lottery, so no choice of frame avoids it. Every sprite is now rendered two pixels larger on each side and cropped back down, which leaves the artefact outside the picture.',
+        ],
+      },
+      {
+        title: 'Changed',
+        items: [
+          'Every body now carries every clip. The atlas had gaps in it — no attack frames for the peasant, and no digging or mining frames for any of the three soldiers — because those combinations had never been rendered, and a sprite the atlas does not have is silently skipped rather than reported. The full set is four hundred and forty-eight frames larger and has no holes left to fall through.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.34.0',
     date: '2026-09-01',
     headline: 'Zoom the whole way in, and find something worth looking at.',
