@@ -36,6 +36,7 @@ import {
   BUILDINGS, STORE_SPRITES, SPRITE_STANDIN, SOLDIER_TYPES, buildingHp,
   canGarrison, isWeapon,
   GARRISON_HEIGHT, garrisonReach, MARSH_SPEED_FOOT, MARSH_SPEED_SIEGE,
+  BUILD_MENU, unlistedBuildings,
   BURN_SECONDS, BURN_RADIUS, BURN_DPS, IGNITE_RADIUS, DEMOLISH_REFUND,
   SPEED_LEVELS, RESOURCE_LABELS,
   type Resource,
@@ -176,6 +177,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     ...missingSprites(
       Object.keys(BUILDINGS).filter(n => n !== 'stockpile' && n !== 'granary'),
       atlas.frames),
+    ...unlistedBuildings(),
   ]);
 
   const terrain = new Terrain({ width: MAP_W, height: MAP_H, layers: 20 }, tiles.texture);
@@ -1689,6 +1691,28 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
    *
    * Returns how many tiles caught.
    */
+  /**
+   * Raise or drop every drawbridge, and repath around the result.
+   *
+   * All of them at once, like F lights the pitch: a drawbridge is a gate in a
+   * line you drew, and hunting for each one under fire is not a decision, it
+   * is an obstacle. Returns how many moved.
+   */
+  function toggleDrawbridges(): number {
+    const bridges = state.buildings.filter(b => b.name === 'drawbridge');
+    if (!bridges.length) return 0;
+    // Follow the majority so one bridge left the wrong way up does not invert
+    // the meaning of the key for the whole castle.
+    const up = bridges.filter(b => b.raised).length > bridges.length / 2;
+    for (const b of bridges) {
+      b.raised = !up;
+      // A raised bridge is the one thing that becomes solid AFTER placement.
+      markSolid(b.x, b.z, 1, 1, !up);
+    }
+    staticDirty = true;
+    return bridges.length;
+  }
+
   function lightPitch(): number {
     const ditches = state.buildings.filter(b => b.name === 'pitch_ditch');
     if (!ditches.length) return 0;
@@ -2158,6 +2182,11 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     }
     for (const b of state.buildings) {
       const [w, d] = b.def.footprint;
+      // The one building that draws a different model under the same name.
+      if (b.name === 'drawbridge' && b.raised) {
+        push('drawbridge_raised', b.x, b.z, w, d);
+        continue;
+      }
       // A PAINTED store draws the square and whatever is stacked on it. A store
       // with no square art -- the armoury -- falls through and draws itself.
       const art = b.def.storeFor ? STORE_SPRITES[b.def.storeFor] : undefined;
@@ -2592,6 +2621,15 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       else if (hud.demolishing) hud.setDemolish(false);
       else openPause();
     }
+    if (k === 'g') {
+      const n = toggleDrawbridges();
+      if (!n) state.notify('You have no drawbridges', 'warn');
+      else {
+        const up = state.buildings.some(b => b.name === 'drawbridge' && b.raised);
+        state.notify(up ? `${n} drawbridge${n > 1 ? 's' : ''} raised`
+                        : `${n} drawbridge${n > 1 ? 's' : ''} dropped`, 'info');
+      }
+    }
     if (k === 'f') {
       const n = lightPitch();
       if (!n) {
@@ -2622,7 +2660,11 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       hud.syncSound();
       state.notify(audio.volume > 0 ? 'Sound on' : 'Sound off');
     }
-    if (k >= '1' && k <= '6') hud.toggleCategory(Number(k) - 1);
+    // BUILD_MENU decides how many there are; '6' was hard-coded when there
+    // were seven groups, so Weapons already had no key before this.
+    if (k >= '1' && k <= '9' && Number(k) <= BUILD_MENU.length) {
+      hud.toggleCategory(Number(k) - 1);
+    }
     if (k === 'm') hud.toggleMarket();
     if (k === 't') hud.toggleStats();
     if (k === 'h') toggleHold();
@@ -3410,6 +3452,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       buildings: state.buildings.map(b => ({
         n: b.name, x: b.x, z: b.z, staff: b.staff, hp: b.hp,
         held: { ...b.held } as Record<string, number>,
+        up: b.raised ? 1 : undefined,
       })),
       factions: factions.map(f => ({
         id: f.id,
@@ -3480,7 +3523,9 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       b.hp = sb.hp;
       b.held = { ...sb.held } as typeof b.held;
       markArea(sb.x, sb.z, w, d);
-      if (!def.walkable) markSolid(sb.x, sb.z, w, d);
+      // A drawbridge saved in the up position is solid, walkable def or not.
+      b.raised = !!(sb as { up?: number }).up;
+      if (!def.walkable || b.raised) markSolid(sb.x, sb.z, w, d);
     }
     for (const sf of sv.factions) {
       const f = factionOf(sf.id);

@@ -2511,3 +2511,80 @@ REGISTRY.update({
     "round_tower": round_tower,
     "lookout_tower": lookout_tower,
 })
+
+
+# --- the wet ditch and the way over it --------------------------------------
+
+
+def moat():
+    """
+    A tile of wet ditch.
+
+    Painted in runs, so it has to TILE: anything with a lip or a bank around
+    all four sides turns a channel into a row of separate ponds and draws a
+    grid over the map. So the cut goes edge to edge and only the water is
+    inset, which lets neighbours read as one continuous trench.
+    """
+    dark = M.cloth("MoatBed", colour=(0.13, 0.12, 0.10))
+    water = M.ground_water("MoatWater")
+
+    parts = []
+    # Every layer runs the FULL tile, 0 to 1 on both axes. The first cut inset
+    # the water and left the pale cut showing as a rim, which on a painted run
+    # is a lattice of pale diamonds drawn over the map -- the exact thing this
+    # docstring says not to do. Nothing is inset now, so neighbours meet edge
+    # to edge and a line of them is one sheet of water.
+    parts.append(geom.box("mo_bed", (0.0, 0.0, 0.0), (1.0, 1.0, 0.03), dark))
+    parts.append(geom.box("mo_water", (0.0, 0.0, 0.03), (1.0, 1.0, 0.02), water))
+    # No rubble in the bottom either. Two stones at fixed spots is two stones
+    # at the SAME spot on every tile, and a painted run turns that into a row
+    # of evenly spaced dots -- the rim problem again wearing a different hat.
+    # One sprite laid end to end can only carry what survives repetition.
+    return geom.join(parts, "moat"), (1, 1)
+
+
+def _drawbridge(raised: bool):
+    """The deck, flat or swung up. Two sprites, one model, one flag."""
+    timber_l = M.timber("BridgeDeck")
+    timber_d = M.timber("BridgePost", dark=True)
+    iron = M.iron("BridgeChain")
+    stone = M.rough_stone("BridgeAbutment")
+    water = M.ground_water("BridgeWater")
+
+    parts = []
+    # The ditch it spans is drawn under it either way, or a raised bridge
+    # leaves a suspiciously dry hole in the moat.
+    parts.append(geom.box("db_cut", (0.0, 0.0, 0.0), (1.0, 1.0, 0.04), stone))
+    parts.append(geom.box("db_water", (0.06, 0.06, 0.05), (0.88, 0.88, 0.02), water))
+    for i, y in enumerate((0.06, 0.80)):
+        parts.append(geom.box(f"db_abut_{i}", (0.0, y, 0.0), (1.0, 0.14, 0.20), stone))
+    for i, x in enumerate((0.10, 0.78)):
+        parts.append(geom.box(f"db_post_{i}", (x, 0.02, 0.20), (0.12, 0.12, 0.62), timber_d))
+    parts.append(geom.box("db_lintel", (0.06, 0.02, 0.82), (0.88, 0.12, 0.10), timber_d))
+
+    if raised:
+        # Swung up against the posts: the deck stands on its hinge edge, which
+        # is the whole read at forty pixels -- a vertical slab where there was
+        # a flat one.
+        parts.append(geom.box("db_deck", (0.14, 0.72, 0.18), (0.72, 0.10, 0.80), timber_l))
+        for i, x in enumerate((0.22, 0.70)):
+            parts.append(geom.box(f"db_plank_{i}", (x, 0.70, 0.20), (0.08, 0.06, 0.74), timber_d))
+            parts.append(geom.cylinder(f"db_chain_{i}", (x + 0.04, 0.30, 0.86), 0.018, 0.46, iron,
+                                       segments=5))
+            parts[-1].rotation_euler = (1.02, 0.0, 0.0)
+    else:
+        parts.append(geom.box("db_deck", (0.10, 0.16, 0.18), (0.80, 0.68, 0.07), timber_l))
+        for i, y in enumerate((0.26, 0.50, 0.74)):
+            parts.append(geom.box(f"db_plank_{i}", (0.10, y, 0.25), (0.80, 0.05, 0.02), timber_d))
+        for i, x in enumerate((0.22, 0.70)):
+            parts.append(geom.cylinder(f"db_chain_{i}", (x + 0.04, 0.10, 0.40), 0.018, 0.52, iron,
+                                       segments=5))
+            parts[-1].rotation_euler = (-0.62, 0.0, 0.0)
+    return geom.join(parts, "drawbridge_raised" if raised else "drawbridge"), (1, 1)
+
+
+REGISTRY.update({
+    "moat": moat,
+    "drawbridge": lambda: _drawbridge(False),
+    "drawbridge_raised": lambda: _drawbridge(True),
+})

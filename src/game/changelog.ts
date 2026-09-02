@@ -23,6 +23,33 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.39.0',
+    date: '2026-09-02',
+    headline: 'Twenty-one buildings you could not build, and a moat to dig.',
+    sections: [
+      {
+        title: 'Fixed',
+        items: [
+          'Twenty-one buildings existed and could not be built. Every well, pond, statue, maypole, dancing bear, shrine, chapel, cathedral, tanner, turret, round tower, lookout tower and all seven of the punishments were costed, modelled, rendered and wired into the simulation — and none of them appeared in the build menu, because the menu is a hand-written list and nothing had added them to it. They are all there now, in three new groups, and the game says so loudly on startup if it ever happens again.',
+          'The build menu had more categories than keys. The digit shortcuts stopped at 6 while there were seven groups, so Weapons could only be opened with the mouse. They follow the menu now, however long it grows.',
+        ],
+      },
+      {
+        title: 'Added',
+        items: [
+          'Moats. A wet ditch, painted in runs like a wall, that nothing crosses and nobody can stand on — the cheapest way to say "not here", and the reason to leave a gap where you do want them. Two wood a tile.',
+          'Drawbridges, which are that gap. Down, it is a road and anyone may walk it, including the men coming for you. Up, it is a wall. G raises and drops every one you own at once, because hunting for each bridge in a line under fire is not a decision.',
+        ],
+      },
+      {
+        title: 'Changed',
+        items: [
+          'The town menu is three groups now — Town, Faith and Fear — rather than one list of twenty-one. Gardens and gibbets were never the same kind of decision.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.38.0',
     date: '2026-09-02',
     headline: 'Three more things to stand on, and height that finally counts.',

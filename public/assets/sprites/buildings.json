@@ -1716,6 +1716,110 @@
     "scale": 3
   },
   {
+    "name": "drawbridge",
+    "rotation": 0,
+    "width": 140,
+    "height": 122,
+    "anchor_x": 34.2,
+    "anchor_y": 88.04,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "drawbridge",
+    "rotation": 1,
+    "width": 166,
+    "height": 122,
+    "anchor_x": 57.67,
+    "anchor_y": 64.04,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "drawbridge",
+    "rotation": 2,
+    "width": 140,
+    "height": 146,
+    "anchor_x": 105.8,
+    "anchor_y": 87.38,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "drawbridge",
+    "rotation": 3,
+    "width": 166,
+    "height": 134,
+    "anchor_x": 108.33,
+    "anchor_y": 111.94,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "drawbridge_raised",
+    "rotation": 0,
+    "width": 150,
+    "height": 134,
+    "anchor_x": 44.21,
+    "anchor_y": 98.57,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "drawbridge_raised",
+    "rotation": 1,
+    "width": 182,
+    "height": 134,
+    "anchor_x": 62.71,
+    "anchor_y": 77.0,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "drawbridge_raised",
+    "rotation": 2,
+    "width": 150,
+    "height": 166,
+    "anchor_x": 105.79,
+    "anchor_y": 101.64,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "drawbridge_raised",
+    "rotation": 3,
+    "width": 182,
+    "height": 150,
+    "anchor_x": 119.29,
+    "anchor_y": 123.18,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
     "name": "dungeon",
     "rotation": 0,
     "width": 344,
@@ -2752,6 +2856,58 @@
     "footprint": [
       3,
       3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "moat",
+    "rotation": 0,
+    "width": 116,
+    "height": 70,
+    "anchor_x": 10.66,
+    "anchor_y": 36.47,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "moat",
+    "rotation": 1,
+    "width": 118,
+    "height": 70,
+    "anchor_x": 57.62,
+    "anchor_y": 12.47,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "moat",
+    "rotation": 2,
+    "width": 116,
+    "height": 72,
+    "anchor_x": 105.34,
+    "anchor_y": 36.78,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "moat",
+    "rotation": 3,
+    "width": 118,
+    "height": 70,
+    "anchor_x": 60.38,
+    "anchor_y": 60.14,
+    "footprint": [
+      1,
+      1
     ],
     "scale": 3
   },

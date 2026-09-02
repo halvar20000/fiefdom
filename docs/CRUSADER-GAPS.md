@@ -115,8 +115,9 @@ the state machine has no state for.
 
 - [x] `perimeter_turret` (1x1, deck 1.14), `round_tower` (3x3, deck 1.92, hp
       900), `lookout_tower` (2x2, deck 2.30, timber and fragile with it).
-- [ ] `moat`, `drawbridge`, `killing_pit`, `stairs`, `oil_smelter`,
-      `water_pot`.
+- [x] `moat` (paintable, blocks, nobody mans it) and `drawbridge` (walkable
+      down, solid up, G toggles them all).
+- [ ] `killing_pit`, `stairs`, `oil_smelter`, `water_pot`.
 
 The three towers reused the garrison system, but reusing it meant fixing two
 things that were correct only because there had been exactly one tower.
@@ -137,9 +138,22 @@ Deck heights in `GARRISON_HEIGHT` are read off the Blender models and are the
 top of the surface a man stands on, not the merlons above it. Changing a model
 means changing that table.
 
-Still to come is the hard half: moats need terrain modification and pathing
-that respects them, drawbridges an open/shut state, killing pits and oil a
-trigger and a damage model.
+The moat needed no new pathing after all: a building that is not `walkable`
+already calls `markSolid` and blocks, and `wouldSealSomethingOff` already stops
+a player walling themselves in. The drawbridge is the only thing in the game
+whose passability changes after placement, which is why `raised` lives on the
+placed building and not on the def.
+
+**Read this before adding another building.** `BUILD_MENU` in `defs.ts` is the
+only thing that makes a building placeable, and it is hand-maintained. Twenty-
+one buildings from tranches 2 to 5 were defined, costed, rendered, simulated
+and completely unreachable because nothing added them to it, and nothing
+anywhere said so. `unlistedBuildings()` now reports it through the same loud
+banner as a stale asset manifest. Keep it passing.
+
+Still to come: killing pits and oil need a trigger and a damage model, and
+`stairs` needs a decision about whether it is a building at all or a property
+of the wall.
 
 ### 6. Recruitment
 

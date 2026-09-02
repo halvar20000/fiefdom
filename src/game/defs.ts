@@ -290,6 +290,28 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     walkable: true, paintable: true, hp: 40,
     description: 'A trench of tar. Lay a line of them, then light it (F).',
   },
+  moat: {
+    name: 'moat', label: 'Moat', category: 'castle',
+    footprint: [1, 1], cost: { wood: 2 }, workers: 0, terrain: 'any', hp: 70,
+    // NOT walkable, and that is the entire building: it blocks, and unlike a
+    // wall nobody can stand on it. Paintable because a moat is a run, never a
+    // single square.
+    paintable: true,
+    description: 'A wet ditch. Nothing crosses it and nobody mans it — the '
+               + 'cheapest way to say "not here", and the reason to leave a '
+               + 'drawbridge where you do want them.',
+  },
+  drawbridge: {
+    name: 'drawbridge', label: 'Drawbridge', category: 'castle',
+    footprint: [1, 1], cost: { wood: 12, iron: 2 }, workers: 0, terrain: 'any', hp: 90,
+    // Walkable while it is down. Raising it marks its tile solid instead --
+    // see toggleDrawbridges() -- which is the one building in the game whose
+    // passability changes after it is placed.
+    walkable: true,
+    description: 'The gap you leave in your own moat. Raise and drop it with '
+               + 'G: down it is a road, up it is a wall, and the enemy walks '
+               + 'straight over it while you forget.',
+  },
   siege_camp: {
     name: 'siege_camp', label: 'Siege Camp', category: 'castle',
     footprint: [3, 3], cost: { wood: 40, stone: 10 }, workers: 0, terrain: 'any',
@@ -697,11 +719,28 @@ export const BUILDINGS: Record<string, BuildingDef> = {
 };
 
 /** Buildings offered in the build menu, in the order they appear. */
+/**
+ * The build bar, group by group, and the ONLY way a building becomes placeable.
+ *
+ * A building defined but left out of here is fully real -- costed, rendered,
+ * simulated -- and cannot be built, with nothing anywhere to say so. Twenty-one
+ * of them accumulated exactly that way before anyone noticed. `unlistedBuildings`
+ * below is the guard; keep it passing.
+ */
 export const BUILD_MENU: { category: Category; label: string; items: string[] }[] = [
-  { category: 'castle', label: 'Castle', items: ['wall', 'gatehouse', 'tower', 'pitch_ditch', 'barracks', 'siege_camp'] },
+  { category: 'castle', label: 'Castle',
+    items: ['wall', 'gatehouse', 'tower', 'round_tower', 'perimeter_turret',
+            'lookout_tower', 'moat', 'drawbridge', 'pitch_ditch', 'barracks',
+            'siege_camp'] },
   { category: 'castle', label: 'Stores', items: ['stockpile', 'granary'] },
   { category: 'town', label: 'Town',
-    items: ['hovel', 'market', 'church', 'pharmacy', 'garden', 'gallows'] },
+    items: ['hovel', 'market', 'garden', 'well', 'pond', 'statue', 'maypole',
+            'dancing_bear'] },
+  { category: 'town', label: 'Faith',
+    items: ['shrine', 'chapel', 'church', 'cathedral', 'pharmacy'] },
+  { category: 'town', label: 'Fear',
+    items: ['stocks', 'dunking_stool', 'gallows', 'stretching_rack', 'gibbet',
+            'dog_cage', 'burning_stake', 'dungeon'] },
   { category: 'industry', label: 'Industry',
     items: ['woodcutter', 'quarry', 'ox_tether', 'iron_mine', 'pitch_rig', 'depot'] },
   { category: 'farm', label: 'Farms',
@@ -710,8 +749,23 @@ export const BUILD_MENU: { category: Category; label: string; items: string[] }[
   { category: 'food', label: 'Food & Ale',
     items: ['mill', 'bakery', 'slaughterhouse', 'brewery', 'inn'] },
   { category: 'weapons', label: 'Weapons',
-    items: ['armoury', 'poleturner', 'fletcher', 'blacksmith', 'armourer'] },
+    items: ['armoury', 'poleturner', 'fletcher', 'blacksmith', 'armourer', 'tanner'] },
 ];
+
+/**
+ * Buildings that exist but no menu offers.
+ *
+ * `keep` is deliberate -- you start with one and never place another. Anything
+ * else in this list is a building the player has paid for in code and cannot
+ * reach, which is the failure this exists to make loud.
+ */
+export function unlistedBuildings(): string[] {
+  const listed = new Set(BUILD_MENU.flatMap(g => g.items));
+  const deliberate = new Set(['keep']);
+  return Object.keys(BUILDINGS)
+    .filter(n => !listed.has(n) && !deliberate.has(n))
+    .map(n => `unbuildable:${n}`);
+}
 
 /**
  * A standing order per good. Buy and sell are INDEPENDENT, as in Stronghold:

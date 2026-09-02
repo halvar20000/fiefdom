@@ -24,6 +24,14 @@ export interface PlacedBuilding {
   held: Partial<Record<Resource, number>>;
   /** Damage left before it falls. Only siege engines reduce it. */
   hp: number;
+  /**
+   * A drawbridge that is up.
+   *
+   * The only mutable passability in the game: everything else decides once, at
+   * placement, whether it is `walkable` and never changes its mind. Kept on the
+   * placed building rather than the def for exactly that reason.
+   */
+  raised?: boolean;
 }
 
 export interface Notice {
