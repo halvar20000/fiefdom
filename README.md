@@ -2401,17 +2401,41 @@ the point on a desert start.
 
 ### The gazelle sprites
 
-96 sprites from `tools/render/wildlife.py` and `render_wildlife.py`: walk (6
-frames), graze (4) and idle (2), each in 8 world-space facings. No armature —
+160 sprites from `tools/render/wildlife.py` and `render_wildlife.py`: walk (10
+frames), graze (6) and idle (4), each in 8 world-space facings. No armature —
 a quadruped walk is four legs swinging in diagonal pairs, which is a handful of
 Euler angles. `_limb` moves the mesh *below* its origin so the pivot is the hip;
 geom.box would otherwise put the origin at the hoof and swing the whole animal's
-foot in a circle round the ground.
+foot in a circle round the ground; `_forward` and `_upward` do the same for a
+neck and for a horn.
 
-Two calibrations: the neck angle was inverted at first (a negative rotation of
+Three calibrations: the neck angle was inverted at first (a negative rotation of
 the +Y neck points it at the ground, so the alert pose looked like a permanent
-graze and the graze clip had nowhere to go), and the first build was far too
-stocky — leg length carries the whole silhouette at 16 px.
+graze and the graze clip had nowhere to go); the first build was far too stocky
+— leg length carries the whole silhouette at 16 px; and the second build was a
+slab on four posts with a straight tube for a neck, which is worth spelling out
+because the fix is not what "more detail" would suggest.
+
+Three things made it read as an animal, in descending order of how much they
+bought:
+
+* **Markings, not geometry.** A dark band down the flank, pale under it and a
+  pale rump. None of it costs a vertex in silhouette and it is what makes a tan
+  animal on tan ground legible at all. Cheapest of the three by a distance and
+  by some way the most effective.
+* **A break in the line.** The head sits *across* the end of the neck with the
+  muzzle dropped below it — the chess-knight arrangement `mounts.py` already
+  used for the horse. Before that, head and neck had the same cross-section and
+  nothing in the silhouette said where one ended. The head is a posable part of
+  its own too, so the graze clip hangs it off the bottom of the neck instead of
+  pointing the whole animal at the grass like a compass needle.
+* **A bend in the leg.** Two segments with the hind pair folded at the hock.
+  Four straight posts is the one thing that reads as furniture. The shank's
+  length is *solved* from the rest angles rather than authored, so the hoof
+  still lands on z = 0 when either angle is touched.
+
+The horns are three chained segments swept back and then eased forward, because
+a single upright spike at this size is an aerial rather than a horn.
 
 `render_wildlife.py` and `render_units.py` share `units.json` and both MERGE into
 it. `render_units.py` used to overwrite it outright, which would have deleted

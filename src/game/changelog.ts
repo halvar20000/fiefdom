@@ -23,6 +23,22 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.49.2',
+    date: '2026-09-03',
+    headline: 'The gazelle stops being a bench.',
+    sections: [
+      {
+        title: 'Changed',
+        items: [
+          'The gazelle is rebuilt. The old one was a slab on four posts with a straight tube for a neck: the head had the same cross-section as the neck it grew out of, so nothing in the silhouette said where the animal began, and the horns read as a pair of aerials. It now has a head set across the end of its neck with the muzzle dropped below it, three-segment horns swept back and eased forward the way a real pair are, a chest and a haunch instead of two flat walls, and legs that bend at the hock.',
+          'It is also marked rather than merely shaped: a dark band down the flank, pale beneath it, and a pale rump. That is the part that carries at thirty pixels — an unmarked tan animal on tan ground is a blob whatever it is made of — and it costs nothing in silhouette.',
+          'The graze clip drops the head off the bottom of the neck and dips the shoulders with it, instead of pointing the whole animal at the grass like a compass needle. The walk folds the knee on the way forward and straightens it for the stance it pushes back through.',
+          'A herd is cheaper to draw than it was: the animal is measured and centred on the point it stands on rather than centred by hand, so each of its 160 sprites carries less empty air. That is 0.6 megapixels back off the atlas, better than half of what the herd was taking.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.49.1',
     date: '2026-09-02',
     headline: 'The stockpile is a yard, not a shed.',
