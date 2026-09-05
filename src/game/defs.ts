@@ -119,6 +119,16 @@ export type TerrainNeed = 'any' | 'green' | 'rock' | 'sand' | 'marsh';
 export const WATER_REACH = 3;
 
 /**
+ * What pulling a building down gives back.
+ *
+ * Half, not all and not nothing. Nothing punishes a misclick harder than the
+ * mistake deserves and makes the player reload rather than adapt; all of it
+ * makes the build menu a free sketchpad and removes any weight from choosing
+ * where things go.
+ */
+export const DEMOLISH_REFUND = 0.5;
+
+/**
  * The storehouse.
  *
  * Capacity is all goods together, not per kind: it is a shed, not a set of
@@ -129,18 +139,38 @@ export const WATER_REACH = 3;
  * point -- one long walk replaces several, so a distant workings keeps
  * producing while a single man does the hauling.
  */
-/**
- * What pulling a building down gives back.
- *
- * Half, not all and not nothing. Nothing punishes a misclick harder than the
- * mistake deserves and makes the player reload rather than adapt; all of it
- * makes the build menu a free sketchpad and removes any weight from choosing
- * where things go.
- */
-export const DEMOLISH_REFUND = 0.5;
-
 export const DEPOT_CAPACITY = 48;
 export const DEPOT_BATCH = 12;
+
+/**
+ * How far a storehouse reaches to serve the workshops around it, measured
+ * between origins like the ox tether's range.
+ *
+ * The shed only ever held finished loads waiting to go IN, which answered a
+ * distant producer and left a distant CONSUMER with nothing: a mill out by the
+ * wheat still walked to the stockpile for every sack, because a workshop
+ * fetches from a real store and cannot see a shed. Within this range the shed
+ * keeps the inputs those workshops eat, and the carrier makes the long walk
+ * instead of the miller.
+ *
+ * Shorter than the ox's fourteen on purpose. The tether is a licence a quarry
+ * must own and wants some slack; this is a shed serving the workings it stands
+ * in, and a range that reached across a settlement would quietly make every
+ * workshop equidistant from everything.
+ */
+export const DEPOT_SERVE_RANGE = 12;
+
+/**
+ * Units of ONE input a storehouse keeps on hand for the workshops it serves.
+ *
+ * Deliberately a few cycles' worth and not a full shed. The point is to take
+ * the walk off the workshop's critical path, not to abolish distance: a shed
+ * that stocked forty sacks would make a mill out in the fields exactly as good
+ * as one built on the yard, and the yard is what the whole layout is arranged
+ * around. Eight is enough that the miller is never stood waiting on a carrier
+ * mid-walk, and little enough that losing the shed costs a minute, not an hour.
+ */
+export const DEPOT_INPUT_STOCK = 8;
 
 /**
  * How far an ox tether reaches for a quarry, measured between origins.
@@ -754,8 +784,9 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     name: 'depot', label: 'Storehouse', category: 'industry',
     footprint: [2, 2], cost: { wood: 15 }, workers: 1, terrain: 'any',
     relay: DEPOT_CAPACITY,
-    description: 'A drop-off out at the workings. Producers unload here and go '
-               + 'straight back to work; its carrier takes the load on.',
+    description: 'A drop-off out at the workings, and a shelf for what they '
+               + 'use. Producers unload here; its carrier takes the load on, '
+               + 'and fetches back the inputs the workshops around it eat.',
   },
   fishery: {
     name: 'fishery', label: "Fisherman's Hut", category: 'farm',

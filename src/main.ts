@@ -45,7 +45,8 @@ import {
   OIL_POT_TRIGGER_RADIUS, OIL_POT_BLAST_RADIUS, OIL_POT_DAMAGE,
   REPAIR_RADIUS, REPAIR_PER_SECOND, UNDERMINE_RADIUS, UNDERMINE_PER_SECOND,
   SPEED_LEVELS, RESOURCE_LABELS, productionOf, goodName, HAUL_RANGE,
-  type Resource,
+  DEPOT_SERVE_RANGE,
+  type Resource, type Store,
 } from './game/defs';
 
 /** The shared palette, aliased: the minimap is one of three users of it. */
@@ -704,19 +705,44 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     return { x: tx + (dx / len) * off, z: tz + (dz / len) * off };
   }
 
+  function nearestStoreAt(kind: Store, x: number, z: number): PlacedBuilding | null {
+    let best: PlacedBuilding | null = null;
+    let bestD = Infinity;
+    for (const b of state.buildings) {
+      if (b.def.storeFor !== kind) continue;
+      const d = (b.x - x) ** 2 + (b.z - z) ** 2;
+      if (d < bestD) { bestD = d; best = b; }
+    }
+    return best;
+  }
+
+  /**
+   * Is this shed a shorter walk for that workshop's inputs than the yard is?
+   *
+   * The ONE test, asked by both halves of the arrangement: what a shed decides
+   * to keep on its shelves, and what a workshop is allowed to take off them.
+   * If the two could disagree -- if a shed stocked flour for a bakery that
+   * then walked past it to the stockpile anyway -- the sacks would sit on the
+   * shelf out of the town's stock and out of everyone's reach, which is a leak
+   * and not a feature.
+   *
+   * Measured between origins on both sides for the same reason.
+   */
+  function shedServes(shed: PlacedBuilding, b: PlacedBuilding): boolean {
+    const d = (shed.x - b.x) ** 2 + (shed.z - b.z) ** 2;
+    if (d > DEPOT_SERVE_RANGE ** 2) return false;
+    // Every input in the game is a yard good, which is why the fetch leg is
+    // hardcoded to the stockpile. The day one is not, this and that change
+    // together.
+    const store = nearestStoreAt('stockpile', b.x, b.z);
+    if (!store) return true;
+    return d < (store.x - b.x) ** 2 + (store.z - b.z) ** 2;
+  }
+
   const workerWorld: WorkerWorld = {
     heightAt: (x, z) => terrain.heightAt(x, z),
     groundSpeed,
-    nearestStore(kind, x, z) {
-      let best: PlacedBuilding | null = null;
-      let bestD = Infinity;
-      for (const b of state.buildings) {
-        if (b.def.storeFor !== kind) continue;
-        const d = (b.x - x) ** 2 + (b.z - z) ** 2;
-        if (d < bestD) { bestD = d; best = b; }
-      }
-      return best;
-    },
+    nearestStore: nearestStoreAt,
 
     /**
      * The nearest place a load can be dropped: a real store square, or a
@@ -741,6 +767,60 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       }
       return best;
     },
+    /**
+     * What the staffed workshops around a storehouse consume.
+     *
+     * Measured between origins, like the ox tether's range, and only from
+     * buildings with a MAN in them: an unstaffed workshop eats nothing, and a
+     * shed hoarding sacks for a mill nobody works is holding them out of the
+     * town's stock for no one.
+     *
+     * Relays are skipped, so two sheds standing near each other cannot decide
+     * to stock one another.
+     */
+    relayDemand(b) {
+      const out = new Set<Resource>();
+      for (const other of state.buildings) {
+        if (other.def.relay || other.staff <= 0) continue;
+        const prod = productionOf(other.def, other.alt);
+        if (!prod?.inputs) continue;
+        if (!shedServes(b, other)) continue;
+        for (const r of Object.keys(prod.inputs)) out.add(r as Resource);
+      }
+      return out;
+    },
+
+    /**
+     * A storehouse that can supply a whole cycle without a walk to the yard.
+     *
+     * All of the inputs or none: a worker carries one load home and there is
+     * no state for a trip that collects half a cycle here and half there.
+     *
+     * And only if the shed is genuinely nearer than the stockpile the worker
+     * would otherwise walk to. Without that test a shed built beside the yard
+     * would pull every workshop in the settlement into a detour, and a shed
+     * would stop being a way to shorten a long walk and start being a tax on a
+     * short one.
+     */
+    inputSource(b, inputs, x, z) {
+      let best: PlacedBuilding | null = null;
+      let bestD = Infinity;
+      for (const shed of state.buildings) {
+        if (!shed.def.relay) continue;
+        // Only a shed that is serving THIS workshop: the same test that
+        // decides what the shed keeps decides who may draw on it.
+        if (!shedServes(shed, b)) continue;
+        let has = true;
+        for (const [r, n] of Object.entries(inputs)) {
+          if ((shed.held[r as Resource] ?? 0) < (n ?? 0)) { has = false; break; }
+        }
+        if (!has) continue;
+        const d = (shed.x - x) ** 2 + (shed.z - z) ** 2;
+        if (d < bestD) { bestD = d; best = shed; }
+      }
+      return best;
+    },
+
     isWalkable(x, z) {
       return !paths.isBlocked(Math.floor(x), Math.floor(z));
     },
@@ -3443,9 +3523,21 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       // A shed's stock, and equally a quarry yard's: what is standing on the
       // ground waiting to be carried is exactly what a player wondering where
       // their stone has got to needs to read.
-      if ((def.relay || def.needsHauler || def.hauler) && held.length) {
-        const what = held.map(([r, n]) => `${n} ${r}`).join(', ');
-        bits.push(def.needsHauler ? `${what} waiting to be hauled` : what);
+      const what = (rows: [string, number | undefined][]) =>
+        rows.map(([r, n]) => `${n} ${r}`).join(', ');
+      if (def.relay && held.length) {
+        // A shed's pile now has two halves that look identical and mean
+        // opposite things: goods on their way IN to the store, and inputs kept
+        // OUT here for the workshops around it. Saying which is which is the
+        // difference between "why is there wheat in my storehouse" and reading
+        // the building at a glance.
+        const demand = workerWorld.relayDemand(mine);
+        const out = held.filter(([r]) => !demand.has(r as Resource));
+        const keep = held.filter(([r]) => demand.has(r as Resource));
+        if (out.length) bits.push(`${what(out)} to go out`);
+        if (keep.length) bits.push(`${what(keep)} for the workings`);
+      } else if ((def.needsHauler || def.hauler) && held.length) {
+        bits.push(def.needsHauler ? `${what(held)} waiting to be hauled` : what(held));
       }
       const full = buildingHp(def);
       if (mine.hp < full) bits.push(`${Math.max(0, Math.round(mine.hp))}/${full} hp`);

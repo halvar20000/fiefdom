@@ -23,6 +23,23 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.52.0',
+    date: '2026-09-05',
+    headline: 'The storehouse walks both ways.',
+    sections: [
+      {
+        title: 'Changed',
+        items: [
+          'The storehouse fetches as well as delivers. It was only ever a drop-off, which answered a distant PRODUCER \u2014 a quarry, a fishery \u2014 and did nothing whatever for a distant consumer: a workshop draws its inputs from a real store and could not see a shed, so a mill out by the wheat walked to the stockpile for every sack it ground, and a bakery out by the mill walked there for every sack it baked. The shed stood between the two holding the flour and was allowed to help with one leg of four.',
+          'A shed now looks at the manned workshops around it, keeps eight of whatever they eat on the shelf, and its carrier makes the walk to the yard instead of the miller. There is nothing to set: it stocks what the workings it stands in consume, and a shed with no workshop near it is the drop-off it always was.',
+          'Which means a chain built out at the fields closes on itself. The mill drops its flour in the shed, the bakery takes it straight back out, and only the bread makes the journey home. Measured over ten minutes with a mill and a bakery thirty tiles from the stockpile, averaged over nine runs: 26 loaves with no shed, 38 with the shed as it was, 104 now. At forty-five tiles, 16 and 22 against 77.',
+          'A shed keeps a few cycles\u2019 worth and not a shed full, on purpose. The walk comes off the workshop\u2019s critical path; the distance is not abolished. Forty sacks on the shelf would make a mill in the fields exactly as good as one built on the yard, and where things stand is meant to be a decision.',
+          'The storehouse tooltip now says which half of its pile is which \u2014 "4 bread to go out \u00b7 8 wheat for the workings" \u2014 because the two look identical on the ground and mean opposite things.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.51.0',
     date: '2026-09-04',
     headline: 'The ox goes to work.',

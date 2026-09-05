@@ -1819,6 +1819,37 @@ Measured on the same fishery, 74 tiles from its granary, over 600 seconds:
 | Fishery alone | **10** |
 | Fishery + storehouse | **58** |
 
+### It walks both ways
+
+That fixed a distant **producer** and did nothing at all for a distant
+**consumer**. A workshop fetches its inputs from a real store — `nearestStore`,
+which cannot see a shed — so a mill out by the wheat still walked to the
+stockpile for every sack it ground, and a bakery out by the mill walked there
+for every sack it baked. The shed stood between them holding the flour and was
+allowed to help with exactly one leg of four.
+
+The carrier now walks in both directions. It looks at the staffed workshops
+within `DEPOT_SERVE_RANGE` and keeps `DEPOT_INPUT_STOCK` of whatever they eat
+on the shelf; those workshops take their inputs off the shelf instead of
+walking to the yard for each one.
+
+A mill and a bakery with one shed between them, wheat kept in stock, bread
+counted as it reaches the granary, over 600 seconds. Walking pace varies from
+worker to worker, so these are the mean of nine runs:
+
+| Tiles from the yard | No shed | Shed, before | Shed, now |
+|---|---|---|---|
+| 4 | 125 | 137 | **166** |
+| 10 | 71 | 96 | **161** |
+| 20 | 38 | 56 | **128** |
+| 30 | 26 | 38 | **104** |
+| 45 | 16 | 22 | **77** |
+
+The chain closes on itself out there: the mill drops its flour in the shed, the
+bakery takes it straight back out, and only the bread makes the journey home.
+Nothing decides that — it falls out of the shed holding what the workings
+around it consume.
+
 Some deliberate choices in it:
 
 - **Capacity is all goods together**, not per kind. It is a shed, not a set of
@@ -1835,6 +1866,22 @@ Some deliberate choices in it:
   standing on a full yard cannot.
 - **Nothing routes to a storehouse unless the real store exists.** Otherwise a
   shed becomes a way to "store" goods the town can never reach.
+- **One test decides both what a shed stocks and who may draw on it**
+  (`shedServes`). If the two could disagree — a shed keeping flour for a bakery
+  that then walks past it to the stockpile anyway — the sacks would sit on the
+  shelf out of the town's stock and out of everyone's reach. That is a leak,
+  not a feature.
+- **A shed keeps a few cycles' worth, not a shed full.** The point is to take
+  the walk off the workshop's critical path, not to abolish distance: forty
+  sacks on the shelf would make a mill out in the fields exactly as good as one
+  built on the yard, and the yard is what the whole layout is arranged around.
+- **A good the workings eat is never carried out.** Otherwise a shed serving a
+  mill would fetch wheat from the stockpile and immediately walk it back again.
+- **An empty shelf comes before a full one.** A workshop with nothing to work
+  on is stopped; a load waiting in the shed is only late.
+- **The tooltip says which half is which** — "4 bread to go out · 8 wheat for
+  the workings" — because the two look identical on the ground and mean
+  opposite things.
 
 With no storehouse on the map the routing is byte-for-byte the old behaviour:
 the loop that considers relays has nothing to iterate.
