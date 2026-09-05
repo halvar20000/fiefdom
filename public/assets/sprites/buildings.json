@@ -3226,10 +3226,10 @@
   {
     "name": "ox_tether",
     "rotation": 0,
-    "width": 144,
-    "height": 107,
-    "anchor_x": -8.96,
-    "anchor_y": 76.08,
+    "width": 153,
+    "height": 92,
+    "anchor_x": 3.72,
+    "anchor_y": 50.3,
     "footprint": [
       2,
       2
@@ -3239,10 +3239,10 @@
   {
     "name": "ox_tether",
     "rotation": 1,
-    "width": 164,
-    "height": 110,
-    "anchor_x": 65.61,
-    "anchor_y": 32.4,
+    "width": 176,
+    "height": 100,
+    "anchor_x": 79.29,
+    "anchor_y": 23.3,
     "footprint": [
       2,
       2
@@ -3252,10 +3252,10 @@
   {
     "name": "ox_tether",
     "rotation": 2,
-    "width": 144,
-    "height": 126,
-    "anchor_x": 152.96,
-    "anchor_y": 78.38,
+    "width": 152,
+    "height": 137,
+    "anchor_x": 148.28,
+    "anchor_y": 72.22,
     "footprint": [
       2,
       2
@@ -3265,10 +3265,10 @@
   {
     "name": "ox_tether",
     "rotation": 3,
-    "width": 164,
-    "height": 122,
-    "anchor_x": 98.39,
-    "anchor_y": 122.06,
+    "width": 174,
+    "height": 121,
+    "anchor_x": 95.71,
+    "anchor_y": 114.22,
     "footprint": [
       2,
       2

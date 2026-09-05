@@ -1,6 +1,7 @@
 import type { GameState, PlacedBuilding } from './state';
 import {
-  storeOf, STORE_LABELS, DEPOT_BATCH, productionOf, type Resource, type Store,
+  storeOf, STORE_LABELS, DEPOT_BATCH, HAUL_YARD, productionOf,
+  type Resource, type Store,
 } from './defs';
 import type { PathNode } from './pathfind';
 
@@ -51,6 +52,16 @@ export interface Worker {
    * building's own pile.
    */
   dropAt: PlacedBuilding | null;
+  /**
+   * The yard this hauler is going to empty.
+   *
+   * Separate from `dropAt` rather than reusing it for the outbound leg: one
+   * is where a load is going and the other where it is coming from, and a
+   * single field would mean two things on two different legs of the same
+   * journey -- which is exactly the sort of overload `prey` was split out of
+   * `claim` to avoid.
+   */
+  haulFrom: PlacedBuilding | null;
 }
 
 /** Everything a relay is holding, all kinds together. */
@@ -74,6 +85,14 @@ export interface WorkerWorld {
   workSpot(b: PlacedBuilding, w: Worker): { x: number; z: number } | null;
   /** Is there an ox tether close enough to haul for this building? */
   haulerNear(b: PlacedBuilding): boolean;
+  /**
+   * The fullest yard in range of this hauler that has something waiting.
+   *
+   * Fullest rather than nearest: the ox is the bottleneck, and the yard
+   * closest to filling is the one that will stop its cutters first.
+   */
+  haulSource(b: PlacedBuilding, resource: Resource, range: number):
+    PlacedBuilding | null;
   /**
    * Where a load of this good should be taken from here: the real store, or a
    * storehouse if one is nearer and has room.
@@ -145,7 +164,7 @@ export class WorkerPool {
           speed: 1.55 + Math.random() * 0.4,
           building: b, state: 'idle', timer: 0.5 + Math.random(),
           tx: c.x, tz: c.z, carrying: null, carryAmount: 0, slot: have,
-          claim: null, prey: null, path: [], dropAt: null,
+          claim: null, prey: null, path: [], dropAt: null, haulFrom: null,
         });
         have++;
       }
@@ -233,6 +252,10 @@ export class WorkerPool {
         this.updateStocker(w, b, b.def.stocks, dt);
         continue;
       }
+      if (b.def.hauler) {
+        this.updateHauler(w, b, b.def.hauler, dt);
+        continue;
+      }
       const prod = productionOf(b.def, b.alt);
       if (!prod) { w.state = 'idle'; continue; }
 
@@ -245,6 +268,15 @@ export class WorkerPool {
           if (b.def.needsHauler && !this.world.haulerNear(b)) {
             w.timer = 2;
             this.state.notify(`${b.def.label} needs an ox tether nearby`, 'warn');
+            break;
+          }
+          // And one whose yard is full has nowhere to put the next block:
+          // the ox is not keeping up with what is being cut.
+          if (b.def.needsHauler
+              && (b.held[prod.output] ?? 0) >= HAUL_YARD) {
+            w.timer = 2.5;
+            this.state.notify(
+              `${b.def.label} yard is full — the ox tether cannot keep up`, 'warn');
             break;
           }
 
@@ -325,7 +357,9 @@ export class WorkerPool {
 
         case 'returning': {
           if (!this.arrive(w, dt)) break;
-          if (w.carrying && b.def.stocks) {
+          // Into the building's own pile: inputs fetched for a stocker, or
+          // a block just cut in a yard the ox will come for.
+          if (w.carrying && (b.def.stocks || b.def.needsHauler)) {
             b.held[w.carrying] = (b.held[w.carrying] ?? 0) + w.carryAmount;
             w.carrying = null;
             w.carryAmount = 0;
@@ -356,6 +390,18 @@ export class WorkerPool {
           this.world.harvest(b, w);
           w.carrying = prod.output;
           w.carryAmount = prod.amount;
+
+          // A hauled producer stacks its output in its own yard and its man
+          // goes straight back to the face. The stone is not his to walk to
+          // the stockpile -- that is what the ox is for -- and before this
+          // the quarrymen carried every block themselves and the tether was
+          // a licence they had to own rather than anything that worked.
+          if (b.def.needsHauler) {
+            const home = this.world.approach(b, w.x, w.z);
+            this.goTo(w, home.x, home.z, 'returning');
+            break;
+          }
+
           const kind = storeOf(prod.output);
           const store = this.world.nearestDrop(kind, w.x, w.z);
           if (!store) {
@@ -545,6 +591,140 @@ export class WorkerPool {
     }
   }
 
+  /**
+   * The ox tether.
+   *
+   * It produces nothing. It walks to a quarry that has stone stacked in its
+   * yard, takes a sledge-load, walks it to the stockpile and comes back --
+   * which is what the building has always claimed to do and, until now, never
+   * did: the tether was a range check that let a quarry work, and the
+   * quarrymen carried every block to the stockpile themselves while the ox
+   * stood at its post.
+   *
+   * Anything the stockpile had no room for stays on the sledge, in the
+   * tether's own yard, and goes out again on the next trip rather than being
+   * spilled on the ground.
+   */
+  private updateHauler(
+    w: Worker, b: PlacedBuilding,
+    hauler: { resource: Resource; range: number; batch: number },
+    dt: number,
+  ): void {
+    const kind = storeOf(hauler.resource);
+
+    switch (w.state) {
+      case 'idle': {
+        // The animation phase advances while it waits, unlike a peasant's:
+        // an idle worker among forty is a man standing still, but a single ox
+        // frozen mid-breath at its post is the whole building looking broken.
+        w.phase += dt;
+        w.timer -= dt;
+        if (w.timer > 0) return;
+
+        // A load left over from a full stockpile goes out again first.
+        const left = b.held[hauler.resource] ?? 0;
+        if (left > 0) {
+          const store = this.world.nearestDrop(kind, w.x, w.z);
+          if (!store) { w.timer = 4; return; }
+          b.held[hauler.resource] = 0;
+          w.carrying = hauler.resource;
+          w.carryAmount = left;
+          w.dropAt = store;
+          const c = this.world.approach(store, w.x, w.z);
+          this.goTo(w, c.x, c.z, 'toStore');
+          return;
+        }
+
+        const src = this.world.haulSource(b, hauler.resource, hauler.range);
+        if (!src) { w.timer = 2.5; return; }
+        w.haulFrom = src;
+        const c = this.world.approach(src, w.x, w.z);
+        this.goTo(w, c.x, c.z, 'toFetch');
+        return;
+      }
+
+      case 'toFetch': {
+        if (!this.arrive(w, dt)) return;
+
+        const src = w.haulFrom;
+        w.haulFrom = null;
+        // The yard may have been emptied by another tether, or the quarry
+        // pulled down, while the ox was on its way.
+        const have = src ? (src.held[hauler.resource] ?? 0) : 0;
+        const take = Math.min(hauler.batch, have);
+        if (!src || take <= 0) {
+          const home = this.world.approach(b, w.x, w.z);
+          this.goTo(w, home.x, home.z, 'returning');
+          return;
+        }
+        src.held[hauler.resource] = have - take;
+        w.carrying = hauler.resource;
+        w.carryAmount = take;
+
+        const store = this.world.nearestDrop(kind, w.x, w.z);
+        if (!store) {
+          // Nowhere to take it: bring the load home rather than stand in the
+          // quarry holding it, and let the tether's yard keep it.
+          this.state.notify(
+            `${STORE_LABELS[kind]} — nowhere for the ${b.def.label} to deliver`, 'warn');
+          const home = this.world.approach(b, w.x, w.z);
+          this.goTo(w, home.x, home.z, 'returning');
+          return;
+        }
+        w.dropAt = store;
+        const c = this.world.approach(store, w.x, w.z);
+        this.goTo(w, c.x, c.z, 'toStore');
+        return;
+      }
+
+      case 'toStore': {
+        if (!this.arrive(w, dt)) return;
+        if (w.carrying) {
+          const relay = w.dropAt?.def.relay;
+          if (relay) {
+            const t = w.dropAt!;
+            const room = relay - totalHeld(t);
+            const put = Math.min(w.carryAmount, room);
+            if (put > 0) t.held[w.carrying] = (t.held[w.carrying] ?? 0) + put;
+            w.carryAmount -= put;
+          } else {
+            // Only what fits. `deposit` spills the remainder of a part load,
+            // which is the right answer for a man with an armful and the
+            // wrong one for a sledge: the ox can simply take the rest back.
+            const put = Math.min(w.carryAmount, this.state.roomFor(w.carrying));
+            if (put > 0) {
+              this.state.deposit(w.carrying, put);
+              w.carryAmount -= put;
+            } else {
+              this.state.notify(
+                `${STORE_LABELS[kind]} is full — the ox is standing loaded`, 'warn');
+            }
+          }
+          if (w.carryAmount > 0) {
+            b.held[w.carrying] = (b.held[w.carrying] ?? 0) + w.carryAmount;
+          }
+          w.carrying = null;
+          w.carryAmount = 0;
+          w.dropAt = null;
+        }
+        const home = this.world.approach(b, w.x, w.z);
+        this.goTo(w, home.x, home.z, 'returning');
+        return;
+      }
+
+      case 'returning': {
+        if (!this.arrive(w, dt)) return;
+        w.state = 'idle';
+        w.timer = 0.4;
+        return;
+      }
+
+      default:
+        w.state = 'idle';
+        w.timer = 0.4;
+    }
+  }
+
   /** Workers are drawn walking whenever they are between places. */
   isMoving(w: Worker): boolean {
     return w.state === 'toWork' || w.state === 'toStore'
@@ -559,6 +739,13 @@ export class WorkerPool {
    * doing one or the other at any moment.
    */
   clipFor(w: Worker): string {
+    // The hauler is not a peasant, and its clips are not the peasant's: it
+    // stands at its post, walks out empty, and comes back with a block on the
+    // sledge. Same three states the rest of the workforce has, drawn as an
+    // animal in harness.
+    if (w.building?.def.hauler) {
+      return w.carrying ? 'ox_haul' : this.isMoving(w) ? 'ox_walk' : 'ox_idle';
+    }
     if (w.carrying) return 'carry';
     if (this.isMoving(w)) return 'walk';
     if (w.state === 'working') return w.building?.def.workClip ?? 'dig';

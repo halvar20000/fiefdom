@@ -306,22 +306,43 @@ def quarry():
 
 
 def ox_tether():
-    """Ox and sledge: the stone haulier. 2x2."""
+    """The ox's post and yard: harness, water and blocks. No ox. 2x2.
+
+    The animal used to be part of this sprite -- a draught ox baked into a
+    building, standing at its post for the whole game while the quarrymen
+    carried the stone to the stockpile themselves. It is a UNIT now
+    (mounts.build_ox) and it spends its time walking the haul, so what is left
+    here is the post it is tethered to and the yard it comes home to. Two oxen
+    on the same tile, one of them painted on, is the one outcome worth
+    avoiding.
+    """
     hide = M.plaster("OxHide", tint=(0.36, 0.22, 0.13))
     dark = M.timber(dark=True)
     timber = M.timber()
     stone = M.castle_stone()
 
-    # The ox stands IN FRONT of the sledge, not on top of it. It used to be
-    # placed inside the sledge's own footprint, which at the old zoom passed as
-    # a vague brown mass and now reads as an animal sunk into its cargo.
     parts = [geom.box("ot_post", (1.72, 0.98, 0.0), (0.10, 0.10, 0.70), dark)]
-    parts += _ox("ot_ox", (0.86, 0.72), hide, dark)
-    # sledge with a block on it, and the traces running up to the yoke
-    parts.append(geom.box("ot_sledge", (0.12, 0.66, 0.0), (0.62, 0.50, 0.09), timber))
-    parts.append(geom.box("ot_load", (0.20, 0.72, 0.09), (0.46, 0.38, 0.28), stone))
-    for ty in (0.78, 0.98):
-        parts.append(geom.box(f"ot_trace_{ty}", (0.72, ty, 0.24), (0.20, 0.035, 0.035), dark))
+    # A crossbar between post and a second stake: what the harness hangs on,
+    # and what makes the post read as a tether rather than a fence remnant.
+    parts.append(geom.box("ot_stake", (1.72, 0.34, 0.0), (0.09, 0.09, 0.56), dark))
+    parts.append(geom.box("ot_rail", (1.745, 0.34, 0.50), (0.05, 0.70, 0.07), dark))
+    # The spare yoke, slung over the rail. The one piece of the old sprite
+    # worth keeping: it says draught animal without needing the animal.
+    parts.append(geom.box("ot_yoke", (1.53, 0.48, 0.38), (0.42, 0.13, 0.10), timber))
+    for i, ty in enumerate((0.54, 0.72)):
+        parts.append(geom.box(f"ot_trace_{i}", (1.62 + i * 0.16, ty, 0.10),
+                              (0.05, 0.05, 0.30), hide))
+
+    # A water trough, and blocks waiting on the ground for the next load.
+    parts.append(geom.box("ot_trough", (0.30, 1.44, 0.0), (0.86, 0.30, 0.17), timber))
+    # Water, not a hole. Rendered in the trough's own dark timber the first
+    # time, which at this size is a black rectangle sunk in the yard.
+    water = M.cloth("TroughWater", colour=(0.24, 0.34, 0.34))
+    parts.append(geom.box("ot_trough_water", (0.34, 1.48, 0.14),
+                          (0.78, 0.22, 0.02), water))
+    for i, (bx, by, bz) in enumerate(((0.24, 0.30, 0.0), (0.72, 0.26, 0.0),
+                                      (0.30, 0.34, 0.30))):
+        parts.append(geom.box(f"ot_block_{i}", (bx, by, bz), (0.46, 0.42, 0.29), stone))
     return geom.join(parts, "ox_tether"), (2, 2)
 
 

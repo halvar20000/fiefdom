@@ -883,6 +883,82 @@ healthy. Their cycle was `idle > toFetch > returning > idle > ...`, all legal
 transitions, no stuck states, no failed paths. It only looks wrong when you
 watch it. Some faults are only visible to a human.
 
+## The ox tether actually hauls
+
+The tether shipped as a **licence rather than a building**. A quarry needed one
+within fourteen tiles or its men would not cut -- and that was the whole of it:
+the quarrymen then carried every block to the stockpile themselves, and the ox
+was a picture baked into the tether's sprite, standing at its post for the
+length of the game. It looked exactly like a broken building, because it was
+one.
+
+Now the ox does the job the building is named after. The quarry's men stay at
+the rock face and stack what they cut **in its own yard** (`needsHauler`
+buildings put their output in `b.held` instead of walking it anywhere); the
+tether's worker is a `hauler` -- a def with `{resource, range, batch}` -- which
+walks to the fullest yard in range, takes a sledge-load of four blocks, carries
+them to the nearest drop, and comes home.
+
+Three details that are not incidental:
+
+* **Fullest yard, not nearest.** The ox is the bottleneck, so the yard closest
+  to stopping its own cutters is the one worth emptying.
+* **The yard is capped at twelve.** Full, the cutters stop with a warning
+  naming the reason. Silently voiding the block they just cut would be worse,
+  and a backlog on the ground is the visible sign that one ox is not enough.
+* **A part load comes home.** `state.deposit` spills what a full store cannot
+  take, which is right for a man with an armful and wrong for a sledge. The ox
+  deposits what fits and keeps the rest in the tether's own yard for the next
+  trip.
+
+Measured over ten simulated minutes, one quarry of three men, one tether:
+
+Medians of fifteen runs, because a worker's walking speed is randomised a
+little at birth and a single run of this is worth about five stone either way:
+
+| stockpile distance | before | after | with a second tether |
+|---|---|---|---|
+| 6 tiles | 81 stone | 107 | 107 |
+| 14 tiles | 58 | 105 | 105 |
+| 22 tiles | 44 | 94 | 104 |
+| 30 tiles | 36 | 71 | **103** |
+
+Two things fall out of that table. Stone comes in faster than it did -- the
+cutters no longer spend most of their cycle walking -- and **where you put the
+stockpile now matters**, which it barely did before. At thirty tiles the ox is
+the constraint, says so, and a second tether fixes it.
+
+### The ox had to become a unit
+
+A hauler that is a picture on a building cannot walk, so the animal was rebuilt
+in `mounts.py` beside the horses and the war dog: a posable quadruped with a
+sledge on two shafts, `ox_idle` / `ox_walk` / `ox_haul`, eight facings each.
+The block rides the sledge on the way to the stockpile and not on the way back,
+which is the same distinction the peasants' `carry` and `walk` draw and the one
+the player actually reads.
+
+Three passes were needed, and each failure is worth recording because none of
+them is about polygon count:
+
+* **Daylight under the belly.** The first cut had a deep body on short legs and
+  read as a hippo. The body is shallower than a horse's and the legs longer
+  than they look like they should be.
+* **`geom.box` turns about its minimum corner.** Horns laid out along X and
+  tilted did not rotate in place, they slid. Built with `_forward` and swung
+  instead -- pitched up, then swept out, which is the order Blender's XYZ euler
+  applies.
+* **The shafts have to be outboard, not merely clear.** At two centimetres
+  wider than the flank a thirty-degree camera draws one bar straight across the
+  animal. Set well outside it, they read as a harness down each side.
+
+The tether's own sprite lost the ox painted into it -- two oxen on one tile,
+one of them a photograph, is the outcome worth avoiding -- and is now the post,
+a spare yoke on the rail, a water trough and blocks waiting in the yard.
+
+**Water is level ground, and a lake is not a yard.** The same class of bug as
+the maps: `isBuildable` reads corner heights, so nothing stopped a keep being
+seated in a lake. Here the equivalent was `findStartSite`; see the map section.
+
 ## M2, part one: the curtain wall
 
 Wall is a paintable 1x1 building costing 3 stone; gatehouse and tower are 2x2.

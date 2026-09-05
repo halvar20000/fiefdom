@@ -23,6 +23,22 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.51.0',
+    date: '2026-09-04',
+    headline: 'The ox goes to work.',
+    sections: [
+      {
+        title: 'Changed',
+        items: [
+          'The ox tether hauls. Until now it was a licence and not a building: a quarry had to have one within fourteen tiles or it could not cut, and then the quarrymen carried every block to the stockpile on their own backs while the ox stood at its post for the whole game. The animal now walks the haul \u2014 out to the quarry with the sledge empty, back to the stockpile with a block on it \u2014 and the cutters stay at the rock face, stacking what they cut in the yard.',
+          'The ox is a unit, not a picture. It is built and animated like the horses and the war dog: a heavy quadruped with the hump and the wide horns that tell it from a horse at sprite size, a yoke, and a sledge trailing on two shafts with a dressed block on it when loaded. The tether\u2019s own sprite has lost the ox that was painted into it and is now the post, the spare yoke, a water trough and the blocks waiting in the yard.',
+          'A quarry stacks up to twelve blocks in its yard, and its tooltip says how many are waiting. Full, the cutters stop and say so \u2014 one ox is not enough for the stone three men can cut when the stockpile is a long way off, and a second tether beside the quarry is the answer. Measured over ten minutes with the stockpile thirty tiles away: 71 stone with one tether, 103 with two.',
+          'Stone comes in faster than it did, and how much faster depends on where the stockpile is, which it never really did before. Six tiles away: 81 before, 107 now. Thirty tiles away: 36 before, 71 now.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.50.0',
     date: '2026-09-04',
     headline: 'Six more maps, and ground that is shaped and not merely dressed.',

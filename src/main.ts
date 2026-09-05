@@ -44,7 +44,7 @@ import {
   PIT_TRIGGER_RADIUS, PIT_BLAST_RADIUS, PIT_DAMAGE, WATER_POT_RADIUS,
   OIL_POT_TRIGGER_RADIUS, OIL_POT_BLAST_RADIUS, OIL_POT_DAMAGE,
   REPAIR_RADIUS, REPAIR_PER_SECOND, UNDERMINE_RADIUS, UNDERMINE_PER_SECOND,
-  SPEED_LEVELS, RESOURCE_LABELS, productionOf, goodName,
+  SPEED_LEVELS, RESOURCE_LABELS, productionOf, goodName, HAUL_RANGE,
   type Resource,
 } from './game/defs';
 
@@ -788,8 +788,18 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
 
     haulerNear(b) {
       return state.buildings.some(o =>
-        o.name === 'ox_tether' &&
-        Math.abs(o.x - b.x) < 14 && Math.abs(o.z - b.z) < 14);
+        o.def.hauler &&
+        Math.abs(o.x - b.x) < HAUL_RANGE && Math.abs(o.z - b.z) < HAUL_RANGE);
+    },
+    haulSource(b, resource, range) {
+      let best: PlacedBuilding | null = null, most = 0;
+      for (const o of state.buildings) {
+        if (!o.def.needsHauler) continue;
+        if (Math.abs(o.x - b.x) >= range || Math.abs(o.z - b.z) >= range) continue;
+        const n = o.held[resource] ?? 0;
+        if (n > most) { most = n; best = o; }
+      }
+      return best;
     },
     workSpot(b, w) {
       const [fw, fd] = b.def.footprint;
@@ -3430,8 +3440,12 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
         bits.push(`${state.armouryUsed} / ${state.armouryCapacity} weapons`);
       }
       const held = Object.entries(mine.held).filter(([, n]) => (n ?? 0) > 0);
-      if (def.relay && held.length) {
-        bits.push(held.map(([r, n]) => `${n} ${r}`).join(', '));
+      // A shed's stock, and equally a quarry yard's: what is standing on the
+      // ground waiting to be carried is exactly what a player wondering where
+      // their stone has got to needs to read.
+      if ((def.relay || def.needsHauler || def.hauler) && held.length) {
+        const what = held.map(([r, n]) => `${n} ${r}`).join(', ');
+        bits.push(def.needsHauler ? `${what} waiting to be hauled` : what);
       }
       const full = buildingHp(def);
       if (mine.hp < full) bits.push(`${Math.max(0, Math.round(mine.hp))}/${full} hp`);

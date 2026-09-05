@@ -142,6 +142,27 @@ export const DEMOLISH_REFUND = 0.5;
 export const DEPOT_CAPACITY = 48;
 export const DEPOT_BATCH = 12;
 
+/**
+ * How far an ox tether reaches for a quarry, measured between origins.
+ *
+ * One number, shared by the three places that ask: the player's hauler
+ * looking for a load, the placement rule that tells a quarry it has nowhere
+ * to put its stone, and the rival lord, whose economy is abstracted but who
+ * has to obey the same range or he is quarrying for free.
+ */
+export const HAUL_RANGE = 14;
+
+/**
+ * How much a hauled producer may stack in its own yard.
+ *
+ * A quarry with a tether cuts into this pile and the ox empties it, so the
+ * two need not be in step: the cutters keep working through a long haul, and
+ * a backlog on the ground is the visible sign that one ox is not enough for
+ * the stone being cut. Full, the quarry stops -- there is nowhere to put the
+ * next block, and silently voiding it would be worse.
+ */
+export const HAUL_YARD = 12;
+
 export interface Production {
   /** What comes out, one unit per completed cycle. */
   output: Resource;
@@ -204,6 +225,15 @@ export interface BuildingDef {
   storeFor?: Store;
   /** Needs an ox tether nearby to move its output. */
   needsHauler?: boolean;
+  /**
+   * A hauler: it produces nothing itself, and instead empties the yards of
+   * nearby producers that cannot move their own output.
+   *
+   * `batch` is a sledge-load, deliberately several times a man's armful --
+   * that is what the ox is FOR, and a hauler that carried what a peasant
+   * carries would simply be a slower quarryman.
+   */
+  hauler?: { resource: Resource; range: number; batch: number };
   /** Must stand within WATER_REACH tiles of water. See the fishery. */
   needsWater?: boolean;
   /** People one of these reaches, for coverage levers like the church. */
@@ -646,13 +676,16 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     footprint: [3, 3], cost: { wood: 20 }, workers: 3, terrain: 'rock',
     produces: { output: 'stone', amount: 1, seconds: 12, to: 'stockpile' },
     needsHauler: true,
-    description: 'Cuts stone. Must be built on rock, and needs an ox tether to move it.',
+    description: 'Cuts stone. Must be built on rock. The blocks are stacked in '
+               + 'its yard for an ox tether to haul away.',
     workClip: 'mine',
   },
   ox_tether: {
     name: 'ox_tether', label: 'Ox Tether', category: 'industry',
     footprint: [2, 2], cost: { wood: 12 }, workers: 1, terrain: 'any',
-    description: 'Hauls stone from quarries to the stockpile.',
+    hauler: { resource: 'stone', range: HAUL_RANGE, batch: 4 },
+    description: 'The ox hauls cut stone from the quarries near it to the '
+               + 'stockpile. Build it beside the quarry, not beside the keep.',
   },
   iron_mine: {
     name: 'iron_mine', label: 'Iron Mine', category: 'industry',

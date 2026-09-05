@@ -1,7 +1,7 @@
 import {
   BUILDINGS, RATIONS, TAX_LEVELS, ALL_RESOURCES, FOOD_RESOURCES,
   STOCKPILE_TILE_CAPACITY, GRANARY_TILE_CAPACITY, ARMOURY_CAPACITY,
-  SOLDIER_TYPES, isFood, isWeapon,
+  SOLDIER_TYPES, isFood, isWeapon, HAUL_RANGE,
   type Resource,
 } from './defs';
 import type { Army, Soldier } from './army';
@@ -336,10 +336,10 @@ export class Lord {
     this.idle = free;
   }
 
-  /** Same 14-tile test the player's quarries have to pass. */
+  /** The same haul-range test the player's quarries have to pass. */
   private haulerNear(b: LordBuilding): boolean {
     return this.world.buildings().some(o => o.name === 'ox_tether'
-      && Math.abs(o.x - b.x) < 14 && Math.abs(o.z - b.z) < 14);
+      && Math.abs(o.x - b.x) < HAUL_RANGE && Math.abs(o.z - b.z) < HAUL_RANGE);
   }
 
   private produce(dt: number): void {

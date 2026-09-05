@@ -1,5 +1,6 @@
 """
-The two bodies that are not a man on the Mixamo rig: a horse, and a dog.
+The bodies that are not a man on the Mixamo rig: a horse, a dog, and the
+draught ox that hauls stone off a quarry.
 
 Why this file exists at all. Every soldier so far is `peasant.build` on the
 Mixamo skeleton, which is a superb deal -- palette and kit are the only
@@ -30,6 +31,8 @@ from __future__ import annotations
 import math
 
 import bpy
+from mathutils import Vector
+
 import geom
 import materials as M
 
@@ -41,6 +44,12 @@ HORSE_BACK = 0.44
 #: Shoulder height of a war dog. Deliberately well under the gazelle's 0.36:
 #: at this size the two animals differ mostly by how low and long they are.
 DOG_SHOULDER = 0.21
+
+#: Withers height of the draught ox. Lower than the horse's back at 0.44 and a
+#: good deal wider: at sprite size the two must not be mistaken for each other,
+#: and an ox reads as an ox by being heavy and low with a hump over the
+#: shoulders, not by any amount of detail on its head.
+OX_BACK = 0.38
 
 #: See the module docstring. Authored facing +Y, drawn facing -Y.
 BASE_YAW_DEG = 180.0
@@ -332,6 +341,179 @@ def build_war_dog():
     return _finish(objs, parts, dy=-0.03)
 
 
+def build_ox():
+    """
+    The draught ox, in harness, dragging a stone sledge. Returns (root, objs, parts).
+
+    This is a UNIT and not a prop, which is the whole point of it: the ox
+    tether used to be a building with an ox baked into its sprite standing at
+    a post forever, while the quarrymen carried the stone themselves. The
+    animal now walks the haul, so it has to be posable, and the sledge has to
+    come with it -- an ox that arrives at the stockpile and puts down a block
+    it was not visibly dragging is worse than no ox at all.
+
+    Three things carry it at sprite size, and the first cut of this model got
+    all three wrong -- a deep body on stubby legs, a head tucked into the
+    chest and a sledge parked against the rump read as a brown lump with a
+    crate beside it:
+
+    * DAYLIGHT UNDER THE ANIMAL. The body is shallower than a horse's and the
+      legs are longer than they look like they should be. A quadruped whose
+      belly is close to the ground is a pig.
+    * THE HEAD HELD OUT. Neck forward and level, with the horns swept wide and
+      raised. Sideways is what survives from the facings where the head points
+      at the camera, and the horns are the one thing on the silhouette that is
+      not shared with every other animal in the game.
+    * SHAFTS AND A GAP. The sledge trails a clear stride behind, with two
+      shafts running up the flanks to the yoke. The gap is what makes it a
+      thing being towed rather than a thing standing next to an ox.
+    """
+    hide = _hide("OxHide", (0.30, 0.19, 0.12))
+    dark = M.cloth("OxDark", colour=(0.12, 0.10, 0.08))
+    pale = M.cloth("OxMuzzle", colour=(0.62, 0.55, 0.45))
+    horn = M.cloth("OxHorn", colour=(0.78, 0.73, 0.60))
+    timber = M.timber(dark=True)
+    stone = M.castle_stone()
+
+    objs = []
+    parts = {"legs": {}}
+
+    body_l, body_w, body_h = 0.42, 0.175, 0.165
+    back_z = 0.40
+
+    body = geom.box("ox_body", (-body_w / 2, -body_l / 2, back_z - body_h),
+                    (body_w, body_l, body_h), hide)
+    objs.append(body)
+    parts["body"] = body
+    # The hump over the shoulders, standing proud of the back line. Without it
+    # an ox is a brown horse, and the game already has brown horses.
+    objs.append(geom.box("ox_hump", (-body_w / 2 + 0.028, body_l / 2 - 0.165,
+                                     back_z - 0.010),
+                         (body_w - 0.056, 0.135, 0.070), hide))
+    # Rump and brisket, so neither end of the animal is a wall.
+    objs.append(geom.box("ox_rump", (-body_w / 2 - 0.008, -body_l / 2 - 0.050,
+                                     back_z - body_h + 0.026),
+                         (body_w + 0.016, 0.080, body_h - 0.038), hide))
+    objs.append(geom.box("ox_chest", (-body_w / 2 + 0.006, body_l / 2 - 0.080,
+                                      back_z - body_h - 0.022),
+                         (body_w - 0.012, 0.090, body_h * 0.60), hide))
+
+    # Neck carried FORWARD and level, not tucked. An ox in draught reaches
+    # into the yoke; a head sunk into the chest reads as a bull about to
+    # charge, which is the wrong animal doing the wrong job.
+    neck = _forward("ox_neck", (0.0, body_l / 2 - 0.020, back_z - 0.048),
+                    (0.098, 0.150, 0.100), hide)
+    neck.rotation_euler = (math.radians(-6.0), 0.0, 0.0)
+    objs.append(neck)
+    parts["neck"] = neck
+
+    head = geom.box("ox_head", (-0.055, 0.115, -0.055), (0.110, 0.130, 0.100), hide)
+    head.parent = neck
+    objs.append(head)
+    muzzle = geom.box("ox_muzzle", (-0.040, 0.222, -0.062), (0.080, 0.060, 0.058), pale)
+    muzzle.parent = neck
+    objs.append(muzzle)
+    # A pale blaze down the face. Markings, not geometry: the cheapest thing
+    # that says which end of a brown animal is the front.
+    blaze = geom.box("ox_blaze", (-0.020, 0.150, 0.030), (0.040, 0.100, 0.020), pale)
+    blaze.parent = neck
+    objs.append(blaze)
+    for i, sx in enumerate((-1.0, 1.0)):
+        # Built with `_forward` and swung, rather than laid out along X and
+        # tilted: `geom.box` turns about its minimum corner, so a horn posed
+        # that way slides as much as it rotates. Pitched up first and then
+        # swept out, which is the order Blender's XYZ euler applies.
+        h = _forward(f"ox_horn_{i}", (sx * 0.046, 0.128, 0.044),
+                     (0.028, 0.105, 0.026), horn)
+        h.rotation_euler = (math.radians(20.0), 0.0, math.radians(sx * 74.0))
+        h.parent = neck
+        objs.append(h)
+        ear = geom.box(f"ox_ear_{i}", (sx * 0.056 - 0.012, 0.098, 0.010),
+                       (0.026, 0.040, 0.020), hide)
+        ear.parent = neck
+        objs.append(ear)
+    # The yoke across the shoulders, in front of the hump so it is not buried
+    # in it. This is the part that says the animal is working.
+    objs.append(geom.box("ox_yoke", (-0.108, body_l / 2 - 0.045, back_z + 0.006),
+                         (0.216, 0.048, 0.030), timber))
+
+    # Legs: long enough to put daylight under the belly, thick enough to be an
+    # ox's. `leg_h` is the drop from the shoulder joint to the ground.
+    leg_h = back_z - body_h + 0.012
+    for side, sx in (("left", -1), ("right", 1)):
+        for end, sy in (("front", 1), ("hind", -1)):
+            x = sx * (body_w / 2 - 0.030)
+            y = sy * (body_l / 2 - 0.062)
+            leg = _limb(f"ox_leg_{end}_{side}", (x, y, back_z - body_h + 0.012),
+                        (0.048, 0.050, leg_h), hide)
+            objs.append(leg)
+            parts["legs"][(end, side)] = leg
+            hoof = geom.box(f"ox_hoof_{end}_{side}", (-0.028, -0.030, -leg_h),
+                            (0.056, 0.060, 0.028), dark)
+            hoof.parent = leg
+            objs.append(hoof)
+
+    tail = _limb("ox_tail", (0.0, -body_l / 2 - 0.052, back_z - 0.018),
+                 (0.026, 0.026, 0.150), hide)
+    objs.append(tail)
+    parts["tail"] = tail
+    tuft = geom.box("ox_tail_tuft", (-0.019, -0.019, -0.150), (0.038, 0.038, 0.046), dark)
+    tuft.parent = tail
+    objs.append(tuft)
+
+    # --- the sledge --------------------------------------------------------
+    # Its own empty parent, so a walk can let it yaw a fraction behind the
+    # animal pulling it rather than tracking as if it were welded to the rump.
+    sledge = bpy.data.objects.new("ox_sledge", None)
+    bpy.context.collection.objects.link(sledge)
+    sledge.location = (0.0, -body_l / 2 - 0.145, 0.0)
+    objs.append(sledge)
+    parts["sledge"] = sledge
+
+    for i, sx in ((0, -1.0), (1, 1.0)):
+        runner = geom.box(f"ox_runner_{i}", (sx * 0.082 - 0.020, -0.250, 0.0),
+                          (0.040, 0.270, 0.026), timber)
+        runner.parent = sledge
+        objs.append(runner)
+    bed = geom.box("ox_bed", (-0.102, -0.235, 0.026), (0.204, 0.225, 0.026), timber)
+    bed.parent = sledge
+    objs.append(bed)
+    # The shafts: up the flanks from the sledge's nose to the yoke. Long,
+    # straight and outboard of the body, so they read as a connection rather
+    # than disappearing into the animal.
+    for i, sx in ((0, -1.0), (1, 1.0)):
+        # Rise and run measured to the yoke: 0.555 forward, 0.38 up, which is
+        # 34 degrees and a 0.67 bar. A shaft that stops short of the yoke is
+        # a stick lying on the ox, not a harness. Positive rotation about X
+        # lifts the far end -- the first cut used a negative angle and buried
+        # both shafts under the ground.
+        #
+        # Set WELL outboard of the body, not just clear of it. At 0.108 the
+        # pair was a couple of centimetres wider than the flank, which from a
+        # thirty-degree camera drew a bar straight across the animal instead
+        # of one down each side of it.
+        shaft = geom.box(f"ox_shaft_{i}", (sx * 0.140 - 0.010, 0.0, 0.028),
+                         (0.020, 0.670, 0.020), timber)
+        shaft.rotation_euler = (math.radians(34.0), 0.0, 0.0)
+        shaft.parent = sledge
+        objs.append(shaft)
+
+    # The load. Hidden for the empty walk home -- see `pose`.
+    load = geom.box("ox_load", (-0.082, -0.215, 0.052), (0.164, 0.185, 0.120), stone)
+    load.parent = sledge
+    objs.append(load)
+    parts["load"] = load
+
+    # Centre the team on the point it stands on, MEASURED rather than guessed:
+    # the sledge reaches much further back than the nose reaches forward, so
+    # yawing it through eight facings would otherwise sweep a circle sized by
+    # the sledge and every sprite would carry that much empty air.
+    bpy.context.view_layer.update()
+    ys = [(o.matrix_world @ Vector(c)).y
+          for o in objs if o.type == 'MESH' for c in o.bound_box]
+    return _finish(objs, parts, dy=-(min(ys) + max(ys)) / 2.0)
+
+
 def _finish(objs, parts, dy):
     """Centre on the origin and parent everything to a root.
 
@@ -360,23 +542,38 @@ CLIPS = {
     "horse_archer_idle": (4, 0.5), "horse_archer_walk": (10, 0.5),
     "horse_archer_attack": (8, 0.7),
     "war_dog_idle": (4, 0.5), "war_dog_walk": (8, 0.35), "war_dog_attack": (6, 0.5),
+    # The ox has no attack and never will. It has the pair every hauler needs:
+    # the loaded plod out to the stockpile and the empty walk home, which is
+    # the same distinction the peasants' `carry` and `walk` draw.
+    "ox_idle": (4, 0.6), "ox_walk": (8, 0.62), "ox_haul": (8, 0.78),
 }
 
 BUILDERS = {
     "knight": lambda: build_horse("knight"),
     "horse_archer": lambda: build_horse("horse_archer"),
     "war_dog": build_war_dog,
+    "ox": build_ox,
 }
 
 #: Resting angles, per body, so `pose` can put everything back before it moves.
-_NECK_REST = {"knight": 38.0, "horse_archer": 38.0, "war_dog": -6.0}
-_TAIL_REST = {"knight": 0.0, "horse_archer": 0.0, "war_dog": -40.0}
+_NECK_REST = {"knight": 38.0, "horse_archer": 38.0, "war_dog": -6.0, "ox": -4.0}
+_TAIL_REST = {"knight": 0.0, "horse_archer": 0.0, "war_dog": -40.0, "ox": 0.0}
 
 
 def pose(kind, parts, clip, t):
     """Pose body `kind` for phase `t` in 0..1 of `clip`."""
     legs, neck, tail, root = parts["legs"], parts["neck"], parts["tail"], parts["root"]
     arm = parts.get("arm")
+    sledge, load = parts.get("sledge"), parts.get("load")
+
+    # The block rides the sledge on the way to the stockpile and not on the
+    # way back. It is the only difference between the two ox clips and it is
+    # the one the player actually reads: a loaded sledge means stone is
+    # moving.
+    if load is not None:
+        load.hide_render = clip != "ox_haul"
+    if sledge is not None:
+        sledge.rotation_euler = (0.0, 0.0, 0.0)
 
     for o in legs.values():
         o.rotation_euler = (0.0, 0.0, 0.0)
@@ -392,6 +589,26 @@ def pose(kind, parts, clip, t):
     # pantomime horse even at this size.
     phases = {("front", "left"): 0.0, ("hind", "right"): 0.0,
               ("front", "right"): math.pi, ("hind", "left"): math.pi}
+
+    if kind == "ox" and (clip.endswith("_walk") or clip.endswith("_haul")):
+        # A loaded ox plods: a shorter stride, a deeper nod, and a slower
+        # cycle (see CLIPS). The empty walk home is the same gait let out a
+        # little, which is what makes the two read as the same animal.
+        haul = clip.endswith("_haul")
+        swing = math.radians(17.0 if haul else 22.0)
+        for key, leg in legs.items():
+            leg.rotation_euler = (math.sin(a + phases[key]) * swing, 0.0, 0.0)
+        root.location.z = abs(math.sin(a)) * 0.007
+        # Head down into the yoke when there is weight behind it.
+        neck.rotation_euler = (
+            math.radians(_NECK_REST[kind] - (11.0 if haul else 0.0))
+            + math.sin(a) * (0.085 if haul else 0.055), 0.0, 0.0)
+        tail.rotation_euler = (math.sin(a) * 0.13, 0.0, 0.0)
+        if sledge is not None:
+            # The sledge yaws a touch behind the animal dragging it, rather
+            # than tracking as if it were welded to the rump.
+            sledge.rotation_euler = (0.0, 0.0, math.sin(a - 0.6) * 0.035)
+        return
 
     if clip.endswith("_walk"):
         swing = math.radians(30.0 if kind == "war_dog" else 24.0)
