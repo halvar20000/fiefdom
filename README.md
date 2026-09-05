@@ -70,21 +70,65 @@ x86-only image fails at install time with a message nobody can act on.
 
 ## Start menu and map choice
 
-The game opens on a title screen listing six maps. Nothing is generated until
-you pick one, so the choice shapes the terrain rather than being applied to a
-world that already exists.
+The game opens on a title screen listing twelve maps. Nothing is generated
+until you pick one, so the choice shapes the terrain rather than being applied
+to a world that already exists.
 
 A map is a set of BIASES on the one generator, not hand-drawn terrain:
 
 ```ts
-{ seed, green, rock, marsh, trees, lords, difficulty }
+{ seed, green, rock, marsh, trees, river, lords, difficulty,
+  relief, grain, lakes, coast, dunes }
 ```
 
 A Crusader map is characterised by what it is short of — one is green and
 wooded, another bare rock, another half bog — and biasing thresholds says that
 in a few numbers where hand-drawn terrain would say it in a megabyte. `green`
 shifts the moisture cut-offs, `rock` the outcrop threshold, `marsh` the bog
-threshold, `trees` multiplies vegetation density.
+threshold, `trees` multiplies vegetation density, `river` is the half-width of
+the water in the wadi.
+
+The first six maps differ only in **cover**: the same tiered ground, dressed
+green or bare or boggy. The second six differ in **shape**, which needed five
+more knobs on the same generator rather than a second one:
+
+| | what it changes | what it makes |
+|---|---|---|
+| `relief` | height of the tiers | 0.34 a plain you can see across; 1.42 tablelands whose tops clamp flat |
+| `grain` | frequency of the elevation noise | 0.6 few broad landforms; 2.1 a gullied badland |
+| `lakes` | standing water in hollows, away from the wadi | pools with a flat shore, and pitch seams along it |
+| `coast` | a sea along the southern edge | a wandering shoreline with bays and headlands, and a strand |
+| `dunes` | ridges laid over the land after quantisation | rank on rank of whole-step crests |
+
+All five are optional and default to the old behaviour, so the original six
+maps generate exactly the ground they always did — which matters, because a
+save is a diff against the world its seed regenerates.
+
+The knobs are measured, not guessed. Composition over the whole 200x200 map,
+and how much of it a keep can stand on:
+
+| | knob | rock | water | cliff | 5x5 keep sites |
+|---|---|---|---|---|---|
+| The Green Wadi (default) | — | 24.6% | 5.3% | 3.5% | 2,144 |
+| The Salt Pan | `relief 0.34` | 22.6% | 12.9% | **0.0%** | 3,553 |
+| The High Tables | `relief 1.42` | **44.9%** | 9.1% | 5.4% | 2,330 |
+| The Broken Country | `grain 2.1` | 22.3% | 5.5% | 2.9% | **1,264** |
+| The Dune Sea | `dunes 1.15` | 17.1% | 9.0% | 1.6% | **974** |
+| The Lake of Reeds | `lakes 0.09` | 14.2% | 26.0% | 2.0% | 3,057 |
+| The Salt Coast | `coast 0.22` | 12.8% | 25.1% | 1.0% | 3,107 |
+
+The Salt Pan has no cliff on it anywhere; the Dune Sea offers under a third of
+the keep sites the Salt Coast does. The pips on the cards are not flattering
+the maps.
+
+**Water is level ground, and that broke two things once there was a lot of
+it.** `isBuildable` reads corner heights and nothing else, so a lake was the
+flattest country on the map: `findStartSite` scored it as open building land
+and put the player's keep in the middle of one, and the placement screen's
+"farthest point from every other seat" was reliably the middle of the sea —
+where the game then refused to build, losing the lord. Both now test the
+ground type as well as the height. Water in *reach* still earns a small
+bonus — a shore is worth having, a swamp is not.
 
 Verified that the choice is real, not decoration:
 
@@ -1052,7 +1096,7 @@ revealed it was wrong for a completely different reason first.
 
 ## A map editor, and where a painted map has to live
 
-The six shipped maps are generator **biases** -- a seed and four numbers -- and
+The shipped maps are generator **biases** -- a seed and a handful of numbers -- and
 a saved game is a diff against the world that seed regenerates. A hand-painted
 map has no seed that would reproduce it, so it is the one thing in the game
 that has to carry its own tiles.
@@ -1811,10 +1855,12 @@ decorations scattered on it, all four building kinds refused with "You cannot
 build on water" — including the pitch rig, which is the one thing a bog accepts
 — and a path requested straight across the lake routed around it instead.
 
-**The six shipped maps deliberately have no water.** Their terrain is
-regenerated from a seed and a save is a diff against that world, so adding
-water to the generator would change the ground under every existing save.
-Water is available to painted maps, where it costs nothing already saved.
+**Water arrived on the shipped maps late, and carefully.** Their terrain is
+regenerated from a seed and a save is a diff against that world, so every
+change to the generator moves the ground under existing saves: the river was
+added with a one-off drain of any water a restored building stood in, and the
+lake and coast knobs were made optional so that no map that predates them
+generates a single tile differently.
 
 ### Reading a map out of a picture
 

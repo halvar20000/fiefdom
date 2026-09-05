@@ -23,6 +23,29 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.50.0',
+    date: '2026-09-04',
+    headline: 'Six more maps, and ground that is shaped and not merely dressed.',
+    sections: [
+      {
+        title: 'Added',
+        items: [
+          'Six new maps, and they differ in the shape of the land rather than only in what grows on it. The Salt Pan is flat from edge to edge \u2014 not one cliff on the whole map \u2014 with a shallow salt lake in the middle and no high ground to hold. The High Tables are flat-topped rocks standing over a canyon with a river in the bottom of it. The Broken Country is gullies and ridges with barely a field\u2019s worth of level ground: a third fewer places to seat a keep than any map before it. The Salt Coast runs down to a sea with bays and headlands and a strand along it. The Lake of Reeds is a quarter under water, in pools with reed beds and pitch seams around them. The Dune Sea is rank on rank of sand ridges, and the hardest ground to build on in the game.',
+          'Five new settings on the generator to do it with \u2014 the height of the tiers, the grain of the elevation noise, lakes in the hollows, a sea along one edge, and dune ridges laid over the land. All optional: the six original maps generate exactly the ground they always did, because a save is a diff against the world its seed regenerates.',
+          'A Relief pip on the map cards, derived from those numbers like the rest of them, so a card that says flat means flat.',
+        ],
+      },
+      {
+        title: 'Fixed',
+        items: [
+          'Water is level ground, and the buildable test only ever read heights \u2014 so a lake was the flattest country on the map. The opening site could be chosen in the middle of one, and the placement screen\u2019s automatic seat, which looks for the point farthest from every other lord, would put a rival out in the sea where the game then refused to build his keep and lost him. Both now ask what the ground is as well as how level it is. Water within reach still counts for something: a shore is worth starting on, standing in it is not.',
+          'Seating a keep by hand on water or bog is now refused on the placement screen, with a reason, instead of being accepted there and quietly failing a moment later.',
+          'The Quiet Valley opens somewhere better as a result of the above \u2014 in the farmland in the south rather than on a stretch of river that scored as open ground.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.49.2',
     date: '2026-09-03',
     headline: 'The gazelle stops being a bench.',

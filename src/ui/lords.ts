@@ -14,6 +14,7 @@
  */
 import {
   shapeTerrain, heightFieldOf, findStartSite, isBuildable, GROUND_COLOURS,
+  GROUND_TYPES,
 } from '../game/worldgen';
 import { MAP_W, MAP_H, type MapDef } from '../game/maps';
 import { KEEP_COLOURS, decodeArrays, type CustomMap } from '../game/custom';
@@ -139,6 +140,27 @@ export function lordScreen(
     const field = heightFieldOf(shape);
     const W = shape.width, H = shape.height;
 
+    /**
+     * Is the ground under a keep dry?
+     *
+     * `isBuildable` reads corner heights and nothing else, and a lake is
+     * perfectly level ground: on the coast and lake maps the flattest,
+     * emptiest country -- and so the point farthest from every other seat --
+     * was the middle of the water. The game itself refuses to build there, so
+     * a seat dropped on it cost the map a lord.
+     */
+    const dryGround = (x: number, z: number) => {
+      for (let dz = -1; dz <= 3; dz++) {
+        for (let dx = -1; dx <= 3; dx++) {
+          const tx = x + dx, tz = z + dz;
+          if (tx < 0 || tz < 0 || tx >= W || tz >= H) return false;
+          const g = GROUND_TYPES[shape.groundType[tz * W + tx]];
+          if (g === 'water' || g === 'marsh') return false;
+        }
+      }
+      return true;
+    };
+
     const board = document.createElement('div');
     board.className = 'board';
     root.appendChild(board);
@@ -192,7 +214,7 @@ export function lordScreen(
       let bestScore = -Infinity;
       for (let z = 20; z < H - 20; z += 4) {
         for (let x = 20; x < W - 20; x += 4) {
-          if (!isBuildable(field, x - 1, z - 1, 5, 5)) continue;
+          if (!isBuildable(field, x - 1, z - 1, 5, 5) || !dryGround(x, z)) continue;
           const near = Math.min(...taken.map(s => Math.hypot(s.x - x, s.z - z)));
           if (near < MIN_SEPARATION) continue;
           // Farthest from the nearest neighbour, so lords spread out rather
@@ -326,6 +348,10 @@ export function lordScreen(
       // accepted here cannot be refused a moment later.
       if (!isBuildable(field, x - 1, z - 1, 5, 5)) {
         warn.textContent = 'A keep needs five tiles of level ground.';
+        return;
+      }
+      if (!dryGround(x, z)) {
+        warn.textContent = 'Nothing stands in water or bog. Seat it on dry ground.';
         return;
       }
       const clash = seats.some((s, i) =>

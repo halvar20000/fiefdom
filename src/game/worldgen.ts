@@ -96,7 +96,49 @@ export function shapeTerrain(
 ): TerrainShape {
   const { seed, green, rock, marsh } = settings;
   const river = settings.river ?? 0;
+  const relief = settings.relief ?? 1;
+  const grain = settings.grain ?? 1;
+  const dunes = settings.dunes ?? 0;
+  const lakes = settings.lakes ?? 0;
+  const coast = settings.coast ?? 0;
   const noise = makeNoise(seed);
+
+  // --- landforms the two passes have to agree about -----------------------
+  // Both the elevation pass and the ground pass need to know where the sea
+  // and the lake basins are: one cuts the ground flat for them, the other
+  // decides where the water actually stands. Asked twice through the same
+  // closure rather than remembered in an array, for the same reason the wadi
+  // is recomputed below -- a lookup is cheaper than 40,000 stored floats.
+
+  /**
+   * How far inland the sea reaches at this column, in tiles.
+   *
+   * The wobble is large on purpose: the sea comes in anywhere from a quarter
+   * to nearly twice its mean depth, because a shoreline that merely ripples
+   * is a ruled line with a fringe. At this amplitude it bites bays a good way
+   * inland and leaves headlands between them, which is what gives a coast
+   * somewhere worth putting a fishery and somewhere worth defending.
+   */
+  const seaReach = (x: number) => {
+    if (coast <= 0) return 0;
+    // The noise sits within about a fifth either side of a half, so it is
+    // stretched to roughly -1..1 before it is used as a proportion.
+    const wobble = Math.max(-0.9, Math.min(0.9, (noise(x + 900, 40, 3, 0.02) - 0.5) * 4));
+    return coast * height * (1 + wobble * 0.8);
+  };
+  /** Signed distance inland from the shoreline: positive is seaward. */
+  const seaward = (x: number, z: number) =>
+    coast <= 0 ? -Infinity : z - (height - seaReach(x));
+
+  /**
+   * Depth of a hollow, for maps that hold standing water away from the wadi.
+   *
+   * Above `lakeWater` the ground is under water; the shallower band down to
+   * `lakeWater - 0.05` is cut flat as well, which is what gives a lake a
+   * buildable shore instead of a wall of cliff dropping straight into it.
+   */
+  const hollow = (x: number, z: number) => noise(x + 5600, z + 4100, 3, 0.028);
+  const lakeWater = 0.72 - lakes;
 
   // --- elevation ----------------------------------------------------------
   const MAX_LEVEL = 5;
@@ -104,9 +146,16 @@ export function shapeTerrain(
   const corners = new Uint8Array(cw * (height + 1));
   for (let z = 0; z <= height; z++) {
     for (let x = 0; x <= width; x++) {
-      const n = noise(x, z, 4, 0.018);
+      const n = noise(x, z, 4, 0.018 * grain);
       // quantise hard so the ground forms tiers rather than dunes
-      let level = Math.floor(n * (MAX_LEVEL + 1.4));
+      let level = Math.floor(n * (MAX_LEVEL + 1.4) * relief);
+      // Dune ridges. Bent by slow noise so they wander like a dune field
+      // instead of ruling parallel stripes across the map, and added AFTER
+      // the quantisation so a crest is a whole step and reads as a ridge.
+      if (dunes > 0) {
+        const drift = noise(x + 2200, z + 800, 2, 0.008);
+        level += Math.round(Math.sin((x * 0.85 + z * 0.35) * 0.32 + drift * 9) * dunes);
+      }
       // carve a wadi across the middle
       const wadi = Math.abs(noise(x, z, 2, 0.012) - 0.5);
       if (wadi < 0.055) level = Math.max(0, level - 2);
@@ -115,6 +164,11 @@ export function shapeTerrain(
       // steps up and down where it crosses higher ground gives a chain of
       // ponds instead.
       if (river > 0 && wadi < river) level = 0;
+      // Lake basins and the shelf around them, flattened for the same reason.
+      if (lakes > 0 && hollow(x, z) > lakeWater - 0.05) level = 0;
+      // The sea, the strand, and a tile of ground behind it, for the same
+      // reason: a beach that steps is a cliff at the waterline.
+      if (coast > 0 && seaward(x, z) > -5) level = 0;
       corners[z * cw + x] = Math.max(0, Math.min(MAX_LEVEL, level));
     }
   }
@@ -165,14 +219,28 @@ export function shapeTerrain(
       // not a trade worth making.
       const wadi = Math.abs(noise(x, z, 2, 0.012) - 0.5);
 
+      const sea = seaward(x, z);
+
       let type: GroundType;
-      if (river > 0 && flat && wadi < river) {
+      if (sea > 4) {
+        // The sea. First, along with the other standing water, so that
+        // nothing else can claim a tile the player cannot build on anyway.
+        type = 'water';
+      } else if (sea > -4) {
+        // The strand. Sand whatever the moisture says, because a beach that
+        // shades into meadow at the waterline does not read as a coast.
+        type = 'sand';
+      } else if (lakes > 0 && flat && lo === 0 && hollow(x, z) > lakeWater) {
+        type = 'water';
+      } else if (river > 0 && flat && wadi < river) {
         // Standing water in the channel. First, so nothing else can claim it.
         type = 'water';
       } else if (slope >= 2 || (hi >= 4 && patch > 0.55 - rock)
           || (flat && outcrop > 0.63 - rock)) {
         type = 'rock';
-      } else if (river > 0 && flat && wadi < river * 2.0 && bog > 0.58) {
+      } else if (flat && bog > 0.58
+          && ((river > 0 && wadi < river * 2.0)
+              || (lakes > 0 && lo === 0 && hollow(x, z) > lakeWater - 0.05))) {
         // Tar seeps along the banks.
         //
         // Deliberately NOT scaled by the map's marsh bias, unlike the belt
@@ -299,6 +367,7 @@ export function findStartSite(
   const GRASS = GROUND_TYPES.indexOf('grass');
   const DARK = GROUND_TYPES.indexOf('grass_dark');
   const ROCK = GROUND_TYPES.indexOf('rock');
+  const WATER = GROUND_TYPES.indexOf('water');
 
   let best = { x: Math.floor(width / 2), z: Math.floor(height / 2) };
   let bestScore = -Infinity;
@@ -309,12 +378,19 @@ export function findStartSite(
     for (let x = margin; x < width - margin; x += step) {
       if (!isBuildable(terrain, x - 1, z - 1, 5, 5)) continue;
 
-      let green = 0, rock = 0, flat = 0;
+      let green = 0, rock = 0, flat = 0, water = 0;
       for (let dz = -radius; dz <= radius; dz += 2) {
         for (let dx = -radius; dx <= radius; dx += 2) {
           const tx = x + dx, tz = z + dz;
           if (tx < 0 || tz < 0 || tx >= width || tz >= height) continue;
           const g = groundType[idx(tx, tz)];
+          // Water is level ground, so `isBuildable` is perfectly happy with
+          // it -- it only reads corner heights. Counted as flat, a lake was
+          // the flattest country on the map, and on the lake and coast maps
+          // that put the player's keep in the middle of one. Water is scored
+          // on its own terms below: worth something to be beside, worth
+          // nothing to stand in.
+          if (g === WATER) { water++; continue; }
           const buildable = isBuildable(terrain, tx, tz, 3, 3);
           if (buildable) flat++;
           // Only count ground a farm or quarry could actually be PUT on.
@@ -325,7 +401,11 @@ export function findStartSite(
           else if (g === ROCK) rock++;
         }
       }
+      // A little water in reach is a fishery and a water pot, so it earns a
+      // small bonus -- capped, because a shore is worth having and a swamp is
+      // not.
       const score = Math.min(green, 60) * 4 + Math.min(rock, 30) * 3 + flat
+        + Math.min(water, 25) * 2
         - (green < 8 ? 900 : 0) - (rock < 4 ? 900 : 0);
       if (score > bestScore) { bestScore = score; best = { x, z }; }
     }
