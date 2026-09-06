@@ -1384,6 +1384,7 @@ export class Hud {
       '<b>1-6</b> build menu &nbsp; <b>B</b> toggle it<br>' +
       '<b>V</b> mutes and unmutes<br>' +
       '<b>X</b> demolish a building (half cost back)<br>' +
+      '<b>Wall, moat, yard:</b> drag to lay a whole run at once<br>' +
       'Esc cancels building &nbsp; M market &nbsp; T hide panel<br>' +
       '<b>Troops:</b> click select &nbsp; <b>shift-drag</b> box<br>' +
       'double-click all of a kind &nbsp; right-click move<br>' +

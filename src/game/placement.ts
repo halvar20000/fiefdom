@@ -56,19 +56,89 @@ export class Placement {
   selected: string | null = null;
   hover: { x: number; z: number } | null = null;
   lastCheck: PlacementCheck = { ok: false, reason: '' };
+  /**
+   * Where a dragged run began, or null while nothing is being dragged.
+   *
+   * Set on the press and cleared on the release; `run()` reads it against the
+   * hovered tile to say which tiles the release would build.
+   */
+  dragFrom: { x: number; z: number } | null = null;
 
   constructor(private world: PlacementWorld, private state: GameState) {}
 
   select(name: string | null): void {
     this.selected = name === this.selected ? null : name;
+    this.dragFrom = null;
   }
 
   cancel(): void {
     this.selected = null;
     this.hover = null;
+    this.dragFrom = null;
   }
 
-  check(name: string, x: number, z: number): PlacementCheck {
+  /**
+   * May the thing in hand be laid in a dragged run?
+   *
+   * The single-tile things you build in LINES -- curtain wall, moat, pitch
+   * ditch, yard squares. Anything bigger than one tile is a decision per
+   * placement rather than a stroke, and a dragged row of gatehouses is not a
+   * thing anybody wants.
+   */
+  get runnable(): boolean {
+    const def = this.selected ? BUILDINGS[this.selected] : null;
+    return !!def && !!def.paintable
+      && def.footprint[0] === 1 && def.footprint[1] === 1;
+  }
+
+  /**
+   * The tiles a release would build: the whole dragged run, or the one tile
+   * under the cursor when nothing is being dragged.
+   *
+   * The run turns ONE corner. A drag from the press to the release, along
+   * whichever axis it covers more of first and then the other, so a single
+   * stroke lays a straight wall when the drag is straight and two sides of a
+   * bailey when it is not -- which is what a player dragging diagonally across
+   * a corner of their castle means. Building it as a bare straight line would
+   * throw away half of every diagonal drag, and as a filled rectangle would
+   * put a hundred tiles of wall inside the courtyard.
+   */
+  run(): { x: number; z: number }[] {
+    if (!this.hover) return [];
+    // Capped, because the preview re-checks every tile of the stroke on every
+    // frame and a drag from one corner of the map to the other is 400 of them.
+    // Well past any wall anybody lays in one go.
+    const MAX_RUN = 128;
+    const a = this.dragFrom;
+    if (!a) return [{ ...this.hover }];
+    const b = this.hover;
+    const sx = Math.sign(b.x - a.x), sz = Math.sign(b.z - a.z);
+    const alongX = Math.abs(b.x - a.x) >= Math.abs(b.z - a.z);
+    const out: { x: number; z: number }[] = [];
+    let x = a.x, z = a.z;
+    out.push({ x, z });
+    const runX = () => {
+      while (x !== b.x && out.length < MAX_RUN) { x += sx; out.push({ x, z }); }
+    };
+    const runZ = () => {
+      while (z !== b.z && out.length < MAX_RUN) { z += sz; out.push({ x, z }); }
+    };
+    if (alongX) { runX(); runZ(); } else { runZ(); runX(); }
+    return out;
+  }
+
+  /**
+   * May `name` go at (x, z)?
+   *
+   * `also` is ground the caller is about to build on in the same stroke, and
+   * exists for one rule: a store square must touch the store. Laying a row of
+   * granary bays works tile by tile because each one touches the last, but the
+   * GHOST is drawn all at once, against a store that does not have the row in
+   * it yet -- so without this the preview of a legal row is red from the second
+   * bay onward.
+   */
+  check(name: string, x: number, z: number,
+        also: { x: number; z: number }[] = []): PlacementCheck {
     const def = BUILDINGS[name];
     if (!def) return { ok: false, reason: 'Unknown building' };
     const [w, d] = def.footprint;
@@ -102,8 +172,9 @@ export class Placement {
     // wherever the workshops are, not welded to the side of the first.
     if (def.storeFor && STORE_SPRITES[def.storeFor]) {
       const own = this.state.storeTiles(def.storeFor);
-      if (own.length
-          && !own.some(t => Math.abs(t.x - x) + Math.abs(t.z - z) === 1)) {
+      const touching = (t: { x: number; z: number }) =>
+        Math.abs(t.x - x) + Math.abs(t.z - z) === 1;
+      if (own.length && !own.some(touching) && !also.some(touching)) {
         return { ok: false, reason: `Must touch the ${def.storeFor}` };
       }
     }
@@ -180,18 +251,32 @@ export class Placement {
     return this.lastCheck.ok;
   }
 
+  /**
+   * Build one tile, checks and all, saying why if it would not go there.
+   *
+   * Separate from `commit` because a dragged run places many tiles from one
+   * gesture and must not be routed through the hovered tile to do it -- and
+   * because a run reports at most one refusal for the whole stroke rather than
+   * one per tile it stepped over.
+   */
+  placeAt(name: string, x: number, z: number): PlacementCheck {
+    const check = this.check(name, x, z);
+    if (!check.ok) return check;
+    const def = BUILDINGS[name];
+    this.state.spend(def.cost);
+    this.state.addBuilding(name, x, z);
+    this.state.assignWorkers();
+    return check;
+  }
+
   /** Try to build at the hovered tile. Returns the building name if placed. */
   commit(): string | null {
     if (!this.selected || !this.hover) return null;
-    const check = this.check(this.selected, this.hover.x, this.hover.z);
+    const check = this.placeAt(this.selected, this.hover.x, this.hover.z);
     if (!check.ok) {
       this.state.notify(check.reason, 'warn');
       return null;
     }
-    const def = BUILDINGS[this.selected];
-    this.state.spend(def.cost);
-    this.state.addBuilding(this.selected, this.hover.x, this.hover.z);
-    this.state.assignWorkers();
     return this.selected;
   }
 }

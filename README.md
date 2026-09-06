@@ -400,11 +400,41 @@ Two things that had to be right for it to look like rock:
 The material is deliberately direction-free: tiles pick one of four UV
 orientations at random, so bedding planes would point four ways along one cliff.
 
-Only **buildings** block. Trees and rocks are deliberately passable: making
-scatter block as well turns a palm grove into a maze and sends woodcutters on
-absurd detours around the very trunk they are walking to. That is why there are
-two grids -- `occupied` (buildings + scatter) decides where you may BUILD,
-`paths.blocked` (buildings only) decides where units may WALK.
+**A tile you cannot build on is a tile nobody walks over.** There are still two
+grids -- `occupied` decides where you may BUILD, `paths.blocked` where units may
+WALK -- but buildings, water, trees, bushes and rocks are in both, and
+`markScatter()` is the one place that writes either.
+
+Scatter used to be passable, on the argument that a blocking palm grove is a
+maze. The cost of that was worse than the maze. A boulder standing in a wall
+line is ground you may not build on and the enemy may walk through, so a castle
+with a rock on its perimeter could never be closed -- and a rock, unlike a tree,
+can never be cleared. The hole was invisible, permanent, and on exactly the tile
+the player had planned a wall for.
+
+The maze never turned up either. Across the twelve shipped maps the thickest
+woodland (Cedar Ridge, `trees: 1.9`) covers 16.7% of the flat ground, well under
+the ~40% where an 8-connected grid stops percolating. Flood-filled with scatter
+solid, the largest walkable region loses at most **0.2 points** of the map's open
+ground and the trees fence off at most **56 tiles**, usually none -- and the maps
+that are cut into pieces are cut by their rivers, which they already were.
+`ensureKeepsConnected()` now clears trees as well as draining water when it
+carves a route, so a lord walled in by his own woodland cannot happen either.
+
+Two things this needed:
+
+* **Woodcutters stand a tile back.** `standBeside` used a 0.35-tile offset,
+  which is inside the trunk's own tile. With the tile solid, `snapOpen` shunted
+  the man to whatever it found first -- often round the far side, chopping with
+  his back to the tree. 0.8 puts him in the neighbour he arrived from. Measured
+  over ten minutes on three maps with three huts: 102/174/146 wood before,
+  104/176/148 after. The extra step costs nothing.
+* **The seal-off trial must put back what it found.** `wouldSealSomethingOff`
+  marked its tiles impassable and handed them back *cleared*, and every caller
+  cleared them again -- right only when the ground was open to begin with. Trial
+  a wall over a boulder or the edge of a lake and the pair of them silently
+  unblocked a tile that had been solid since the map was made. It now snapshots
+  and restores, and the callers do nothing.
 
 Three things make it actually work, and each was a separate bug:
 
@@ -966,6 +996,35 @@ Wall is a paintable 1x1 building costing 3 stone; gatehouse and tower are 2x2.
 twenty-tile wall while re-selecting between every tile is not a decision, it is
 an obstacle. Stores use the same flag.
 
+### A wall is dragged, not clicked twenty times
+
+Keeping the tool in hand was only half of it: a twenty-tile wall was still
+twenty clicks, each one aimed at the tile beside the last. **Press where the run
+starts and release where it ends**, as in Stronghold. Mouse and pen only — on a
+phone the one-finger drag is the only way to pan, and taking it over would
+strand anyone laying a long wall with no way to see where it is going.
+
+* **Any 1x1 paintable building**, so moat, pitch ditch, killing pit, oil pot and
+  the two store squares all drag too. Anything larger is a decision per
+  placement rather than a stroke.
+* **The run turns one corner.** It follows whichever axis the drag covers more
+  of and then the other, so a straight drag lays a straight wall and a diagonal
+  one lays two sides of a bailey. A straight line would throw away half of every
+  diagonal drag; a filled rectangle would put a hundred tiles of wall inside the
+  courtyard.
+* **Every tile is ghosted, tinted by its own verdict** — including where the
+  stone runs out, since a run spends as it goes. `planRun()` walks the stroke in
+  order once per frame and both the ghost and the cursor label ("Wall × 12 · 36
+  stone") read the result, so the two cannot disagree.
+* **A tile that cannot take it is skipped, not fatal.** Dragging twenty tiles
+  across a boulder gives nineteen tiles of wall and a boulder — and since the
+  boulder is solid ground now, the line is still closed. Measured: `asked 20,
+  built 19, refusal "Something is in the way"`, all 20 tiles impassable. One
+  warning for the whole stroke, not one per tile.
+* **A plain click is a run of one.** `buildRun()` is the only path into placing
+  a building; the console's `__game.build()` calls it too, so a test cannot pass
+  against code the game does not run. `__game.buildLine()` drives the drag.
+
 A wall segment is crenellated on **all four sides**. A 1x1 segment has no idea
 which way the run goes — it is placed tile by tile and the player may turn a
 corner anywhere — so merlons running one way only would be wrong on half the
@@ -1027,6 +1086,45 @@ routed to one tile arrive, find it occupied by each other, and mill about.
 
 Selected soldiers are brightened in place via the sprite tint rather than given
 a marker sprite.
+
+### No two men stand on the same spot
+
+`orderMove` spreading its targets over a block was the only thing in the game
+that did. Every other order aims at a POINT — a rally flag, a barracks door, a
+foe's tile — and a dozen units all given the same point all arrive at it.
+Measured: twenty archers recruited to one rally flag, all 190 pairs at a
+distance of **zero**. They drew as one archer, and the player could neither
+count them nor click any of them apart. Only selecting them and marching them
+somewhere revealed how many there were.
+
+`Army.separate()` fixes it once, at the end of every tick, rather than by
+spreading each caller's target: a spread target is a guess about ground that may
+be full, and the alternative was writing the same fix into recruitment, the
+rally flag, the lord's musters and every order added afterwards. The same twenty
+now sit **0.62 tiles apart** at the closest, inside a 2-tile circle.
+
+* **A fraction of each overlap per tick** (`SEPARATION_RATE`), so a crowd settles
+  over about half a second instead of exploding apart.
+* **Each axis is tried on its own** against `world.blocked`, so a man shoved
+  against a wall slides along it rather than through it. Verified: twelve men
+  pressed into a wall line, none crossed it.
+* **Two men exactly on top of each other** take their push direction from their
+  ids, so it is the same every tick and the pair separates instead of shivering.
+* **Garrisoned men are exempt.** `postTo` already lays out their places on the
+  wall; nudging them would walk them off the parapet.
+* **Bulk is per unit type** — 0.33 for a man, 0.42 for a horse, 0.6 for an
+  engine — so a cart does not sit inside a spearman.
+
+It runs every tick for every unit, so it is written to be cheap: one pass
+bucketing the men into tiles as linked lists over scratch typed arrays that live
+between ticks, then a half-neighbourhood sweep that visits each pair of tiles
+exactly once. Measured over 30 seconds of simulation: 40 men 48 → 59 ms, 100 men
+64 → 97 ms, 300 men 196 → 350 ms. At 300 that is 0.17 ms per tick, against a
+16 ms frame.
+
+The rally flag also aims recruits a little off the flag rather than at it.
+Separation would unpack the pile on arrival anyway, but a company that lands on
+one tile and then visibly sorts itself out looks like a bug.
 
 **Pointer handlers must ignore non-left buttons.** `pointerdown` and `pointerup`
 fire for the RIGHT button too. Letting them through broke move orders entirely
@@ -2618,13 +2716,15 @@ they get special handling in `workerWorld.workSpot`:
 
 * Each worker **claims** its own tree. Without the reservation every hut sends
   its man to the same nearest trunk and they stack on one tile.
-* The worker stands ~0.55 tiles from the trunk on the side facing home, which
+* The worker stands 0.8 tiles from the trunk on the side facing home, which
   also leaves its walk heading pointing at the tree, so the chop animation faces
-  what it is cutting.
+  what it is cutting. It has to be past 0.5, because [a tree is solid
+  ground](#movement) and 0.35 put him inside the trunk's own tile.
 * Finishing a cycle **fells** the tree: it disappears, the tile becomes
-  buildable, and it regrows after `TREE_REGROW_SECONDS` unless something was
-  built there meanwhile. Felling is what makes the wood visibly come from
-  somewhere.
+  buildable *and walkable*, and it regrows after `TREE_REGROW_SECONDS` unless
+  something was built there meanwhile — or unless somebody is standing on the
+  spot, since a trunk that blocks the way must not close over a worker. Felling
+  is what makes the wood visibly come from somewhere.
 * No tree within `TREE_SEARCH_RADIUS` means the worker waits and warns, rather
   than miming the job at thin air.
 

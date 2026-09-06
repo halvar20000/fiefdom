@@ -196,7 +196,9 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
   // ONE batch for the whole scene. Everything is drawn in a single
   // back-to-front stream so people, buildings and trees interleave correctly.
   const sprites = new SpriteBatch(atlas.texture, 40000);
-  const ghostBatch = new SpriteBatch(atlas.texture, 4);
+  // Big enough for a dragged run of wall, not for one ghost: a stroke across
+  // the map is a couple of hundred tiles and every one of them is drawn.
+  const ghostBatch = new SpriteBatch(atlas.texture, 512);
   ghostBatch.mesh.renderOrder = 11;
   scene.add(sprites.mesh);
   scene.add(ghostBatch.mesh);
@@ -204,13 +206,32 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
   scene.add(projectiles.mesh);
 
   // --- occupancy ----------------------------------------------------------
-  // Two grids on purpose. `occupied` decides where you may BUILD and counts
-  // trees and rocks; `paths.blocked` decides where units may WALK and counts
-  // only buildings. Making scatter block movement as well turns a palm grove
-  // into a maze and sends woodcutters on long detours around the very tree
-  // they are walking to.
+  // Two grids, kept in step. `occupied` decides where you may BUILD;
+  // `paths.blocked` decides where units may WALK. Anything solid is in both.
+  //
+  // Scatter used to be in `occupied` alone, on the argument that a blocking
+  // palm grove is a maze. The cost of that was worse: a boulder sitting in a
+  // wall line is a tile you may not build on and the enemy may walk through,
+  // so a castle with a rock on its perimeter could never be closed at all --
+  // and a rock, unlike a tree, can never be cleared. A tile you cannot build
+  // on is now a tile nobody walks over, whatever put it there.
+  //
+  // The maze never turned up. Across the twelve shipped maps the thickest
+  // woodland (Cedar Ridge, trees 1.9) covers 16.7% of the flat ground, well
+  // under the ~40% where an 8-connected grid stops percolating: flood-filled,
+  // the biggest walkable region loses at most 0.2 points of the map's open
+  // ground and the trees fence off at most 56 tiles of it, usually none. A
+  // forest is threaded, not sealed.
   const occupied = new Uint8Array(MAP_W * MAP_H);
   const paths = new PathGrid(MAP_W, MAP_H);
+  /**
+   * Which tiles hold a living tree, bush or rock.
+   *
+   * `occupied` cannot answer this -- a building marks it too -- and scanning
+   * the decorations list cannot answer it cheaply enough for the ford search,
+   * which asks about every tile it steps on.
+   */
+  const scatterGrid = new Uint8Array(MAP_W * MAP_H);
 
   // Water blocks both grids from the outset, before a single building exists.
   // It is the one ground that is impassable in itself: marsh only slows a
@@ -243,6 +264,34 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     paths.fill(x, z, w, d, v);
   };
 
+  /**
+   * A tree, rock or bush arrives on a tile, or leaves it.
+   *
+   * One place, because the two grids must agree: scatter that is in `occupied`
+   * but not in `paths` is exactly the hole a wall can never close.
+   */
+  const markScatter = (x: number, z: number, there: boolean) => {
+    if (x < 0 || z < 0 || x >= MAP_W || z >= MAP_H) return;
+    if (there) {
+      occupied[z * MAP_W + x] = 1;
+      scatterGrid[z * MAP_W + x] = 1;
+      paths.setBlocked(x, z, true);
+      return;
+    }
+    scatterGrid[z * MAP_W + x] = 0;
+    // Only give the tile back if nothing else has claimed it meanwhile. A
+    // felled tree with a granary now standing on it must not un-mark the
+    // granary.
+    if (buildingAt(x, z)) return;
+    if (allEnemyBuildings().some(b => {
+      const [w, d] = BUILDINGS[b.name].footprint;
+      return x >= b.x && z >= b.z && x < b.x + w && z < b.z + d;
+    })) return;
+    if (groundName(x, z) === 'water') return;
+    occupied[z * MAP_W + x] = 0;
+    paths.setBlocked(x, z, false);
+  };
+
   /** Does this building have at least one usable door in `region`? */
   function hasAccess(bx: number, bz: number, bw: number, bd: number,
                      region: number): boolean {
@@ -265,8 +314,18 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
    * rebuild, which is far too costly to run every frame under the cursor.
    */
   function wouldSealSomethingOff(x: number, z: number, w: number, d: number): boolean {
+    // Snapshot before the trial, and put back exactly what was there.
+    //
+    // It used to hand the tiles back CLEARED, and every caller then cleared
+    // them again -- which is only right when the ground under them was open to
+    // begin with. Trial a wall over a boulder or the edge of a lake and the
+    // pair of them quietly unblocked a tile that has been solid since the map
+    // was made: a hole in the line, on ground the player is not allowed to
+    // build on, that nothing would ever close.
+    const before: boolean[] = [];
+    for (let dz = 0; dz < d; dz++)
+      for (let dx = 0; dx < w; dx++) before.push(paths.isBlocked(x + dx, z + dz));
     paths.fill(x, z, w, d, true);
-    let sealed = false;
     try {
       const ref = state.buildings.find(b => b.name === 'keep') ?? state.buildings[0];
       if (!ref) return false;
@@ -280,20 +339,19 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       }
       if (region < 0) return true;
 
-      if (!hasAccess(x, z, w, d, region)) { sealed = true; return true; }
+      if (!hasAccess(x, z, w, d, region)) return true;
       for (const b of state.buildings) {
         const [bw, bd] = b.def.footprint;
-        if (!hasAccess(b.x, b.z, bw, bd, region)) { sealed = true; return true; }
+        if (!hasAccess(b.x, b.z, bw, bd, region)) return true;
       }
       for (const wk of workers.workers) {
-        if (paths.regionAt(Math.floor(wk.x), Math.floor(wk.z)) !== region) {
-          sealed = true; return true;
-        }
+        if (paths.regionAt(Math.floor(wk.x), Math.floor(wk.z)) !== region) return true;
       }
       return false;
     } finally {
-      if (!sealed) paths.fill(x, z, w, d, true);   // keep it; caller placed it
-      else paths.fill(x, z, w, d, false);          // undo the trial
+      let i = 0;
+      for (let dz = 0; dz < d; dz++)
+        for (let dx = 0; dx < w; dx++) paths.setBlocked(x + dx, z + dz, before[i++]);
     }
   }
 
@@ -578,6 +636,8 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     if (name) {
       decorations.push({ name, x: t.x, z: t.z, alive: true, regrowAt: 0, claimedBy: null });
       occupied[idx] = 1;
+      scatterGrid[idx] = 1;
+      paths.setBlocked(t.x, t.z, true);
     }
   }
 
@@ -616,6 +676,121 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       }
     }
   };
+
+  /**
+   * How many of a building the stores will pay for, right now.
+   *
+   * A run spends as it goes, so the preview has to know where the stone runs
+   * out -- otherwise a drag of forty wall tiles is drawn entirely green and
+   * twelve of them get built.
+   */
+  function affordableCount(name: string): number {
+    const cost = Object.entries(BUILDINGS[name].cost) as [Resource, number][];
+    let n = Infinity;
+    for (const [r, need] of cost) {
+      if (!need) continue;
+      n = Math.min(n, Math.floor(state.stock[r] / need));
+    }
+    return n;
+  }
+
+  /** "36 stone", "24 wood and 6 iron" -- what a run of `n` will cost. */
+  function runCost(name: string, n: number): string {
+    const parts = (Object.entries(BUILDINGS[name].cost) as [Resource, number][])
+      .filter(([, need]) => need > 0)
+      .map(([r, need]) => `${need * n} ${RESOURCE_LABELS[r].toLowerCase()}`);
+    return parts.join(' and ') || 'free';
+  }
+
+  /** What a release would build: the stroke's tiles and which of them go up. */
+  interface RunPlan {
+    tiles: { x: number; z: number }[];
+    legal: boolean[];
+    /** How many would actually be laid. */
+    count: number;
+  }
+  let runPlan: RunPlan = { tiles: [], legal: [], count: 0 };
+
+  /**
+   * Work out the stroke once per frame, for the ghost AND the cursor label.
+   *
+   * Both used to ask `placement.lastCheck`, which knows about one tile. A run
+   * has to be walked in order: each tile is judged against the purse left after
+   * the ones before it and against the store squares they will have added.
+   */
+  function planRun(name: string): RunPlan {
+    const tiles = placement.run();
+    const legal: boolean[] = [];
+    const laid: { x: number; z: number }[] = [];
+    let purse = affordableCount(name);
+    for (const t of tiles) {
+      const ok = purse > 0 && placement.check(name, t.x, t.z, laid).ok;
+      if (ok) { purse--; laid.push(t); }
+      legal.push(ok);
+    }
+    return { tiles, legal, count: laid.length };
+  }
+
+  /**
+   * Lay every tile of a run the player has just dragged out.
+   *
+   * A run is the ordinary single placement generalised: a plain click hands
+   * this one tile, so there is one path through the build code rather than two
+   * that drift apart.
+   *
+   * A tile that cannot take the building is SKIPPED, not fatal. Dragging a
+   * twenty-tile wall across a boulder should give nineteen tiles of wall and a
+   * boulder, not nothing and a complaint -- and since the boulder is solid
+   * ground now, the line it interrupts is still a closed line. The first
+   * refusal is reported once at the end, so a stroke that crosses a wood does
+   * not fire off thirty warnings.
+   *
+   * Order matters in one place: the placement check runs BEFORE the seal-off
+   * trial. The trial marks the tile impassable and then hands it back, and
+   * "hands it back" means UNBLOCKED -- run on a tile that was already solid
+   * (a rock, a lake) it would quietly open a hole in the map that nothing
+   * would ever close again.
+   */
+  function buildRun(name: string, tiles: { x: number; z: number }[],
+                    keepTool: boolean): { built: number; refusal: string } {
+    const def = BUILDINGS[name];
+    const [pw, pd] = def.footprint;
+    let built = 0;
+    let refusal = '';
+    let border = false;
+    for (const t of tiles) {
+      const check = placement.check(name, t.x, t.z);
+      if (!check.ok) { refusal ||= check.reason; continue; }
+      // A walkable building cannot seal anything off, so it skips the test --
+      // which also means painting a large yard never trips "would block the way".
+      if (!def.walkable && wouldSealSomethingOff(t.x, t.z, pw, pd)) {
+        refusal ||= 'That would block the way';
+        continue;
+      }
+      if (!placement.placeAt(name, t.x, t.z).ok) continue;
+      const b = state.buildings[state.buildings.length - 1];
+      markArea(b.x, b.z, pw, pd);
+      if (!def.walkable) markSolid(b.x, b.z, pw, pd);
+      if (BORDER_BUILDINGS.has(name)) border = true;
+      built++;
+    }
+    if (built) {
+      audio.play('place');
+      if (border) recomputeTerritory();      // a wall claims new ground
+      workers.sync();
+      staticDirty = true;
+      // "Wall x 13 laid", matching the label the cursor showed while the run
+      // was being drawn. A plural of the building's own name is a trap -- there
+      // is no "granarys" and no "wall stairss".
+      if (tiles.length > 1) state.notify(`${def.label} × ${built} laid`, 'info');
+    }
+    if (refusal && built < tiles.length) state.notify(refusal, 'warn');
+    // Keep the tool in hand for anything laid in runs -- yard squares, granary
+    // bays, curtain wall -- and for a shift-click of anything else.
+    if (built === 0 || keepTool || def.paintable) refreshOverlay(true);
+    else placement.cancel();
+    return { built, refusal };
+  }
 
   function recomputeTerritory(): void {
     territory.fill(0);
@@ -689,19 +864,25 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
    * Stand next to the trunk on the side facing home, not on top of it.
    * Approaching from that side also leaves the walk heading pointing at the
    * tree, so the chop animation faces what it is cutting.
+   *
+   * A tree now blocks the way, so the spot has to be clear of the trunk's own
+   * tile: 0.35 kept the woodcutter inside it, and `snapOpen` would have shunted
+   * him to whatever tile it found first -- often round the far side, chopping
+   * with his back to the tree. 0.8 lands him in the neighbour he came from.
    */
   function standBeside(t: Decoration, from: { x: number; z: number }) {
-    return standBesidePoint({ x: t.x + 0.5, z: t.z + 0.5 }, from);
+    return standBesidePoint({ x: t.x + 0.5, z: t.z + 0.5 }, from, 0.8);
   }
 
   /** Same, for something that already has a world position rather than a tile. */
-  function standBesidePoint(p: { x: number; z: number }, from: { x: number; z: number }) {
+  function standBesidePoint(p: { x: number; z: number }, from: { x: number; z: number },
+                            off = 0.35) {
     const tx = p.x, tz = p.z;
     const dx = from.x - tx, dz = from.z - tz;
     const len = Math.hypot(dx, dz) || 1;
-    // Close enough to be swinging AT the trunk, not standing back from it. Was
-    // 0.55, which read as a gap between the woodcutter and the tree he is felling.
-    const off = 0.35;
+    // Close enough to be swinging AT the quarry, not standing back from it. Was
+    // 0.55, which read as a gap between the hunter and what he is stalking. A
+    // woodcutter passes more, because his tree is solid ground now.
     return { x: tx + (dx / len) * off, z: tz + (dz / len) * off };
   }
 
@@ -983,8 +1164,8 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       t.regrowAt = state.elapsed + TREE_REGROW_SECONDS;
       t.claimedBy = null;
       w.claim = null;
-      // felling clears the land, so the spot becomes buildable
-      occupied[t.z * MAP_W + t.x] = 0;
+      // felling clears the land, so the spot becomes buildable -- and walkable
+      markScatter(t.x, t.z, false);
       regrowing.push(decorations.indexOf(t));
       staticDirty = true;
     },
@@ -1069,10 +1250,8 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     if (!site) return null;
     if (!placementWorld.isOccupied(site.x, site.z)) {
       if (state.buildings.length && wouldSealSomethingOff(site.x, site.z, w, d)) {
-        paths.fill(site.x, site.z, w, d, false);
         return null;
       }
-      paths.fill(site.x, site.z, w, d, false);
       const b = state.addBuilding(name, site.x, site.z);
       markArea(site.x, site.z, w, d);
       markSolid(site.x, site.z, w, d);
@@ -1316,13 +1495,29 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
   function ensureKeepsConnected(): void {
     const WATER = GROUND_TYPES.indexOf('water');
     const SAND = GROUND_TYPES.indexOf('sand');
-    const drain = (x: number, z: number) => {
+    /**
+     * Open one tile of the route: dry the water, or clear what grows on it.
+     *
+     * Scatter is in here as well as water because scatter blocks the way now.
+     * Across the twelve shipped maps it fences off at most 56 tiles of the
+     * mainland and usually none, so this almost never fires -- but "almost
+     * never" is not "never", and a lord walled in by his own woodland is a
+     * game that cannot be won or lost, exactly like the river this function
+     * was written for.
+     */
+    const clear = (x: number, z: number) => {
       const t = z * MAP_W + x;
-      if (groundType[t] !== WATER) return;
-      groundType[t] = SAND;
-      terrain.layer[t] = tiles.layerOf('sand', hashVariant(x, z));
-      paths.setBlocked(x, z, false);
-      occupied[t] = 0;
+      if (groundType[t] === WATER) {
+        groundType[t] = SAND;
+        terrain.layer[t] = tiles.layerOf('sand', hashVariant(x, z));
+        paths.setBlocked(x, z, false);
+        occupied[t] = 0;
+        return;
+      }
+      if (!scatterGrid[t]) return;
+      const d = decorations.find(o => o.alive && o.x === x && o.z === z);
+      if (d) { d.alive = false; d.claimedBy = null; }
+      markScatter(x, z, false);
     };
     const near = (x: number, z: number) => paths.nearestOpen(x, z, 10);
     const home = near(kx, kz);
@@ -1341,10 +1536,10 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
 
       const ford = shortestFord(home.x, home.z, target);
       if (!ford) { console.warn(`[map] no ford could reach ${f.name}`); continue; }
-      for (const [x, z] of ford) drain(x, z);
+      for (const [x, z] of ford) clear(x, z);
       // Widen the crossing to two tiles so it reads as a causeway and a column
-      // does not bottleneck single file over it. Only the water beside the ford
-      // is drained -- `drain` ignores anything that is not water -- so the banks
+      // does not bottleneck single file over it. Only what was IN the way is
+      // opened -- `clear` ignores dry ground with nothing on it -- so the banks
       // are left alone. Thickened along whichever axis the ford runs LEAST, i.e.
       // across its length.
       if (ford.length > 1) {
@@ -1352,7 +1547,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
         const runsHorizontal =
           Math.max(...xs) - Math.min(...xs) >= Math.max(...zs) - Math.min(...zs);
         for (const [x, z] of ford) {
-          drain(runsHorizontal ? x : x + 1, runsHorizontal ? z + 1 : z);
+          clear(runsHorizontal ? x : x + 1, runsHorizontal ? z + 1 : z);
         }
       }
       carved = true;
@@ -1372,9 +1567,12 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     const N = MAP_W * MAP_H;
     const cost = new Int32Array(N).fill(0x7fffffff);
     const prev = new Int32Array(N).fill(-1);
-    const isWater = (i: number) => groundType[i] === WATER;
+    // What costs a tile of clearing to cross: open water, or a tree or boulder
+    // standing on dry land. Both are things this function is allowed to remove;
+    // a building is not, and never becomes crossable at any price.
+    const isWater = (i: number) => groundType[i] === WATER || scatterGrid[i] === 1;
     const passable = (x: number, z: number) =>
-      isWater(z * MAP_W + x) || !paths.isBlocked(x, z);   // land or water, never a building
+      isWater(z * MAP_W + x) || !paths.isBlocked(x, z);
     const buckets: number[][] = [[sz * MAP_W + sx]];
     cost[sz * MAP_W + sx] = 0;
 
@@ -1389,6 +1587,8 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
           for (let j = i; j !== -1; j = prev[j]) {
             if (isWater(j)) ford.push([j % MAP_W, (j / MAP_W) | 0]);
           }
+          // `isWater` covers scatter too, so `ford` is every tile that has to
+          // be opened -- drained or felled, whichever it is.
           return ford;
         }
         for (const [nx, nz] of [[x + 1, z], [x - 1, z], [x, z + 1], [x, z - 1]] as const) {
@@ -1657,6 +1857,23 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
   let builtRotation = -1;
   let staticDirty = true;
 
+  /**
+   * Is anybody standing on this tile?
+   *
+   * Asked before a tree is allowed to grow back over it. Covers every figure
+   * that has a position on the map, including the idle townsfolk -- they are
+   * the only people on screen before the first workshop exists, so a list that
+   * left them out would look correct in a test and wrong in a new game.
+   */
+  function someoneOn(x: number, z: number): boolean {
+    const on = (px: number, pz: number) => Math.floor(px) === x && Math.floor(pz) === z;
+    for (const w of workers.workers) if (on(w.x, w.z)) return true;
+    for (const u of wanderers) if (on(u.x, u.z)) return true;
+    for (const w of enemyWorkers.workers) if (on(w.x, w.z)) return true;
+    for (const s of army.soldiers) if (s.hp > 0 && on(s.x, s.z)) return true;
+    return false;
+  }
+
   /** Grow felled trees back, unless something has since been built there. */
   function regrowForest(): void {
     for (let i = regrowing.length - 1; i >= 0; i--) {
@@ -1665,8 +1882,13 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       if (state.elapsed < t.regrowAt) continue;
       regrowing.splice(i, 1);
       if (occupied[t.z * MAP_W + t.x]) continue;   // built over; it stays gone
+      // A trunk that blocks the way must not close over somebody standing
+      // there. Cheap to check -- this runs for a handful of stumps a minute --
+      // and the alternative is a worker sealed inside a tree until something
+      // else rescues him.
+      if (someoneOn(t.x, t.z)) continue;
       t.alive = true;
-      occupied[t.z * MAP_W + t.x] = 1;
+      markScatter(t.x, t.z, true);
       staticDirty = true;
     }
   }
@@ -2578,6 +2800,21 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     if (e.button !== 0) return;
     dragging = true; dragMoved = false; lastX = e.clientX; lastY = e.clientY;
     canvas.setPointerCapture(e.pointerId);
+    // A wall, a moat, a line of ditches: press where the run starts, release
+    // where it ends. Held while the cursor moves, so the press is remembered
+    // whether the player then drags out a run or simply lets go on the spot --
+    // a plain click is a run of one and goes through exactly the same code.
+    //
+    // Mouse and pen only. On a phone the one-finger drag is the ONLY way to pan
+    // (two fingers pinch), so taking it over would strand anyone laying a long
+    // wall with no way to see where it is going.
+    if (placement.selected && placement.runnable && !placingRally && !hud.demolishing
+        && e.pointerType !== 'touch') {
+      const t = pickTile(e.clientX, e.clientY);
+      placement.dragFrom = { x: t.x, z: t.z };
+      placement.moveTo(t.x, t.z);
+      return;
+    }
     if (e.shiftKey && !placement.selected) {
       boxing = true; boxX = e.clientX; boxY = e.clientY;
       selBox.style.cssText += ';display:block';
@@ -2687,37 +2924,14 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       return;
     }
 
-    if (!dragMoved && placement.selected) {
+    if (placement.selected && (!dragMoved || placement.dragFrom)) {
       const pending = placement.selected;
-      const spot = placement.hover;
-      // A walkable building cannot seal anything off, so it skips the test --
-      // which also means painting a large yard never trips "would block the way".
-      if (pending && spot && !BUILDINGS[pending].walkable) {
-        const [pw, pd] = BUILDINGS[pending].footprint;
-        if (wouldSealSomethingOff(spot.x, spot.z, pw, pd)) {
-          paths.fill(spot.x, spot.z, pw, pd, false);
-          state.notify('That would block the way', 'warn');
-          return;
-        }
-        paths.fill(spot.x, spot.z, pw, pd, false);
-      }
-      const built = placement.commit();
-      if (built) {
-        audio.play('place');
-        const b = state.buildings[state.buildings.length - 1];
-        const [w, d] = b.def.footprint;
-        markArea(b.x, b.z, w, d);
-        if (!b.def.walkable) markSolid(b.x, b.z, w, d);
-        if (BORDER_BUILDINGS.has(b.name)) recomputeTerritory();   // a wall claims new ground
-        workers.sync();
-        staticDirty = true;
-        // Keep the tool in hand for anything laid in runs -- yard squares,
-        // granary bays, curtain wall.
-        if (e.shiftKey || b.def.paintable) refreshOverlay(true);
-        else placement.cancel();
-      }
+      const tiles = placement.run();
+      placement.dragFrom = null;
+      if (tiles.length) buildRun(pending, tiles, e.shiftKey);
       refreshOverlay();
     }
+    placement.dragFrom = null;
   });
   canvas.addEventListener('pointermove', e => {
     mouseX = e.clientX; mouseY = e.clientY;
@@ -2730,9 +2944,21 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     }
     if (dragging && !pinching()) {
       if (Math.abs(e.clientX - lastX) + Math.abs(e.clientY - lastY) > 3) dragMoved = true;
-      iso.panByPixels(-(e.clientX - lastX), (e.clientY - lastY));
+      // A run being dragged out is not a pan. The camera holds still while the
+      // line is drawn -- panning under a stroke would move the far end of the
+      // wall away from the cursor as fast as the cursor chased it.
+      if (!placement.dragFrom) iso.panByPixels(-(e.clientX - lastX), (e.clientY - lastY));
       lastX = e.clientX; lastY = e.clientY;
     }
+  });
+  // A cancelled pointer -- the browser taking the gesture, a window losing
+  // focus mid-stroke -- must drop the run with it. Left set, `dragFrom` anchors
+  // the ghost to a tile the player pressed on minutes ago and every later click
+  // lays a line back to it.
+  canvas.addEventListener('pointercancel', () => {
+    dragging = false; boxing = false;
+    selBox.style.display = 'none';
+    placement.dragFrom = null;
   });
   canvas.addEventListener('wheel', e => {
     e.preventDefault(); iso.zoomBy(e.deltaY > 0 ? -1 : 1);
@@ -3100,8 +3326,17 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     // Send him to the rally flag if one is set. `ordered` keeps him marching
     // there rather than wandering off after the first thing he sees -- the same
     // flag every recruit follows, so an army forms up where you asked.
-    if (soldier && rallyPoint && army.send(soldier, rallyPoint.x, rallyPoint.z)) {
-      soldier.ordered = true;
+    //
+    // Aimed a little off the flag rather than at it. Army.separate() would pull
+    // the pile apart on arrival anyway, but a company that lands on one tile and
+    // then visibly unpacks itself looks like a bug; spread on the way there and
+    // they simply arrive as a company.
+    if (soldier && rallyPoint) {
+      const ra = Math.random() * Math.PI * 2;
+      const rr = Math.sqrt(Math.random()) * 1.6;
+      const rx = rallyPoint.x + Math.cos(ra) * rr;
+      const rz = rallyPoint.z + Math.sin(ra) * rr;
+      if (army.send(soldier, rx, rz)) soldier.ordered = true;
     }
     audio.play('recruit');
     state.notify(`${def.label} recruited`, 'info');
@@ -3288,9 +3523,22 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       const t = pickTile(mouseX, mouseY);
       const ok = placement.moveTo(t.x, t.z);
       const def = BUILDINGS[placement.selected];
-      hud.showGhost(mouseX, mouseY,
-        ok ? def.label : placement.lastCheck.reason, ok);
+      runPlan = planRun(placement.selected);
+      if (placement.dragFrom) {
+        // Mid-stroke the label counts the run and prices it, because that is
+        // the decision being made: not "may this tile take a wall" but "how
+        // much wall am I buying".
+        hud.showGhost(mouseX, mouseY,
+          runPlan.count
+            ? `${def.label} × ${runPlan.count} · ${runCost(placement.selected, runPlan.count)}`
+            : placement.lastCheck.reason || 'Nothing can be laid here',
+          runPlan.count > 0);
+      } else {
+        hud.showGhost(mouseX, mouseY,
+          ok ? def.label : placement.lastCheck.reason, ok);
+      }
     } else {
+      runPlan = { tiles: [], legal: [], count: 0 };
       hud.hideGhost();
       // Only when nothing is in hand: during placement the ghost already
       // occupies the cursor, and two boxes chasing it is worse than either.
@@ -3756,11 +4004,16 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       const frame = key ? atlas.frames[key] : undefined;
       if (frame) {
         const [w, d] = BUILDINGS[placement.selected].footprint;
-        const { x, z } = placement.hover;
-        const [gx, gz] = spriteAnchor(x, z, d);
-        ghostBatch.add(frame, atlas.size, ppuOf(frame),
-          gx, terrain.heightAt(x, z), gz, footprintDepthBias(w, d, rot) + 6,
-          placement.lastCheck.ok ? [0.55, 1.20, 0.55] : [1.30, 0.45, 0.40]);
+        // Every tile of the dragged run, each tinted by its OWN verdict -- the
+        // whole point of showing the line is seeing where it will break and
+        // where the stone runs out. Not a drag: the plan is the one hovered
+        // tile, so this is the single ghost it always was.
+        runPlan.tiles.forEach((t, i) => {
+          const [gx, gz] = spriteAnchor(t.x, t.z, d);
+          ghostBatch.add(frame, atlas.size, ppuOf(frame),
+            gx, terrain.heightAt(t.x, t.z), gz, footprintDepthBias(w, d, rot) + 6,
+            runPlan.legal[i] ? [0.55, 1.20, 0.55] : [1.30, 0.45, 0.40]);
+        });
       }
     }
     ghostBatch.flush();
@@ -3990,7 +4243,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       d.alive = false;
       d.regrowAt = regrowAt;
       d.claimedBy = null;
-      occupied[d.z * MAP_W + d.x] = 0;
+      markScatter(d.x, d.z, false);
       regrowing.push(i);
     }
 
@@ -4133,31 +4386,25 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     renderer, scene, sprites,
     occupiedAt: (x: number, z: number) => occupied[z * MAP_W + x],
     regrowForest,
+    // The player's own click, with the mouse taken out of it: one tile handed
+    // to the same buildRun a release calls, so a test can never pass against
+    // code the game does not run.
     build: (name: string, x: number, z: number) => {
-      const c = placement.check(name, x, z);
-      if (!c.ok) return c.reason;
-      // same rule the player's click goes through, so tests reflect the game
-      const [gw, gd] = BUILDINGS[name].footprint;
-      if (!BUILDINGS[name].walkable) {
-        if (wouldSealSomethingOff(x, z, gw, gd)) {
-          paths.fill(x, z, gw, gd, false);
-          return 'would block the way';
-        }
-        paths.fill(x, z, gw, gd, false);
-      }
-      placement.select(name);
-      placement.moveTo(x, z);
-      const built = placement.commit();
-      if (built) {
-        const b = state.buildings[state.buildings.length - 1];
-        markArea(b.x, b.z, b.def.footprint[0], b.def.footprint[1]);
-        if (!b.def.walkable) markSolid(b.x, b.z, b.def.footprint[0], b.def.footprint[1]);
-        if (BORDER_BUILDINGS.has(b.name)) recomputeTerritory();
-        workers.sync();
-        staticDirty = true;
-      }
+      const r = buildRun(name, [{ x, z }], true);
       placement.cancel();
-      return built ?? 'failed';
+      return r.built ? name : (r.refusal || 'failed');
+    },
+    /** Lay a run of `name` from one tile to another, as a drag would. */
+    buildLine: (name: string, x1: number, z1: number, x2: number, z2: number) => {
+      placement.cancel();
+      placement.select(name);
+      placement.dragFrom = { x: x1, z: z1 };
+      placement.moveTo(x2, z2);
+      const tiles = placement.run();
+      const r = buildRun(name, tiles, true);
+      placement.dragFrom = null;
+      placement.cancel();
+      return { asked: tiles.length, built: r.built, refusal: r.refusal };
     },
     findSpot: (name: string, nearX = kx, nearZ = kz) => {
       for (let r = 0; r < 40; r++) {

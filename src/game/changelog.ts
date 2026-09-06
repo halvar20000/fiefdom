@@ -23,6 +23,32 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.53.0',
+    date: '2026-09-06',
+    headline: 'A wall you draw, and ground that means what it says.',
+    sections: [
+      {
+        title: 'Changed',
+        items: [
+          'A wall is dragged, not clicked twenty times. Press where the run starts, release where it ends, as in Stronghold \u2014 and the run turns one corner, so a straight drag lays a straight wall and a diagonal one lays two sides of a bailey in a single stroke. Every tile of it is ghosted and tinted by its own verdict, including where the stone runs out, and the cursor prices the run as you draw it: "Wall \u00d7 12 \u00b7 36 stone". Any one-tile paintable building drags the same way \u2014 moat, pitch ditch, killing pit, oil pot, and the stockpile and granary squares.',
+          'A tile that cannot take the wall is skipped rather than stopping the stroke. Drag twenty tiles across a boulder and you get nineteen tiles of wall and a boulder, with one warning for the whole run instead of one per tile.',
+          'Mouse and pen only. On a phone the one-finger drag is the only way to pan, and taking it over would strand anyone laying a long wall with no way to see where it is going, so a tap still places one tile there.',
+          'Anything you cannot build on, nobody can walk over. Trees, bushes and rocks blocked building and not movement, which meant a boulder standing in a wall line was a hole your enemy walked through and you were not allowed to close \u2014 and a rock, unlike a tree, can never be cleared. A castle with one on its perimeter could never be shut. The two grids now agree: a boulder in the line IS the line.',
+          'The forest is threaded, not sealed. Across the twelve maps the thickest woodland covers 16.7% of its flat ground; flood-filled, the biggest walkable region loses at most 0.2 points of the map\u2019s open ground and the trees fence off at most 56 tiles, usually none. The maps that come in pieces are cut by their rivers, as they always were, and the ford the game carves to reach a rival lord now clears trees as well as draining water.',
+          'A woodcutter stands a tile back from his tree rather than on it, which the trunk being solid now requires. Measured over ten minutes on three maps with three huts: 102, 174 and 146 wood before; 104, 176 and 148 after.',
+        ],
+      },
+      {
+        title: 'Fixed',
+        items: [
+          'Soldiers no longer stand on top of one another. Twenty archers mustered at one rally flag stood in exactly one place \u2014 all 190 pairs at a distance of zero \u2014 drew as a single archer, and could not be counted or clicked apart; only selecting them and marching them somewhere revealed how many there were. Move orders were the one thing in the game that spread out. Now nothing is allowed to overlap, whatever sent it there: the same twenty sit 0.62 tiles apart at the closest, inside a two-tile circle. A man pushed against a wall slides along it rather than through it, and men posted on a wall keep the places they were given.',
+          'New recruits walk to a spot near the rally flag rather than to the flag itself, so a company arrives as a company instead of landing in a pile and unpacking itself.',
+          'Trying a wall on ground that was already solid \u2014 a boulder, the edge of a lake \u2014 silently made that ground walkable, even though the wall was then refused. The check that asks whether a building would wall something off now puts back exactly what it found.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.52.0',
     date: '2026-09-05',
     headline: 'The storehouse walks both ways.',
