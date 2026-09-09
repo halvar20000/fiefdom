@@ -6,7 +6,25 @@
 # than plain nginx -- and all of it is Node built-ins, with no dependencies.
 
 # ---- build ----
-FROM node:20-alpine AS build
+#
+# Pinned to BUILDPLATFORM -- the machine doing the building -- and NOT to the
+# architecture being built for. What comes out of this stage is `dist/`:
+# JavaScript, JSON and PNGs, which are the same bytes whether they will be
+# served by an x86 box or an ARM one. Running the build twice, once per target,
+# bought nothing and cost everything:
+#
+# CI builds amd64 and arm64, and the arm64 half ran Node under QEMU emulation.
+# On 2026-09-09 that stopped working -- `npm ci` died with "qemu: uncaught
+# target signal 4 (Illegal instruction)" on a runner image that had moved
+# underneath us. Because the process died from a SIGNAL rather than exiting,
+# buildkit waited on it instead of failing, and the job sat there for ninety
+# minutes reporting nothing at all.
+#
+# With this, the arm64 image has no RUN in it whatsoever: it is a base image and
+# some files copied in, so no ARM binary is ever executed at build time and the
+# emulator is never involved. It is also roughly twice as fast, because npm and
+# vite now run once rather than once per architecture.
+FROM --platform=$BUILDPLATFORM node:20-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN npm ci || npm install

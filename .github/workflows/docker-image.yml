@@ -41,6 +41,16 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # A wedged build must fail, not idle.
+    #
+    # A crash inside an emulated build stage killed the process with a signal
+    # rather than an exit code, and buildkit waited on it: the job ran for
+    # ninety minutes, reported nothing, and would have run for six hours -- the
+    # default -- before GitHub stopped it. The Dockerfile no longer emulates
+    # anything, so that particular trap is gone, but a build that has not
+    # finished in this long has failed whatever the reason, and saying so is
+    # more useful than a spinner.
+    timeout-minutes: 25
     permissions:
       contents: read
       packages: write
