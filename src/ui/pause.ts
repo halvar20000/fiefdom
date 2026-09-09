@@ -48,6 +48,17 @@ export interface PauseHooks {
   /** Build a snapshot of the running game. */
   snapshot(): SaveGame;
   onResume(): void;
+  /**
+   * This is a multiplayer match.
+   *
+   * Two things change. The save slots go away: a save is one castle's worth of
+   * a world that three other people are also living in, and restoring one would
+   * put a player back into a match that has moved on without them -- there is
+   * nothing sensible for the button to do. And the menu says plainly that the
+   * war has NOT stopped, because the whole meaning of "paused" is different
+   * when the other lords are still building.
+   */
+  match?: boolean;
 }
 
 /**
@@ -80,11 +91,13 @@ export function showPause(hooks: PauseHooks): void {
   };
 
   const h2 = document.createElement('h2');
-  h2.textContent = 'PAUSED';
+  h2.textContent = hooks.match ? 'MENU' : 'PAUSED';
   box.appendChild(h2);
   const hint = document.createElement('div');
   hint.className = 'hint';
-  hint.textContent = 'Esc to resume';
+  hint.textContent = hooks.match
+    ? 'Esc to resume — the war goes on while this is open'
+    : 'Esc to resume';
   box.appendChild(hint);
 
   // Reachable mid-game as well as from the title screen: "what am I running"
@@ -104,7 +117,7 @@ export function showPause(hooks: PauseHooks): void {
   resume.onclick = close;
   const quit = document.createElement('button');
   quit.className = 'danger';
-  quit.textContent = 'Quit to menu';
+  quit.textContent = hooks.match ? 'Give up and leave' : 'Quit to menu';
   quit.onclick = () => {
     setBootIntent({ kind: 'menu' });
     location.reload();
@@ -115,10 +128,11 @@ export function showPause(hooks: PauseHooks): void {
   // --- slots ---
   const slotsHead = document.createElement('h4');
   slotsHead.textContent = 'Saved games';
-  box.appendChild(slotsHead);
-
   const slotsWrap = document.createElement('div');
-  box.appendChild(slotsWrap);
+  if (!hooks.match) {
+    box.appendChild(slotsHead);
+    box.appendChild(slotsWrap);
+  }
 
   box.appendChild(ver);
 
@@ -182,7 +196,7 @@ export function showPause(hooks: PauseHooks): void {
       slotsWrap.appendChild(row);
     }
   };
-  render();
+  if (!hooks.match) render();
 
   msg.className = 'msg';
   box.appendChild(msg);

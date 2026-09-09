@@ -35,7 +35,7 @@ export interface GarrisonPost {
 }
 
 /** How long a killed soldier lies dying before he is removed, in seconds. */
-const DEATH_TIME = 1.1;
+export const DEATH_TIME = 1.1;
 
 export interface Soldier {
   id: number;
@@ -106,6 +106,32 @@ export interface Soldier {
    */
   escalade: boolean;
   /**
+   * This man is somebody ELSE'S, replicated over the network.
+   *
+   * In a multiplayer match every faction is simulated by exactly one client --
+   * its owner -- and everyone else carries a copy that is moved by arriving
+   * snapshots rather than by this file. So a netted soldier is skipped by the
+   * whole of `update`: he does not decide, walk, chase or take damage here.
+   * What he DOES do is get fought: he is a legal target, and a blow struck on
+   * him is reported to his owner, who applies it and sends back the truth.
+   *
+   * That is the one asymmetry in the design, and it is the one that makes it
+   * safe -- nothing on the map is ever simulated in two places at once, so
+   * there is nothing for two clients to disagree about.
+   */
+  net?: boolean;
+  /**
+   * A replicated man's id ON HIS OWNER'S MACHINE, which is how a blow struck on
+   * him is addressed back.
+   *
+   * Not the same as `id`. Every client numbers its own soldiers from one, so two
+   * players would both have a soldier 5 and `byId` -- which is how a unit
+   * remembers what it is fighting -- would find whichever came first. So a
+   * replicated man is given a local id in his own side's band (see `adopt`) and
+   * carries his owner's number here.
+   */
+  netId?: number;
+  /**
    * Standing behind a mantlet of his own side, this tick.
    *
    * Recomputed alongside `escalade` and for the same reason: cover is a fact
@@ -169,6 +195,22 @@ export interface ArmyWorld {
    * at the moment of the blow, on the tile the blow landed on.
    */
   onIncendiary?(x: number, z: number): void;
+  /**
+   * Are these two sides at war?
+   *
+   * Absent -- which is every single-player game -- any two different sides
+   * fight, which is what the game always did. A multiplayer match supplies one
+   * so that allied players' troops walk past each other instead of duelling in
+   * the street.
+   */
+  hostile?(a: Side, b: Side): boolean;
+  /**
+   * A blow landed on a soldier somebody else owns.
+   *
+   * The damage is NOT applied here; it is sent to his owner, whose next
+   * snapshot carries the result. See `Soldier.net`.
+   */
+  onNetHit?(s: Soldier, amount: number): void;
 }
 
 /** Tiles from a click within which a soldier counts as clicked. */
@@ -218,6 +260,62 @@ export class Army {
   lastFallen: Soldier[] = [];
 
   constructor(private world: ArmyWorld) {}
+
+  /**
+   * Whether `a` may strike `b`.
+   *
+   * One place, because "different side" was written out at six call sites and
+   * allies made every one of them wrong.
+   */
+  private foes(a: Side, b: Side): boolean {
+    return this.world.hostile ? this.world.hostile(a, b) : a !== b;
+  }
+
+  /**
+   * Take a soldier belonging to another player into the local world.
+   *
+   * Bypasses `recruit` deliberately: a replicated man is not being raised, he
+   * already exists on his owner's machine, and the id he carries is THEIRS --
+   * matching it here is what lets a later snapshot find him again and what lets
+   * a blow struck on him be addressed back. He is never simulated locally.
+   */
+  adopt(side: Side, netId: number, type: string,
+        x: number, z: number, heading: number, hp: number): Soldier | null {
+    const def = SOLDIER_TYPES[type];
+    if (!def) return null;
+    const s: Soldier = {
+      id: Army.netLocalId(side, netId), netId, side, type, def, x, z,
+      heading, phase: (netId % 7) * 0.3,
+      hp, moving: false, selected: false,
+      path: [], tx: x, tz: z,
+      target: null, cooldown: 0, swing: 0, dying: 0, ordered: false,
+      garrison: null, mountAt: null, hold: false, escalade: !!def.climbs,
+      covered: false, net: true,
+    };
+    this.soldiers.push(s);
+    return s;
+  }
+
+  /**
+   * A local id for a replicated soldier, in a band of its own per side.
+   *
+   * Every client numbers its own men from 1, so without this two players'
+   * soldier 5 would be the same id here and `byId` -- which is how a unit
+   * remembers what it is fighting -- would return the wrong man.
+   */
+  static netLocalId(side: Side, netId: number): number {
+    return (side + 1) * 1_000_000 + netId;
+  }
+
+  /** Everyone of a side, replicated ones included, alive or dying. */
+  allOf(side: Side): Soldier[] {
+    return this.soldiers.filter(s => s.side === side);
+  }
+
+  /** Drop every replicated soldier of a side -- its owner has gone or lost. */
+  forget(side: Side): void {
+    this.soldiers = this.soldiers.filter(s => !(s.net && s.side === side));
+  }
 
   recruit(type: string, x: number, z: number, side: Side = PLAYER): Soldier | null {
     const def = SOLDIER_TYPES[type];
@@ -422,7 +520,7 @@ export class Army {
     let best: Soldier | null = null;
     let bestD = reach * reach;
     for (const o of this.soldiers) {
-      if (o.side === s.side || o.hp <= 0) continue;
+      if (o.hp <= 0 || !this.foes(s.side, o.side)) continue;
       if (!this.canHit(s, o)) continue;
       const d = (o.x - s.x) ** 2 + (o.z - s.z) ** 2;
       if (d < bestD) { bestD = d; best = o; }
@@ -603,6 +701,10 @@ export class Army {
       const dx = px[i], dz = pz[i];
       if (dx === 0 && dz === 0) continue;
       const s = list[i];
+      // A replicated man crowds his neighbours but is never crowded himself:
+      // his position comes from his owner, and nudging it here would only be
+      // undone by the next snapshot, as a twitch.
+      if (s.net) continue;
       if (dx !== 0 && !this.world.blocked(s.x + dx, s.z)) s.x += dx;
       if (dz !== 0 && !this.world.blocked(s.x, s.z + dz)) s.z += dz;
     }
@@ -633,6 +735,10 @@ export class Army {
 
     for (const s of this.soldiers) {
       if (s.hp <= 0) continue;
+      // A replicated man is his owner's to move and to fight with. All that
+      // happens to him here is that his legs keep going, so he does not stand
+      // frozen between the eight snapshots a second that carry him.
+      if (s.net) { s.phase += dt; if (s.swing > 0) s.swing -= dt; continue; }
       // Every living unit's animation clock runs, not just the walkers.
       // This used to sit in the movement pass, which skips anyone standing
       // still or in contact -- so idle men were frozen on one frame and the
@@ -654,7 +760,7 @@ export class Army {
         if (s.hold || (s.ordered && s.moving)) { s.target = null; continue; }
         const reach = Army.reachOf(s);
         let foe = s.target !== null ? this.byId(s.target) ?? null : null;
-        if (foe && (foe.hp <= 0 || foe.side === s.side
+        if (foe && (foe.hp <= 0 || !this.foes(s.side, foe.side)
                     || Math.hypot(foe.x - s.x, foe.z - s.z) > reach)) foe = null;
         if (!foe) foe = this.findFoe(s, reach);
         s.target = foe ? foe.id : null;
@@ -715,7 +821,7 @@ export class Army {
       }
 
       let foe = s.target !== null ? this.byId(s.target) ?? null : null;
-      if (foe && (foe.hp <= 0 || foe.side === s.side)) foe = null;
+      if (foe && (foe.hp <= 0 || !this.foes(s.side, foe.side))) foe = null;
 
       const reach = Army.reachOf(s);
       const aggro = reach + AGGRO_MARGIN;
@@ -793,6 +899,10 @@ export class Army {
       const amount = b.ranged && b.on.covered
         ? Math.max(1, Math.round(b.amount * (1 - SHIELD_REDUCTION)))
         : b.amount;
+      // Somebody else's man: his owner decides whether that killed him. Applying
+      // it here as well would have both clients subtracting the same blow, and a
+      // soldier who died on one screen and lived on the other.
+      if (b.on.net) { this.world.onNetHit?.(b.on, amount); continue; }
       b.on.hp -= amount;
       // Being hit clears a march order: a column that walks on while being cut
       // down from behind looks broken, whatever the orders say.
@@ -800,7 +910,7 @@ export class Army {
     }
 
     for (const s of this.soldiers) {
-      if (s.hp <= 0 || !s.moving || engaged.has(s.id) || s.garrison) continue;
+      if (s.hp <= 0 || s.net || !s.moving || engaged.has(s.id) || s.garrison) continue;
       const going = this.world.groundSpeed?.(s.x, s.z, !!s.def.siege) ?? 1;
       let budget = s.def.speed * going * dt;
       while (budget > 0) {
@@ -829,7 +939,7 @@ export class Army {
     // about to walk out of anyway.
     this.separate(dt);
 
-    const fallen = this.soldiers.filter(s => s.hp <= 0 && s.dying <= 0);
+    const fallen = this.soldiers.filter(s => !s.net && s.hp <= 0 && s.dying <= 0);
     if (fallen.length) {
       this.lastFallen = fallen;
       // A soldier who just died starts his death animation rather than

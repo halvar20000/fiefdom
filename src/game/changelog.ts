@@ -23,6 +23,41 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.54.0',
+    date: '2026-09-09',
+    headline: 'Other lords, and they are people.',
+    sections: [
+      {
+        title: 'Added',
+        items: [
+          'Multiplayer. Two to four players on one map, a castle each, allied or every lord for himself \u2014 and AI lords to fill whatever seats are left, at whatever difficulty the host sets. The host picks the map and, when everyone has readied, places one keep per player on the same screen a solo game uses, so the picture you put a keep on is the ground you wake up in.',
+          'Accounts, kept by this server and nothing else. A username, an email and a password; no mail is ever sent, so there is no verification link to wait for and no SMTP server to set up. Registering also makes your saved games private to you. Single-player still never asks for any of it.',
+          'A lobby: the open matches, who is in them, team numbers you can change so that 2v2 is two people picking the same number, and somewhere to talk before the gates open.',
+          'Talk during a match \u2014 Enter opens a line. The same panel carries a connection light, because a match where the line has dropped looks exactly like a match where nobody is doing anything, and the difference matters a great deal.',
+        ],
+      },
+      {
+        title: 'Changed',
+        items: [
+          'Allies exist. Every place the game asked "is this a different side?" now asks "are these two at war?", so a friend\u2019s spearman is walked past rather than run through, a catapult does not range on his gatehouse, and an archer on your wall does not thin his labourers.',
+          'A match runs at one speed for everybody. Pause and fast-forward are switched off and say so: each castle is run by its own player\u2019s browser, so one player at 3\u00d7 would simply grow three times as fast as the man he is fighting. Esc still opens the menu \u2014 over a running world, which it now admits to.',
+          'A match cannot be saved. A save is one castle\u2019s worth of a world three other people are also living in, and restoring one would put you back into a war that has moved on without you, so the slots are hidden while a match is on.',
+          'Cloudflare Access is gone, replaced by the accounts above. It worked, but it asked every self-hoster to stand up a Zero Trust application before two people could have separate saves, and it was never going to supply the thing a lobby needs, which is names.',
+          'The rival colours moved out of the game loop and into a table the lobby can read too, and grew from three to seven \u2014 a full map is now four players and up to four AI lords.',
+        ],
+      },
+      {
+        title: 'How it works, and what that costs',
+        items: [
+          'Every faction has exactly one owner: a browser that simulates it. Yours is yours, each other player\u2019s is theirs, and the AI lords belong to the host, who runs them exactly as single-player always did. An owner says what its castle looks like; everyone else replicates that and does not simulate it. Nothing is ever simulated twice, so there is nothing for two clients to disagree about.',
+          'The consequence you can feel: when you strike another player\u2019s soldier you do not decide he dies. You tell his owner you hit him, and the answer comes back in their next snapshot, a fraction of a second later. That buys the thing that matters \u2014 two players can never disagree about whether a keep is still standing.',
+          'The consequence to be honest about: a player who edits their own client could lie about their own castle. There is no referee on the server, which is also why a match costs the machine hosting it tens of kilobytes a second and no CPU at all. It is a fair trade for a game you host for people you know.',
+          'A dropped connection keeps your seat: the server holds it, the client redials, and your castle keeps running throughout \u2014 what stops is knowing what the others are doing. Closing the tab is leaving, though. The world is in the browser.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.53.0',
     date: '2026-09-06',
     headline: 'A wall you draw, and ground that means what it says.',

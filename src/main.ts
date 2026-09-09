@@ -16,7 +16,7 @@ import {
 import { GameState, type PlacedBuilding } from './game/state';
 import { PathGrid } from './game/pathfind';
 import { Herd, HUNT_RADIUS } from './game/wildlife';
-import { Army, PLAYER, SWING_TIME } from './game/army';
+import { Army, PLAYER, SWING_TIME, DEATH_TIME } from './game/army';
 import { Lord, type Difficulty } from './game/lord';
 import { WorkerPool, totalHeld, type WorkerWorld } from './game/workers';
 import { EnemyWorkers } from './game/enemyworkers';
@@ -34,6 +34,15 @@ import { MAP_W, MAP_H } from './game/maps';
 import type { LordSetup } from './ui/lords';
 import { SAVE_VERSION, takeBootIntent, readSlot, playTime, type SaveGame } from './game/save';
 import { hydrate } from './game/backend';
+import { BANNERS } from './game/banners';
+import { MatchRuntime } from './net/match';
+import { packBuilding, packSoldier, unpackSoldier, buildingName } from './net/wire';
+import { multiplayer } from './ui/lobby';
+import { net } from './net/socket';
+import { accountScreen } from './ui/account';
+import { showMatchChat } from './ui/gamechat';
+import type { Soldier } from './game/army';
+import type { NetBuilding, NetSoldier } from './net/protocol';
 import {
   BUILDINGS, STORE_SPRITES, SPRITE_STANDIN, storeSquare, SOLDIER_TYPES, buildingHp,
   canGarrison, isWeapon,
@@ -135,7 +144,8 @@ function hash2(x: number, y: number): number {
 
 async function main(chosen: MapDef, restore: SaveGame | null = null,
                     difficulty: Difficulty = 'normal',
-                    setup: LordSetup | null = null) {
+                    setup: LordSetup | null = null,
+                    mp: MatchRuntime | null = null) {
   const app = document.getElementById('app')!;
   const legacyHud = document.getElementById('hud')!;
   const loading = document.getElementById('loading')!;
@@ -410,20 +420,11 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
   /**
    * One colour per rival, troops strong and stone soft.
    *
-   * A soldier is twenty-odd pixels and must read as hostile at a glance; a
-   * castle covers a third of the screen and the same strength over that much
-   * stone reads as a broken render rather than a banner colour.
+   * The table itself moved to banners.ts when the lobby needed to show the same
+   * colours before a world exists to draw -- see there for why there are two
+   * strengths of each.
    */
-  const FACTION_COLOURS: {
-    name: string; unit: [number, number, number]; stone: [number, number, number];
-  }[] = [
-    // Red needs the least push: warming warm sandstone reads immediately.
-    // Cooling it only neutralises, so blue and violet are pushed harder to
-    // land at the same apparent distance from the player's own stone.
-    { name: 'the Red Lord',    unit: [1.50, 0.62, 0.55], stone: [1.30, 0.78, 0.70] },
-    { name: 'the Blue Lord',   unit: [0.55, 0.80, 1.60], stone: [0.62, 0.86, 1.48] },
-    { name: 'the Violet Lord', unit: [1.22, 0.56, 1.50], stone: [1.14, 0.72, 1.36] },
-  ];
+  const FACTION_COLOURS = BANNERS;
 
   /** Gap between off-map raids, once they are switched on at all. */
   const RAID_EVERY = 300;
@@ -469,10 +470,22 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
    * keep in it would hand the player its beds and its granary.
    */
   interface EnemyBuilding {
+    /**
+     * Stable for as long as the building stands.
+     *
+     * The player's own buildings have always had one. These did not, because
+     * nothing ever had to name one from outside this file -- until multiplayer,
+     * where a castle is replicated across four browsers and "the thing I just
+     * hit" has to survive being sent to its owner and looked up there. An index
+     * into the array would not: the array is spliced whenever anything falls.
+     */
+    id: number;
     name: string; x: number; z: number; hp: number;
     /** Workers the lord has put in it. He manages this; we just store it. */
     staff: number;
   }
+  /** Ids for the above, unique across every faction on the map. */
+  let nextEnemyBuildingId = 1;
 
   /** Everything one rival lord owns. */
   interface Faction {
@@ -487,8 +500,41 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     gate: [number, number] | null;
     lord: Lord;
     defeated: boolean;
+    /**
+     * This faction's side number ON THE WIRE, which is not its `id` here.
+     *
+     * In a match every client calls ITSELF side 0, because several hundred
+     * lines of this file test against `PLAYER`. `MatchRuntime.local` swaps my
+     * slot with 0 to get from one to the other; this is the untranslated half.
+     * In single-player it is just the id.
+     */
+    gside: number;
+    /**
+     * Another player owns this one: they simulate it, we only replicate it.
+     *
+     * A netted faction has no lord thinking for it here, its buildings and
+     * soldiers arrive as snapshots, and damage dealt to it is reported to its
+     * owner rather than applied. See net/match.ts for why.
+     */
+    net: boolean;
   }
   const factions: Faction[] = [];
+
+  /**
+   * In a match: the wire side of each faction, in the order they are created.
+   *
+   * Local faction ids run 1, 2, 3... and `MatchRuntime.local` maps a wire side
+   * to exactly one of them, so sorting the other sides by their local number
+   * makes the i-th faction created the one whose local id is i+1. That identity
+   * is what lets the rest of this file go on saying `factionOf(s.side)` without
+   * knowing anything about slots.
+   */
+  const mpSides: number[] = mp ? mp.rivalSides : [];
+  const mpNames: string[] = mp ? mpSides.map(g => mp.nameOfGlobal(g)) : [];
+
+  /** Do these two LOCAL sides fight? Allies in a co-op match do not. */
+  const atWar = (a: number, b: number): boolean =>
+    mp ? mp.hostile(a, b) : a !== b;
 
   /** Every building on the map that is not the player's. */
   const allEnemyBuildings = () => factions.flatMap(f => f.buildings);
@@ -524,16 +570,17 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
           dist, hit,
         };
       };
-      // Anything not on this engine's own side is a target -- which is what
-      // lets two rival lords wreck each other's castles without a special case.
-      if (s.side !== PLAYER) {
+      // Anything at war with this engine's side is a target -- which is what
+      // lets two rival lords wreck each other's castles without a special case,
+      // and what keeps an ally's gatehouse out of a catapult's list.
+      if (atWar(s.side, PLAYER)) {
         for (const b of state.buildings) {
           const [w, d] = b.def.footprint;
           consider(b.x, b.z, w, d, (n) => damagePlayerBuilding(b, n));
         }
       }
       for (const f of factions) {
-        if (f.id === s.side) continue;
+        if (!atWar(s.side, f.id)) continue;
         for (const b of f.buildings) {
           const [w, d] = BUILDINGS[b.name].footprint;
           consider(b.x, b.z, w, d, (n) => damageEnemyBuilding(f, b, n));
@@ -554,7 +601,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       let best: (typeof enemyWorkers.workers)[number] | null = null;
       let bestD = reach;
       for (const w of enemyWorkers.workers) {
-        if (w.side === s.side) continue;   // never his own side's people
+        if (!atWar(s.side, w.side)) continue;   // never his own side's, nor an ally's
         const d = Math.hypot(w.x - s.x, w.z - s.z);
         if (d > reach || d >= bestD) continue;
         bestD = d; best = w;
@@ -567,10 +614,31 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
           victim.hp -= amount;
           if (victim.hp > 0) return;
           const b = victim.b ?? undefined;
+          const f = factionOf(victim.side);
           enemyWorkers.remove(victim);
-          factionOf(victim.side)?.lord.loseWorker(b);
+          // A labourer of somebody else's is drawn from THEIR staffing, so the
+          // figure vanishing here is only the arrow landing. What costs them the
+          // man -- and the staffed slot on the building he worked, so the job
+          // stops -- is the report, applied on their machine. Their next
+          // snapshot puts our figures right.
+          if (f?.net && mp) {
+            const id = (b as { id?: number } | undefined)?.id;
+            if (id !== undefined) mp.hit(f.gside, 'w', id, 1);
+            return;
+          }
+          f?.lord?.loseWorker(b);
         },
       };
+    },
+    // Allies walk past each other. Without this every side fights every other,
+    // which is exactly right for single-player and wrong the moment two humans
+    // are on the same team.
+    hostile: (a, b) => atWar(a, b),
+    // A blow on a soldier another player owns. His health is not ours to
+    // change; we say what we did and his owner says what came of it.
+    onNetHit: (s, amount) => {
+      const f = factionOf(s.side);
+      if (f && mp && s.netId !== undefined) mp.hit(f.gside, 'u', s.netId, amount);
     },
   });
 
@@ -643,6 +711,8 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
 
   // --- game ---------------------------------------------------------------
   const state = new GameState();
+  // One speed for everybody: see GameState.speedLocked.
+  state.speedLocked = !!mp;
 
   const groundName = (x: number, z: number) => {
     if (x < 0 || z < 0 || x >= MAP_W || z >= MAP_H) return 'sand';
@@ -1166,7 +1236,12 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       w.claim = null;
       // felling clears the land, so the spot becomes buildable -- and walkable
       markScatter(t.x, t.z, false);
-      regrowing.push(decorations.indexOf(t));
+      const idx = decorations.indexOf(t);
+      regrowing.push(idx);
+      // The trees are generated from the map seed, so index `idx` is the same
+      // tree on every client -- which is what makes one number enough to keep
+      // the stumps in step.
+      mp?.fell(idx);
       staticDirty = true;
     },
 
@@ -1218,7 +1293,10 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
   hud.rivalGold = () => {
     let best: Faction | null = null;
     for (const f of factions) {
-      if (f.defeated) continue;
+      // A faction another player owns has no lord here and no treasury we are
+      // ever told about, so it cannot be on this chart. In a match the line is
+      // the AI lords' -- and with none of them, it simply is not drawn.
+      if (f.defeated || !f.lord) continue;
       if (!best || f.lord.gold > best.lord.gold) best = f;
     }
     return best ? { gold: Math.floor(best.lord.gold), name: best.name } : null;
@@ -1373,7 +1451,10 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       for (let dx = 0; dx < w; dx++) if (occupied[(z + dz) * MAP_W + (x + dx)]) return false;
     }
     if (!enemyGapOk(f, name, x, z)) return false;
-    f.buildings.push({ name, x, z, hp: buildingHp(BUILDINGS[name]), staff: 0 });
+    f.buildings.push({
+      id: nextEnemyBuildingId++, name, x, z,
+      hp: buildingHp(BUILDINGS[name]), staff: 0,
+    });
     markArea(x, z, w, d);
     if (!BUILDINGS[name].walkable) markSolid(x, z, w, d);
     return true;
@@ -1421,10 +1502,12 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     for (let i = 0; i < want; i++) {
       const colour = FACTION_COLOURS[i];
       const f: Faction = {
-        id: i + 1, name: colour.name,
+        id: i + 1, name: mpNames[i] ?? colour.name,
         unitTint: colour.unit, stoneTint: colour.stone,
         buildings: [], keep: null, ring: [], gate: null,
         lord: null as unknown as Lord, defeated: false,
+        gside: mpSides[i] ?? i + 1,
+        net: mp ? mp.ownerOf(mpSides[i] ?? i + 1) !== mp.you : false,
       };
 
       // A hand-placed keep is taken as an instruction, with only enough search
@@ -1476,7 +1559,17 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
                     `${Math.round(Math.hypot(c.x - kx, c.z - kz))} tiles from you`);
         break;
       }
-      if (!sited) { console.warn(`[lords] nowhere to seat rival ${i + 1}`); continue; }
+      if (!sited) {
+        console.warn(`[lords] nowhere to seat rival ${i + 1}`);
+        // In single-player a lord who cannot be seated simply is not on the
+        // map. In a match the faction ids are a numbering every client shares,
+        // so dropping one here would silently rename every faction after it and
+        // send blows to the wrong castle. He is seated as already defeated
+        // instead -- visible to nobody, but holding his place in the list.
+        if (!mp) continue;
+        f.defeated = true;
+        f.lord = null as unknown as Lord;
+      }
       factions.push(f);
     }
   })();
@@ -1851,8 +1944,8 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
   const clipFrames = (clip: string) => atlas.clips[clip]?.frames ?? 1;
   /** Frames per second for a clip, so its cycle keeps its length. */
   const clipFps = (clip: string) => atlas.clips[clip]?.fps ?? WALK_FPS;
-  /** Must match DEATH_TIME in army.ts -- the death clip's play length. */
-  const DEATH_SECONDS = 1.1;
+  /** The death clip's play length, from army.ts so the two cannot drift. */
+  const DEATH_SECONDS = DEATH_TIME;
 
   let builtRotation = -1;
   let staticDirty = true;
@@ -1975,7 +2068,9 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     // The lord is the source of attacks now. The edge-spawn raid stays behind
     // `spawnRaid()` as a testing tool -- troops appearing out of empty desert
     // was always a placeholder for an opponent who actually lives somewhere.
-    for (const f of factions) f.lord.update(dt);
+    // A faction another player owns is thought for on THEIR machine; here it
+    // is only a picture. An unseated one has no lord at all.
+    for (const f of factions) if (!f.net && f.lord) f.lord.update(dt);
     if (nextRaid !== Infinity && state.elapsed >= nextRaid) {
       spawnRaid();
       nextRaid = state.elapsed + RAID_EVERY;
@@ -2211,8 +2306,13 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
    * entry on the same square buys nothing and a fire thrower working one spot
    * would otherwise leave a hundred of them in the list.
    */
-  function lightGround(x: number, z: number): void {
+  function lightGround(x: number, z: number, share = true): void {
     if (x < 0 || z < 0 || x >= MAP_W || z >= MAP_H) return;
+    // Fires are lit by incendiaries, which are simulated by whoever owns the
+    // man throwing them, so they have to be told rather than each client
+    // guessing. `share` is false when we are applying somebody else's, or the
+    // two of us would light each other's fires for ever.
+    if (share) mp?.fire(x, z);
     const at = fires.find(f => f.x === x && f.z === z);
     if (at) { at.until = state.elapsed + BURN_SECONDS; return; }
     fires.push({
@@ -2294,6 +2394,10 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
   }
 
   function damageEnemyBuilding(f: Faction, b: EnemyBuilding, amount: number): void {
+    // Somebody else's stone. Whether it falls is theirs to decide, and their
+    // next snapshot is the answer -- see net/match.ts. Nothing is applied here,
+    // or two clients would each subtract the same blow.
+    if (f.net && mp) { mp.hit(f.gside, 'b', b.id, amount); return; }
     b.hp -= amount;
     if (b.hp > 0) return;
     const [w, d] = BUILDINGS[b.name].footprint;
@@ -2315,14 +2419,51 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
    * rather than written twice and left to drift apart the first time either
    * one changed.
    */
+  /** Living factions this client is actually fighting. Allies do not count. */
+  const livingFoes = () => factions.filter(o => !o.defeated && atWar(PLAYER, o.id));
+
+  /**
+   * Burn a faction's castle off the map and clear the ground it stood on.
+   *
+   * Victory did this to every rival; a beaten player's holdings need exactly
+   * the same treatment, and having written it twice once already, it is one
+   * function now.
+   */
+  function razeFaction(f: Faction): void {
+    for (const b of [...f.buildings]) {
+      const [w, d] = BUILDINGS[b.name].footprint;
+      fires.push({
+        x: Math.floor(b.x + w / 2), z: Math.floor(b.z + d / 2),
+        until: state.elapsed + BURN_SECONDS, seed: (b.x * 7 + b.z * 13) & 7,
+      });
+      evictGarrison(b.x, b.z);
+      razeTiles(b.x, b.z, w, d);
+    }
+    f.buildings.length = 0;
+    staticDirty = true;
+  }
+
   function defeatFaction(f: Faction, why: string): void {
     if (f.defeated) return;
     f.defeated = true;
-    f.lord.defeated = true;
+    if (f.lord) f.lord.defeated = true;
+    // Netted factions are beaten on their owner's machine; ours is a copy, and
+    // their men stop arriving in snapshots. Clear what is left so a dead
+    // player's army does not stand frozen on the field for ever.
+    if (f.net) {
+      army.forget(f.id);
+      // Their snapshots stop arriving the moment they are beaten, so nothing
+      // else will ever clear this castle. Burn it, exactly as a win does.
+      razeFaction(f);
+      enemyWorkers.sync(factions);
+    }
+    // Everyone else needs to hear that one of mine has fallen, or their copy of
+    // it stands for the rest of the match.
+    if (!f.net && mp) mp.declareDead(f.gside);
     // A rival's name starts lower case -- "the Red Lord" -- and this is the
     // start of a sentence.
     const line = why.charAt(0).toUpperCase() + why.slice(1);
-    const left = factions.filter(o => !o.defeated).length;
+    const left = livingFoes().length;
     if (left) {
       state.notify(`${line} ${left} rival${left === 1 ? '' : 's'} left.`, 'info');
     } else {
@@ -2417,7 +2558,10 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       pop = state.population; gold = state.gold; buildings = state.buildings.length;
     } else {
       const f = factionOf(side);
-      pop = f?.lord.population ?? 0; gold = f?.lord.gold ?? 0;
+      // A faction another player owns has no lord here -- its economy is a
+      // number on their machine and not one we are told. What we CAN see is its
+      // castle and its army, which is most of what greatness measures anyway.
+      pop = f?.lord?.population ?? 0; gold = f?.lord?.gold ?? 0;
       buildings = f?.buildings.length ?? 0;
     }
     const armyWorth = army.of(side)
@@ -2451,7 +2595,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       audio.say(`You are now a ${TITLES[t][1]}.`);
     }
 
-    const rivals = factions.filter(f => !f.defeated);
+    const rivals = livingFoes();
     if (!rivals.length) return;   // nobody to be greater THAN; the title carries it
     const best = Math.max(...rivals.map(f => greatness(f.id)));
     if (!isGreatest && score > best * 1.1) {
@@ -2477,34 +2621,38 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     if (gameEnded) return;
     gameEnded = true;
     nextRaid = Infinity;
+    // Tell the match how it went, before anything below can throw. The others
+    // need to know whether to keep fighting; the server needs to know when the
+    // match is done.
+    mp?.report(win);
+    // A beaten player's castle would otherwise stand on every other screen for
+    // the rest of the match: nothing arrives to take it down, because this
+    // client stops having anything to say about it. Saying so explicitly is the
+    // only way the others find out.
+    if (mp && !win) {
+      mp.declareDead(mp.you);
+      mp.stopBroadcasting();
+    }
 
     if (win) {
       for (const f of factions) {
-        for (const b of [...f.buildings]) {
-          const [w, d] = BUILDINGS[b.name].footprint;
-          fires.push({
-            x: Math.floor(b.x + w / 2), z: Math.floor(b.z + d / 2),
-            until: state.elapsed + BURN_SECONDS, seed: (b.x * 7 + b.z * 13) & 7,
-          });
-          evictGarrison(b.x, b.z);
-          razeTiles(b.x, b.z, w, d);
-        }
-        f.buildings.length = 0;
+        if (!atWar(PLAYER, f.id)) continue;   // an ally's town is not spoils
+        razeFaction(f);
       }
-      army.soldiers = army.soldiers.filter(s => s.side === PLAYER);
+      army.soldiers = army.soldiers.filter(s => !atWar(PLAYER, s.side));
       enemyWorkers.sync(factions);
-      staticDirty = true;
     }
 
     audio.play(win ? 'notice' : 'warn');
     audio.say(win ? 'The field is yours, my lord.' : 'Our keep has fallen.', !win);
 
-    const defeated = factions.filter(f => f.defeated).length;
+    const foes = factions.filter(f => atWar(PLAYER, f.id));
+    const defeated = foes.filter(f => f.defeated).length;
     // Final standing. A win means every rival keep has fallen, so the player is
     // the last lord standing -- greatest by survival. Otherwise rank by score.
     titleIdx = Math.max(titleIdx, titleFor(greatness(PLAYER)));
     let standing: string;
-    if (win || !factions.length) {
+    if (win || !foes.length) {
       standing = 'Greatest lord in the land';
     } else {
       const scores = [greatness(PLAYER), ...factions.map(f => greatness(f.id))]
@@ -2524,7 +2672,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
         { label: 'Gold amassed', value: Math.floor(peakGold) },
         { label: 'Popularity', value: `${Math.round(state.popularity)}%` },
         { label: 'Buildings standing', value: state.buildings.length },
-        { label: 'Rival lords defeated', value: `${defeated} of ${factions.length}` },
+        { label: 'Rival lords defeated', value: `${defeated} of ${foes.length}` },
         { label: 'Enemy troops destroyed', value: enemyKilled },
         { label: 'Men lost', value: troopsLost },
       ],
@@ -2541,6 +2689,9 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
    * burn for a while rather than two armies pointed at each other.
    */
   for (const f of factions) {
+    // Netted factions get no lord: their owner runs one, and a second one here
+    // would build a parallel castle nobody else can see.
+    if (f.net || f.defeated) continue;
     f.lord = new Lord(army, {
       buildings: () => f.buildings,
       build: (name: string) => lordBuild(f, name),
@@ -3431,6 +3582,244 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     }
   }
 
+
+  // --- multiplayer ----------------------------------------------------------
+  //
+  // Everything below is inert in a single-player game: `mp` is null, none of it
+  // is called, and the simulation above runs exactly as it always has. That is
+  // the shape the whole feature was built to: multiplayer adds a layer that
+  // SPEAKS about the world, and changes almost nothing about how it works.
+  //
+  // The layer does three things, once a frame:
+  //
+  //   send      what the factions I own look like;
+  //   reconcile what everyone else has said theirs look like;
+  //   apply     the blows they say they struck on mine.
+
+  /** A faction I own, packed for the wire. */
+  function netGather(g: number): { buildings: NetBuilding[]; soldiers: NetSoldier[] } {
+    const side = mp!.local(g);
+    const soldiers = army.soldiers
+      .filter(u => u.side === side && u.hp > 0 && !u.net)
+      .map(u => packSoldier(u))
+      .filter((u): u is NetSoldier => u !== null);
+    if (side === PLAYER) {
+      return {
+        buildings: state.buildings
+          .map(b => packBuilding({
+            id: b.id, name: b.name, x: b.x, z: b.z, hp: b.hp, staff: b.staff,
+            raised: b.raised, alt: b.alt,
+          }))
+          .filter((b): b is NetBuilding => b !== null),
+        soldiers,
+      };
+    }
+    const f = factionOf(side);
+    return {
+      buildings: (f?.buildings ?? [])
+        .map(b => packBuilding(b))
+        .filter((b): b is NetBuilding => b !== null),
+      soldiers,
+    };
+  }
+
+  /**
+   * Make a replicated castle match the last thing its owner said about it.
+   *
+   * Matched by the owner's building id, never by position in the list: a castle
+   * is spliced whenever anything falls, so an index would quietly come to mean a
+   * different building. Tiles are marked and unmarked exactly as they are when
+   * this client raises or razes something itself, because the pathfinder has to
+   * agree with the picture -- a wall that is drawn but not marked is a wall
+   * soldiers walk through.
+   */
+  function reconcileCastle(f: Faction, list: NetBuilding[]): void {
+    let changed = false;
+    const seen = new Set<number>();
+
+    for (const nb of list) {
+      const name = buildingName(nb.n);
+      if (!name || !BUILDINGS[name]) continue;   // a build we do not have
+      seen.add(nb.i);
+      const [w, d] = BUILDINGS[name].footprint;
+      let had = f.buildings.find(b => b.id === nb.i);
+      // An id alone is not proof it is the same building. Every castle is
+      // seeded locally at the start of a match -- a keep and a hovel, from the
+      // same seat list everyone has -- and those placeholders take ids from
+      // this client's own counter, which begins at 1 exactly as the owner's
+      // does. So id 2 here can be the hovel we guessed at and id 2 there the
+      // woodcutter they actually built. Checking what it IS, not just which
+      // number it wears, turns that into one building replacing another
+      // instead of a phantom that keeps a wrong name and position for ever.
+      if (had && (had.name !== name || had.x !== nb.x || had.z !== nb.z)) {
+        const [ow, od] = BUILDINGS[had.name].footprint;
+        f.buildings.splice(f.buildings.indexOf(had), 1);
+        evictGarrison(had.x, had.z);
+        razeTiles(had.x, had.z, ow, od);
+        had = undefined;
+        changed = true;
+      }
+      if (had) {
+        had.hp = nb.h;
+        had.staff = nb.s;
+        continue;
+      }
+      f.buildings.push({ id: nb.i, name, x: nb.x, z: nb.z, hp: nb.h, staff: nb.s });
+      markArea(nb.x, nb.z, w, d);
+      if (!BUILDINGS[name].walkable) markSolid(nb.x, nb.z, w, d);
+      if (name === 'keep') f.keep = { x: nb.x + 1, z: nb.z + 1 };
+      changed = true;
+    }
+
+    for (let i = f.buildings.length - 1; i >= 0; i--) {
+      const b = f.buildings[i];
+      if (seen.has(b.id)) continue;
+      const [w, d] = BUILDINGS[b.name].footprint;
+      f.buildings.splice(i, 1);
+      evictGarrison(b.x, b.z);
+      razeTiles(b.x, b.z, w, d);
+      changed = true;
+    }
+    if (changed) staticDirty = true;
+  }
+
+  /**
+   * Make a replicated army match its owner's last word on it.
+   *
+   * A man who has stopped being listed is dead, or was never ours to know
+   * about; either way he falls here, with the death clip playing, rather than
+   * blinking out. Army.update leaves netted men alone apart from ageing that
+   * clip, so this is the only thing that moves them.
+   */
+  function reconcileArmy(f: Faction, list: NetSoldier[]): void {
+    const side = f.id;
+    const have = new Map<number, Soldier>();
+    for (const u of army.soldiers) {
+      if (u.net && u.side === side && u.netId !== undefined) have.set(u.netId, u);
+    }
+    for (const packed of list) {
+      const u = unpackSoldier(packed);
+      if (!u.type) continue;
+      const cur = have.get(u.id);
+      if (cur) {
+        have.delete(u.id);
+        cur.x = u.x; cur.z = u.z; cur.heading = u.heading; cur.hp = u.hp;
+      } else {
+        army.adopt(side, u.id, u.type, u.x, u.z, u.heading, u.hp);
+      }
+    }
+    // Whatever is left in `have` was not in this snapshot.
+    for (const u of have.values()) {
+      if (u.hp > 0 && atWar(PLAYER, side)) enemyKilled++;
+      u.hp = 0;
+      if (u.dying <= 0) u.dying = DEATH_TIME;
+    }
+  }
+
+  /** Pull in everything the other players have said since the last frame. */
+  function netReconcile(): void {
+    for (const f of factions) {
+      if (!f.net) continue;
+      const rf = mp!.remote.get(f.gside);
+      if (!rf) continue;
+      if (rf.buildingsDirty) { rf.buildingsDirty = false; reconcileCastle(f, rf.buildings); }
+      if (rf.soldiersDirty) { rf.soldiersDirty = false; reconcileArmy(f, rf.soldiers); }
+      if (rf.defeated && !f.defeated) defeatFaction(f, `${f.name} is beaten.`);
+    }
+  }
+
+  /** Apply the blows and events other players have reported. */
+  function netApply(): void {
+    const { hits, felled, fires: lit, finished } = mp!.drain();
+
+    for (const h of hits) {
+      const side = mp!.local(h.g);
+      if (h.kind === 'b') {
+        if (side === PLAYER) {
+          const b = state.buildings.find(x => x.id === h.i);
+          if (b) damagePlayerBuilding(b, h.n);
+        } else {
+          const f = factionOf(side);
+          const b = f?.buildings.find(x => x.id === h.i);
+          if (f && b) damageEnemyBuilding(f, b, h.n);
+        }
+      } else if (h.kind === 'u') {
+        const u = army.byId(h.i);
+        // Only ever one of my own, alive, on the side the sender named.
+        if (u && !u.net && u.side === side && u.hp > 0) {
+          u.hp -= h.n;
+          u.ordered = false;
+        }
+      } else if (side !== PLAYER) {
+        // A labourer cut down. The player's own villagers are never a target --
+        // civilianTarget only ever looks at the rivals' figures -- so this can
+        // only mean one of the AI lords I am running as host.
+        const f = factionOf(side);
+        const b = f?.buildings.find(x => x.id === h.i);
+        if (f?.lord && b) for (let k = 0; k < h.n; k++) f.lord.loseWorker(b);
+      }
+    }
+
+    for (const i of felled) {
+      const t = decorations[i];
+      if (!t || !t.alive) continue;
+      t.alive = false;
+      t.regrowAt = state.elapsed + TREE_REGROW_SECONDS;
+      t.claimedBy = null;
+      markScatter(t.x, t.z, false);
+      regrowing.push(i);
+      staticDirty = true;
+    }
+
+    for (const f of lit) lightGround(f.x, f.z, false);
+
+    for (const done of finished) {
+      const who = mp!.nameOfGlobal(done.slot);
+      state.notify(`${who} has ${done.win ? 'won their war' : 'been beaten'}.`, 'info');
+    }
+  }
+
+  /**
+   * A cheap number that changes whenever a castle I own does.
+   *
+   * Deliberately a fingerprint rather than a flag set at every place a building
+   * is raised, razed, damaged, staffed, raised as a drawbridge or switched to
+   * its alternate product. There are a dozen such places and finding all of
+   * them once is not the problem -- the problem is the thirteenth, added later,
+   * whose omission shows up as a building that is a few seconds stale on
+   * somebody else's screen and is never traced back here. Summing costs a pass
+   * over a hundred buildings once a frame, and cannot be forgotten.
+   */
+  function castleSignature(): number {
+    let sig = 0;
+    for (const b of state.buildings) {
+      sig = (sig * 31 + b.id + b.hp * 7 + b.staff * 3
+             + (b.raised ? 1 : 0) + (b.alt ? 2 : 0)) | 0;
+    }
+    for (const f of factions) {
+      if (f.net) continue;
+      for (const b of f.buildings) sig = (sig * 31 + b.id + b.hp * 7 + b.staff * 3) | 0;
+    }
+    return sig;
+  }
+  let lastCastleSig = 0;
+
+  /**
+   * The whole network step, on REAL time rather than simulation time.
+   *
+   * Deliberately outside advanceSim: a match runs at one speed for everybody
+   * (see GameState.speedLocked), so scaling the send rate by a speed nobody can
+   * change would only make the rate harder to reason about.
+   */
+  function netTick(dt: number): void {
+    if (!mp) return;
+    netReconcile();
+    netApply();
+    const sig = castleSignature();
+    if (sig !== lastCastleSig) { lastCastleSig = sig; mp.touchCastle(); }
+    mp.tick(dt, netGather);
+  }
+
   // --- loop ---------------------------------------------------------------
   let paused = false;
   let last = performance.now();
@@ -3517,6 +3906,8 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     // time, so a paused settlement is still one you can look around and plan
     // in -- unlike the Esc menu, which stops the frame outright.
     advanceSim(dt * state.speedMult);
+    netTick(dt);
+    matchChat?.tick();
 
     // --- placement ghost ---
     if (placement.selected) {
@@ -4074,7 +4465,12 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
         up: b.raised ? 1 : undefined,
         alt: b.alt ? 1 : undefined,
       })),
-      factions: factions.map(f => ({
+      // Factions another player owns are left out: their economy is a set of
+      // numbers on someone else's machine that this client is never told, so
+      // there is nothing honest to write down. A match cannot be saved anyway
+      // -- the pause menu hides the slots -- and this keeps `snapshot()` from
+      // throwing if anything else ever asks for one.
+      factions: factions.filter(f => f.lord).map(f => ({
         id: f.id,
         buildings: f.buildings.map(b => ({
           n: b.name, x: b.x, z: b.z, staff: b.staff, hp: b.hp, held: {},
@@ -4157,13 +4553,19 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
         const def = BUILDINGS[sb.n];
         if (!def) continue;
         const [w, d] = def.footprint;
-        f.buildings.push({ name: sb.n, x: sb.x, z: sb.z, hp: sb.hp, staff: sb.staff });
+        // Ids are not saved: they only have to be unique and stable within one
+        // run, and a single-player save has nobody to address them from.
+        f.buildings.push({
+          id: nextEnemyBuildingId++, name: sb.n,
+          x: sb.x, z: sb.z, hp: sb.hp, staff: sb.staff,
+        });
         markArea(sb.x, sb.z, w, d);
         if (!def.walkable) markSolid(sb.x, sb.z, w, d);
       }
       const ek = f.buildings.find(b => b.name === 'keep');
       if (ek) f.keep = { x: ek.x + 1, z: ek.z + 1 };
       f.defeated = sf.defeated;
+      if (!f.lord) continue;
       f.lord.defeated = sf.defeated;
       f.lord.gold = sf.gold;
       Object.assign(f.lord.stock, sf.stock);
@@ -4298,9 +4700,17 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
 
   function openPause(): void {
     if (paused) return;
-    paused = true;
     placement.cancel();
-    showPause({ snapshot, onResume: () => { paused = false; last = performance.now(); } });
+    // In a match the world keeps turning: freezing the loop would stop this
+    // castle -- and everything it is telling the other players -- while three
+    // other people carried on building. So the menu opens over a running game
+    // and says so.
+    if (!mp) paused = true;
+    showPause({
+      snapshot,
+      match: !!mp,
+      onResume: () => { paused = false; last = performance.now(); },
+    });
   }
 
   if (restore) applySave(restore);
@@ -4372,12 +4782,28 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     // rival, which is the common case while poking at a game.
     lord: (i = 0) => factions[i]?.lord,
     enemyBuildings: () => allEnemyBuildings(),
+    // A faction another player owns has no lord here to ask -- its economy is
+    // a number on their machine. It reports as netted rather than throwing.
     lordStatus: (i?: number) => i === undefined
-      ? factions.map(f => ({ who: f.name, ...f.lord.status() }))
-      : factions[i]?.lord.status(),
-    lordAttack: (i = 0) => factions[i]?.lord.attackNow() ?? 0,
+      ? factions.map(f => f.lord ? { who: f.name, ...f.lord.status() }
+                                 : { who: f.name, net: true })
+      : factions[i]?.lord?.status(),
+    lordAttack: (i = 0) => factions[i]?.lord?.attackNow() ?? 0,
     /** Force the end screen, for testing. `win=true` also razes the rivals. */
-    endGame: (win = true) => { if (win) for (const f of factions) { f.defeated = true; f.lord.defeated = true; } endGame(win); },
+    endGame: (win = true) => {
+      if (win) for (const f of factions) { f.defeated = true; if (f.lord) f.lord.defeated = true; }
+      endGame(win);
+    },
+    /** The match this client is in, or null in a single-player game. */
+    match: () => mp && {
+      you: mp.you, host: mp.host, mode: mp.mode,
+      mine: mp.mine, rivals: mp.rivalSides, connected: mp.connected,
+      factions: factions.map(f => ({
+        id: f.id, gside: f.gside, name: f.name, net: f.net,
+        defeated: f.defeated, buildings: f.buildings.length,
+        soldiers: army.allOf(f.id).length,
+      })),
+    },
     greatness: (side = 0) => greatness(side),
     checkStanding: () => checkStanding(),
     /** Hold off the next raid. `setNextRaid(Infinity)` disables them. */
@@ -4419,6 +4845,10 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     },
   };
 
+  // The chat panel, and with it the connection light -- the only way a player
+  // can tell "nobody is doing anything" from "the line has dropped".
+  const matchChat = mp ? showMatchChat(mp) : null;
+
   loading.classList.add('done');
   frame();
 }
@@ -4458,6 +4888,26 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     if (choice.kind === 'play') {
       loading.textContent = `building ${choice.map.name.toLowerCase()}…`;
       return main(choice.map, null, choice.setup.difficulty, choice.setup);
+    }
+    if (choice.kind === 'multiplayer') {
+      // Sign in if need be, then the lobby, then the host's placement screen.
+      // Resolves only when a match actually begins; backing out at any point
+      // lands back on the title screen with the loop intact.
+      const started = await multiplayer(() => accountScreen());
+      if (!started) continue;
+      const { match: view, you } = started;
+      const mp = new MatchRuntime(view, you, net);
+      // The seats arrive in wire order -- the humans by slot, then the AI
+      // lords. `rivalSides` puts the others into the order the game creates
+      // its factions in, which is the one thing both ends have to agree on.
+      const seats = view.seats ?? [];
+      const setup: LordSetup = {
+        you: seats[you] ?? { x: MAP_W >> 1, z: MAP_H >> 1 },
+        rivals: mp.rivalSides.map(g => seats[g]).filter(Boolean),
+        difficulty: view.difficulty,
+      };
+      loading.textContent = `mustering on ${view.map.name.toLowerCase()}…`;
+      return main(view.map, null, view.difficulty, setup, mp);
     }
     // The loading veil sits above the canvas; the editor draws its own world,
     // so it has to come down here and go back up before the game boots.

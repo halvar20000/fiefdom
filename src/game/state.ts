@@ -105,7 +105,19 @@ export class GameState {
     return this.speedMult === 0;
   }
 
+  /**
+   * Multiplayer runs at one speed, for everybody.
+   *
+   * Each player's browser simulates its own castle, so a player at 3x would
+   * grow three times as fast as the man he is fighting -- and a paused one
+   * would stop feeding his peasants while his walls stayed up. There is no
+   * sensible way to let one player change the pace of a shared war, so in a
+   * match nobody can.
+   */
+  speedLocked = false;
+
   setSpeed(i: number): void {
+    if (this.speedLocked) return;
     if (i < 0 || i >= SPEED_LEVELS.length) return;
     if (SPEED_LEVELS[i].mult > 0) this.lastRunningSpeed = i;
     this.speed = i;
@@ -113,6 +125,7 @@ export class GameState {
 
   /** Pause, or resume at whatever speed was running before it. */
   togglePause(): void {
+    if (this.speedLocked) return;
     this.setSpeed(this.paused ? this.lastRunningSpeed : 0);
   }
 

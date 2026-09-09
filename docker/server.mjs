@@ -1,12 +1,18 @@
 // Fiefdom's runtime server.
 //
-// The game is still a pure client-side simulation; this server exists for ONE
-// reason the static nginx image could not serve: durable, server-side storage
-// for saved games and custom maps, so they live in a mapped /data volume on the
-// host and survive a container update instead of hiding in one browser's
-// localStorage. Everything else it does -- serving the built files with the
-// right cache headers -- is what nginx did before, reproduced here so there is
-// only one process in the container.
+// The game is still a client-side simulation -- every world is built and run in
+// a browser. This server does the three things a browser cannot do alone:
+//
+//   1. serve the built files, with the cache headers nginx used to set;
+//   2. keep saved games and custom maps in a mapped /data volume, so they
+//      survive a container update instead of hiding in one browser's
+//      localStorage;
+//   3. know who each player is, and put two to four of them in the same match.
+//
+// (3) is the new one. Accounts live in accounts.mjs, the WebSocket protocol in
+// ws.mjs, and the matchmaking in lobby.mjs -- see each for why it is written by
+// hand. Nothing here simulates a castle: the players' browsers do that and tell
+// each other about it through the relay in lobby.mjs.
 //
 // Deliberately dependency-free: Node's own http/fs/zlib, nothing from npm. A
 // self-hosted game's server should be something its owner can read in one
@@ -21,7 +27,10 @@ import { createServer } from 'node:http';
 import { readFile, writeFile, rename, mkdir, stat } from 'node:fs/promises';
 import { gzipSync } from 'node:zlib';
 import { join, normalize, extname } from 'node:path';
-import { createHash, createPublicKey, verify as cryptoVerify } from 'node:crypto';
+import { createHash } from 'node:crypto';
+import { Accounts } from './accounts.mjs';
+import { Lobby } from './lobby.mjs';
+import { accept } from './ws.mjs';
 
 const PORT = Number(process.env.PORT || 80);
 const STATIC_DIR = process.env.STATIC_DIR || '/app/dist';
@@ -31,22 +40,22 @@ const LEGACY_FILE = join(DATA_DIR, 'store.json');   // the old single shared sto
 /** A save or a map bundle is kilobytes; this ceiling is pure abuse-protection. */
 const MAX_BODY = 16 * 1024 * 1024;
 
-// --- Cloudflare Access identity ---------------------------------------------
+// --- who is playing ---------------------------------------------------------
 //
-// When these are set (see the Unraid template / README), the server trusts only
-// a Cloudflare-signed identity token, verifies its signature against the team's
-// public keys, and gives each authenticated email its own private save bucket.
-// A request WITHOUT a valid token -- e.g. reached over the LAN, bypassing
-// Cloudflare -- falls back to the shared "local" bucket, which is also where the
-// old single store migrates to. With these unset, everyone shares "local",
-// exactly as before Access existed.
-const ACCESS_TEAM = process.env.ACCESS_TEAM_DOMAIN || '';   // e.g. "smarthomeworld68"
-const ACCESS_AUD = process.env.ACCESS_AUD || '';            // the Access app's AUD tag
-const ACCESS_ISS = ACCESS_TEAM ? `https://${ACCESS_TEAM}.cloudflareaccess.com` : '';
-const ACCESS_CERTS = process.env.ACCESS_CERTS_URL
-  || (ACCESS_ISS ? `${ACCESS_ISS}/cdn-cgi/access/certs` : '');
-/** Dev/testing ONLY: trust an `x-dev-user` header. Never enable when public. */
-const DEV_ID_HEADER = process.env.DEV_IDENTITY_HEADER === '1';
+// Fiefdom used to borrow its identity from Cloudflare Access: put Access in
+// front of the hostname, set two environment variables, and the server trusted
+// the signed token at the edge. It worked, but it asked every self-hoster to
+// stand up a Zero Trust application before two people could have separate
+// saves -- and multiplayer needs names in a lobby, which Access was never going
+// to supply.
+//
+// So the server keeps its own accounts now (accounts.mjs): a username, an email
+// and a password, and a signed cookie that says who you are. Nothing to
+// configure, nothing external to depend on. A visitor who has not signed in is
+// still served the game and still gets the shared `local` save profile, exactly
+// as an unauthenticated visit always did -- they just cannot join a match.
+const accounts = new Accounts(DATA_DIR);
+const lobby = new Lobby();
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -148,75 +157,30 @@ async function migrateLegacy() {
   } catch { /* no legacy file -- fresh install */ }
 }
 
-// --- Cloudflare Access JWT verification -------------------------------------
+// --- identity ---------------------------------------------------------------
 
-let jwks = [];          // cached public keys
-let jwksAt = 0;
-
-function b64url(s) { return Buffer.from(s.replace(/-/g, '+').replace(/_/g, '/'), 'base64'); }
-
-async function refreshJwks() {
-  try {
-    const res = await fetch(ACCESS_CERTS);
-    const j = await res.json();
-    if (Array.isArray(j.keys)) { jwks = j.keys; jwksAt = Date.now(); }
-  } catch (e) {
-    console.warn('[access] could not fetch certs:', e.message);
-  }
+/** The signed-in account for this request, or null. */
+function accountFor(req) {
+  return accounts.verifyToken(Accounts.readCookie(req));
 }
 
 /**
- * Verify a Cloudflare Access token and return the authenticated email, or null.
+ * Which save bucket a request reads and writes.
  *
- * Checks the RS256 signature against Cloudflare's published keys and the token's
- * expiry, issuer and (when set) audience. Anything that does not check out is
- * null, which the caller reads as "not this user" and falls back to local.
+ * A signed-in player gets a private one keyed by account id; everyone else
+ * shares `local`, which is also where the old single store was migrated to.
+ * Keying on the id rather than the email means changing an address later would
+ * not orphan a player's saves.
  */
-async function verifyAccessJwt(token) {
-  try {
-    const [h, p, s] = token.split('.');
-    if (!s) return null;
-    const header = JSON.parse(b64url(h).toString('utf8'));
-    const payload = JSON.parse(b64url(p).toString('utf8'));
-    if (payload.exp && Date.now() / 1000 > payload.exp) return null;
-    if (ACCESS_ISS && payload.iss !== ACCESS_ISS) return null;
-    if (ACCESS_AUD) {
-      const aud = Array.isArray(payload.aud) ? payload.aud : [payload.aud];
-      if (!aud.includes(ACCESS_AUD)) return null;
-    }
-    const find = () => jwks.find(k => k.kid === header.kid);
-    if (!find() || Date.now() - jwksAt > 3_600_000) await refreshJwks();
-    const jwk = find();
-    if (!jwk) return null;
-    const pub = createPublicKey({ key: jwk, format: 'jwk' });
-    const ok = cryptoVerify('RSA-SHA256', Buffer.from(`${h}.${p}`), pub, b64url(s));
-    if (!ok) return null;
-    const email = (payload.email || payload.identity || '').toLowerCase();
-    return email || null;
-  } catch {
-    return null;
-  }
+function bucketFor(req) {
+  const a = accountFor(req);
+  return a ? `u_${a.id}` : 'local';
 }
 
-/** The Access token, from the header Cloudflare sets or the cookie it drops. */
-function accessToken(req) {
-  const h = req.headers['cf-access-jwt-assertion'];
-  if (h) return Array.isArray(h) ? h[0] : h;
-  const m = (req.headers.cookie || '').match(/CF_Authorization=([^;]+)/);
-  return m ? m[1] : null;
-}
-
-/** Who is making this request. An email when signed in, else "local". */
-async function identify(req) {
-  if (ACCESS_ISS) {
-    const tok = accessToken(req);
-    if (tok) { const email = await verifyAccessJwt(tok); if (email) return email; }
-    return 'local';
-  }
-  if (DEV_ID_HEADER && req.headers['x-dev-user']) {
-    return String(req.headers['x-dev-user']).toLowerCase();
-  }
-  return 'local';
+/** Cookies only get the Secure flag where the browser actually used https. */
+function isSecure(req) {
+  const proto = req.headers['x-forwarded-proto'];
+  return String(Array.isArray(proto) ? proto[0] : proto || '').includes('https');
 }
 
 // --- helpers ----------------------------------------------------------------
@@ -242,6 +206,32 @@ function readBody(req) {
     req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
     req.on('error', reject);
   });
+}
+
+/** A POSTed JSON body, or an empty object if it is missing or malformed. */
+async function readJsonBody(req) {
+  try {
+    const raw = await readBody(req);
+    const obj = JSON.parse(raw);
+    return obj && typeof obj === 'object' ? obj : {};
+  } catch { return {}; }
+}
+
+/**
+ * The address a request came from, for rate limiting sign-in attempts.
+ *
+ * Behind a Cloudflare tunnel every request arrives from the tunnel itself, so
+ * the socket address would put every player in the world in one bucket. The
+ * forwarded headers are trusted for this ONE purpose: the worst a spoofed value
+ * can do is spread an attacker's own guesses across more buckets, which is a
+ * weaker rate limit and never someone else's lockout.
+ */
+function clientIp(req) {
+  const cf = req.headers['cf-connecting-ip'];
+  if (cf) return String(Array.isArray(cf) ? cf[0] : cf);
+  const fwd = req.headers['x-forwarded-for'];
+  if (fwd) return String(Array.isArray(fwd) ? fwd[0] : fwd).split(',')[0].trim();
+  return req.socket.remoteAddress || '?';
 }
 
 async function serveStatic(req, res, pathname) {
@@ -290,14 +280,70 @@ const server = createServer(async (req, res) => {
     const url = new URL(req.url, 'http://localhost');
     const p = url.pathname;
 
+    // --- accounts ---------------------------------------------------------
+    //
+    // Four verbs and no more: who am I, register, sign in, sign out -- plus a
+    // password change, because the alternative to offering one is a player with
+    // no way to fix a password they have given away.
+    if (p === '/api/auth/me' && req.method === 'GET') {
+      const a = accountFor(req);
+      sendJson(res, 200, { ok: true, account: Accounts.publicView(a) });
+      return;
+    }
+
+    if (p.startsWith('/api/auth/') && req.method === 'POST') {
+      const body = await readJsonBody(req);
+      const secure = isSecure(req);
+
+      if (p === '/api/auth/register') {
+        const out = await accounts.register(body);
+        if (out.error) { sendJson(res, 400, { ok: false, ...out }); return; }
+        send(res, 200, JSON.stringify({ ok: true, account: Accounts.publicView(out.account) }), {
+          'Content-Type': 'application/json; charset=utf-8',
+          'Set-Cookie': Accounts.cookieHeader(accounts.issue(out.account.id), { secure }),
+        });
+        return;
+      }
+
+      if (p === '/api/auth/login') {
+        const out = await accounts.login(body, clientIp(req));
+        if (out.error) { sendJson(res, 401, { ok: false, ...out }); return; }
+        send(res, 200, JSON.stringify({ ok: true, account: Accounts.publicView(out.account) }), {
+          'Content-Type': 'application/json; charset=utf-8',
+          'Set-Cookie': Accounts.cookieHeader(accounts.issue(out.account.id), { secure }),
+        });
+        return;
+      }
+
+      if (p === '/api/auth/logout') {
+        send(res, 200, JSON.stringify({ ok: true }), {
+          'Content-Type': 'application/json; charset=utf-8',
+          'Set-Cookie': Accounts.cookieHeader('', { secure, clear: true }),
+        });
+        return;
+      }
+
+      if (p === '/api/auth/password') {
+        const a = accountFor(req);
+        if (!a) { sendJson(res, 401, { ok: false, error: 'Not signed in.' }); return; }
+        const out = await accounts.changePassword(a.id, body);
+        if (out.error) { sendJson(res, 400, { ok: false, ...out }); return; }
+        sendJson(res, 200, { ok: true });
+        return;
+      }
+    }
+
     // Whole store, for the client to hydrate from on boot. Also tells the client
     // who it is signed in as, so it can show that and offer a log-out.
     if (p === '/api/kv' && req.method === 'GET') {
-      const user = await identify(req);
+      const account = accountFor(req);
+      const user = bucketFor(req);
       await loadBucket(user);
       sendJson(res, 200, {
         ok: true, data: publicData(user),
-        user, authed: user !== 'local',
+        user: account ? account.username : 'local',
+        authed: !!account,
+        account: Accounts.publicView(account),
       });
       return;
     }
@@ -308,7 +354,7 @@ const server = createServer(async (req, res) => {
     if (m) {
       const key = decodeURIComponent(m[1]);
       if (key === '_user') { sendJson(res, 403, { ok: false, error: 'reserved' }); return; }
-      const user = await identify(req);
+      const user = bucketFor(req);
       const bucket = await loadBucket(user);
       if (req.method === 'PUT') {
         bucket[key] = await readBody(req);
@@ -343,12 +389,31 @@ const server = createServer(async (req, res) => {
   }
 });
 
+// --- the multiplayer socket --------------------------------------------------
+//
+// One endpoint, /ws, and it is the only place a match is ever spoken to. The
+// cookie is checked HERE and nowhere after: a socket is bound to the account
+// that opened it for its whole life, so no message it later carries can claim
+// to be from somebody else.
+server.on('upgrade', (req, socket, head) => {
+  const url = new URL(req.url, 'http://localhost');
+  if (url.pathname !== '/ws') { socket.destroy(); return; }
+  const account = accountFor(req);
+  if (!account) {
+    // Refused before the handshake, so the browser sees a plain 401 and the
+    // client can say "sign in to play together" rather than "connection lost".
+    socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
+    socket.destroy();
+    return;
+  }
+  const conn = accept(req, socket, head);
+  if (conn) lobby.attach(conn, account);
+});
+
 await mkdir(DATA_DIR, { recursive: true }).catch(() => {});
 await migrateLegacy();
-if (ACCESS_ISS) await refreshJwks();   // warm the key cache when Access is on
+await accounts.load();
 server.listen(PORT, () => {
-  const mode = ACCESS_ISS ? `Cloudflare Access (${ACCESS_TEAM})`
-    : DEV_ID_HEADER ? 'dev identity header' : 'single shared profile';
   console.log(`[fiefdom] serving ${STATIC_DIR} on :${PORT}, data in ${DATA_DIR}`);
-  console.log(`[fiefdom] logins: ${mode}`);
+  console.log(`[fiefdom] accounts: ${accounts.count} registered; multiplayer on /ws`);
 });

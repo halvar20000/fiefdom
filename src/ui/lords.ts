@@ -28,6 +28,24 @@ export interface Seat {
   z: number;
 }
 
+/**
+ * A fixed roster to seat, instead of the "pick your enemies" screen.
+ *
+ * Multiplayer already knows who is playing -- the lobby decided it -- so the
+ * host is not choosing opponents here, only ground. With a plan the screen
+ * loses its Add/Remove buttons and its difficulty picker and gains one row per
+ * participant, named and coloured as they will be in the game.
+ */
+export interface SeatPlan {
+  /** One per required seat, in the order the match expects them back. */
+  labels: string[];
+  /** CSS colour per seat, matching the banner each will fly. */
+  colours: string[];
+  title: string;
+  sub: string;
+  action: string;
+}
+
 /** Who is playing, and from where. Slot 0 is always the human. */
 export interface LordSetup {
   you: Seat;
@@ -101,7 +119,7 @@ const CSS = `
  * Resolves with the setup, or null if the player went back to the map list.
  */
 export function lordScreen(
-  map: MapDef, difficulty: Difficulty,
+  map: MapDef, difficulty: Difficulty, plan: SeatPlan | null = null,
 ): Promise<LordSetup | null> {
   return new Promise(resolve => {
     const style = document.createElement('style');
@@ -113,11 +131,11 @@ export function lordScreen(
     document.body.appendChild(root);
 
     const h1 = document.createElement('h1');
-    h1.textContent = map.name.toUpperCase();
+    h1.textContent = plan ? plan.title : map.name.toUpperCase();
     root.appendChild(h1);
     const sub = document.createElement('div');
     sub.className = 'sub';
-    sub.textContent = 'CHOOSE YOUR ENEMIES · CHOOSE YOUR GROUND';
+    sub.textContent = plan ? plan.sub : 'CHOOSE YOUR ENEMIES · CHOOSE YOUR GROUND';
     root.appendChild(sub);
 
     // The map itself, obtained exactly as the game will obtain it: generated
@@ -202,10 +220,25 @@ export function lordScreen(
     // The human is auto-placed exactly where the game would have put him, so
     // the default opening is the one that was there before this screen existed.
     const you = custom?.start ?? findStartSite(field, shape.groundType);
-    const seats: (Seat | null)[] = [you, null, null, null];
+    const seats: (Seat | null)[] = plan
+      ? [you, ...Array<Seat | null>(plan.labels.length - 1).fill(null)]
+      : [you, null, null, null];
     // A painted map carries its author's keeps. Those are a statement, so they
     // seed the screen rather than being replaced by an automatic spread.
     (custom?.keeps ?? []).slice(0, 3).forEach((k, i) => { if (k) seats[i + 1] = k; });
+
+    /**
+     * How far apart keeps must sit.
+     *
+     * Forty-two tiles is right for a player and three rivals. A full
+     * multiplayer map can want ten castles, and ten circles of that radius do
+     * not fit on two hundred tiles -- the search then finds nothing, and the
+     * screen opens with seats it cannot fill. So the requirement relaxes with
+     * the crowd, down to a floor that still keeps two keeps out of each other's
+     * catapult range.
+     */
+    const separation = Math.max(26, Math.min(MIN_SEPARATION,
+      Math.round(560 / Math.max(2, seats.length))));
 
     /** Somewhere buildable, far from every seat already taken. */
     function autoSeat(): Seat | null {
@@ -216,7 +249,7 @@ export function lordScreen(
         for (let x = 20; x < W - 20; x += 4) {
           if (!isBuildable(field, x - 1, z - 1, 5, 5) || !dryGround(x, z)) continue;
           const near = Math.min(...taken.map(s => Math.hypot(s.x - x, s.z - z)));
-          if (near < MIN_SEPARATION) continue;
+          if (near < separation) continue;
           // Farthest from the nearest neighbour, so lords spread out rather
           // than lining up along one edge.
           if (near > bestScore) { bestScore = near; best = { x, z }; }
@@ -227,7 +260,8 @@ export function lordScreen(
 
     // Seed the rivals with whatever the map suggests, so a player who just
     // wants the old behaviour presses BEGIN and gets it.
-    for (let i = 0; i < Math.min(map.lords, 3); i++) {
+    const wanted = plan ? plan.labels.length - 1 : Math.min(map.lords, 3);
+    for (let i = 0; i < wanted; i++) {
       if (seats[i + 1]) continue;          // the map already said where
       const s = autoSeat();
       if (s) seats[i + 1] = s;
@@ -268,7 +302,11 @@ export function lordScreen(
       });
     };
 
-    KEEP_COLOURS.forEach((c, i) => {
+    const roster = plan
+      ? plan.labels.map((name, i) => ({ name, css: plan.colours[i] ?? '#999' }))
+      : KEEP_COLOURS.map(c => ({ name: c.name, css: c.css }));
+
+    roster.forEach((c, i) => {
       const row = document.createElement('div');
       row.className = 'seat';
       const dot = document.createElement('span');
@@ -276,14 +314,15 @@ export function lordScreen(
       dot.style.background = c.css;
       const nm = document.createElement('span');
       nm.className = 'nm';
-      nm.textContent = i === 0 ? 'You' : c.name;
+      nm.textContent = plan ? c.name : (i === 0 ? 'You' : c.name);
       const at = document.createElement('span');
       at.className = 'at';
       row.append(dot, nm, at);
 
       // The human cannot be removed; a rival can be switched off entirely,
-      // which is how you choose the number of them.
-      if (i > 0) {
+      // which is how you choose the number of them. A planned roster is not
+      // the host's to edit -- the lobby settled it.
+      if (i > 0 && !plan) {
         const tog = document.createElement('button');
         tog.textContent = seats[i] ? 'Remove' : 'Add';
         tog.onclick = e => {
@@ -314,8 +353,11 @@ export function lordScreen(
 
     const hint = document.createElement('div');
     hint.className = 'hint';
-    hint.textContent = 'Click a lord, then click the map to move his keep. '
-      + 'Green and rock near a keep is what makes a start playable.';
+    hint.textContent = plan
+      ? 'Click a player, then click the map to move their keep. '
+        + 'Green and rock near a keep is what makes a start playable.'
+      : 'Click a lord, then click the map to move his keep. '
+        + 'Green and rock near a keep is what makes a start playable.';
     side.appendChild(hint);
     side.appendChild(warn);
 
@@ -334,7 +376,7 @@ export function lordScreen(
       diffBtns[d] = b;
       diffWrap.appendChild(b);
     }
-    side.appendChild(diffWrap);
+    if (!plan) side.appendChild(diffWrap);
 
     canvas.onclick = ev => {
       const r = canvas.getBoundingClientRect();
@@ -355,9 +397,9 @@ export function lordScreen(
         return;
       }
       const clash = seats.some((s, i) =>
-        s && i !== picking && Math.hypot(s.x - x, s.z - z) < MIN_SEPARATION);
+        s && i !== picking && Math.hypot(s.x - x, s.z - z) < separation);
       if (clash) {
-        warn.textContent = `Keep them at least ${MIN_SEPARATION} tiles apart.`;
+        warn.textContent = `Keep them at least ${separation} tiles apart.`;
         return;
       }
       warn.textContent = '';
@@ -379,8 +421,13 @@ export function lordScreen(
 
     const go = document.createElement('button');
     go.className = 'go';
-    go.textContent = 'BEGIN';
+    go.textContent = plan ? plan.action : 'BEGIN';
     go.onclick = () => {
+      if (plan && seats.some(s => !s)) {
+        warn.textContent = 'Every player needs a keep. Click an empty row, '
+          + 'then click the map.';
+        return;
+      }
       leave();
       resolve({
         you: seats[0]!,

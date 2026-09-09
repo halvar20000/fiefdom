@@ -1,9 +1,10 @@
 # Installing Fiefdom on Unraid
 
-Fiefdom runs entirely in your browser. The container is a small web server
-handing over static files and keeping your saves, so there is **no database, no
-API key and no account to create** — set a port, add a folder for your saves,
-start it, and play.
+Fiefdom runs in your browser. The container is a small web server handing over
+static files, keeping your saves, and — when you want to play with other people
+— holding the accounts and passing messages between players. There is **no
+database and no API key**: set a port, add a folder for your saves, start it,
+and play. An account is only needed to play against other people.
 
 ## Community Applications
 
@@ -39,7 +40,8 @@ docker run -d --name fiefdom -p 8080:80 --restart unless-stopped \
 
 **On the server, in `/data`** — map that to a host folder (the template
 defaults it to `/mnt/user/appdata/fiefdom`) and your three save slots and every
-custom map are stored there as a single `store.json`.
+custom map are stored there, under `users/`: one file for the shared profile,
+and one per registered player.
 
 That means:
 
@@ -62,71 +64,97 @@ Two things worth knowing:
 > which is the same trust boundary the game already had. Keep it on your LAN or
 > behind your own access control, as below.
 
-## Separate logins, separate saves (optional)
+## Accounts, and playing together
 
-By default everyone who reaches the server shares one set of save slots. If more
-than one person plays — say you and your kids — you can give each their own
-private saves, gated by a login, using **Cloudflare Access** (free, part of
-Cloudflare Zero Trust). Cloudflare does the actual login at the edge; the game
-never sees a password.
+By default anyone who reaches the server can play alone, and everybody shares
+one set of save slots. Registering an account changes both of those things:
 
-**1. Put Access in front of the hostname.**
-In the Cloudflare **Zero Trust** dashboard → **Access → Applications → Add an
-application → Self-hosted**. Set the application domain to your game's hostname
-(e.g. `fiefdom.example.com`). Add a **policy** that *allows* the emails who may
-play (an "Emails" rule listing you and your family). Save.
+- **your saves become your own**, kept under `/data/users/` and invisible to
+  everyone else;
+- **you can join a multiplayer match**, which needs a name for the other
+  players to see.
 
-**2. Find two values** from that application's **Overview**:
-- your **team domain** — the part before `.cloudflareaccess.com` in your team's
-  URL (e.g. `smarthomeworld68`);
-- the **Application Audience (AUD)** tag.
+There is nothing to configure. Click **MULTIPLAYER** on the title screen and
+the game asks for a username, an email address and a password. The email is an
+identifier and a way to reach a player — **no mail is ever sent**, there is no
+verification link to wait for and no SMTP server to set up. Passwords are
+stored as a scrypt hash; the session is a cookie the server signs with a key it
+keeps in `/data`.
 
-**3. Give them to the container** as environment variables (the Unraid template
-has fields for both):
+> **Back up `/data`.** It now holds `accounts.json` and `session-secret`
+> alongside the saves. Losing the folder means everyone registers again.
 
-| Variable | Value |
+Single-player never asks for any of this. It works exactly as it did.
+
+### Playing a match
+
+One player creates the match and is its host; the others join from the list.
+The host picks:
+
+| Setting | What it does |
 |---|---|
-| `ACCESS_TEAM_DOMAIN` | your team domain, e.g. `smarthomeworld68` |
-| `ACCESS_AUD` | the AUD tag from step 2 |
+| **Map** | Any shipped map, or one drawn in the editor. |
+| **Sides** | *Every lord for himself*, or *Allies*. Either way each player can change their own team number in the lobby, so 2v2 is a matter of two people picking the same number. |
+| **Players** | Two to four. |
+| **AI lords** | Up to four more castles, played by the same AI as single-player, at the difficulty the host sets. |
 
-```bash
-docker run -d --name fiefdom -p 8080:80 --restart unless-stopped \
-  -v /mnt/user/appdata/fiefdom:/data \
-  -e ACCESS_TEAM_DOMAIN=smarthomeworld68 \
-  -e ACCESS_AUD=<your-aud-tag> \
-  ghcr.io/halvar20000/fiefdom:latest
-```
+When everyone has pressed **READY**, the host places one keep per player on the
+map — the same placement screen a solo game uses — and the match begins.
 
-That is it. Now each person, after logging in through Cloudflare, gets their own
-save slots and custom maps — the server verifies Cloudflare's signed token and
-keeps each email's data in its own file under `/data/users/`. The title screen
-shows who is signed in, with a **Log out** link.
+Things worth knowing:
 
-Good to know:
+- **A match runs at one speed.** Pause and fast-forward are off: each player's
+  browser runs its own castle, so one player at 3× would simply grow three
+  times as fast as the man he is fighting. **Esc** still opens the menu, but the
+  war goes on behind it.
+- **Matches cannot be saved.** A save is one castle's worth of a world three
+  other people are also living in, so the slots are hidden during a match.
+- **A dropped connection keeps your seat.** The server holds it, the client
+  redials, and your castle keeps running throughout — what stops is knowing what
+  the others are doing. **Closing the tab is leaving**, though: the world is in
+  the browser, and reloading the page starts over.
+- **Press Enter to talk** during a match. The panel on the left also carries a
+  connection light, so "nobody is doing anything" and "the line is down" do not
+  look alike.
 
-- **The server only trusts a real, Cloudflare-signed token.** It checks the
-  signature against Cloudflare's keys, plus the expiry, issuer and AUD — a forged
-  or copied header does not work. Set both variables; the AUD is what ties tokens
-  to *this* app rather than any app on your team.
-- **On the LAN, bypassing Cloudflare, there is no login** — those visits share a
-  single `local` profile. That `local` profile is also where your *existing*
-  shared saves move to when you upgrade, so they are not lost; reach them by
-  playing over the LAN, or start fresh under your login.
-- Leave the two variables unset and nothing changes: one shared profile, as
-  before.
+### How much the server does
+
+Still almost nothing. Every castle is simulated by its own player's browser,
+and the server passes messages between them without looking inside — a few tens
+of kilobytes a second for a four-player match. It does not simulate the game.
+
+The honest consequence of that design: **a player who edits their own client
+could lie about their own castle.** There is no server-side referee to catch it.
+For a game you host for people you know, that is the same trust boundary the
+save API already had; it is not a game to run for strangers.
 
 ## Reaching it from outside your network
 
 A **Cloudflare Tunnel** is the tidy way: no ports forwarded and TLS handled for
 you. Point the tunnel at `http://<tower-ip>:8080`.
 
-Nothing in Fiefdom needs WebSockets or any special protocol today — it is
-plain HTTP — so any reverse proxy will do.
+**Multiplayer needs WebSockets.** A Cloudflare Tunnel passes them through with
+no configuration; so does Caddy, and so does Traefik. nginx does **not** by
+default — it needs the upgrade headers forwarded:
 
-> If you expose it publicly, remember there are no accounts. Anyone with the
-> address can play — and can read or overwrite the shared saves in `/data`, since
-> the save API is unauthenticated. Put it behind Cloudflare Access or your
-> reverse proxy's auth if that matters to you.
+```nginx
+location / {
+    proxy_pass http://<tower-ip>:8080;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+```
+
+Without those, single-player works and the lobby says "connection lost —
+retrying", which is a confusing way to discover a proxy setting.
+
+> If you expose it publicly, anyone with the address can play a single-player
+> game and can read or overwrite the **shared** save profile, since that profile
+> is unauthenticated by design. Registered players' saves are private to them.
+> Put the whole thing behind your reverse proxy's auth if even that matters.
 
 ## Requirements
 
@@ -138,6 +166,8 @@ plain HTTP — so any reverse proxy will do.
 ## Server load
 
 Essentially none. The simulation, the pathfinding, the rival lords and the
-rendering all happen in the visitor's browser. The container is a small Node
-server handing over files and reading/writing a few kilobytes of saves, and
-will sit near zero CPU.
+rendering all happen in the visitor's browser — in a multiplayer match too,
+where each player's browser runs its own castle and the server only relays what
+they say about it. The container is a small Node server handing over files,
+reading and writing a few kilobytes of saves, and forwarding a few tens of
+kilobytes a second per match. It will sit near zero CPU.

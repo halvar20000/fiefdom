@@ -1,8 +1,9 @@
 # Fiefdom is a client-side game: the browser does the simulation and the
-# rendering. The container serves the built files -- and now also keeps saved
-# games and custom maps in a /data volume, so they survive a container update
-# instead of living only in one browser's localStorage. That storage is the one
-# reason there is a small Node server here rather than plain nginx.
+# rendering, in multiplayer as much as alone. The container serves the built
+# files, keeps saved games and custom maps in a /data volume so they survive an
+# update, holds the player accounts, and puts two to four of those players into
+# the same match. All of that is why there is a small Node server here rather
+# than plain nginx -- and all of it is Node built-ins, with no dependencies.
 
 # ---- build ----
 FROM node:20-alpine AS build
@@ -25,11 +26,17 @@ RUN npm run build
 FROM node:20-alpine
 WORKDIR /app
 # Just the built site and the little dependency-free server. No node_modules --
-# server.mjs uses only Node built-ins, so there is nothing to install.
+# it uses only Node built-ins, so there is nothing to install.
 COPY --from=build /app/dist ./dist
-COPY docker/server.mjs ./server.mjs
-# Saved games and custom maps land here. Map it to a host folder (Unraid
-# appdata) and it outlives every future container update.
+# The whole docker/ folder, not just server.mjs: the server grew three siblings
+# when multiplayer arrived (accounts.mjs, ws.mjs, lobby.mjs) and it imports
+# them by relative path. Copying one file built an image that started and then
+# died on the first import, which is a slow way to find out.
+COPY docker/*.mjs ./
+# Saved games, custom maps, player accounts and the key that signs their
+# sessions all land here. Map it to a host folder (Unraid appdata) and it
+# outlives every future container update -- and losing it means everyone has to
+# register again.
 ENV DATA_DIR=/data
 VOLUME /data
 EXPOSE 80

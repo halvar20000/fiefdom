@@ -180,6 +180,7 @@ const CSS = `
   border: 1px solid rgba(196,162,96,.20); border-radius: 3px;
 }
 #controls .seg button.on { background: rgba(240,200,105,.22); border-color: var(--gold); color: #fff; }
+#controls .seg button:disabled { opacity: .35; cursor: default; }
 #controls .hint { font-size: 10px; opacity: .55; line-height: 1.5; }
 
 #market { padding: 9px 11px; width: 392px; display: none;
@@ -1288,7 +1289,11 @@ export class Hud {
 
     // Speed leads the panel: it is the one setting a player reaches for in the
     // middle of something else, whereas rations and taxes are set and left.
-    this.el('div', this.controls, 'lbl').textContent = 'Speed';
+    // In a match it is not a setting at all -- everyone runs at one speed, and
+    // a row of buttons that quietly do nothing is worse than a row that says
+    // why it cannot be used.
+    this.el('div', this.controls, 'lbl').textContent =
+      this.state.speedLocked ? 'Speed — fixed in a match' : 'Speed';
     const sp = this.el('div', this.controls, 'seg');
     SPEED_LEVELS.forEach((lvl, i) => {
       const b = document.createElement('button');
@@ -1298,6 +1303,7 @@ export class Hud {
         ? `${lvl.label} — ${lvl.mult}x speed`
         : `${lvl.label} — the world stops, the camera does not (Space)`;
       b.onclick = () => { this.state.setSpeed(i); };
+      b.disabled = this.state.speedLocked;
       sp.appendChild(b);
     });
 

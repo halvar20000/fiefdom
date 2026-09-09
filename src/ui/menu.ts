@@ -3,6 +3,7 @@ import { listSlots, setBootIntent, playTime, savedWhen } from '../game/save';
 import { listMaps, deleteMap, defOf, type CustomMap } from '../game/custom';
 import { versionButton, VERSION_CSS } from './whatsnew';
 import { currentUser, isSignedIn, store } from '../game/backend';
+import { logout, multiplayerAvailable } from '../net/session';
 import { type Difficulty } from '../game/lord';
 import { lordScreen, type LordSetup } from './lords';
 
@@ -24,7 +25,8 @@ function escapeHtml(s: string): string {
  */
 export type MenuChoice =
   | { kind: 'play'; map: MapDef; setup: LordSetup }
-  | { kind: 'edit'; edit: CustomMap | null };
+  | { kind: 'edit'; edit: CustomMap | null }
+  | { kind: 'multiplayer' };
 
 /**
  * The title screen: pick a map, then play.
@@ -100,6 +102,15 @@ const CSS = `
 #menu .diff button:hover { background: rgba(84,66,36,.85); border-color: rgba(240,200,105,.55); }
 #menu .diff button.on { background: rgba(240,200,105,.22); border-color: var(--gold, #f0c869);
   color: #fff; font-weight: 600; }
+#menu .acts {
+  display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+  justify-content: center;
+}
+#menu .go.alt {
+  background: transparent; color: #f0c869;
+  border: 1px solid rgba(240,200,105,.6);
+}
+#menu .go.alt:hover { background: rgba(240,200,105,.12); }
 #menu .go {
   margin-top: 16px; padding: 12px 44px; font: inherit; font-size: 14px;
   letter-spacing: 3px; cursor: pointer; color: #10100e; background: #f0c869;
@@ -289,7 +300,23 @@ export function showMenu(): Promise<MenuChoice> {
       leave();
       resolve({ kind: 'play', map: chosen, setup });
     };
-    root.appendChild(go);
+
+    const acts = document.createElement('div');
+    acts.className = 'acts';
+    acts.appendChild(go);
+    root.appendChild(acts);
+
+    // Multiplayer, only where there is a server to host it. On the plain static
+    // build there is no /api, no accounts and no lobby, so the button is not
+    // shown at all rather than offered and then failing.
+    void multiplayerAvailable().then(ok => {
+      if (!ok || !document.body.contains(root)) return;
+      const mpBtn = document.createElement('button');
+      mpBtn.className = 'go alt';
+      mpBtn.textContent = 'MULTIPLAYER →';
+      mpBtn.onclick = () => { leave(); resolve({ kind: 'multiplayer' }); };
+      acts.appendChild(mpBtn);
+    });
 
     // Saved games, if there are any. Hidden entirely when there are none --
     // an empty "Saved games" heading on a first run is just noise.
@@ -324,16 +351,18 @@ export function showMenu(): Promise<MenuChoice> {
     ver.appendChild(versionButton());
     root.appendChild(ver);
 
-    // Who is signed in, when Cloudflare Access is in front. Each signed-in
-    // player has their own saves; the log-out link is Cloudflare's own.
+    // Who is signed in. An account is only needed to play against other
+    // people, but once there is one it also makes the saves private, so it is
+    // worth saying which is in force.
     if (isSignedIn() && currentUser()) {
       const who = document.createElement('div');
       who.className = 'note';
       who.innerHTML = `Signed in as <b>${escapeHtml(currentUser()!)}</b> — your saves are your own. `;
       const out = document.createElement('a');
-      out.textContent = 'Log out';
-      out.href = '/cdn-cgi/access/logout';
+      out.textContent = 'Sign out';
       out.style.color = 'var(--gold, #f0c869)';
+      out.style.cursor = 'pointer';
+      out.onclick = async () => { await logout(); location.reload(); };
       who.appendChild(out);
       root.appendChild(who);
     }
