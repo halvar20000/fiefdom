@@ -1,3 +1,5 @@
+import { fullscreenAvailable, isFullscreen, toggleFullscreen, onFullscreenChange }
+  from './fullscreen';
 import {
   BUILDINGS, BUILD_MENU, PRICES, RATIONS, RATION_LEVELS, TAX_LEVELS,
   RESOURCE_LABELS, ALL_RESOURCES, RESOURCE_BAR, FOOD_RESOURCES, goodName,
@@ -1373,6 +1375,25 @@ export class Hud {
     };
     this.syncSound = syncSound;
 
+    // Fullscreen sits with the standing settings for the same reason sound
+    // does. Offered only where the browser will actually do it -- on iOS it is
+    // a <video>-only feature, and a button that cannot work is worse than no
+    // button.
+    if (fullscreenAvailable()) {
+      this.el('div', this.controls, 'lbl').textContent = 'View';
+      const fs = this.el('div', this.controls, 'seg');
+      const fsBtn = document.createElement('button');
+      const syncFs = (on: boolean) => {
+        fsBtn.textContent = on ? 'Leave fullscreen' : 'Fullscreen';
+        fsBtn.classList.toggle('on', on);
+      };
+      fsBtn.onclick = () => { void toggleFullscreen().then(syncFs); };
+      fs.appendChild(fsBtn);
+      syncFs(isFullscreen());
+      // Also follow F11 and Escape, which change it behind the game's back.
+      onFullscreenChange(syncFs);
+    }
+
     // Soldier controls belong here, not only in the Barracks view. Box select
     // sat undiscovered behind a hint in a panel the player had no reason to
     // have open. It starts open for the same reason, and folds away with the
@@ -1395,7 +1416,8 @@ export class Hud {
       '<b>Troops:</b> click select &nbsp; <b>shift-drag</b> box<br>' +
       'double-click all of a kind &nbsp; right-click move<br>' +
       'right-click a <b>tower/gatehouse</b>, or a wall joined to one, to man it<br>' +
-      '<b>F</b> lights your pitch ditches &nbsp; <b>Esc</b> pause / save';
+      '<b>F</b> lights your pitch ditches &nbsp; <b>Shift-F</b> fullscreen<br>' +
+      '<b>Esc</b> pause / save';
   }
 
   /**

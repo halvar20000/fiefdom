@@ -5,6 +5,16 @@ import {
 } from './iso';
 
 /**
+ * How far inside the screen edge a map corner can be brought.
+ *
+ * 1 puts the corner tile exactly on the edge, which is reachable in the strict
+ * sense and useless in practice. Below 1 pulls it in far enough to look at,
+ * at the cost of showing that much more of what is beyond the map. 0.7 puts a
+ * corner roughly two thirds of the way out from the middle of the screen.
+ */
+const CORNER_REACH = 0.7;
+
+/**
  * Stronghold's camera: orthographic, four fixed 90-degree rotations, a couple of
  * zoom steps, pan by dragging or shoving the pointer at a screen edge.
  * No free rotation -- the sprites only exist from four angles.
@@ -37,7 +47,7 @@ export class IsoCamera {
     this.apply();
   }
 
-  /** Keep the whole VIEW inside the map, not merely its centre. */
+  /** Limit where the view may be pushed. See clampTarget for the rule. */
   setBounds(minX: number, maxX: number, minZ: number, maxZ: number): void {
     this.bounds = { minX, maxX, minZ, maxZ };
     this.clampTarget();
@@ -80,52 +90,87 @@ export class IsoCamera {
     this.apply();
   }
 
-  /** Ground-space bounding box of what is currently on screen. */
-  private viewBox(): { minX: number; maxX: number; minZ: number; maxZ: number } {
+  /**
+   * Keep the view on the map -- but never so strictly that part of the map
+   * cannot be looked at.
+   *
+   * The rule used to be "the whole view stays inside the map", which sounds
+   * right and quietly made the four corners of every map impossible to see at
+   * any zoom. The geometry, once written down, is not subtle:
+   *
+   * The camera looks along a 45-degree diagonal (ROTATIONS), so the square map
+   * is drawn as a diamond and the screen rectangle lands on the ground as a
+   * parallelogram turned 45 degrees to the world axes. Containing that
+   * parallelogram inside the map square constrains its axis-aligned BOUNDING
+   * BOX, which at 45 degrees is much bigger than the shape inside it -- and the
+   * corners of that bounding box are the one part of it that is not on the
+   * shape. To put the map's corner tile on screen, the view's bounding box
+   * corner has to sit ON that tile, which the old rule forbade by exactly the
+   * amount the box overshoots. So the corner was never reachable: not zoomed
+   * in, not zoomed out, not at any rotation. Zoomed out it was simply most
+   * obvious, because the unreachable margin scales with the view.
+   *
+   * What is clamped now is the view's CENTRE, into the map inset by a margin
+   * derived from how far the view reaches: far enough in that a normal pan
+   * shows no void, and never so far that a corner cannot be brought properly
+   * into shot. A corner of the map is a corner of the world, and looking at one
+   * means seeing some of what lies beyond it; that is the trade, and it is the
+   * right way round.
+   *
+   * Worked from the four projected screen corners rather than from the zoom and
+   * rotation. An analytic reach looked right and left two tiles of void at the
+   * top corner, because the target is not the centre of what you can see -- it
+   * projects about 32px below it. Projecting the corners cannot disagree with
+   * what is actually drawn, whatever that offset turns out to be. One pass is
+   * enough and there is no iteration: moving the target translates the whole
+   * view by the same vector, so the correction is exact.
+   */
+  private clampTarget(): void {
+    const b = this.bounds;
+    if (!Number.isFinite(b.minX)) return;   // unbounded, e.g. before setBounds
+
+    this.apply();                            // screenToGround needs the matrices
     const c = [
       this.screenToGround(0, 0, 0),
       this.screenToGround(this.viewW, 0, 0),
       this.screenToGround(this.viewW, this.viewH, 0),
       this.screenToGround(0, this.viewH, 0),
     ];
-    return {
-      minX: Math.min(...c.map(p => p.x)), maxX: Math.max(...c.map(p => p.x)),
-      minZ: Math.min(...c.map(p => p.z)), maxZ: Math.max(...c.map(p => p.z)),
-    };
-  }
+    // The middle of what is on screen, which is NOT the target.
+    const cx = (c[0].x + c[1].x + c[2].x + c[3].x) / 4;
+    const cz = (c[0].z + c[1].z + c[2].z + c[3].z) / 4;
 
-  /**
-   * Keep the whole view on the map, not merely its centre.
-   *
-   * Measured from the four screen corners rather than worked out from the zoom
-   * and rotation. An analytic reach looked right and left two tiles of void at
-   * the top corner, because the target is not exactly the centre of what you
-   * can see -- it projects 32px below it. Projecting the corners cannot
-   * disagree with what is actually drawn, whatever that offset turns out to be.
-   *
-   * The correction is a single pass because moving the target translates the
-   * whole view by the same amount: the second pass only confirms.
-   */
-  private clampTarget(): void {
-    const b = this.bounds;
-    if (!Number.isFinite(b.minX)) return;   // unbounded, e.g. before setBounds
-
-    for (let pass = 0; pass < 2; pass++) {
-      this.apply();                          // viewBox needs current matrices
-      const v = this.viewBox();
-      // Wider than the map: no legal position exists, so centre it and stop.
-      const dx = (v.maxX - v.minX) >= (b.maxX - b.minX)
-        ? (b.minX + b.maxX) / 2 - (v.minX + v.maxX) / 2
-        : v.minX < b.minX ? b.minX - v.minX
-        : v.maxX > b.maxX ? b.maxX - v.maxX : 0;
-      const dz = (v.maxZ - v.minZ) >= (b.maxZ - b.minZ)
-        ? (b.minZ + b.maxZ) / 2 - (v.minZ + v.maxZ) / 2
-        : v.minZ < b.minZ ? b.minZ - v.minZ
-        : v.maxZ > b.maxZ ? b.maxZ - v.maxZ : 0;
-      if (Math.abs(dx) < 1e-6 && Math.abs(dz) < 1e-6) break;
-      this.target.x += dx;
-      this.target.z += dz;
+    // How far the view reaches along its own two ground axes -- the directions
+    // a drag actually moves it in, which is why the margin is measured here
+    // rather than along the world axes.
+    const az = (ROTATIONS[this.rotation] * Math.PI) / 180;
+    const rightX = Math.cos(az), rightZ = -Math.sin(az);
+    const upX = Math.sin(az), upZ = Math.cos(az);
+    let reachRight = 0, reachUp = 0;
+    for (const p of c) {
+      const dx = p.x - cx, dz = p.z - cz;
+      reachRight = Math.max(reachRight, Math.abs(dx * rightX + dz * rightZ));
+      reachUp = Math.max(reachUp, Math.abs(dx * upX + dz * upZ));
     }
+
+    // The inset, and the whole fix in one line.
+    //
+    // Along the diagonal to a map corner, the view reaches min(right, up) / √2
+    // in world-axis terms -- the smaller of the two, because the corner lies
+    // where both axes must stretch to meet it. Insetting by exactly that puts
+    // the corner tile precisely on the screen edge; CORNER_REACH pulls it in
+    // off the edge so it can actually be looked at rather than just touched.
+    const inset = CORNER_REACH * Math.min(reachRight, reachUp) / Math.SQRT2;
+
+    // A map smaller than the inset has no legal position: centre it instead.
+    const fit = (v: number, lo: number, hi: number) =>
+      lo > hi ? (lo + hi) / 2 : Math.min(hi, Math.max(lo, v));
+    const wantX = fit(cx, b.minX + inset, b.maxX - inset);
+    const wantZ = fit(cz, b.minZ + inset, b.maxZ - inset);
+
+    this.target.x += wantX - cx;
+    this.target.z += wantZ - cz;
+    this.apply();
   }
 
   apply(): void {

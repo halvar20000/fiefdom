@@ -23,6 +23,26 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.55.0',
+    date: '2026-09-09',
+    headline: 'The corners of the map, and the whole screen.',
+    sections: [
+      {
+        title: 'Fixed',
+        items: [
+          'The four corners of every map can be looked at. They could not be \u2014 not zoomed out, not zoomed in, not at any rotation \u2014 and the reason was a rule that sounded right: keep the whole view inside the map. The camera looks along a diagonal, so the screen lands on the ground as a rectangle turned forty-five degrees, and holding THAT inside the map square actually constrains its bounding box, which at that angle is far bigger than the shape inside it. Putting a corner tile on screen needs the box\u2019s own corner to sit on that tile, which is precisely what the rule forbade. Measured across four corners, four rotations and four zoom levels: sixty-four of sixty-four unreachable before, sixty-four of sixty-four reachable now, none of them pinned to the edge of the screen.',
+          'What is held on the map now is the middle of the view, inset by how far the view reaches \u2014 far enough that ordinary panning shows no emptiness, and never so far that a corner cannot be brought properly into shot. Looking at the corner of a map does now show some of what lies beyond it, which is the honest way round: a corner of the map is a corner of the world.',
+        ],
+      },
+      {
+        title: 'Added',
+        items: [
+          'Fullscreen, the browser\u2019s own rather than a maximised window \u2014 under VIEW in the settings panel, or Shift-F. F11 does the same thing on a desktop keyboard and nowhere else, which is no use on a laptop whose function row is media keys, or on a tablet. Leaving by Escape or F11 is noticed too, so the button never disagrees with the screen. Not offered on iOS, where the browser will only do it for a video and a button that cannot work is worse than no button.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.54.0',
     date: '2026-09-09',
     headline: 'Other lords, and they are people.',

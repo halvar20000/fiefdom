@@ -41,6 +41,7 @@ import { multiplayer } from './ui/lobby';
 import { net } from './net/socket';
 import { accountScreen } from './ui/account';
 import { showMatchChat } from './ui/gamechat';
+import { toggleFullscreen, onFullscreenChange } from './ui/fullscreen';
 import type { Soldier } from './game/army';
 import type { NetBuilding, NetSoldier } from './net/protocol';
 import {
@@ -3306,6 +3307,13 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
                         : `${n} drawbridge${n > 1 ? 's' : ''} dropped`, 'info');
       }
     }
+    if (k === 'f' && e.shiftKey) {
+      // Shift-F rather than F: F already lights the pitch ditches, and that is
+      // a key you hit in a hurry with an enemy in the trench.
+      e.preventDefault();
+      void toggleFullscreen();
+      return;
+    }
     if (k === 'f') {
       const n = lightPitch();
       if (!n) {
@@ -3372,6 +3380,10 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     iso.setViewport(viewOverride ? viewOverride.w : w, viewOverride ? viewOverride.h : h);
   };
   window.addEventListener('resize', resize);
+  // Entering or leaving fullscreen changes the viewport, and the resize event
+  // for it can arrive a frame or two late -- long enough to draw the world at
+  // the old size against the new canvas, which reads as the camera jumping.
+  onFullscreenChange(resize);
   resize();
 
   /** Screen pixel -> tile, refined once against the terrain height there. */
