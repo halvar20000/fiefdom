@@ -23,6 +23,21 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.56.0',
+    date: '2026-09-09',
+    headline: 'Push the pointer at the edge and the map follows.',
+    sections: [
+      {
+        title: 'Added',
+        items: [
+          'Edge scrolling. Shove the pointer at the side of the screen and the map moves \u2014 which is what the camera\u2019s own description has claimed since it was written, and what the cursor keys were the only way to do. It eases in across the last twenty pixels rather than lurching the moment you touch the band.',
+          'It holds off when it would get in the way: while a button is down, because a drag is already panning, a box selection is being drawn or a wall run is being laid out, and scrolling under any of those moves the thing you are aiming at. Hovering a side panel does not scroll either \u2014 that is you reaching for a button \u2014 but shoving PAST the panel to the bare strip at the very edge does, so the right-hand side works like the other three. Leaving the window or losing focus parks it, so reaching for a second monitor no longer drags the map along the way.',
+          'A switch for it under VIEW, beside fullscreen, remembered per browser. Edge scrolling is the one camera control people actively dislike, and a game that insists on it is a game you fight. Hidden on touch-only devices, where a finger has no hover and it could never happen anyway.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.55.0',
     date: '2026-09-09',
     headline: 'The corners of the map, and the whole screen.',

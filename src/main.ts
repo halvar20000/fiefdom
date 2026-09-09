@@ -109,6 +109,20 @@ const GATHER_SPACING = 0.85;
  */
 const MAX_SIM_STEP = 0.1;
 
+/**
+ * How close to the window edge the pointer scrolls the map, in pixels.
+ *
+ * The side panels sit 12px in from the edge (#leftcol / #rightcol), so the
+ * outermost strip of every edge is always bare canvas. That is what makes the
+ * band work on the right at all: shoving the pointer at the edge lands it past
+ * the controls panel, while moving it deliberately ONTO the panel does not
+ * scroll -- which is what you want when you are reaching for a button.
+ */
+const EDGE_BAND = 20;
+/** Pan speed at the edge, as a multiple of the keyboard's. Eases in over the band. */
+const EDGE_SPEED_MIN = 0.5;
+const EDGE_SPEED_MAX = 1.5;
+
 interface Decoration {
   name: string;
   x: number;
@@ -2933,6 +2947,17 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
 
   let dragging = false, dragMoved = false, lastX = 0, lastY = 0;
   let mouseX = 0, mouseY = 0;
+
+  // Edge scrolling needs the pointer wherever it is, not only over the canvas:
+  // the whole point is the last few pixels at the side of the screen. Tracked
+  // separately from mouseX/mouseY, which are the position ON the world and are
+  // deliberately not updated while the pointer is over a panel.
+  let edgeX = -1, edgeY = -1;
+  /** Over a HUD panel rather than the world. #ui is pointer-events:none, so
+   *  anything that is not the canvas is a panel, a notice or an overlay. */
+  let edgeOverUi = false;
+  /** A real pointing device. A finger has no hover, so it must never do this. */
+  let edgePointer = false;
   // Touch has no double-click event to speak of, so a second quick tap near the
   // first is detected by hand -- the "select all of this kind" idiom otherwise
   // has no way in on a phone.
@@ -3085,6 +3110,19 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     }
     placement.dragFrom = null;
   });
+  // On the WINDOW, not the canvas: the band this feeds is at the edge of the
+  // screen, and over the side panels the canvas hears nothing.
+  window.addEventListener('pointermove', e => {
+    edgeX = e.clientX; edgeY = e.clientY;
+    edgePointer = e.pointerType !== 'touch';
+    edgeOverUi = e.target !== canvas;
+  }, { passive: true });
+  // Leaving the window or losing focus parks it. Without this, flicking the
+  // pointer off to another monitor leaves the map scrolling for ever.
+  const stopEdge = () => { edgeX = -1; edgeY = -1; };
+  document.addEventListener('mouseleave', stopEdge);
+  window.addEventListener('blur', stopEdge);
+
   canvas.addEventListener('pointermove', e => {
     mouseX = e.clientX; mouseY = e.clientY;
     if (boxing) {
@@ -3911,6 +3949,29 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     if (keys.has('arrowright') || keys.has('d')) iso.panByPixels(pan, 0);
     if (keys.has('arrowup') || keys.has('w')) iso.panByPixels(0, -pan);
     if (keys.has('arrowdown') || keys.has('s')) iso.panByPixels(0, pan);
+
+    // Shove the pointer at the edge of the screen and the map follows -- what
+    // the camera's own description has always claimed it did.
+    //
+    // Off while a button is down: a drag is already panning, a box selection is
+    // being drawn, and a wall run is being laid out. Scrolling under any of the
+    // three moves the thing the player is aiming at.
+    if (hud.edgeScroll && edgePointer && !edgeOverUi && !dragging && !boxing
+        && edgeX >= 0) {
+      // How far into the band, 0 at its inner lip and 1 at the very edge, so
+      // the map eases into motion instead of jumping the moment you touch it.
+      const depth = (near: number) =>
+        near >= EDGE_BAND ? 0 : 1 - Math.max(0, near) / EDGE_BAND;
+      const w = window.innerWidth, h = window.innerHeight;
+      const dLeft = depth(edgeX), dRight = depth(w - 1 - edgeX);
+      const dUp = depth(edgeY), dDown = depth(h - 1 - edgeY);
+      const ex = dRight - dLeft, ey = dDown - dUp;
+      if (ex || ey) {
+        const push = Math.min(1, Math.max(Math.abs(ex), Math.abs(ey)));
+        const speed = pan * (EDGE_SPEED_MIN + (EDGE_SPEED_MAX - EDGE_SPEED_MIN) * push);
+        iso.panByPixels(ex * speed, ey * speed);
+      }
+    }
 
     // --- simulation ---
     // Real seconds scaled by the chosen speed: 0 at Pause, 3x at Fast. The
