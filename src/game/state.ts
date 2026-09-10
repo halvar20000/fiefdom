@@ -55,6 +55,31 @@ export interface Notice {
   text: string;
   at: number;
   kind: 'info' | 'warn';
+  /**
+   * Tells one notice from the next, so the HUD can leave the ones already on
+   * screen alone.
+   *
+   * The notices used to be rebuilt from scratch every frame, which was free
+   * when they were text and fatal the moment they became clickable: a press
+   * and a release sixteen milliseconds apart land on two different elements
+   * and the browser reports no click at all.
+   */
+  id: number;
+  /**
+   * Where on the map this is about, if it is about anywhere.
+   *
+   * A point rather than a building: a notice outlives the thing it names --
+   * "your granary has been destroyed" is precisely the case where there is no
+   * building left to hold on to -- and where it happened is what the player
+   * wants to be shown either way.
+   */
+  where?: { x: number; z: number };
+}
+
+/** The middle of a building's footprint, for a notice that is about it. */
+export function siteOf(b: PlacedBuilding): { x: number; z: number } {
+  const [w, d] = b.def.footprint;
+  return { x: b.x + w / 2, z: b.z + d / 2 };
 }
 
 /** The band a popularity factor belongs to, for grouping in the history chart. */
@@ -207,10 +232,13 @@ export class GameState {
    */
   onNotice: (text: string, kind: Notice['kind']) => void = () => {};
 
-  notify(text: string, kind: Notice['kind'] = 'info'): void {
+  private nextNoticeId = 1;
+
+  notify(text: string, kind: Notice['kind'] = 'info',
+         where?: { x: number; z: number }): void {
     const last = this.notices[this.notices.length - 1];
     if (last && last.text === text && this.elapsed - last.at < 12) return;
-    this.notices.push({ text, at: this.elapsed, kind });
+    this.notices.push({ text, at: this.elapsed, kind, id: this.nextNoticeId++, where });
     if (this.notices.length > 6) this.notices.shift();
     this.onNotice(text, kind);
   }

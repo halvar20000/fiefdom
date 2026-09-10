@@ -405,6 +405,15 @@ const CSS = `
 #notices div { padding: 5px 11px; border-radius: 3px; font-size: 11px;
   background: rgba(24,19,12,.93); border: 1px solid var(--edge); }
 #notices div.warn { color: var(--warn); border-color: rgba(226,121,79,.45); }
+/* A notice that knows where it happened takes the click that goes there. The
+   rest stay transparent to the pointer: #ui is pointer-events:none precisely
+   so the map underneath a message is still the map. */
+#notices div.go { pointer-events: auto; cursor: pointer; padding-right: 22px;
+  position: relative; }
+#notices div.go::after { content: '\\27A4'; position: absolute; right: 8px;
+  top: 50%; transform: translateY(-50%); font-size: 9px; opacity: .55; }
+#notices div.go:hover { border-color: var(--gold); }
+#notices div.go:hover::after { opacity: 1; }
 
 /* Narrow windows: the panels are sized for a desktop, and at laptop widths
    they otherwise overlap each other and cover the map. */
@@ -582,6 +591,8 @@ export class Hud {
   private miniH = 1;
   /** Where the player clicked, in tiles. Wired up by main.ts. */
   onMinimapPick: (x: number, z: number) => void = () => {};
+  /** Clicking a notice that knows where it happened. */
+  onNoticePick: (x: number, z: number) => void = () => {};
   /** Reused between frames, so a steady state allocates nothing. */
   private flagPool: HTMLElement[] = [];
   /** Which category is open, and which to reopen when B is pressed. */
@@ -607,6 +618,12 @@ export class Hud {
   private leftCol!: HTMLElement;
   private rightCol!: HTMLElement;
   private notices!: HTMLElement;
+  /**
+   * The ids currently on screen, so the notices are rebuilt only when the set
+   * of them changes. See Notice.id: rebuilding every frame means a press and a
+   * release land on two different elements and the click never happens.
+   */
+  private noticeSig = '';
   private pausedBanner!: HTMLElement;
   /** Last `top` written to the banner, so a steady frame writes no style. */
   private pausedTop = 0;
@@ -670,6 +687,13 @@ export class Hud {
     this.notices = document.createElement('div');
     this.notices.id = 'notices';
     this.root.appendChild(this.notices);
+    // Delegated, so it survives the list being rewritten under it.
+    this.notices.addEventListener('click', e => {
+      const el = (e.target as HTMLElement).closest('[data-go]') as HTMLElement | null;
+      if (!el) return;
+      const [x, z] = el.dataset.go!.split(',').map(Number);
+      this.onNoticePick(x, z);
+    });
 
     this.tip = document.createElement('div');
     this.tip.id = 'tip';
@@ -2052,8 +2076,15 @@ export class Hud {
 
     // notices
     const live = s.notices.filter(n => s.elapsed - n.at < 6);
-    this.notices.innerHTML = live.map(
-      n => `<div class="${n.kind}">${n.text}</div>`).join('');
+    const sig = live.map(n => n.id).join(',');
+    if (sig !== this.noticeSig) {
+      this.noticeSig = sig;
+      this.notices.innerHTML = live.map(n => {
+        const go = n.where
+          ? ` data-go="${n.where.x},${n.where.z}" title="Click to look at it"` : '';
+        return `<div class="${n.kind}${n.where ? ' go' : ''}"${go}>${n.text}</div>`;
+      }).join('');
+    }
 
     void RATIONS;
   }

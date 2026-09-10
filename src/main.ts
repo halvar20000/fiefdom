@@ -13,7 +13,7 @@ import {
   TILE_PX_W, unitDirectionIndex, footprintDepthBias, depthKey, spriteAnchor,
   cameraDirection,
 } from './engine/iso';
-import { GameState, type PlacedBuilding } from './game/state';
+import { GameState, siteOf, type PlacedBuilding } from './game/state';
 import { PathGrid } from './game/pathfind';
 import { Herd, HUNT_RADIUS } from './game/wildlife';
 import { Army, PLAYER, SWING_TIME, DEATH_TIME } from './game/army';
@@ -1193,7 +1193,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
           if (d < bestD) { bestD = d; bestIdx = i; }
         }
         if (bestIdx < 0 || bestD > TREE_SEARCH_RADIUS ** 2) {
-          state.notify('No trees near the woodcutter', 'warn');
+          state.notify('No trees near the woodcutter', 'warn', siteOf(b));
           return null;
         }
         decorations[bestIdx].claimedBy = w.id;
@@ -1213,7 +1213,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
 
         const quarry = herd.nearestFree(c.x, c.z, HUNT_RADIUS);
         if (!quarry) {
-          state.notify('No game near the hunter', 'warn');
+          state.notify('No game near the hunter', 'warn', siteOf(b));
           return null;
         }
         quarry.claimedBy = w.id;
@@ -1237,7 +1237,10 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
             if (d < bd) { bd = d; wx = x; wz = z; }
           }
         }
-        if (wx < 0) { state.notify('The fishery has no water to work', 'warn'); return null; }
+        if (wx < 0) {
+          state.notify('The fishery has no water to work', 'warn', siteOf(b));
+          return null;
+        }
         // the walkable land tile touching that water, nearest the hut
         let sx = -1, sz = -1, sbd = Infinity;
         for (const [dx, dz] of
@@ -1309,7 +1312,14 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
 
   hud.setIcons(atlas);
   buildMinimapGround();
-  hud.onMinimapPick = (x, z) => {
+  /**
+   * Put a point on the map in the middle of the screen.
+   *
+   * One function for the minimap and for a notice you can click, because they
+   * are asking the same thing -- show me that -- and a second copy of the
+   * clamp is a second thing to keep in step with the camera's bounds.
+   */
+  const lookAt = (x: number, z: number) => {
     iso.target.x = Math.max(0, Math.min(MAP_W, x));
     iso.target.z = Math.max(0, Math.min(MAP_H, z));
     // A zero pan is how the camera's own clamp gets applied from outside;
@@ -1317,6 +1327,8 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     // of the bounds to keep in step.
     iso.panByPixels(0, 0);
   };
+  hud.onMinimapPick = lookAt;
+  hud.onNoticePick = lookAt;
   hud.onRecruit = (type: string) => recruit(type);
   hud.enemyCount = () => army.enemies.length;
   hud.armyCounts = () => {
@@ -2114,7 +2126,8 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     }
     for (const f of army.lastFallen) {
       if (f.side === PLAYER) {
-        state.notify(`Your ${f.def.label.toLowerCase()} has fallen`, 'warn');
+        state.notify(`Your ${f.def.label.toLowerCase()} has fallen`, 'warn',
+                     { x: f.x, z: f.z });
       }
     }
     const keep = state.buildings.find(b => b.name === 'keep');
@@ -2131,7 +2144,8 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       sackDebt -= take;
       state.gold = Math.max(0, state.gold - take);
       state.popularity = Math.max(0, state.popularity - take * 0.05);
-      state.notify('Your keep is being sacked!', 'warn');
+      state.notify('Your keep is being sacked!', 'warn',
+                   { x: keep.x + 1.5, z: keep.z + 1.5 });
     }
   }
 
@@ -2443,7 +2457,8 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     evictGarrison(b.x, b.z);
     razeTiles(b.x, b.z, w, d);
     if (b.name === 'barracks') {
-      state.notify(`${f.name}'s barracks is destroyed — no more troops!`, 'info');
+      state.notify(`${f.name}'s barracks is destroyed — no more troops!`, 'info',
+                   { x: b.x + w / 2, z: b.z + d / 2 });
     }
     if (b.name === 'keep') defeatFaction(f, `${f.name}'s keep has fallen.`);
   }
@@ -2560,7 +2575,10 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     evictGarrison(b.x, b.z);
     razeTiles(b.x, b.z, w, d);
     if (b.name === 'keep' || BORDER_BUILDINGS.has(b.name)) recomputeTerritory();
-    state.notify(`Your ${b.def.label.toLowerCase()} has been destroyed!`, 'warn');
+    // The point on the map rather than the building: it is gone, and where it
+    // stood is exactly what the player wants to be shown.
+    state.notify(`Your ${b.def.label.toLowerCase()} has been destroyed!`, 'warn',
+                 { x: b.x + w / 2, z: b.z + d / 2 });
     workers.sync();
     // Lose your keep and the fief is lost.
     if (b.name === 'keep') {

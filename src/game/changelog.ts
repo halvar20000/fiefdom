@@ -23,6 +23,22 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.60.0',
+    date: '2026-09-10',
+    headline: 'Click the message, go to the trouble.',
+    sections: [
+      {
+        title: 'Added',
+        items: [
+          'A message about somewhere on the map can be clicked, and the view goes there. \u201cBrewery is waiting for materials\u201d is the case that asks for it: the brewery is out by the hops, and the message told you the one thing you could not act on \u2014 which brewery, and where. Now it is one click to be standing over it.',
+          'Which messages: every workshop\u2019s complaint \u2014 waiting for materials, no stockpile to draw from, cannot reach its work, needs an ox tether nearby, yard full and the ox not keeping up, the store full and the workshop stopped \u2014 as well as no trees near the woodcutter, no game near the hunter, a fishery with no water, one of your buildings destroyed, one of your soldiers fallen, your keep being sacked, and a rival\u2019s barracks going down. They carry a small arrow to say so. The rest \u2014 speed, sound, a building laid \u2014 are about nowhere in particular and stay exactly as they were.',
+          'A message about a building that has since fallen still knows where it stood, which is the case that most wants pointing at: \u201cyour granary has been destroyed\u201d is not much use if you cannot find the hole.',
+          'The messages used to be rebuilt from scratch every frame. That was free while they were text and would have been fatal the moment they became clickable \u2014 a press and a release a sixtieth of a second apart land on two different elements and the browser reports no click at all \u2014 so they are now rebuilt only when the set of them changes.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.59.0',
     date: '2026-09-10',
     headline: 'Turn a building before you set it down.',

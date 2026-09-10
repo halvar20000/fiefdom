@@ -1,4 +1,4 @@
-import type { GameState, PlacedBuilding } from './state';
+import { siteOf, type GameState, type PlacedBuilding } from './state';
 import {
   storeOf, STORE_LABELS, DEPOT_BATCH, DEPOT_CAPACITY, DEPOT_INPUT_STOCK,
   HAUL_YARD, productionOf,
@@ -211,7 +211,8 @@ export class WorkerPool {
       w.tx = w.x; w.tz = w.z;
       w.state = 'idle';
       w.timer = 3;
-      this.state.notify(`${w.building?.def.label ?? 'A worker'} cannot reach its work`, 'warn');
+      this.state.notify(`${w.building?.def.label ?? 'A worker'} cannot reach its work`,
+                        'warn', w.building ? siteOf(w.building) : undefined);
       return;
     }
     w.path = route.slice();
@@ -296,7 +297,8 @@ export class WorkerPool {
           // A quarry with no ox tether in range has nowhere to put its stone.
           if (b.def.needsHauler && !this.world.haulerNear(b)) {
             w.timer = 2;
-            this.state.notify(`${b.def.label} needs an ox tether nearby`, 'warn');
+            this.state.notify(`${b.def.label} needs an ox tether nearby`, 'warn',
+                              siteOf(b));
             break;
           }
           // And one whose yard is full has nowhere to put the next block:
@@ -305,7 +307,8 @@ export class WorkerPool {
               && (b.held[prod.output] ?? 0) >= HAUL_YARD) {
             w.timer = 2.5;
             this.state.notify(
-              `${b.def.label} yard is full — the ox tether cannot keep up`, 'warn');
+              `${b.def.label} yard is full — the ox tether cannot keep up`, 'warn',
+              siteOf(b));
             break;
           }
 
@@ -321,7 +324,8 @@ export class WorkerPool {
               && this.state.roomFor(prod.output) < prod.amount) {
             w.timer = 3;
             this.state.notify(
-              `${STORE_LABELS[outStore]} is full — ${b.def.label} has stopped`, 'warn');
+              `${STORE_LABELS[outStore]} is full — ${b.def.label} has stopped`, 'warn',
+              siteOf(b));
             break;
           }
 
@@ -347,7 +351,8 @@ export class WorkerPool {
               const store = this.world.nearestStore('stockpile', w.x, w.z);
               if (!store) {
                 w.timer = 3;
-                this.state.notify(`${b.def.label} has no stockpile to draw from`, 'warn');
+                this.state.notify(`${b.def.label} has no stockpile to draw from`,
+                                  'warn', siteOf(b));
                 break;
               }
               // Only set off if the goods are actually there. Without this the
@@ -358,7 +363,8 @@ export class WorkerPool {
                 ([r, n]) => this.state.stock[r as Resource] < (n ?? 0));
               if (short) {
                 w.timer = 2.5;
-                this.state.notify(`${b.def.label} is waiting for materials`, 'warn');
+                this.state.notify(`${b.def.label} is waiting for materials`, 'warn',
+                                  siteOf(b));
                 break;
               }
               const c = this.world.approach(store, w.x, w.z);
@@ -405,7 +411,8 @@ export class WorkerPool {
               b.held[res] = (b.held[res] ?? 0) + (n ?? 0);
             }
           } else {
-            this.state.notify(`${b.def.label} is waiting for materials`, 'warn');
+            this.state.notify(`${b.def.label} is waiting for materials`, 'warn',
+                              siteOf(b));
           }
           const c = this.world.approach(b, w.x, w.z);
           this.goTo(w, c.x, c.z, 'returning');
@@ -532,13 +539,14 @@ export class WorkerPool {
         if (held >= stocks.capacity) { w.timer = 3; return; }
         if (this.state.stock[stocks.resource] <= 0) {
           w.timer = 4;
-          this.state.notify(`${b.def.label} has no ale to fetch`, 'warn');
+          this.state.notify(`${b.def.label} has no ale to fetch`, 'warn', siteOf(b));
           return;
         }
         const src = this.world.nearestStore('stockpile', w.x, w.z);
         if (!src) {
           w.timer = 4;
-          this.state.notify(`${b.def.label} has no stockpile to draw from`, 'warn');
+          this.state.notify(`${b.def.label} has no stockpile to draw from`, 'warn',
+                            siteOf(b));
           return;
         }
         const c = this.world.approach(src, w.x, w.z);
@@ -663,7 +671,7 @@ export class WorkerPool {
         if (!store) {
           w.timer = 4;
           this.state.notify(
-            `The storehouse has no ${kind} to deliver to`, 'warn');
+            `The storehouse has no ${kind} to deliver to`, 'warn', siteOf(b));
           return;
         }
         const take = Math.min(DEPOT_BATCH, most);
@@ -810,7 +818,8 @@ export class WorkerPool {
           // Nowhere to take it: bring the load home rather than stand in the
           // quarry holding it, and let the tether's yard keep it.
           this.state.notify(
-            `${STORE_LABELS[kind]} — nowhere for the ${b.def.label} to deliver`, 'warn');
+            `${STORE_LABELS[kind]} — nowhere for the ${b.def.label} to deliver`, 'warn',
+            siteOf(b));
           const home = this.world.approach(b, w.x, w.z);
           this.goTo(w, home.x, home.z, 'returning');
           return;
@@ -841,7 +850,8 @@ export class WorkerPool {
               w.carryAmount -= put;
             } else {
               this.state.notify(
-                `${STORE_LABELS[kind]} is full — the ox is standing loaded`, 'warn');
+                `${STORE_LABELS[kind]} is full — the ox is standing loaded`, 'warn',
+                siteOf(b));
             }
           }
           if (w.carryAmount > 0) {
