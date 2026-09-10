@@ -481,8 +481,24 @@ def wheat_farm():
     return geom.join(parts, "wheat_farm"), (3, 3)
 
 
-def mill():
-    """Windmill. The one tall silhouette in the economy -- deliberately so."""
+# How many sails the wheel carries, and how many baked phases carry it round.
+#
+# Four identical sails means a quarter turn is a WHOLE revolution as far as the
+# picture is concerned, so the phases only have to span 90 degrees. Six of them
+# is a 15-degree step and twenty-four distinct positions per turn, off five
+# extra sprites per rotation instead of twenty-three.
+MILL_SAILS = 4
+MILL_PHASES = 6
+
+
+def mill(phase: int = 0):
+    """
+    Windmill. The one tall silhouette in the economy -- deliberately so.
+
+    `phase` steps the sails round by a fraction of the gap between two of them;
+    see MILL_PHASES. Everything else about the render is identical, which is
+    what lets the game cut between phases without the tower shifting.
+    """
     stone = M.castle_stone()
     timber = M.timber(dark=True)
     sail = M.cloth("Sail", colour=(0.76, 0.72, 0.60))
@@ -540,8 +556,9 @@ def mill():
     # between the bars are what make it a windmill rather than four paddles.
     hub = (1.5, 0.62, 1.60)
     parts.append(geom.box("ml_shaft", (1.46, 0.50, 1.56), (0.08, 0.30, 0.08), timber))
-    for i in range(4):
-        a = (i / 4) * math.tau + math.pi / 4
+    spin = (phase / MILL_PHASES) * (math.tau / MILL_SAILS)
+    for i in range(MILL_SAILS):
+        a = (i / MILL_SAILS) * math.tau + math.pi / 4 + spin
         arm = geom.box(f"ml_arm_{i}", hub, (0.055, 0.05, 1.10), timber)
         arm.rotation_euler = (0.0, a, 0.0)
         parts.append(arm)
@@ -674,6 +691,11 @@ REGISTRY.update({
     "market": market,
     "wheat_farm": wheat_farm,
     "mill": mill,
+    # The turning wheel, as separate assets: the game holds a working mill in
+    # its per-frame stream and steps these, exactly as a lit pitch fire cycles
+    # its three flames. Phase 0 IS plain "mill", so a still wheel costs nothing.
+    **{f"mill_turn_{k}": (lambda k=k: mill(phase=k))
+       for k in range(1, MILL_PHASES)},
     "bakery": bakery,
     "apple_orchard": apple_orchard,
     "dairy_farm": dairy_farm,

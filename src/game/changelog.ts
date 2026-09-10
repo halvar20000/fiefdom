@@ -23,6 +23,21 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.57.0',
+    date: '2026-09-10',
+    headline: 'The mill turns.',
+    sections: [
+      {
+        title: 'Added',
+        items: [
+          'The windmill\u2019s sails turn. It is the one tall silhouette in the town and the piece of the skyline the eye goes to, and it stood there with its wheel painted on. A working mill now grinds with the sails going round \u2014 and with them the shadow they throw, across the tower and down onto the ground, because every position of the wheel is a real render of the model rather than a sprite spun in code.',
+          'Only a manned mill turns. A mill with nobody in it is a still wheel, which is the rule the ambience has gone by since it learned to grind: sails turning over an empty mill say the flour is flowing when it is not. Lose the miller to a shrinking population and the wheel stops with him.',
+          'Six renders carry it, per camera angle. The wheel has four identical sails, so a quarter turn brings the picture back to where it started and the frames only have to span ninety degrees \u2014 six of them is a fifteen-degree step and twenty-four distinct positions in a revolution, at the cost of five extra sprites a rotation instead of twenty-three. Stepped five and a half a second, which is a turn about every four seconds: a mill sail is a slow, heavy thing, and spun any faster it reads as a propeller. Two mills built side by side are offset from each other so they do not turn as one machine.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.56.0',
     date: '2026-09-09',
     headline: 'Push the pointer at the edge and the map follows.',

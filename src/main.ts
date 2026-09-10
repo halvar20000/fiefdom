@@ -2807,6 +2807,46 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     return key && atlas.frames[key] ? key : null;
   }
 
+  /**
+   * How many baked sail positions the mill has, and how fast they are stepped.
+   *
+   * The wheel carries four identical sails, so a quarter turn brings the
+   * picture back to where it started: six sprites spanning ninety degrees are
+   * twenty-four distinct positions per revolution, and cost five extra frames
+   * per camera rotation rather than twenty-three. At five and a half a second
+   * that is a turn about every four seconds -- a mill sail is a slow, heavy
+   * thing, and spun any faster it reads as a propeller.
+   */
+  const MILL_PHASES = 6;
+  const MILL_PHASE_HZ = 5.5;
+  const MILL_WORKERS = BUILDINGS.mill.workers ?? 0;
+  const [MILL_W, MILL_D] = BUILDINGS.mill.footprint;
+
+  /**
+   * Every mill on the map, the player's and the rivals', with what it takes to
+   * draw one. Refreshed by rebuildStatic, which is where a mill would have
+   * gone before it learned to turn.
+   */
+  const mills: {
+    b: { x: number; z: number; staff: number; id: number };
+    workers: number;
+    tint?: [number, number, number];
+  }[] = [];
+
+  /**
+   * The sprite a mill draws this instant.
+   *
+   * A mill with nobody in it is a still wheel -- the same rule the ambience
+   * goes by, and for the same reason: seeing sails turn over an empty mill
+   * says the chain is running when it is not. `seed` staggers two mills so a
+   * pair built side by side do not turn as one machine.
+   */
+  function millSprite(working: boolean, seed: number): string {
+    if (!working) return 'mill';
+    const p = (Math.floor(state.elapsed * MILL_PHASE_HZ) + seed) % MILL_PHASES;
+    return p === 0 ? 'mill' : `mill_turn_${p}`;
+  }
+
   /** Relayout both stores. Returns whether anything DRAWN changed. */
   function syncStores(): boolean {
     let moved = false;
@@ -2821,6 +2861,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
   function rebuildStatic() {
     const rot = iso.rotation;
     const items: DrawItem[] = [];
+    mills.length = 0;
 
     const push = (name: string, x: number, z: number, w: number, d: number,
                   tint?: [number, number, number]) => {
@@ -2863,12 +2904,21 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
         push(squareAt.get(`${b.x},${b.z}`) ?? art.empty, b.x, b.z, 1, 1);
         continue;
       }
+      // A mill is never static: its sails turn. Collected here rather than
+      // hunted for every frame -- this list is exactly as fresh as the scenery
+      // is, and a castle's few thousand wall segments are not worth walking
+      // sixty times a second to find three mills among them.
+      if (b.name === 'mill') { mills.push({ b, workers: b.def.workers }); continue; }
       push(b.name, b.x, b.z, w, d);
     }
 
     // Each rival's castle, under his own colour.
     for (const f of factions) {
       for (const b of f.buildings) {
+        if (b.name === 'mill') {              // turns; see above
+          mills.push({ b, workers: MILL_WORKERS, tint: f.stoneTint });
+          continue;
+        }
         const [w, d] = BUILDINGS[b.name].footprint;
         push(b.name, b.x, b.z, w, d, f.stoneTint);
       }
@@ -4428,6 +4478,22 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
         key, x: fx, z: fz, y: terrain.heightAt(f.x, f.z),
         bias: footprintDepthBias(1, 1, rot),
         depth: depthKey(f.x + 0.5, f.z + 0.5, rot),
+      });
+    }
+
+    // The mills, whose sails turn. Their place in the depth stream is exactly
+    // what the static list gave them -- footprint centre, footprint bias -- so
+    // moving them here changes only which frame is picked.
+    for (const m of mills) {
+      const { x, z } = m.b;
+      const key = spriteKey(millSprite(m.b.staff >= m.workers, m.b.id), rot);
+      if (!key) continue;
+      const [mx, mz] = spriteAnchor(x, z, MILL_D);
+      figures.push({
+        key, x: mx, z: mz, y: terrain.heightAt(x, z),
+        bias: footprintDepthBias(MILL_W, MILL_D, rot),
+        depth: depthKey(x + MILL_W / 2, z + MILL_D / 2, rot),
+        tint: m.tint,
       });
     }
 

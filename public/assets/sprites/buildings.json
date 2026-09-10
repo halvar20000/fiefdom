@@ -2928,9 +2928,9 @@
     "name": "mill",
     "rotation": 1,
     "width": 340,
-    "height": 258,
+    "height": 240,
     "anchor_x": 102.33,
-    "anchor_y": 131.5,
+    "anchor_y": 113.5,
     "footprint": [
       3,
       3
@@ -2941,9 +2941,9 @@
     "name": "mill",
     "rotation": 2,
     "width": 268,
-    "height": 328,
+    "height": 309,
     "anchor_x": 243.28,
-    "anchor_y": 203.94,
+    "anchor_y": 184.94,
     "footprint": [
       3,
       3
@@ -2957,6 +2957,266 @@
     "height": 241,
     "anchor_x": 237.67,
     "anchor_y": 223.42,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "mill_turn_1",
+    "rotation": 0,
+    "width": 276,
+    "height": 208,
+    "anchor_x": 29.88,
+    "anchor_y": 150.64,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "mill_turn_1",
+    "rotation": 1,
+    "width": 350,
+    "height": 244,
+    "anchor_x": 104.91,
+    "anchor_y": 116.08,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "mill_turn_1",
+    "rotation": 2,
+    "width": 276,
+    "height": 305,
+    "anchor_x": 246.12,
+    "anchor_y": 177.31,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "mill_turn_1",
+    "rotation": 3,
+    "width": 350,
+    "height": 243,
+    "anchor_x": 245.09,
+    "anchor_y": 223.42,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "mill_turn_2",
+    "rotation": 0,
+    "width": 286,
+    "height": 210,
+    "anchor_x": 35.93,
+    "anchor_y": 150.96,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "mill_turn_2",
+    "rotation": 1,
+    "width": 362,
+    "height": 246,
+    "anchor_x": 108.73,
+    "anchor_y": 116.4,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "mill_turn_2",
+    "rotation": 2,
+    "width": 286,
+    "height": 310,
+    "anchor_x": 250.07,
+    "anchor_y": 178.55,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "mill_turn_2",
+    "rotation": 3,
+    "width": 362,
+    "height": 246,
+    "anchor_x": 253.27,
+    "anchor_y": 223.22,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "mill_turn_3",
+    "rotation": 0,
+    "width": 290,
+    "height": 211,
+    "anchor_x": 38.24,
+    "anchor_y": 150.64,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "mill_turn_3",
+    "rotation": 1,
+    "width": 366,
+    "height": 244,
+    "anchor_x": 110.09,
+    "anchor_y": 113.08,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "mill_turn_3",
+    "rotation": 2,
+    "width": 290,
+    "height": 319,
+    "anchor_x": 251.76,
+    "anchor_y": 185.91,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "mill_turn_3",
+    "rotation": 3,
+    "width": 366,
+    "height": 246,
+    "anchor_x": 255.91,
+    "anchor_y": 222.75,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "mill_turn_4",
+    "rotation": 0,
+    "width": 286,
+    "height": 210,
+    "anchor_x": 35.88,
+    "anchor_y": 150.85,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "mill_turn_4",
+    "rotation": 1,
+    "width": 362,
+    "height": 236,
+    "anchor_x": 108.84,
+    "anchor_y": 106.29,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "mill_turn_4",
+    "rotation": 2,
+    "width": 286,
+    "height": 320,
+    "anchor_x": 250.12,
+    "anchor_y": 188.49,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "mill_turn_4",
+    "rotation": 3,
+    "width": 362,
+    "height": 246,
+    "anchor_x": 253.16,
+    "anchor_y": 223.13,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "mill_turn_5",
+    "rotation": 0,
+    "width": 276,
+    "height": 209,
+    "anchor_x": 29.81,
+    "anchor_y": 151.49,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "mill_turn_5",
+    "rotation": 1,
+    "width": 350,
+    "height": 234,
+    "anchor_x": 105.05,
+    "anchor_y": 105.93,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "mill_turn_5",
+    "rotation": 2,
+    "width": 276,
+    "height": 316,
+    "anchor_x": 246.19,
+    "anchor_y": 188.24,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "mill_turn_5",
+    "rotation": 3,
+    "width": 350,
+    "height": 243,
+    "anchor_x": 244.95,
+    "anchor_y": 223.31,
     "footprint": [
       3,
       3
