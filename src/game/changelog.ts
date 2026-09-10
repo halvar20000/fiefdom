@@ -23,6 +23,23 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.61.0',
+    date: '2026-09-10',
+    headline: 'A castle you can actually close.',
+    sections: [
+      {
+        title: 'Fixed',
+        items: [
+          'Walls, moats, ditches, killing pits and perimeter turrets can be laid on any ground a man can walk over. They wanted level, dry ground; a soldier needs neither. He strolls over a one-step slope without noticing it and wades a bog at half pace \u2014 and both were ground no wall could cross, so every castle had at least one hole in it that nothing could ever close. That makes the wall, the moat and the gatehouse an expense with no defence at the end of it. The rule is now the honest one: ANYWHERE A MAN CAN WALK, YOU MAY LAY A WALL. Water still refuses everything, and rightly \u2014 nothing walks it, so there is nothing there to shut.',
+          'The last tile of a ring used to refuse itself. The guard that stops you sealing a workplace away from your keep counted WALLS among the things needing a way in, so closing a corner left the wall tiles inside it with no open neighbour, and the guard called the finished ring a trap and would not let it shut. Only somewhere a peasant has to arrive at is protected now \u2014 a workplace, a house, a store. A wall does not need a door.',
+          'And when it does refuse, it says what it is protecting. \u201cThat would shut your granary off from the keep\u201d or \u201cthat would strand one of your people outside\u201d, instead of \u201cthat would block the way\u201d \u2014 which named nothing and left you moving the same tile about at random.',
+          'A piece standing on broken ground is founded at the bottom of its tile rather than at the tile\u2019s middling height, so no footing hangs in the air on the downhill side, and a man posted on that stretch of wall stands on the stone instead of half a step above it.',
+          'Measured on a twelve-tile ring round the keep, on ground a fifth of which is broken and part of it bog: sixty-seven of the ninety-six tiles could be laid before \u2014 twenty-one refused for the bog, five for the slope, three for what was standing on them \u2014 leaving twenty-six holes, and every one of sixty-four points outside the wall could walk in through them. Now ninety-three go down, the only refusals are the three tiles with trees in them, and a tree stops a man as surely as a wall does. No holes, and not one of the sixty-four can reach the inside at all.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.60.0',
     date: '2026-09-10',
     headline: 'Click the message, go to the trouble.',

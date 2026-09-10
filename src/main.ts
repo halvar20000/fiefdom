@@ -10,8 +10,8 @@ import {
   generateMap, findSite, isBuildable, findStartSite, GROUND_TYPES, GROUND_COLOURS,
 } from './game/worldgen';
 import {
-  TILE_PX_W, unitDirectionIndex, footprintDepthBias, depthKey, spriteAnchor,
-  cameraDirection,
+  TILE_PX_W, HEIGHT_STEP, unitDirectionIndex, footprintDepthBias, depthKey,
+  spriteAnchor, cameraDirection,
 } from './engine/iso';
 import { GameState, siteOf, type PlacedBuilding } from './game/state';
 import { PathGrid } from './game/pathfind';
@@ -59,7 +59,7 @@ import {
   REPAIR_RADIUS, REPAIR_PER_SECOND, UNDERMINE_RADIUS, UNDERMINE_PER_SECOND,
   SPEED_LEVELS, RESOURCE_LABELS, productionOf, goodName, HAUL_RANGE,
   DEPOT_SERVE_RANGE,
-  type Resource, type Store,
+  type Resource, type Store, type BuildingDef,
 } from './game/defs';
 
 /** The shared palette, aliased: the minimap is one of three users of it. */
@@ -345,14 +345,39 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
   }
 
   /**
-   * Would putting a building here wall something off?
+   * Whether anybody has to be able to WALK to this building.
    *
-   * Buildings placed shoulder to shoulder can seal a courtyard, and anything
-   * inside -- a worker, another building's only door -- is then cut off for
-   * good. Checked on commit rather than on hover: it needs a full connectivity
-   * rebuild, which is far too costly to run every frame under the cursor.
+   * A wall does not need a door. Neither does a moat, a ditch, a pit or a
+   * turret: nobody goes to them, they are what stops people going anywhere.
+   * Testing them alongside the rest is what made the last tile of a castle
+   * wall refuse itself -- close a corner and the wall tiles inside it have no
+   * open neighbour left, so the guard below called the finished ring a trap
+   * and would not let it shut. Which made a closed castle impossible, in a
+   * game whose whole middle is building one.
+   *
+   * Only somewhere a peasant has to arrive at is worth protecting: a
+   * workplace, a house, a store.
    */
-  function wouldSealSomethingOff(x: number, z: number, w: number, d: number): boolean {
+  function mustBeReached(def: BuildingDef): boolean {
+    return def.workers > 0 || !!def.housing || !!def.storeFor;
+  }
+
+  /**
+   * What putting a building here would wall off, or null if it walls off
+   * nothing.
+   *
+   * Buildings placed shoulder to shoulder can seal a courtyard, and a
+   * workplace or a peasant inside is then cut off for good. Checked on commit
+   * rather than on hover: it needs a full connectivity rebuild, which is far
+   * too costly to run every frame under the cursor.
+   *
+   * Returns the sentence to show rather than a bare true, because "that would
+   * block the way" is the least useful thing a refusal can say. Knowing it is
+   * the granary, or a man caught outside, is the difference between moving one
+   * tile and giving up on the wall.
+   */
+  function sealsOff(name: string, x: number, z: number,
+                    w: number, d: number): string | null {
     // Snapshot before the trial, and put back exactly what was there.
     //
     // It used to hand the tiles back CLEARED, and every caller then cleared
@@ -367,7 +392,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     paths.fill(x, z, w, d, true);
     try {
       const ref = state.buildings.find(b => b.name === 'keep') ?? state.buildings[0];
-      if (!ref) return false;
+      if (!ref) return null;
       const [rw, rd] = ref.def.footprint;
       let region = -1;
       for (let rz = ref.z - 1; rz <= ref.z + rd && region < 0; rz++) {
@@ -376,17 +401,25 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
           if (r >= 0) region = r;
         }
       }
-      if (region < 0) return true;
+      if (region < 0) return 'That would block the way';
 
-      if (!hasAccess(x, z, w, d, region)) return true;
+      const def = BUILDINGS[name];
+      if (def && mustBeReached(def) && !hasAccess(x, z, w, d, region)) {
+        return `Nobody could reach that ${def.label.toLowerCase()}`;
+      }
       for (const b of state.buildings) {
+        if (!mustBeReached(b.def)) continue;
         const [bw, bd] = b.def.footprint;
-        if (!hasAccess(b.x, b.z, bw, bd, region)) return true;
+        if (!hasAccess(b.x, b.z, bw, bd, region)) {
+          return `That would shut your ${b.def.label.toLowerCase()} off from the keep`;
+        }
       }
       for (const wk of workers.workers) {
-        if (paths.regionAt(Math.floor(wk.x), Math.floor(wk.z)) !== region) return true;
+        if (paths.regionAt(Math.floor(wk.x), Math.floor(wk.z)) !== region) {
+          return 'That would strand one of your people outside';
+        }
       }
-      return false;
+      return null;
     } finally {
       let i = 0;
       for (let dz = 0; dz < d; dz++)
@@ -870,10 +903,8 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       if (!check.ok) { refusal ||= check.reason; continue; }
       // A walkable building cannot seal anything off, so it skips the test --
       // which also means painting a large yard never trips "would block the way".
-      if (!def.walkable && wouldSealSomethingOff(t.x, t.z, pw, pd)) {
-        refusal ||= 'That would block the way';
-        continue;
-      }
+      const seals = def.walkable ? null : sealsOff(name, t.x, t.z, pw, pd);
+      if (seals) { refusal ||= seals; continue; }
       if (!placement.placeAt(name, t.x, t.z).ok) continue;
       const b = state.buildings[state.buildings.length - 1];
       markArea(b.x, b.z, pw, pd);
@@ -1376,7 +1407,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     const site = findSite(terrain, w, d, nearX, nearZ, 34);
     if (!site) return null;
     if (!placementWorld.isOccupied(site.x, site.z)) {
-      if (state.buildings.length && wouldSealSomethingOff(site.x, site.z, w, d)) {
+      if (state.buildings.length && sealsOff(name, site.x, site.z, w, d)) {
         return null;
       }
       const b = state.addBuilding(name, site.x, site.z);
@@ -2934,6 +2965,27 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     return moved;
   }
 
+  /**
+   * The height a building's sprite is planted at.
+   *
+   * Level ground has one answer and everything used to take it: the mean of
+   * the tile's four corners. A wall laid across a slope has four DIFFERENT
+   * answers, and the mean is the one that looks worst -- half the footing
+   * hangs in the air on the downhill side, which reads as a wall that has not
+   * been built yet.
+   *
+   * The lowest corner instead: the piece is founded at the bottom of the tile
+   * and the hill runs up behind it, which is how a wall on broken ground is
+   * actually built and the one choice that never leaves daylight underneath.
+   */
+  function footing(name: string, x: number, z: number): number {
+    if (!BUILDINGS[name]?.onRoughGround) return terrain.heightAt(x, z);
+    const h = Math.min(
+      terrain.cornerHeight(x, z), terrain.cornerHeight(x + 1, z),
+      terrain.cornerHeight(x + 1, z + 1), terrain.cornerHeight(x, z + 1));
+    return h * HEIGHT_STEP;
+  }
+
   function rebuildStatic() {
     const rot = iso.rotation;
     const items: DrawItem[] = [];
@@ -2945,7 +2997,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       if (!key) return;
       const [ax, az] = spriteAnchor(x, z, d);
       items.push({
-        key, x: ax, z: az, y: terrain.heightAt(x, z),
+        key, x: ax, z: az, y: footing(name, x, z),
         bias: footprintDepthBias(w, d, rot),
         // sort by the footprint centre, not by whichever corner is anchored
         depth: depthKey(x + w / 2, z + d / 2, rot),
@@ -4547,7 +4599,14 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       // puts him after the wall in the same depth slot, so he is drawn on it
       // rather than behind it.
       const post = sd.garrison;
-      const lift = post ? (GARRISON_HEIGHT[buildingNameAt(post.x, post.z)] ?? 0) : 0;
+      const postName = post ? buildingNameAt(post.x, post.z) : '';
+      const lift = post ? (GARRISON_HEIGHT[postName] ?? 0) : 0;
+      // A wall on broken ground is founded at the bottom of its tile, so its
+      // walkway is there too. Without this the man on it stands at the tile's
+      // MEAN height and floats half a step above the stone he is meant to be
+      // standing on -- the same half step the wall itself was moved down by.
+      const postDrop = post
+        ? terrain.heightAt(post.x, post.z) - footing(postName, post.x, post.z) : 0;
       // The strike lunge. A close-fighter or a battering ram thrusts toward what
       // it is hitting on the moment of the blow and eases back -- so the blow
       // visibly lands instead of falling short across a gap, and the ram meets
@@ -4561,7 +4620,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
         dz += Math.sin(sd.heading) * l;
       }
       figures.push({
-        key, x: dx, z: dz, y: terrain.heightAt(dx, dz) + lift,
+        key, x: dx, z: dz, y: terrain.heightAt(dx, dz) + lift - postDrop,
         bias: footprintDepthBias(1, 1, rot) + (post ? 0.6 : 0),
         depth: depthKey(dx, dz, rot),
         // Enemies are the same three bodies under a red cast rather than three
@@ -4650,7 +4709,8 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
         runPlan.tiles.forEach((t, i) => {
           const [gx, gz] = spriteAnchor(t.x, t.z, d);
           ghostBatch.add(frame, atlas.size, ppuOf(frame),
-            gx, terrain.heightAt(t.x, t.z), gz, footprintDepthBias(w, d, rot) + 6,
+            gx, footing(placement.selected!, t.x, t.z), gz,
+            footprintDepthBias(w, d, rot) + 6,
             runPlan.legal[i] ? [0.55, 1.20, 0.55] : [1.30, 0.45, 0.40]);
         });
       }

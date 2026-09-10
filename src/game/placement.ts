@@ -226,7 +226,13 @@ export class Placement {
     for (let dz = 0; dz < d; dz++) {
       for (let dx = 0; dx < w; dx++) {
         const ground = this.world.groundAt(x + dx, z + dz);
-        if (!terrainAllows(def.terrain, ground)) {
+        // A line piece is allowed the bog as well as the slope: see
+        // onRoughGround. It does not stop being a bog -- what is walled is one
+        // tile of it, paid for in stone, and the rest still slows whoever is
+        // wading through it at the wall.
+        const allowed = terrainAllows(def.terrain, ground)
+          || (def.onRoughGround && ground === 'marsh');
+        if (!allowed) {
           return {
             ok: false,
             reason: ground === 'marsh' && def.terrain !== 'marsh'
@@ -237,7 +243,10 @@ export class Placement {
       }
     }
 
-    if (!this.world.isFlat(x, z, w, d)) {
+    // Broken ground stops a building with a floor, not a wall. See
+    // onRoughGround: the tiles a wall most needs are the ones a man walks over
+    // without noticing, and refusing them left a hole in every castle.
+    if (!def.onRoughGround && !this.world.isFlat(x, z, w, d)) {
       return { ok: false, reason: 'The ground is not level' };
     }
 

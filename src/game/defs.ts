@@ -251,6 +251,28 @@ export interface BuildingDef {
    * building does not silently create an indestructible one.
    */
   hp?: number;
+  /**
+   * A piece of a defensive LINE, and so buildable on any ground a man can walk.
+   *
+   * Everything else needs its whole footprint dry and at one elevation. That
+   * is right for a building with a floor and fatal for a wall, because the two
+   * rules a wall was being held to did not match the one rule a soldier obeys:
+   * he walks over a one-step slope without noticing it and wades a bog at half
+   * pace, and both were ground no wall could be laid on. Every castle
+   * therefore had at least one hole in it that nothing could ever close --
+   * which makes the wall, the moat and the gatehouse an expense with no
+   * defence at the end of it.
+   *
+   * So the rule for these pieces is the honest one: ANYWHERE A MAN CAN WALK,
+   * YOU MAY LAY A WALL. No limit on the steepness, because the steep tiles are
+   * exactly the ones he climbs; the bog too, because he crosses it. Water
+   * still refuses everything, and rightly -- nothing walks it, so there is
+   * nothing there to close.
+   *
+   * Single-tile pieces only. A building with a floor still wants level ground
+   * under all of it, and a keep pitched across a hillside would look it.
+   */
+  onRoughGround?: boolean;
   /** Marks storage buildings; production is delivered to the nearest one. */
   storeFor?: Store;
   /** Needs an ox tether nearby to move its output. */
@@ -378,6 +400,8 @@ export const BUILDINGS: Record<string, BuildingDef> = {
   },
   wall: {
     name: 'wall', label: 'Wall', category: 'castle',
+    // Part of a line, so it crosses rough ground: see onRoughGround.
+    onRoughGround: true,
     footprint: [1, 1], cost: { stone: 3 }, workers: 0, terrain: 'any',
     paintable: true, hp: 130,
     description: 'One tile of curtain wall. Blocks the way — leave a gatehouse.',
@@ -399,6 +423,8 @@ export const BUILDINGS: Record<string, BuildingDef> = {
   },
   pitch_ditch: {
     name: 'pitch_ditch', label: 'Pitch Ditch', category: 'castle',
+    // Part of a line, so it crosses rough ground: see onRoughGround.
+    onRoughGround: true,
     footprint: [1, 1], cost: { pitch: 4 }, workers: 0, terrain: 'any',
     // Walkable, and that is the trick: the enemy crosses it without a thought.
     walkable: true, paintable: true, hp: 40,
@@ -406,6 +432,8 @@ export const BUILDINGS: Record<string, BuildingDef> = {
   },
   moat: {
     name: 'moat', label: 'Moat', category: 'castle',
+    // Part of a line, so it crosses rough ground: see onRoughGround.
+    onRoughGround: true,
     footprint: [1, 1], cost: { wood: 2 }, workers: 0, terrain: 'any', hp: 70,
     // NOT walkable, and that is the entire building: it blocks, and unlike a
     // wall nobody can stand on it. Paintable because a moat is a run, never a
@@ -417,6 +445,8 @@ export const BUILDINGS: Record<string, BuildingDef> = {
   },
   drawbridge: {
     name: 'drawbridge', label: 'Drawbridge', category: 'castle',
+    // Part of a line, so it crosses rough ground: see onRoughGround.
+    onRoughGround: true,
     footprint: [1, 1], cost: { wood: 12, iron: 2 }, workers: 0, terrain: 'any', hp: 90,
     // Walkable while it is down. Raising it marks its tile solid instead --
     // see toggleDrawbridges() -- which is the one building in the game whose
@@ -428,6 +458,8 @@ export const BUILDINGS: Record<string, BuildingDef> = {
   },
   killing_pit: {
     name: 'killing_pit', label: 'Killing Pit', category: 'castle',
+    // Part of a line, so it crosses rough ground: see onRoughGround.
+    onRoughGround: true,
     footprint: [1, 1], cost: { wood: 6 }, workers: 0, terrain: 'any', hp: 30,
     // Walkable, and that is the trick, exactly as with the pitch ditch: it has
     // to be crossed to work, so it must not block the path that leads over it.
@@ -515,6 +547,8 @@ export const BUILDINGS: Record<string, BuildingDef> = {
   },
   perimeter_turret: {
     name: 'perimeter_turret', label: 'Perimeter Turret', category: 'castle',
+    // Part of a line, so it crosses rough ground: see onRoughGround.
+    onRoughGround: true,
     footprint: [1, 1], cost: { stone: 14 }, workers: 0, terrain: 'any', hp: 150,
     description: 'A one-tile watch post with a stair of its own, so it can be '
                + 'manned standing alone on ground you only want watched. It '
