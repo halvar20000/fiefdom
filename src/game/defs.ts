@@ -1057,6 +1057,44 @@ export function storeSprites(): string[] {
 }
 
 /**
+ * Buildings the player may turn on their own footprint before placing them.
+ *
+ * Every footprint in the game is square, so which way a building faces changes
+ * nothing whatever about where it fits, what it blocks or how far anything
+ * walks. It is purely how the place looks -- and that IS the point: a village
+ * of identically-oriented huts is the most obviously stamped thing on the map.
+ *
+ * A short list on purpose, and this is the reason: a turnable building needs
+ * its own render at each quarter turn AND at each of the four camera angles,
+ * because the sun is fixed in the world. Reusing the camera frames to fake a
+ * turn is free and looks it -- the building's shadow then falls a different way
+ * from every neighbour's. So each name here is twelve more sprites and about
+ * 0.9 megapixels of an atlas with a hard ceiling, spent on the buildings placed
+ * in numbers rather than on all sixty-eight.
+ *
+ * Keep in step with TURNABLE in tools/render/buildings.py. A name here with no
+ * art simply never turns -- see `spriteKey` -- but `turnSprites` puts it in the
+ * startup banner rather than letting the key quietly do nothing.
+ */
+export const TURNABLE: ReadonlySet<string> = new Set([
+  'hovel', 'garden', 'well', 'pond', 'statue', 'dancing_bear', 'market',
+  'woodcutter', 'bakery', 'poleturner', 'fletcher', 'blacksmith', 'armourer',
+  'stairs', 'perimeter_turret',
+]);
+
+/** Quarter turns a turnable building has art for, turn 0 included. */
+export const TURNS = 4;
+
+/** Every turned frame the game may ask for. Turn 0 is the plain name. */
+export function turnSprites(): string[] {
+  const out: string[] = [];
+  for (const n of TURNABLE) {
+    for (let t = 1; t < TURNS; t++) out.push(`${n}_t${t}`);
+  }
+  return out;
+}
+
+/**
  * Baked sail positions the windmill has, spanning a QUARTER turn.
  *
  * The wheel carries four identical sails, so a quarter turn brings the picture

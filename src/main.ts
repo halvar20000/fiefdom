@@ -36,7 +36,8 @@ import { SAVE_VERSION, takeBootIntent, readSlot, playTime, type SaveGame } from 
 import { hydrate } from './game/backend';
 import { BANNERS } from './game/banners';
 import { MatchRuntime } from './net/match';
-import { packBuilding, packSoldier, unpackSoldier, buildingName } from './net/wire';
+import { packBuilding, packSoldier, unpackSoldier, buildingName,
+         F_TURN_SHIFT, F_TURN_MASK } from './net/wire';
 import { multiplayer } from './ui/lobby';
 import { net } from './net/socket';
 import { accountScreen } from './ui/account';
@@ -50,6 +51,7 @@ import {
   GARRISON_HEIGHT, garrisonReach, MARSH_SPEED_FOOT, MARSH_SPEED_SIEGE,
   BUILD_MENU, SOLDIER_ORDER, unlistedBuildings, unlistedSoldiers,
   unlistedResources, storeSprites, millPhaseSprites, quarryLoadSprites,
+  turnSprites,
   MILL_SAIL_PHASES, HAUL_YARD,
   BURN_SECONDS, BURN_RADIUS, BURN_DPS, IGNITE_RADIUS, DEMOLISH_REFUND,
   PIT_TRIGGER_RADIUS, PIT_BLAST_RADIUS, PIT_DAMAGE, WATER_POT_RADIUS,
@@ -214,6 +216,9 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     // rendering the blocks to fill it a loud failure rather than a quiet one.
     ...missingSprites(millPhaseSprites(), atlas.frames),
     ...missingSprites(quarryLoadSprites(), atlas.frames),
+    // Every turned frame TURNABLE promises. A name listed there with no art
+    // reads to the player as a key that does not work.
+    ...missingSprites(turnSprites(), atlas.frames),
     ...unlistedBuildings(),
     ...unlistedSoldiers(),
     ...unlistedResources(),
@@ -507,6 +512,14 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     name: string; x: number; z: number; hp: number;
     /** Workers the lord has put in it. He manages this; we just store it. */
     staff: number;
+    /**
+     * Quarter turns it was laid at, for a castle another PLAYER owns.
+     *
+     * A lord builds facing north like everything else did before the key
+     * existed -- he has no eye for a street -- so this only ever arrives over
+     * the wire. Absent means 0.
+     */
+    turn?: number;
   }
   /** Ids for the above, unique across every faction on the map. */
   let nextEnemyBuildingId = 1;
@@ -2797,7 +2810,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
    * -- the same behaviour a missing frame always had. See SPRITE_STANDIN for
    * why a building might not have its own art.
    */
-  function spriteKey(name: string, rot: number): string | null {
+  function spriteKey(name: string, rot: number, turn = 0): string | null {
     // A painted store draws its square, and that beats a sprite of the same
     // name -- see storeSquare. Checked FIRST, not as a fallback, which is the
     // whole fix: the stockpile had a 3x3 shed left in the atlas from before it
@@ -2808,6 +2821,14 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     if (square) {
       const k = `${square}_${rot}`;
       return atlas.frames[k] ? k : null;
+    }
+    // A turned building has its own render at this camera angle. Asked for
+    // FIRST and fallen back on silently: a name in TURNABLE whose art has not
+    // been rendered yet draws facing north rather than vanishing, and the
+    // startup banner is what says so -- see turnSprites.
+    if (turn) {
+      const turned = `${name}_t${turn}_${rot}`;
+      if (atlas.frames[turned]) return turned;
     }
     const own = `${name}_${rot}`;
     if (atlas.frames[own]) return own;
@@ -2901,8 +2922,8 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     restless.length = 0;
 
     const push = (name: string, x: number, z: number, w: number, d: number,
-                  tint?: [number, number, number]) => {
-      const key = spriteKey(name, rot);
+                  tint?: [number, number, number], turn = 0) => {
+      const key = spriteKey(name, rot, turn);
       if (!key) return;
       const [ax, az] = spriteAnchor(x, z, d);
       items.push({
@@ -2947,7 +2968,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
                         workers: b.def.workers });
         continue;
       }
-      push(b.name, b.x, b.z, w, d);
+      push(b.name, b.x, b.z, w, d, undefined, b.turn);
     }
 
     // Each rival's castle, under his own colour.
@@ -2960,7 +2981,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
                           tint: f.stoneTint });
           continue;
         }
-        push(b.name, b.x, b.z, w, d, f.stoneTint);
+        push(b.name, b.x, b.z, w, d, f.stoneTint, b.turn);
       }
     }
     items.sort((a, b) => a.depth - b.depth);
@@ -2996,6 +3017,24 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     + 'filter:drop-shadow(0 2px 2px rgba(0,0,0,.6))';
   rallyFlag.textContent = '\u{1F6A9}';   // a flag the eye finds at a glance
   document.body.appendChild(rallyFlag);
+
+  /**
+   * Turn the building in hand, or say why it will not turn.
+   *
+   * The message is the whole reason this is not two lines inline: most
+   * buildings have no turned art, and a key that appears dead teaches the
+   * player that the feature does not work rather than that this building does
+   * not turn.
+   */
+  function turnGhost(quarters: number): void {
+    if (!placement.selected) return;
+    if (!placement.turnBy(quarters)) {
+      state.notify(`${BUILDINGS[placement.selected].label} only stands one way`,
+                   'warn');
+    }
+    // Nothing to refresh: the ghost is drawn from `placement.facing` every
+    // frame, and a square footprint means turning cannot change where it fits.
+  }
 
   function armRally(): void {
     placement.cancel();
@@ -3458,8 +3497,17 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     }
     // Not the digits: 1-6 already open the build categories. , and . sit under
     // the fingers that are not on the camera keys.
-    if (k === ',' || k === '<') { state.nudgeSpeed(-1); announceSpeed(); }
-    if (k === '.' || k === '>') { state.nudgeSpeed(1); announceSpeed(); }
+    //
+    // With a building in hand the same two keys turn it instead, which is
+    // where every builder's finger already goes. Speed is the thing you set
+    // once and leave; a turn is set while the ghost is under the cursor and
+    // there is nowhere better for it -- R and E already rotate the camera, and
+    // taking one of those would mean losing the view while siting a building.
+    if (k === ',' || k === '<' || k === '.' || k === '>') {
+      const back = k === ',' || k === '<';
+      if (placement.selected) { turnGhost(back ? -1 : 1); }
+      else { state.nudgeSpeed(back ? -1 : 1); announceSpeed(); }
+    }
     if (k === 'b') hud.toggleBuild();
     if (k === 'x' || k === 'delete') hud.setDemolish(!hud.demolishing);
     if (k === 'n') hud.toggleMinimap();
@@ -3748,7 +3796,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
         buildings: state.buildings
           .map(b => packBuilding({
             id: b.id, name: b.name, x: b.x, z: b.z, hp: b.hp, staff: b.staff,
-            raised: b.raised, alt: b.alt,
+            raised: b.raised, alt: b.alt, turn: b.turn,
           }))
           .filter((b): b is NetBuilding => b !== null),
         soldiers,
@@ -3804,7 +3852,10 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
         had.staff = nb.s;
         continue;
       }
-      f.buildings.push({ id: nb.i, name, x: nb.x, z: nb.z, hp: nb.h, staff: nb.s });
+      f.buildings.push({
+        id: nb.i, name, x: nb.x, z: nb.z, hp: nb.h, staff: nb.s,
+        turn: (nb.f >> F_TURN_SHIFT) & F_TURN_MASK,
+      });
       markArea(nb.x, nb.z, w, d);
       if (!BUILDINGS[name].walkable) markSolid(nb.x, nb.z, w, d);
       if (name === 'keep') f.keep = { x: nb.x + 1, z: nb.z + 1 };
@@ -4570,7 +4621,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     if (placement.selected && placement.hover) {
       // A painted store has no building sprite of its own -- it is a square, so
       // the ghost is the empty square. SPRITE_STANDIN already says as much.
-      const key = spriteKey(placement.selected, rot);
+      const key = spriteKey(placement.selected, rot, placement.facing);
       const frame = key ? atlas.frames[key] : undefined;
       if (frame) {
         const [w, d] = BUILDINGS[placement.selected].footprint;
@@ -4643,6 +4694,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
         held: { ...b.held } as Record<string, number>,
         up: b.raised ? 1 : undefined,
         alt: b.alt ? 1 : undefined,
+        t: b.turn || undefined,
       })),
       // Factions another player owns are left out: their economy is a set of
       // numbers on someone else's machine that this client is never told, so
@@ -4723,6 +4775,9 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       // A workshop keeps what it was set to cut. An older save has no field
       // here, which reads as the default product -- exactly what it was making.
       b.alt = !!sb.alt;
+      // And which way it was turned. Absent in an older save, which reads as
+      // facing the way everything faced before the key existed.
+      b.turn = sb.t ?? 0;
       if (!def.walkable || b.raised) markSolid(sb.x, sb.z, w, d);
     }
     for (const sf of sv.factions) {

@@ -34,6 +34,16 @@ export const soldierType = (i: number): string | null => SOLDIER_ORDER_WIRE[i] ?
 /** Flags packed into NetBuilding.f. */
 export const F_RAISED = 1;
 export const F_ALT = 2;
+/**
+ * Two bits for the quarter turn it was laid at, above the two flag bits.
+ *
+ * In the flag word rather than as a field of its own so the message keeps its
+ * shape: a turn is three quarters at most and the word had the room. An older
+ * client sends zeroes here, which reads as the way everything faced before the
+ * key existed.
+ */
+export const F_TURN_SHIFT = 2;
+export const F_TURN_MASK = 3;
 
 export interface WireBuildingSource {
   id: number;
@@ -44,6 +54,7 @@ export interface WireBuildingSource {
   staff: number;
   raised?: boolean;
   alt?: boolean;
+  turn?: number;
 }
 
 export function packBuilding(b: WireBuildingSource): NetBuilding | null {
@@ -53,7 +64,8 @@ export function packBuilding(b: WireBuildingSource): NetBuilding | null {
     i: b.id, n, x: b.x, z: b.z,
     h: Math.max(0, Math.round(b.hp)),
     s: b.staff | 0,
-    f: (b.raised ? F_RAISED : 0) | (b.alt ? F_ALT : 0),
+    f: (b.raised ? F_RAISED : 0) | (b.alt ? F_ALT : 0)
+       | ((b.turn ?? 0) & F_TURN_MASK) << F_TURN_SHIFT,
   };
 }
 

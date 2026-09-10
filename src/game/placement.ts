@@ -1,4 +1,5 @@
-import { WATER_REACH, BUILDINGS, STORE_SPRITES, type TerrainNeed } from './defs';
+import { WATER_REACH, BUILDINGS, STORE_SPRITES, TURNABLE, TURNS,
+         type TerrainNeed } from './defs';
 import type { GameState } from './state';
 
 export interface PlacementWorld {
@@ -57,6 +58,20 @@ export class Placement {
   hover: { x: number; z: number } | null = null;
   lastCheck: PlacementCheck = { ok: false, reason: '' };
   /**
+   * Quarter turns the thing in hand is to be laid at, 0 to 3.
+   *
+   * Kept across placements rather than reset with every click: setting a row
+   * of huts to face the street means turning ONE of them and then laying the
+   * row. Kept across a change of building too -- a player who has turned the
+   * view of their town in their head has not changed their mind about it
+   * because they reached for a different tool.
+   *
+   * Always 0 for a building with no turned art, so nothing is ever stored or
+   * sent that the game cannot draw.
+   */
+  turn = 0;
+
+  /**
    * Where a dragged run began, or null while nothing is being dragged.
    *
    * Set on the press and cleared on the release; `run()` reads it against the
@@ -75,6 +90,29 @@ export class Placement {
     this.selected = null;
     this.hover = null;
     this.dragFrom = null;
+  }
+
+  /** Whether what is in hand can be turned at all. */
+  get turnable(): boolean {
+    return !!this.selected && TURNABLE.has(this.selected);
+  }
+
+  /** The turn the thing in hand would actually be laid at. */
+  get facing(): number {
+    return this.turnable ? this.turn : 0;
+  }
+
+  /**
+   * Turn the thing in hand a quarter, either way. Returns whether it moved.
+   *
+   * False for a building with no turned art, which is the caller's cue to say
+   * so rather than to silently do nothing -- a key that appears dead is worse
+   * than a key that tells you why.
+   */
+  turnBy(quarters: number): boolean {
+    if (!this.turnable) return false;
+    this.turn = (((this.turn + quarters) % TURNS) + TURNS) % TURNS;
+    return true;
   }
 
   /**
@@ -264,7 +302,7 @@ export class Placement {
     if (!check.ok) return check;
     const def = BUILDINGS[name];
     this.state.spend(def.cost);
-    this.state.addBuilding(name, x, z);
+    this.state.addBuilding(name, x, z, TURNABLE.has(name) ? this.turn : 0);
     this.state.assignWorkers();
     return check;
   }

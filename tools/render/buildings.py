@@ -200,6 +200,34 @@ def quarry_rock():
 # `stockpile_deck` and `granary_bin` -- and defs.ts `storeSquare` is now the one
 # thing that answers "what does a store draw". Recover the sheds from git if a
 # building-shaped store is ever wanted; do not re-register these names.
+#: Buildings the player may turn on their own footprint before placing.
+#:
+#: Every footprint in the game is square, so turning one is purely a matter of
+#: how it looks -- but that IS the point: a village of identically-oriented huts
+#: is the most obviously stamped thing on the map.
+#:
+#: A short list on purpose. Each name here is twelve more sprites (three turns
+#: by four camera angles) and about 0.9 megapixels of a single atlas that has a
+#: hard ceiling, so this is spent on the buildings placed in numbers rather than
+#: on every model in the catalogue. Keep in step with TURNABLE in defs.ts, which
+#: is what tells the game the key will do anything.
+#:
+#: Not the gatehouse: it was deliberately modelled with an arch on all four
+#: faces BECAUSE nothing rotates, so turning it changes almost nothing. Give it
+#: a single passage first and it earns its place here.
+#: Not the mill or the quarry either: each already carries a family of frames
+#: -- sail phases, yard levels -- and turning those would multiply the family
+#: by four.
+TURNABLE = (
+    "hovel", "garden", "well", "pond", "statue", "dancing_bear", "market",
+    "woodcutter", "bakery", "poleturner", "fletcher", "blacksmith", "armourer",
+    "stairs", "perimeter_turret",
+)
+
+#: Quarter turns a turnable building has art for.
+TURNS = 4
+
+
 REGISTRY = {
     "keep": keep,
     "hovel": hovel,

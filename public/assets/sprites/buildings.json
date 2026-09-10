@@ -68,9 +68,9 @@
     "name": "armourer",
     "rotation": 1,
     "width": 306,
-    "height": 214,
+    "height": 182,
     "anchor_x": 108.69,
-    "anchor_y": 107.06,
+    "anchor_y": 75.06,
     "footprint": [
       2,
       2
@@ -81,9 +81,9 @@
     "name": "armourer",
     "rotation": 2,
     "width": 260,
-    "height": 258,
+    "height": 226,
     "anchor_x": 203.95,
-    "anchor_y": 154.66,
+    "anchor_y": 122.66,
     "footprint": [
       2,
       2
@@ -94,9 +94,165 @@
     "name": "armourer",
     "rotation": 3,
     "width": 306,
-    "height": 236,
+    "height": 203,
     "anchor_x": 197.31,
-    "anchor_y": 202.79,
+    "anchor_y": 169.79,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "armourer_t1",
+    "rotation": 0,
+    "width": 260,
+    "height": 214,
+    "anchor_x": 56.05,
+    "anchor_y": 154.58,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "armourer_t1",
+    "rotation": 1,
+    "width": 306,
+    "height": 178,
+    "anchor_x": 108.69,
+    "anchor_y": 71.06,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "armourer_t1",
+    "rotation": 2,
+    "width": 260,
+    "height": 229,
+    "anchor_x": 203.95,
+    "anchor_y": 125.66,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "armourer_t1",
+    "rotation": 3,
+    "width": 306,
+    "height": 207,
+    "anchor_x": 197.31,
+    "anchor_y": 173.79,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "armourer_t2",
+    "rotation": 0,
+    "width": 260,
+    "height": 214,
+    "anchor_x": 56.05,
+    "anchor_y": 154.58,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "armourer_t2",
+    "rotation": 1,
+    "width": 306,
+    "height": 175,
+    "anchor_x": 108.69,
+    "anchor_y": 68.06,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "armourer_t2",
+    "rotation": 2,
+    "width": 260,
+    "height": 226,
+    "anchor_x": 203.95,
+    "anchor_y": 122.66,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "armourer_t2",
+    "rotation": 3,
+    "width": 306,
+    "height": 210,
+    "anchor_x": 197.31,
+    "anchor_y": 176.79,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "armourer_t3",
+    "rotation": 0,
+    "width": 260,
+    "height": 214,
+    "anchor_x": 56.05,
+    "anchor_y": 154.58,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "armourer_t3",
+    "rotation": 1,
+    "width": 306,
+    "height": 179,
+    "anchor_x": 108.69,
+    "anchor_y": 72.06,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "armourer_t3",
+    "rotation": 2,
+    "width": 260,
+    "height": 223,
+    "anchor_x": 203.95,
+    "anchor_y": 119.66,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "armourer_t3",
+    "rotation": 3,
+    "width": 306,
+    "height": 206,
+    "anchor_x": 197.31,
+    "anchor_y": 172.79,
     "footprint": [
       2,
       2
@@ -172,9 +328,9 @@
     "name": "bakery",
     "rotation": 1,
     "width": 298,
-    "height": 210,
+    "height": 177,
     "anchor_x": 108.09,
-    "anchor_y": 102.61,
+    "anchor_y": 69.61,
     "footprint": [
       2,
       2
@@ -185,9 +341,9 @@
     "name": "bakery",
     "rotation": 2,
     "width": 252,
-    "height": 254,
+    "height": 224,
     "anchor_x": 204.07,
-    "anchor_y": 153.87,
+    "anchor_y": 123.87,
     "footprint": [
       2,
       2
@@ -198,9 +354,165 @@
     "name": "bakery",
     "rotation": 3,
     "width": 298,
-    "height": 230,
+    "height": 202,
     "anchor_x": 189.91,
-    "anchor_y": 201.36,
+    "anchor_y": 173.36,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "bakery_t1",
+    "rotation": 0,
+    "width": 252,
+    "height": 210,
+    "anchor_x": 47.93,
+    "anchor_y": 150.61,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "bakery_t1",
+    "rotation": 1,
+    "width": 298,
+    "height": 170,
+    "anchor_x": 108.09,
+    "anchor_y": 62.61,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "bakery_t1",
+    "rotation": 2,
+    "width": 252,
+    "height": 220,
+    "anchor_x": 204.07,
+    "anchor_y": 119.87,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "bakery_t1",
+    "rotation": 3,
+    "width": 298,
+    "height": 207,
+    "anchor_x": 189.91,
+    "anchor_y": 178.36,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "bakery_t2",
+    "rotation": 0,
+    "width": 252,
+    "height": 210,
+    "anchor_x": 47.93,
+    "anchor_y": 150.61,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "bakery_t2",
+    "rotation": 1,
+    "width": 298,
+    "height": 176,
+    "anchor_x": 108.09,
+    "anchor_y": 68.61,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "bakery_t2",
+    "rotation": 2,
+    "width": 249,
+    "height": 213,
+    "anchor_x": 204.07,
+    "anchor_y": 112.87,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "bakery_t2",
+    "rotation": 3,
+    "width": 298,
+    "height": 204,
+    "anchor_x": 189.91,
+    "anchor_y": 175.36,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "bakery_t3",
+    "rotation": 0,
+    "width": 252,
+    "height": 195,
+    "anchor_x": 47.93,
+    "anchor_y": 150.61,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "bakery_t3",
+    "rotation": 1,
+    "width": 275,
+    "height": 180,
+    "anchor_x": 85.09,
+    "anchor_y": 72.61,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "bakery_t3",
+    "rotation": 2,
+    "width": 252,
+    "height": 219,
+    "anchor_x": 204.07,
+    "anchor_y": 118.87,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "bakery_t3",
+    "rotation": 3,
+    "width": 270,
+    "height": 197,
+    "anchor_x": 189.91,
+    "anchor_y": 168.36,
     "footprint": [
       2,
       2
@@ -1056,9 +1368,9 @@
     "name": "blacksmith",
     "rotation": 1,
     "width": 306,
-    "height": 214,
+    "height": 182,
     "anchor_x": 108.69,
-    "anchor_y": 107.06,
+    "anchor_y": 75.06,
     "footprint": [
       2,
       2
@@ -1069,9 +1381,9 @@
     "name": "blacksmith",
     "rotation": 2,
     "width": 260,
-    "height": 258,
+    "height": 226,
     "anchor_x": 203.95,
-    "anchor_y": 154.66,
+    "anchor_y": 122.66,
     "footprint": [
       2,
       2
@@ -1082,9 +1394,165 @@
     "name": "blacksmith",
     "rotation": 3,
     "width": 306,
-    "height": 236,
+    "height": 203,
     "anchor_x": 197.31,
-    "anchor_y": 202.79,
+    "anchor_y": 169.79,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "blacksmith_t1",
+    "rotation": 0,
+    "width": 260,
+    "height": 214,
+    "anchor_x": 56.05,
+    "anchor_y": 154.58,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "blacksmith_t1",
+    "rotation": 1,
+    "width": 306,
+    "height": 178,
+    "anchor_x": 108.69,
+    "anchor_y": 71.06,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "blacksmith_t1",
+    "rotation": 2,
+    "width": 260,
+    "height": 229,
+    "anchor_x": 203.95,
+    "anchor_y": 125.66,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "blacksmith_t1",
+    "rotation": 3,
+    "width": 306,
+    "height": 207,
+    "anchor_x": 197.31,
+    "anchor_y": 173.79,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "blacksmith_t2",
+    "rotation": 0,
+    "width": 260,
+    "height": 214,
+    "anchor_x": 56.05,
+    "anchor_y": 154.58,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "blacksmith_t2",
+    "rotation": 1,
+    "width": 306,
+    "height": 175,
+    "anchor_x": 108.69,
+    "anchor_y": 68.06,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "blacksmith_t2",
+    "rotation": 2,
+    "width": 260,
+    "height": 226,
+    "anchor_x": 203.95,
+    "anchor_y": 122.66,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "blacksmith_t2",
+    "rotation": 3,
+    "width": 306,
+    "height": 210,
+    "anchor_x": 197.31,
+    "anchor_y": 176.79,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "blacksmith_t3",
+    "rotation": 0,
+    "width": 260,
+    "height": 214,
+    "anchor_x": 56.05,
+    "anchor_y": 154.58,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "blacksmith_t3",
+    "rotation": 1,
+    "width": 306,
+    "height": 179,
+    "anchor_x": 108.69,
+    "anchor_y": 72.06,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "blacksmith_t3",
+    "rotation": 2,
+    "width": 260,
+    "height": 223,
+    "anchor_x": 203.95,
+    "anchor_y": 119.66,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "blacksmith_t3",
+    "rotation": 3,
+    "width": 306,
+    "height": 206,
+    "anchor_x": 197.31,
+    "anchor_y": 172.79,
     "footprint": [
       2,
       2
@@ -1553,6 +2021,162 @@
     "height": 156,
     "anchor_x": 136.55,
     "anchor_y": 149.53,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "dancing_bear_t1",
+    "rotation": 0,
+    "width": 84,
+    "height": 102,
+    "anchor_x": -100.47,
+    "anchor_y": 53.29,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "dancing_bear_t1",
+    "rotation": 1,
+    "width": 148,
+    "height": 95,
+    "anchor_x": 88.45,
+    "anchor_y": -1.71,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "dancing_bear_t1",
+    "rotation": 2,
+    "width": 83,
+    "height": 166,
+    "anchor_x": 184.47,
+    "anchor_y": 134.01,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "dancing_bear_t1",
+    "rotation": 3,
+    "width": 149,
+    "height": 135,
+    "anchor_x": 60.55,
+    "anchor_y": 183.53,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "dancing_bear_t2",
+    "rotation": 0,
+    "width": 12,
+    "height": 54,
+    "anchor_x": -172.47,
+    "anchor_y": 80.29,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "dancing_bear_t2",
+    "rotation": 1,
+    "width": 153,
+    "height": 55,
+    "anchor_x": 15.45,
+    "anchor_y": -41.71,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "dancing_bear_t2",
+    "rotation": 2,
+    "width": 14,
+    "height": 49,
+    "anchor_x": 184.47,
+    "anchor_y": -39.99,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "dancing_bear_t2",
+    "rotation": 3,
+    "width": 213,
+    "height": 97,
+    "anchor_x": 153.55,
+    "anchor_y": 183.53,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "dancing_bear_t3",
+    "rotation": 0,
+    "width": 94,
+    "height": 114,
+    "anchor_x": -90.47,
+    "anchor_y": 131.29,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "dancing_bear_t3",
+    "rotation": 1,
+    "width": 133,
+    "height": 98,
+    "anchor_x": -36.55,
+    "anchor_y": 1.29,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "dancing_bear_t3",
+    "rotation": 2,
+    "width": 98,
+    "height": 141,
+    "anchor_x": 184.47,
+    "anchor_y": 52.01,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "dancing_bear_t3",
+    "rotation": 3,
+    "width": 133,
+    "height": 141,
+    "anchor_x": 169.55,
+    "anchor_y": 183.53,
     "footprint": [
       2,
       2
@@ -2044,9 +2668,9 @@
     "name": "fletcher",
     "rotation": 1,
     "width": 306,
-    "height": 214,
+    "height": 182,
     "anchor_x": 108.68,
-    "anchor_y": 107.06,
+    "anchor_y": 75.06,
     "footprint": [
       2,
       2
@@ -2057,9 +2681,9 @@
     "name": "fletcher",
     "rotation": 2,
     "width": 260,
-    "height": 258,
+    "height": 226,
     "anchor_x": 203.95,
-    "anchor_y": 154.66,
+    "anchor_y": 122.66,
     "footprint": [
       2,
       2
@@ -2070,9 +2694,165 @@
     "name": "fletcher",
     "rotation": 3,
     "width": 306,
-    "height": 236,
+    "height": 203,
     "anchor_x": 197.32,
-    "anchor_y": 202.79,
+    "anchor_y": 169.79,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "fletcher_t1",
+    "rotation": 0,
+    "width": 260,
+    "height": 214,
+    "anchor_x": 56.05,
+    "anchor_y": 154.58,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "fletcher_t1",
+    "rotation": 1,
+    "width": 306,
+    "height": 178,
+    "anchor_x": 108.68,
+    "anchor_y": 71.06,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "fletcher_t1",
+    "rotation": 2,
+    "width": 260,
+    "height": 229,
+    "anchor_x": 203.95,
+    "anchor_y": 125.66,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "fletcher_t1",
+    "rotation": 3,
+    "width": 306,
+    "height": 207,
+    "anchor_x": 197.32,
+    "anchor_y": 173.79,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "fletcher_t2",
+    "rotation": 0,
+    "width": 260,
+    "height": 214,
+    "anchor_x": 56.05,
+    "anchor_y": 154.58,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "fletcher_t2",
+    "rotation": 1,
+    "width": 306,
+    "height": 175,
+    "anchor_x": 108.68,
+    "anchor_y": 68.06,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "fletcher_t2",
+    "rotation": 2,
+    "width": 260,
+    "height": 226,
+    "anchor_x": 203.95,
+    "anchor_y": 122.66,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "fletcher_t2",
+    "rotation": 3,
+    "width": 306,
+    "height": 210,
+    "anchor_x": 197.32,
+    "anchor_y": 176.79,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "fletcher_t3",
+    "rotation": 0,
+    "width": 260,
+    "height": 214,
+    "anchor_x": 56.05,
+    "anchor_y": 154.58,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "fletcher_t3",
+    "rotation": 1,
+    "width": 306,
+    "height": 179,
+    "anchor_x": 108.68,
+    "anchor_y": 72.06,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "fletcher_t3",
+    "rotation": 2,
+    "width": 260,
+    "height": 223,
+    "anchor_x": 203.95,
+    "anchor_y": 119.66,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "fletcher_t3",
+    "rotation": 3,
+    "width": 306,
+    "height": 206,
+    "anchor_x": 197.32,
+    "anchor_y": 172.79,
     "footprint": [
       2,
       2
@@ -2134,10 +2914,10 @@
   {
     "name": "garden",
     "rotation": 0,
-    "width": 195,
-    "height": 120,
-    "anchor_x": 8.51,
-    "anchor_y": 72.99,
+    "width": 184,
+    "height": 101,
+    "anchor_x": -2.49,
+    "anchor_y": 53.99,
     "footprint": [
       2,
       2
@@ -2147,10 +2927,10 @@
   {
     "name": "garden",
     "rotation": 1,
-    "width": 210,
-    "height": 120,
-    "anchor_x": 95.64,
-    "anchor_y": 24.99,
+    "width": 191,
+    "height": 104,
+    "anchor_x": 90.64,
+    "anchor_y": 8.99,
     "footprint": [
       2,
       2
@@ -2173,10 +2953,166 @@
   {
     "name": "garden",
     "rotation": 3,
-    "width": 210,
-    "height": 121,
-    "anchor_x": 114.36,
-    "anchor_y": 120.74,
+    "width": 191,
+    "height": 99,
+    "anchor_x": 100.36,
+    "anchor_y": 98.74,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "garden_t1",
+    "rotation": 0,
+    "width": 179,
+    "height": 98,
+    "anchor_x": -12.49,
+    "anchor_y": 45.99,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "garden_t1",
+    "rotation": 1,
+    "width": 184,
+    "height": 101,
+    "anchor_x": 95.64,
+    "anchor_y": 0.99,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "garden_t1",
+    "rotation": 2,
+    "width": 179,
+    "height": 108,
+    "anchor_x": 191.49,
+    "anchor_y": 62.31,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "garden_t1",
+    "rotation": 3,
+    "width": 183,
+    "height": 99,
+    "anchor_x": 87.36,
+    "anchor_y": 103.74,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "garden_t2",
+    "rotation": 0,
+    "width": 169,
+    "height": 98,
+    "anchor_x": -22.49,
+    "anchor_y": 50.99,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "garden_t2",
+    "rotation": 1,
+    "width": 189,
+    "height": 94,
+    "anchor_x": 90.64,
+    "anchor_y": -7.01,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "garden_t2",
+    "rotation": 2,
+    "width": 169,
+    "height": 106,
+    "anchor_x": 191.49,
+    "anchor_y": 54.31,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "garden_t2",
+    "rotation": 3,
+    "width": 188,
+    "height": 106,
+    "anchor_x": 97.36,
+    "anchor_y": 114.74,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "garden_t3",
+    "rotation": 0,
+    "width": 179,
+    "height": 104,
+    "anchor_x": -12.49,
+    "anchor_y": 61.99,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "garden_t3",
+    "rotation": 1,
+    "width": 195,
+    "height": 98,
+    "anchor_x": 80.64,
+    "anchor_y": -2.01,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "garden_t3",
+    "rotation": 2,
+    "width": 179,
+    "height": 105,
+    "anchor_x": 191.49,
+    "anchor_y": 45.31,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "garden_t3",
+    "rotation": 3,
+    "width": 194,
+    "height": 103,
+    "anchor_x": 113.36,
+    "anchor_y": 106.74,
     "footprint": [
       2,
       2
@@ -2408,9 +3344,9 @@
     "name": "hovel",
     "rotation": 1,
     "width": 328,
-    "height": 232,
+    "height": 197,
     "anchor_x": 118.01,
-    "anchor_y": 124.48,
+    "anchor_y": 89.48,
     "footprint": [
       2,
       2
@@ -2421,9 +3357,9 @@
     "name": "hovel",
     "rotation": 2,
     "width": 276,
-    "height": 282,
+    "height": 246,
     "anchor_x": 205.0,
-    "anchor_y": 172.21,
+    "anchor_y": 136.21,
     "footprint": [
       2,
       2
@@ -2434,9 +3370,165 @@
     "name": "hovel",
     "rotation": 3,
     "width": 328,
-    "height": 256,
+    "height": 221,
     "anchor_x": 209.99,
-    "anchor_y": 215.71,
+    "anchor_y": 180.71,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "hovel_t1",
+    "rotation": 0,
+    "width": 276,
+    "height": 192,
+    "anchor_x": 71.0,
+    "anchor_y": 127.81,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "hovel_t1",
+    "rotation": 1,
+    "width": 328,
+    "height": 183,
+    "anchor_x": 118.01,
+    "anchor_y": 75.48,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "hovel_t1",
+    "rotation": 2,
+    "width": 276,
+    "height": 256,
+    "anchor_x": 205.0,
+    "anchor_y": 146.21,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "hovel_t1",
+    "rotation": 3,
+    "width": 328,
+    "height": 234,
+    "anchor_x": 209.99,
+    "anchor_y": 193.71,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "hovel_t2",
+    "rotation": 0,
+    "width": 244,
+    "height": 205,
+    "anchor_x": 39.0,
+    "anchor_y": 140.81,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "hovel_t2",
+    "rotation": 1,
+    "width": 328,
+    "height": 174,
+    "anchor_x": 118.01,
+    "anchor_y": 66.48,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "hovel_t2",
+    "rotation": 2,
+    "width": 276,
+    "height": 242,
+    "anchor_x": 205.0,
+    "anchor_y": 132.21,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "hovel_t2",
+    "rotation": 3,
+    "width": 328,
+    "height": 225,
+    "anchor_x": 209.99,
+    "anchor_y": 203.71,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "hovel_t3",
+    "rotation": 0,
+    "width": 276,
+    "height": 222,
+    "anchor_x": 71.0,
+    "anchor_y": 167.81,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "hovel_t3",
+    "rotation": 1,
+    "width": 314,
+    "height": 187,
+    "anchor_x": 104.01,
+    "anchor_y": 79.48,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "hovel_t3",
+    "rotation": 2,
+    "width": 276,
+    "height": 233,
+    "anchor_x": 205.0,
+    "anchor_y": 123.21,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "hovel_t3",
+    "rotation": 3,
+    "width": 328,
+    "height": 230,
+    "anchor_x": 209.99,
+    "anchor_y": 189.71,
     "footprint": [
       2,
       2
@@ -2759,9 +3851,9 @@
     "name": "market",
     "rotation": 0,
     "width": 288,
-    "height": 224,
+    "height": 198,
     "anchor_x": 29.78,
-    "anchor_y": 154.51,
+    "anchor_y": 128.51,
     "footprint": [
       3,
       3
@@ -2772,9 +3864,9 @@
     "name": "market",
     "rotation": 1,
     "width": 332,
-    "height": 224,
+    "height": 194,
     "anchor_x": 129.12,
-    "anchor_y": 89.95,
+    "anchor_y": 59.95,
     "footprint": [
       3,
       3
@@ -2785,9 +3877,9 @@
     "name": "market",
     "rotation": 2,
     "width": 288,
-    "height": 266,
+    "height": 236,
     "anchor_x": 258.22,
-    "anchor_y": 159.82,
+    "anchor_y": 129.82,
     "footprint": [
       3,
       3
@@ -2798,9 +3890,165 @@
     "name": "market",
     "rotation": 3,
     "width": 332,
-    "height": 244,
+    "height": 213,
+    "anchor_x": 202.88,
+    "anchor_y": 193.38,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "market_t1",
+    "rotation": 0,
+    "width": 261,
+    "height": 181,
+    "anchor_x": 2.78,
+    "anchor_y": 111.51,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "market_t1",
+    "rotation": 1,
+    "width": 332,
+    "height": 174,
+    "anchor_x": 129.12,
+    "anchor_y": 39.95,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "market_t1",
+    "rotation": 2,
+    "width": 262,
+    "height": 250,
+    "anchor_x": 258.22,
+    "anchor_y": 143.82,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "market_t1",
+    "rotation": 3,
+    "width": 332,
+    "height": 217,
+    "anchor_x": 202.88,
+    "anchor_y": 213.38,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "market_t2",
+    "rotation": 0,
+    "width": 245,
+    "height": 219,
+    "anchor_x": -13.22,
+    "anchor_y": 154.51,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "market_t2",
+    "rotation": 1,
+    "width": 332,
+    "height": 159,
+    "anchor_x": 129.12,
+    "anchor_y": 24.95,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "market_t2",
+    "rotation": 2,
+    "width": 243,
+    "height": 230,
+    "anchor_x": 258.22,
+    "anchor_y": 123.82,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "market_t2",
+    "rotation": 3,
+    "width": 332,
+    "height": 220,
     "anchor_x": 202.88,
     "anchor_y": 224.38,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "market_t3",
+    "rotation": 0,
+    "width": 276,
+    "height": 209,
+    "anchor_x": 17.78,
+    "anchor_y": 154.51,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "market_t3",
+    "rotation": 1,
+    "width": 309,
+    "height": 179,
+    "anchor_x": 106.12,
+    "anchor_y": 44.95,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "market_t3",
+    "rotation": 2,
+    "width": 288,
+    "height": 215,
+    "anchor_x": 258.22,
+    "anchor_y": 108.82,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "market_t3",
+    "rotation": 3,
+    "width": 309,
+    "height": 227,
+    "anchor_x": 202.88,
+    "anchor_y": 207.38,
     "footprint": [
       3,
       3
@@ -3633,6 +4881,162 @@
     "height": 153,
     "anchor_x": 134.35,
     "anchor_y": 120.93,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "perimeter_turret_t1",
+    "rotation": 0,
+    "width": 158,
+    "height": 124,
+    "anchor_x": 54.74,
+    "anchor_y": 95.8,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "perimeter_turret_t1",
+    "rotation": 1,
+    "width": 187,
+    "height": 131,
+    "anchor_x": 52.65,
+    "anchor_y": 74.92,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "perimeter_turret_t1",
+    "rotation": 2,
+    "width": 158,
+    "height": 177,
+    "anchor_x": 103.26,
+    "anchor_y": 104.63,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "perimeter_turret_t1",
+    "rotation": 3,
+    "width": 187,
+    "height": 157,
+    "anchor_x": 134.35,
+    "anchor_y": 124.93,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "perimeter_turret_t2",
+    "rotation": 0,
+    "width": 158,
+    "height": 140,
+    "anchor_x": 54.74,
+    "anchor_y": 112.8,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "perimeter_turret_t2",
+    "rotation": 1,
+    "width": 185,
+    "height": 127,
+    "anchor_x": 50.65,
+    "anchor_y": 70.92,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "perimeter_turret_t2",
+    "rotation": 2,
+    "width": 158,
+    "height": 172,
+    "anchor_x": 103.26,
+    "anchor_y": 99.63,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "perimeter_turret_t2",
+    "rotation": 3,
+    "width": 184,
+    "height": 161,
+    "anchor_x": 134.35,
+    "anchor_y": 128.93,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "perimeter_turret_t3",
+    "rotation": 0,
+    "width": 158,
+    "height": 139,
+    "anchor_x": 54.74,
+    "anchor_y": 112.8,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "perimeter_turret_t3",
+    "rotation": 1,
+    "width": 183,
+    "height": 131,
+    "anchor_x": 48.65,
+    "anchor_y": 74.92,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "perimeter_turret_t3",
+    "rotation": 2,
+    "width": 158,
+    "height": 168,
+    "anchor_x": 103.26,
+    "anchor_y": 95.63,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "perimeter_turret_t3",
+    "rotation": 3,
+    "width": 182,
+    "height": 157,
+    "anchor_x": 134.35,
+    "anchor_y": 124.93,
     "footprint": [
       1,
       1
@@ -5736,9 +7140,9 @@
     "name": "poleturner",
     "rotation": 1,
     "width": 308,
-    "height": 214,
+    "height": 182,
     "anchor_x": 109.92,
-    "anchor_y": 107.18,
+    "anchor_y": 75.18,
     "footprint": [
       2,
       2
@@ -5749,9 +7153,9 @@
     "name": "poleturner",
     "rotation": 2,
     "width": 260,
-    "height": 258,
+    "height": 226,
     "anchor_x": 203.71,
-    "anchor_y": 154.78,
+    "anchor_y": 122.78,
     "footprint": [
       2,
       2
@@ -5762,9 +7166,165 @@
     "name": "poleturner",
     "rotation": 3,
     "width": 308,
-    "height": 236,
+    "height": 204,
     "anchor_x": 198.08,
-    "anchor_y": 202.67,
+    "anchor_y": 170.67,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "poleturner_t1",
+    "rotation": 0,
+    "width": 260,
+    "height": 214,
+    "anchor_x": 56.29,
+    "anchor_y": 154.46,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "poleturner_t1",
+    "rotation": 1,
+    "width": 308,
+    "height": 178,
+    "anchor_x": 109.92,
+    "anchor_y": 71.18,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "poleturner_t1",
+    "rotation": 2,
+    "width": 260,
+    "height": 229,
+    "anchor_x": 203.71,
+    "anchor_y": 125.78,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "poleturner_t1",
+    "rotation": 3,
+    "width": 308,
+    "height": 207,
+    "anchor_x": 198.08,
+    "anchor_y": 173.67,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "poleturner_t2",
+    "rotation": 0,
+    "width": 260,
+    "height": 214,
+    "anchor_x": 56.29,
+    "anchor_y": 154.46,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "poleturner_t2",
+    "rotation": 1,
+    "width": 308,
+    "height": 175,
+    "anchor_x": 109.92,
+    "anchor_y": 68.18,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "poleturner_t2",
+    "rotation": 2,
+    "width": 260,
+    "height": 225,
+    "anchor_x": 203.71,
+    "anchor_y": 121.78,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "poleturner_t2",
+    "rotation": 3,
+    "width": 308,
+    "height": 210,
+    "anchor_x": 198.08,
+    "anchor_y": 176.67,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "poleturner_t3",
+    "rotation": 0,
+    "width": 260,
+    "height": 214,
+    "anchor_x": 56.29,
+    "anchor_y": 154.46,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "poleturner_t3",
+    "rotation": 1,
+    "width": 308,
+    "height": 179,
+    "anchor_x": 109.92,
+    "anchor_y": 72.18,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "poleturner_t3",
+    "rotation": 2,
+    "width": 260,
+    "height": 223,
+    "anchor_x": 203.71,
+    "anchor_y": 119.78,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "poleturner_t3",
+    "rotation": 3,
+    "width": 308,
+    "height": 206,
+    "anchor_x": 198.08,
+    "anchor_y": 172.67,
     "footprint": [
       2,
       2
@@ -5817,6 +7377,162 @@
     "height": 107,
     "anchor_x": 109.12,
     "anchor_y": 103.02,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "pond_t1",
+    "rotation": 0,
+    "width": 195,
+    "height": 105,
+    "anchor_x": -1.17,
+    "anchor_y": 52.93,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "pond_t1",
+    "rotation": 1,
+    "width": 202,
+    "height": 110,
+    "anchor_x": 99.88,
+    "anchor_y": 8.93,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "pond_t1",
+    "rotation": 2,
+    "width": 196,
+    "height": 110,
+    "anchor_x": 196.17,
+    "anchor_y": 57.88,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "pond_t1",
+    "rotation": 3,
+    "width": 200,
+    "height": 108,
+    "anchor_x": 100.12,
+    "anchor_y": 106.02,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "pond_t2",
+    "rotation": 0,
+    "width": 188,
+    "height": 105,
+    "anchor_x": -8.17,
+    "anchor_y": 54.93,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "pond_t2",
+    "rotation": 1,
+    "width": 201,
+    "height": 104,
+    "anchor_x": 95.88,
+    "anchor_y": 0.93,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "pond_t2",
+    "rotation": 2,
+    "width": 190,
+    "height": 114,
+    "anchor_x": 196.17,
+    "anchor_y": 58.88,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "pond_t2",
+    "rotation": 3,
+    "width": 202,
+    "height": 106,
+    "anchor_x": 106.12,
+    "anchor_y": 108.02,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "pond_t3",
+    "rotation": 0,
+    "width": 195,
+    "height": 105,
+    "anchor_x": -1.17,
+    "anchor_y": 57.93,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "pond_t3",
+    "rotation": 1,
+    "width": 204,
+    "height": 105,
+    "anchor_x": 90.88,
+    "anchor_y": 3.93,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "pond_t3",
+    "rotation": 2,
+    "width": 194,
+    "height": 110,
+    "anchor_x": 196.17,
+    "anchor_y": 51.88,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "pond_t3",
+    "rotation": 3,
+    "width": 202,
+    "height": 111,
+    "anchor_x": 112.12,
+    "anchor_y": 110.02,
     "footprint": [
       2,
       2
@@ -6864,6 +8580,162 @@
     "scale": 3
   },
   {
+    "name": "stairs_t1",
+    "rotation": 0,
+    "width": 130,
+    "height": 104,
+    "anchor_x": 29.25,
+    "anchor_y": 76.46,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "stairs_t1",
+    "rotation": 1,
+    "width": 158,
+    "height": 105,
+    "anchor_x": 52.09,
+    "anchor_y": 51.98,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "stairs_t1",
+    "rotation": 2,
+    "width": 130,
+    "height": 121,
+    "anchor_x": 100.75,
+    "anchor_y": 63.76,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "stairs_t1",
+    "rotation": 3,
+    "width": 158,
+    "height": 106,
+    "anchor_x": 105.91,
+    "anchor_y": 87.09,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "stairs_t2",
+    "rotation": 0,
+    "width": 121,
+    "height": 91,
+    "anchor_x": 20.25,
+    "anchor_y": 60.46,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "stairs_t2",
+    "rotation": 1,
+    "width": 158,
+    "height": 104,
+    "anchor_x": 52.09,
+    "anchor_y": 48.98,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "stairs_t2",
+    "rotation": 2,
+    "width": 130,
+    "height": 124,
+    "anchor_x": 100.75,
+    "anchor_y": 78.76,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "stairs_t2",
+    "rotation": 3,
+    "width": 133,
+    "height": 102,
+    "anchor_x": 80.91,
+    "anchor_y": 90.09,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "stairs_t3",
+    "rotation": 0,
+    "width": 115,
+    "height": 89,
+    "anchor_x": 14.25,
+    "anchor_y": 63.46,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "stairs_t3",
+    "rotation": 1,
+    "width": 154,
+    "height": 89,
+    "anchor_x": 48.09,
+    "anchor_y": 33.98,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "stairs_t3",
+    "rotation": 2,
+    "width": 117,
+    "height": 132,
+    "anchor_x": 100.75,
+    "anchor_y": 75.76,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "stairs_t3",
+    "rotation": 3,
+    "width": 153,
+    "height": 115,
+    "anchor_x": 105.91,
+    "anchor_y": 106.09,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
     "name": "statue",
     "rotation": 0,
     "width": 195,
@@ -6909,6 +8781,162 @@
     "height": 169,
     "anchor_x": 157.39,
     "anchor_y": 162.66,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "statue_t1",
+    "rotation": 0,
+    "width": 191,
+    "height": 162,
+    "anchor_x": -0.74,
+    "anchor_y": 109.79,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "statue_t1",
+    "rotation": 1,
+    "width": 243,
+    "height": 162,
+    "anchor_x": 95.61,
+    "anchor_y": 61.79,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "statue_t1",
+    "rotation": 2,
+    "width": 193,
+    "height": 194,
+    "anchor_x": 191.74,
+    "anchor_y": 118.6,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "statue_t1",
+    "rotation": 3,
+    "width": 243,
+    "height": 169,
+    "anchor_x": 147.39,
+    "anchor_y": 166.66,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "statue_t2",
+    "rotation": 0,
+    "width": 182,
+    "height": 161,
+    "anchor_x": -9.74,
+    "anchor_y": 113.79,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "statue_t2",
+    "rotation": 1,
+    "width": 249,
+    "height": 157,
+    "anchor_x": 90.61,
+    "anchor_y": 56.79,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "statue_t2",
+    "rotation": 2,
+    "width": 186,
+    "height": 195,
+    "anchor_x": 191.74,
+    "anchor_y": 114.6,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "statue_t2",
+    "rotation": 3,
+    "width": 246,
+    "height": 167,
+    "anchor_x": 155.39,
+    "anchor_y": 171.66,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "statue_t3",
+    "rotation": 0,
+    "width": 193,
+    "height": 161,
+    "anchor_x": 1.26,
+    "anchor_y": 118.79,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "statue_t3",
+    "rotation": 1,
+    "width": 277,
+    "height": 161,
+    "anchor_x": 80.61,
+    "anchor_y": 61.79,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "statue_t3",
+    "rotation": 2,
+    "width": 192,
+    "height": 196,
+    "anchor_x": 191.74,
+    "anchor_y": 109.6,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "statue_t3",
+    "rotation": 3,
+    "width": 248,
+    "height": 169,
+    "anchor_x": 167.39,
+    "anchor_y": 166.66,
     "footprint": [
       2,
       2
@@ -7384,6 +9412,162 @@
     "scale": 3
   },
   {
+    "name": "well_t1",
+    "rotation": 0,
+    "width": 68,
+    "height": 72,
+    "anchor_x": -87.69,
+    "anchor_y": 37.25,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "well_t1",
+    "rotation": 1,
+    "width": 117,
+    "height": 50,
+    "anchor_x": 59.12,
+    "anchor_y": -32.75,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "well_t1",
+    "rotation": 2,
+    "width": 67,
+    "height": 144,
+    "anchor_x": 155.69,
+    "anchor_y": 111.27,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "well_t1",
+    "rotation": 3,
+    "width": 119,
+    "height": 117,
+    "anchor_x": 59.88,
+    "anchor_y": 158.55,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "well_t2",
+    "rotation": 0,
+    "width": 150,
+    "height": 144,
+    "anchor_x": -5.69,
+    "anchor_y": 109.25,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "well_t2",
+    "rotation": 1,
+    "width": 83,
+    "height": 27,
+    "anchor_x": 39.12,
+    "anchor_y": -55.75,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "well_t2",
+    "rotation": 2,
+    "width": 150,
+    "height": 180,
+    "anchor_x": 155.69,
+    "anchor_y": 111.27,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "well_t2",
+    "rotation": 3,
+    "width": 171,
+    "height": 63,
+    "anchor_x": 126.88,
+    "anchor_y": 158.55,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "well_t3",
+    "rotation": 0,
+    "width": 80,
+    "height": 88,
+    "anchor_x": -75.69,
+    "anchor_y": 109.25,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "well_t3",
+    "rotation": 1,
+    "width": 77,
+    "height": 75,
+    "anchor_x": -49.88,
+    "anchor_y": -7.75,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "well_t3",
+    "rotation": 2,
+    "width": 54,
+    "height": 89,
+    "anchor_x": 155.69,
+    "anchor_y": 20.27,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "well_t3",
+    "rotation": 3,
+    "width": 75,
+    "height": 103,
+    "anchor_x": 126.88,
+    "anchor_y": 158.55,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
     "name": "wheat_farm",
     "rotation": 0,
     "width": 342,
@@ -7452,9 +9636,9 @@
     "name": "woodcutter",
     "rotation": 1,
     "width": 276,
-    "height": 194,
+    "height": 164,
     "anchor_x": 102.93,
-    "anchor_y": 93.87,
+    "anchor_y": 63.87,
     "footprint": [
       2,
       2
@@ -7465,9 +9649,9 @@
     "name": "woodcutter",
     "rotation": 2,
     "width": 236,
-    "height": 234,
+    "height": 204,
     "anchor_x": 190.1,
-    "anchor_y": 141.97,
+    "anchor_y": 111.97,
     "footprint": [
       2,
       2
@@ -7481,6 +9665,162 @@
     "height": 179,
     "anchor_x": 173.07,
     "anchor_y": 151.56,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "woodcutter_t1",
+    "rotation": 0,
+    "width": 223,
+    "height": 194,
+    "anchor_x": 32.9,
+    "anchor_y": 137.13,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "woodcutter_t1",
+    "rotation": 1,
+    "width": 276,
+    "height": 143,
+    "anchor_x": 102.93,
+    "anchor_y": 42.87,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "woodcutter_t1",
+    "rotation": 2,
+    "width": 221,
+    "height": 213,
+    "anchor_x": 190.1,
+    "anchor_y": 120.97,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "woodcutter_t1",
+    "rotation": 3,
+    "width": 276,
+    "height": 191,
+    "anchor_x": 173.07,
+    "anchor_y": 172.56,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "woodcutter_t2",
+    "rotation": 0,
+    "width": 188,
+    "height": 189,
+    "anchor_x": -2.1,
+    "anchor_y": 137.13,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "woodcutter_t2",
+    "rotation": 1,
+    "width": 271,
+    "height": 134,
+    "anchor_x": 97.93,
+    "anchor_y": 33.87,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "woodcutter_t2",
+    "rotation": 2,
+    "width": 180,
+    "height": 193,
+    "anchor_x": 190.1,
+    "anchor_y": 100.97,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "woodcutter_t2",
+    "rotation": 3,
+    "width": 276,
+    "height": 179,
+    "anchor_x": 173.07,
+    "anchor_y": 181.56,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "woodcutter_t3",
+    "rotation": 0,
+    "width": 236,
+    "height": 176,
+    "anchor_x": 45.9,
+    "anchor_y": 137.13,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "woodcutter_t3",
+    "rotation": 1,
+    "width": 249,
+    "height": 154,
+    "anchor_x": 75.93,
+    "anchor_y": 53.87,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "woodcutter_t3",
+    "rotation": 2,
+    "width": 236,
+    "height": 183,
+    "anchor_x": 190.1,
+    "anchor_y": 90.97,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "woodcutter_t3",
+    "rotation": 3,
+    "width": 246,
+    "height": 189,
+    "anchor_x": 173.07,
+    "anchor_y": 161.56,
     "footprint": [
       2,
       2

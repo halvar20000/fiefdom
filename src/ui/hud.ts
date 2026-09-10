@@ -1457,6 +1457,7 @@ export class Hud {
     hint.innerHTML =
       'R / E rotate &nbsp; wheel zoom &nbsp; drag pan<br>' +
       '<b>Space</b> pause &nbsp; <b>,</b> / <b>.</b> slower / faster<br>' +
+      '<b>,</b> / <b>.</b> turn what you are placing<br>' +
       '<b>1-6</b> build menu &nbsp; <b>B</b> toggle it<br>' +
       '<b>V</b> mutes and unmutes<br>' +
       '<b>X</b> demolish a building (half cost back)<br>' +

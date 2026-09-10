@@ -23,6 +23,23 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.59.0',
+    date: '2026-09-10',
+    headline: 'Turn a building before you set it down.',
+    sections: [
+      {
+        title: 'Added',
+        items: [
+          'Buildings can be turned before they are placed. With one in hand, \u002c and \u002e spin it a quarter at a time \u2014 the same two keys that set the game speed when your hands are empty. The ghost under the cursor shows exactly what will be laid, and the turn stays set from one placement to the next, so a row of huts facing the street is one press and then the row.',
+          'It is a real render and not a flipped sprite. The sun here is fixed over the WORLD, which is why turning the camera shows you genuinely different lit and shadowed faces \u2014 so drawing a turned building with one of its other camera frames would throw its shadow a different way from every neighbour\u2019s, which is what a rotated sprite usually looks like in an isometric game. Each turnable building is rendered on all four quarter turns and from all four camera angles instead: sixteen frames apiece, with the light and the shadow right at every one of them.',
+          'Fifteen buildings turn to begin with \u2014 hovel, garden, well, pond, statue, dancing bear, market, woodcutter, bakery, the four weapon workshops, stairs and the perimeter turret. They are the ones you place in numbers, where a stamped grid shows most. Everything else says so when you press the key rather than appearing not to work: the limit is the sprite atlas, which is one texture with a hard ceiling, and the list can grow a building at a time.',
+          'Not the gatehouse. It was deliberately given an arch on all four faces BECAUSE nothing could turn, so turning it changes almost nothing \u2014 it wants a single passage first, which is a job of its own.',
+          'Which way a building faces is saved with the game and sent over the wire, so a town looks the same when you load it and the same to everyone else in a match.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.58.0',
     date: '2026-09-10',
     headline: 'What the quarry is holding, in blocks.',

@@ -117,7 +117,10 @@ export interface NetBuilding {
   h: number;
   /** Workers on it, which is what draws its labourers. */
   s: number;
-  /** Bit 1: a drawbridge raised. Bit 2: a workshop on its alternate product. */
+  /**
+   * Bit 1: a drawbridge raised. Bit 2: a workshop on its alternate product.
+   * Bits 3-4: the quarter turn it was laid at. See wire.ts.
+   */
   f: number;
 }
 

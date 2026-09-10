@@ -26,7 +26,7 @@ import sys
 from dataclasses import dataclass, asdict
 
 import bpy
-from mathutils import Vector
+from mathutils import Matrix, Vector
 
 # --- projection ------------------------------------------------------------
 # Must stay in lockstep with src/engine/iso.ts
@@ -289,6 +289,38 @@ def add_shadow_catcher(size: float = 60.0) -> bpy.types.Object:
     plane.visible_diffuse = False
     plane.visible_glossy = False
     return plane
+
+
+# ---------------------------------------------------------------------------
+# turning a building on its own footprint
+# ---------------------------------------------------------------------------
+
+def turn_object(obj, quarters: int, footprint) -> None:
+    """
+    Spin `obj` a quarter turn at a time about the middle of its footprint.
+
+    The mesh DATA is transformed rather than the object, so the object's own
+    matrix stays the identity and everything downstream -- the world bounds,
+    the shadow projection, the framing -- goes on seeing an ordinary building
+    sitting on its tiles.
+
+    About the footprint's middle and not the origin, because the origin is the
+    corner the game anchors the sprite by: turning about that would swing the
+    building off its own plot and into the neighbour's.
+
+    Every step is the same +90 degrees, so repeated presses of the turn key
+    take a building round one way and back to where it started. Which way that
+    reads on screen depends on where the camera is standing, and is the same
+    for every building at a given camera angle -- which is all the player needs
+    it to be.
+    """
+    if not quarters:
+        return
+    cx, cy = footprint[0] / 2.0, footprint[1] / 2.0
+    m = (Matrix.Translation((cx, cy, 0.0))
+         @ Matrix.Rotation(math.pi / 2 * quarters, 4, 'Z')
+         @ Matrix.Translation((-cx, -cy, 0.0)))
+    obj.data.transform(m)
 
 
 # ---------------------------------------------------------------------------

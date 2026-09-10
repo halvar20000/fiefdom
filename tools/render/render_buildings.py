@@ -58,39 +58,47 @@ def main():
 
     for name in names:
         builder = registry[name]
+        # A turnable building is rendered on every quarter turn of its own
+        # footprint as well as from every camera angle. Turn 0 keeps the plain
+        # name, so nothing that already exists is renamed and a building that
+        # never turns costs exactly what it always did.
+        turns = range(buildings.TURNS) if name in buildings.TURNABLE else (0,)
 
-        for rot, azimuth in enumerate(rig.AZIMUTHS_DEG):
-            t0 = time.time()
+        for turn in turns:
+            for rot, azimuth in enumerate(rig.AZIMUTHS_DEG):
+                t0 = time.time()
 
-            # Full reset per render. Slower than reusing the scene, but it makes
-            # every sprite provably independent of what was rendered before it.
-            rig.reset_scene()
-            rig.setup_world()
-            rig.setup_sun()
-            rig.setup_bounce()
-            rig.setup_render(samples=samples)
-            rig.add_shadow_catcher()
+                # Full reset per render. Slower than reusing the scene, but it makes
+                # every sprite provably independent of what was rendered before it.
+                rig.reset_scene()
+                rig.setup_world()
+                rig.setup_sun()
+                rig.setup_bounce()
+                rig.setup_render(samples=samples)
+                rig.add_shadow_catcher()
 
-            obj, footprint = builder()
-            cam = rig.setup_camera(azimuth)
+                obj, footprint = builder()
+                rig.turn_object(obj, turn, footprint)
+                cam = rig.setup_camera(azimuth)
 
-            # keep the cast shadow inside the frame
-            corners = rig._world_bounds([obj])
-            extra = rig.shadow_projected(corners)
+                # keep the cast shadow inside the frame
+                corners = rig._world_bounds([obj])
+                extra = rig.shadow_projected(corners)
 
-            w, h, ax, ay = rig.frame_object(cam, [obj], Vector((0.0, 0.0, 0.0)),
-                                            extra_points=extra)
+                w, h, ax, ay = rig.frame_object(cam, [obj], Vector((0.0, 0.0, 0.0)),
+                                                extra_points=extra)
 
-            path = os.path.join(out_dir, f"{name}_{rot}.png")
-            rig.render_to(path)
+                key = name if turn == 0 else f"{name}_t{turn}"
+                path = os.path.join(out_dir, f"{key}_{rot}.png")
+                rig.render_to(path)
 
-            metas.append(rig.SpriteMeta(
-                name=name, rotation=rot, width=w, height=h,
-                anchor_x=round(ax, 2), anchor_y=round(ay, 2),
-                footprint=list(footprint), scale=rig.SPRITE_RENDER_SCALE,
-            ))
-            print(f"[{name} rot{rot}] {w}x{h} anchor=({ax:.1f},{ay:.1f}) "
-                  f"{time.time() - t0:.1f}s", flush=True)
+                metas.append(rig.SpriteMeta(
+                    name=key, rotation=rot, width=w, height=h,
+                    anchor_x=round(ax, 2), anchor_y=round(ay, 2),
+                    footprint=list(footprint), scale=rig.SPRITE_RENDER_SCALE,
+                ))
+                print(f"[{key} rot{rot}] {w}x{h} anchor=({ax:.1f},{ay:.1f}) "
+                      f"{time.time() - t0:.1f}s", flush=True)
 
     # Merge into any existing manifest instead of replacing it. A partial run
     # (--only keep) must not delete the catalogue entries for every other

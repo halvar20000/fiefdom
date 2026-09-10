@@ -30,6 +30,8 @@ export interface SavedBuilding {
   up?: number;
   /** A workshop set to its alternate product. Absent means the default one. */
   alt?: number;
+  /** Quarter turns it was laid at, 1 to 3. Absent means facing north. */
+  t?: number;
 }
 
 export interface SavedSoldier {

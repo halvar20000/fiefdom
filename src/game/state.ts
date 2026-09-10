@@ -33,6 +33,14 @@ export interface PlacedBuilding {
    */
   raised?: boolean;
   /**
+   * Quarter turns this building was set to before it was placed, 0 to 3.
+   *
+   * Absent means 0, like `raised` and `alt`: most buildings are not turnable
+   * at all, and an old save has no field here. Purely how it is drawn -- every
+   * footprint is square, so nothing about where it sits depends on this.
+   */
+  turn?: number;
+  /**
    * This workshop is cutting its ALTERNATE product -- pikes rather than
    * spears, maces rather than swords, crossbows rather than bows.
    *
@@ -593,10 +601,11 @@ export class GameState {
     return this.totalFood / -net;
   }
 
-  addBuilding(name: string, x: number, z: number): PlacedBuilding {
+  addBuilding(name: string, x: number, z: number, turn = 0): PlacedBuilding {
     const def = BUILDINGS[name];
     const b: PlacedBuilding = {
       id: this.nextId++, name, def, x, z, staff: 0, held: {}, hp: buildingHp(def),
+      ...(turn ? { turn } : {}),
     };
     this.buildings.push(b);
     return b;
