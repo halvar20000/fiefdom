@@ -23,6 +23,22 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.58.0',
+    date: '2026-09-10',
+    headline: 'What the quarry is holding, in blocks.',
+    sections: [
+      {
+        title: 'Added',
+        items: [
+          'A quarry\u2019s yard shows the stone standing in it. Four dressed blocks were baked into the sprite whatever it held, so a quarry the ox had just emptied and one backed up to the brim drew exactly the same picture \u2014 and whether the stone is piling up is the one thing worth having off a quarry at a glance. Every block you can see is now a block the game is actually holding.',
+          'One stack is one ox load. The ox takes four at a time and the blocks stack four to a pile, so three stacks in the yard is three trips it has not made \u2014 which is what tells you a second tether is worth its timber, and roughly where it wants to stand. Twelve blocks is the yard full, and a full yard is a quarry that has stopped cutting: there is nowhere to put the next one.',
+          'Hovering a quarry still reads out the number, as it always has. The blocks are for the glance across the whole works; the tooltip is for when you have already noticed.',
+          'A rival\u2019s quarry stands one load deep while his cutters are at it and empty when they are not. His economy is a set of numbers on his side of the map \u2014 there is no yard of his to report \u2014 so that is the honest thing to show, and it is the same thing his mill\u2019s turning sails say.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.57.0',
     date: '2026-09-10',
     headline: 'The mill turns.',

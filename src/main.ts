@@ -49,7 +49,8 @@ import {
   canGarrison, isWeapon,
   GARRISON_HEIGHT, garrisonReach, MARSH_SPEED_FOOT, MARSH_SPEED_SIEGE,
   BUILD_MENU, SOLDIER_ORDER, unlistedBuildings, unlistedSoldiers,
-  unlistedResources, storeSprites,
+  unlistedResources, storeSprites, millPhaseSprites, quarryLoadSprites,
+  MILL_SAIL_PHASES, HAUL_YARD,
   BURN_SECONDS, BURN_RADIUS, BURN_DPS, IGNITE_RADIUS, DEMOLISH_REFUND,
   PIT_TRIGGER_RADIUS, PIT_BLAST_RADIUS, PIT_DAMAGE, WATER_POT_RADIUS,
   OIL_POT_TRIGGER_RADIUS, OIL_POT_BLAST_RADIUS, OIL_POT_DAMAGE,
@@ -205,6 +206,14 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     // And the yards. A good with no pile art is stored and counted while the
     // square it sits on draws nothing at all.
     ...missingSprites(storeSprites(), atlas.frames),
+    // The frames a building steps through on its own: the mill's sail phases
+    // and every level a quarry yard can stand at. Both are asked for by name
+    // at draw time, so a missing one is a building that silently blinks out
+    // for as long as it is in that state. The quarry list is generated from
+    // HAUL_YARD, which is what makes raising the yard's capacity without
+    // rendering the blocks to fill it a loud failure rather than a quiet one.
+    ...missingSprites(millPhaseSprites(), atlas.frames),
+    ...missingSprites(quarryLoadSprites(), atlas.frames),
     ...unlistedBuildings(),
     ...unlistedSoldiers(),
     ...unlistedResources(),
@@ -2808,43 +2817,71 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
   }
 
   /**
-   * How many baked sail positions the mill has, and how fast they are stepped.
+   * How fast the mill's baked sail positions are stepped, in phases a second.
    *
-   * The wheel carries four identical sails, so a quarter turn brings the
-   * picture back to where it started: six sprites spanning ninety degrees are
-   * twenty-four distinct positions per revolution, and cost five extra frames
-   * per camera rotation rather than twenty-three. At five and a half a second
-   * that is a turn about every four seconds -- a mill sail is a slow, heavy
-   * thing, and spun any faster it reads as a propeller.
+   * MILL_SAIL_PHASES of them span a quarter turn and the wheel's four sails
+   * make that a whole revolution to the eye, so this is a turn about every
+   * four seconds -- a mill sail is a slow, heavy thing, and spun any faster it
+   * reads as a propeller.
    */
-  const MILL_PHASES = 6;
   const MILL_PHASE_HZ = 5.5;
-  const MILL_WORKERS = BUILDINGS.mill.workers ?? 0;
-  const [MILL_W, MILL_D] = BUILDINGS.mill.footprint;
 
   /**
-   * Every mill on the map, the player's and the rivals', with what it takes to
-   * draw one. Refreshed by rebuildStatic, which is where a mill would have
-   * gone before it learned to turn.
-   */
-  const mills: {
-    b: { x: number; z: number; staff: number; id: number };
-    workers: number;
-    tint?: [number, number, number];
-  }[] = [];
-
-  /**
-   * The sprite a mill draws this instant.
+   * What a rival's quarry shows in its yard while his cutters are at it.
    *
-   * A mill with nobody in it is a still wheel -- the same rule the ambience
-   * goes by, and for the same reason: seeing sails turn over an empty mill
-   * says the chain is running when it is not. `seed` staggers two mills so a
-   * pair built side by side do not turn as one machine.
+   * His economy is a set of numbers on his side of the map -- his buildings
+   * carry a staff and nothing else -- so there is no yard of his to report.
+   * One ox load standing there says what IS true of a manned quarry of his,
+   * the same thing his mill's turning sails say, and an unmanned one stands
+   * empty.
    */
-  function millSprite(working: boolean, seed: number): string {
-    if (!working) return 'mill';
-    const p = (Math.floor(state.elapsed * MILL_PHASE_HZ) + seed) % MILL_PHASES;
-    return p === 0 ? 'mill' : `mill_turn_${p}`;
+  const RIVAL_QUARRY_LOAD = 4;
+
+  /**
+   * A building whose picture changes with nothing built or knocked down: a
+   * mill's sails turn, a quarry's yard fills up and is emptied.
+   *
+   * These are collected by rebuildStatic -- so the list is exactly as fresh as
+   * the scenery is, and a castle's few thousand wall segments are not walked
+   * sixty times a second to find three mills among them -- but they are DRAWN
+   * in the per-frame stream, where the pitch fires already cycle their flames.
+   * Their anchor, bias and sort key are the ones the static list gave them, so
+   * they sit in the draw order exactly where they always did.
+   */
+  interface Restless {
+    name: 'mill' | 'quarry';
+    b: {
+      x: number; z: number; staff: number; id: number;
+      held?: Partial<Record<Resource, number>>;
+    };
+    workers: number;
+    w: number; d: number;
+    tint?: [number, number, number];
+  }
+  const RESTLESS = new Set(['mill', 'quarry']);
+  const restless: Restless[] = [];
+
+  /** The sprite one of them draws this instant. */
+  function restlessSprite(r: Restless): string {
+    const working = r.b.staff >= r.workers;
+    if (r.name === 'mill') {
+      // A mill with nobody in it is a still wheel -- the same rule the
+      // ambience goes by, and for the same reason: seeing sails turn over an
+      // empty mill says the chain is running when it is not. The id staggers
+      // two mills so a pair built side by side do not turn as one machine.
+      if (!working) return 'mill';
+      const p = (Math.floor(state.elapsed * MILL_PHASE_HZ) + r.b.id)
+        % MILL_SAIL_PHASES;
+      return p === 0 ? 'mill' : `mill_turn_${p}`;
+    }
+    // Every block standing in the quarry yard is a block the game is holding,
+    // and one stack is one ox load. So a quarry with three stacks in it is
+    // three loads behind, which is the whole of what an ox tether is for.
+    const held = r.b.held
+      ? (r.b.held.stone ?? 0)
+      : (working ? RIVAL_QUARRY_LOAD : 0);
+    const n = Math.min(HAUL_YARD, Math.floor(held));
+    return n > 0 ? `quarry_load_${n}` : 'quarry';
   }
 
   /** Relayout both stores. Returns whether anything DRAWN changed. */
@@ -2861,7 +2898,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
   function rebuildStatic() {
     const rot = iso.rotation;
     const items: DrawItem[] = [];
-    mills.length = 0;
+    restless.length = 0;
 
     const push = (name: string, x: number, z: number, w: number, d: number,
                   tint?: [number, number, number]) => {
@@ -2904,22 +2941,25 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
         push(squareAt.get(`${b.x},${b.z}`) ?? art.empty, b.x, b.z, 1, 1);
         continue;
       }
-      // A mill is never static: its sails turn. Collected here rather than
-      // hunted for every frame -- this list is exactly as fresh as the scenery
-      // is, and a castle's few thousand wall segments are not worth walking
-      // sixty times a second to find three mills among them.
-      if (b.name === 'mill') { mills.push({ b, workers: b.def.workers }); continue; }
+      // A mill and a quarry are never static -- see Restless.
+      if (RESTLESS.has(b.name)) {
+        restless.push({ name: b.name as Restless['name'], b, w, d,
+                        workers: b.def.workers });
+        continue;
+      }
       push(b.name, b.x, b.z, w, d);
     }
 
     // Each rival's castle, under his own colour.
     for (const f of factions) {
       for (const b of f.buildings) {
-        if (b.name === 'mill') {              // turns; see above
-          mills.push({ b, workers: MILL_WORKERS, tint: f.stoneTint });
+        const [w, d] = BUILDINGS[b.name].footprint;
+        if (RESTLESS.has(b.name)) {           // see Restless
+          restless.push({ name: b.name as Restless['name'], b, w, d,
+                          workers: BUILDINGS[b.name].workers ?? 0,
+                          tint: f.stoneTint });
           continue;
         }
-        const [w, d] = BUILDINGS[b.name].footprint;
         push(b.name, b.x, b.z, w, d, f.stoneTint);
       }
     }
@@ -4481,19 +4521,19 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       });
     }
 
-    // The mills, whose sails turn. Their place in the depth stream is exactly
-    // what the static list gave them -- footprint centre, footprint bias -- so
-    // moving them here changes only which frame is picked.
-    for (const m of mills) {
-      const { x, z } = m.b;
-      const key = spriteKey(millSprite(m.b.staff >= m.workers, m.b.id), rot);
+    // Turning sails and filling yards. Everything about where these land is
+    // the static list's -- see Restless -- and only which frame is picked
+    // belongs to this frame.
+    for (const r of restless) {
+      const { x, z } = r.b;
+      const key = spriteKey(restlessSprite(r), rot);
       if (!key) continue;
-      const [mx, mz] = spriteAnchor(x, z, MILL_D);
+      const [rx, rz] = spriteAnchor(x, z, r.d);
       figures.push({
-        key, x: mx, z: mz, y: terrain.heightAt(x, z),
-        bias: footprintDepthBias(MILL_W, MILL_D, rot),
-        depth: depthKey(x + MILL_W / 2, z + MILL_D / 2, rot),
-        tint: m.tint,
+        key, x: rx, z: rz, y: terrain.heightAt(x, z),
+        bias: footprintDepthBias(r.w, r.d, rot),
+        depth: depthKey(x + r.w / 2, z + r.d / 2, rot),
+        tint: r.tint,
       });
     }
 

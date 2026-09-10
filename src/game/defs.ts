@@ -1057,6 +1057,40 @@ export function storeSprites(): string[] {
 }
 
 /**
+ * Baked sail positions the windmill has, spanning a QUARTER turn.
+ *
+ * The wheel carries four identical sails, so a quarter turn brings the picture
+ * back to where it started and the frames need only span ninety degrees. Keep
+ * in step with MILL_PHASES in buildings.py, the way STOCKPILE_LEVELS is kept in
+ * step with LEVELS in piles.py.
+ */
+export const MILL_SAIL_PHASES = 6;
+
+/**
+ * The frames a mill steps through, phase 0 aside -- phase 0 is plain `mill`.
+ */
+export function millPhaseSprites(): string[] {
+  const out: string[] = [];
+  for (let p = 1; p < MILL_SAIL_PHASES; p++) out.push(`mill_turn_${p}`);
+  return out;
+}
+
+/**
+ * Every level a quarry yard can stand at, one sprite per block it holds.
+ *
+ * Generated from HAUL_YARD rather than written out, which is the point: raise
+ * what a yard may stack without rendering the blocks to fill it and the
+ * fullest quarries would silently draw nothing at all. This puts it in the
+ * startup banner instead. An EMPTY yard is plain `quarry`, so the list starts
+ * at one.
+ */
+export function quarryLoadSprites(): string[] {
+  const out: string[] = [];
+  for (let n = 1; n <= HAUL_YARD; n++) out.push(`quarry_load_${n}`);
+  return out;
+}
+
+/**
  * Buildings drawn with somebody else's sprite, and why each one is.
  *
  * Two different needs, served by one map because the drawing code only ever

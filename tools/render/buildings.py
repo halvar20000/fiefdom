@@ -273,9 +273,39 @@ def _ox(name_prefix, origin, mat_hide, mat_dark, rot_z=0.0):
     return [p for p in parts if p is not None]
 
 
-def quarry():
-    """Stone quarry: a cut face, dressed blocks and a timber shear-legs hoist."""
+# Blocks the quarry yard can hold, and how many go in one stack.
+#
+# Must equal HAUL_YARD in defs.ts, and the batch must equal the ox tether's:
+# the yard is drawn as one stack per ox load, so a stack standing in the yard
+# is a load the ox has not come for yet. Rendering fewer levels than the yard
+# holds leaves the fullest quarries drawing a lie.
+QUARRY_YARD = 12
+QUARRY_STACK = 4
+
+
+def _quarry_blocks(load):
+    """
+    `load` dressed blocks stacked in the yard, filling one stack at a time.
+
+    Two wide and two high per stack, three stacks across the front of the
+    footprint. Kept below the height of the cut face on purpose -- a wall of
+    twelve blocks in a row hid the building it was supposed to be reporting on.
+    """
     stone = M.castle_stone()
+    bw, bd, bh = 0.40, 0.42, 0.26
+    parts = []
+    for i in range(min(load, QUARRY_YARD)):
+        stack, within = divmod(i, QUARRY_STACK)
+        col, row = divmod(within, 2)          # bottom pair, then the pair on top
+        parts.append(geom.box(
+            f"q_block_{i}",
+            (0.15 + stack * 0.93 + col * 0.43, 0.18, row * (bh + 0.015)),
+            (bw, bd, bh), stone))
+    return parts
+
+
+def quarry(load=0):
+    """Stone quarry: a cut face, dressed blocks and a timber shear-legs hoist."""
     rough = M.rough_stone()
     timber = M.timber(dark=True)
     rope = M.cloth("QuarryRope", colour=(0.44, 0.38, 0.26))
@@ -298,10 +328,11 @@ def quarry():
     parts.append(geom.box("q_beam", (0.50, 0.85, 1.30), (1.90, 0.11, 0.11), timber))
     parts.append(geom.box("q_rope", (1.40, 0.89, 0.72), (0.035, 0.035, 0.60), rope))
 
-    # dressed blocks waiting to be hauled
-    for i, (bx, by, bz) in enumerate(((0.30, 0.30, 0.0), (0.86, 0.30, 0.0),
-                                      (0.30, 0.30, 0.34), (1.95, 0.45, 0.0))):
-        parts.append(geom.box(f"q_block_{i}", (bx, by, bz), (0.52, 0.46, 0.32), stone))
+    # The stone actually waiting to be hauled. Four blocks used to be baked in
+    # here whatever the yard held, so a quarry whose ox had just emptied it and
+    # a quarry backed up to the brim drew the same picture -- and the ONE thing
+    # a player wants off a quarry at a glance is whether its stone is piling up.
+    parts += _quarry_blocks(load)
     return geom.join(parts, "quarry"), (3, 3)
 
 
@@ -684,7 +715,12 @@ def dairy_farm():
 
 
 REGISTRY.update({
+    # Plain "quarry" is the EMPTY yard -- what the ghost, the menu icon and a
+    # quarry the ox has just cleared all draw. Every block standing in the yard
+    # is a block the game is actually holding; see _quarry_blocks.
     "quarry": quarry,
+    **{f"quarry_load_{n}": (lambda n=n: quarry(load=n))
+       for n in range(1, QUARRY_YARD + 1)},
     "ox_tether": ox_tether,
     "iron_mine": iron_mine,
     "pitch_rig": pitch_rig,

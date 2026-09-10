@@ -5826,10 +5826,10 @@
   {
     "name": "quarry",
     "rotation": 0,
-    "width": 319,
-    "height": 218,
-    "anchor_x": 16.32,
-    "anchor_y": 165.49,
+    "width": 284,
+    "height": 160,
+    "anchor_x": -18.03,
+    "anchor_y": 117.76,
     "footprint": [
       3,
       3
@@ -5839,10 +5839,10 @@
   {
     "name": "quarry",
     "rotation": 1,
-    "width": 372,
-    "height": 240,
-    "anchor_x": 139.1,
-    "anchor_y": 84.26,
+    "width": 308,
+    "height": 210,
+    "anchor_x": 79.55,
+    "anchor_y": 54.58,
     "footprint": [
       3,
       3
@@ -5852,10 +5852,10 @@
   {
     "name": "quarry",
     "rotation": 2,
-    "width": 334,
-    "height": 245,
-    "anchor_x": 302.68,
-    "anchor_y": 123.99,
+    "width": 286,
+    "height": 240,
+    "anchor_x": 302.03,
+    "anchor_y": 123.72,
     "footprint": [
       3,
       3
@@ -5865,10 +5865,634 @@
   {
     "name": "quarry",
     "rotation": 3,
-    "width": 336,
-    "height": 258,
-    "anchor_x": 232.9,
-    "anchor_y": 238.29,
+    "width": 308,
+    "height": 183,
+    "anchor_x": 227.45,
+    "anchor_y": 188.96,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "quarry_load_1",
+    "rotation": 0,
+    "width": 307,
+    "height": 159,
+    "anchor_x": 5.1,
+    "anchor_y": 116.5,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "quarry_load_1",
+    "rotation": 1,
+    "width": 313,
+    "height": 210,
+    "anchor_x": 80.07,
+    "anchor_y": 54.15,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "quarry_load_1",
+    "rotation": 2,
+    "width": 308,
+    "height": 240,
+    "anchor_x": 301.9,
+    "anchor_y": 123.98,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "quarry_load_1",
+    "rotation": 3,
+    "width": 315,
+    "height": 193,
+    "anchor_x": 232.93,
+    "anchor_y": 188.39,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "quarry_load_10",
+    "rotation": 0,
+    "width": 324,
+    "height": 174,
+    "anchor_x": 22.22,
+    "anchor_y": 116.33,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "quarry_load_10",
+    "rotation": 1,
+    "width": 346,
+    "height": 210,
+    "anchor_x": 113.41,
+    "anchor_y": 54.21,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "quarry_load_10",
+    "rotation": 2,
+    "width": 323,
+    "height": 240,
+    "anchor_x": 301.78,
+    "anchor_y": 124.15,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "quarry_load_10",
+    "rotation": 3,
+    "width": 344,
+    "height": 201,
+    "anchor_x": 232.59,
+    "anchor_y": 188.33,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "quarry_load_11",
+    "rotation": 0,
+    "width": 325,
+    "height": 185,
+    "anchor_x": 22.71,
+    "anchor_y": 116.06,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "quarry_load_11",
+    "rotation": 1,
+    "width": 367,
+    "height": 210,
+    "anchor_x": 133.95,
+    "anchor_y": 54.45,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "quarry_load_11",
+    "rotation": 2,
+    "width": 326,
+    "height": 240,
+    "anchor_x": 302.29,
+    "anchor_y": 123.42,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "quarry_load_11",
+    "rotation": 3,
+    "width": 367,
+    "height": 202,
+    "anchor_x": 233.05,
+    "anchor_y": 189.09,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "quarry_load_12",
+    "rotation": 0,
+    "width": 325,
+    "height": 186,
+    "anchor_x": 22.71,
+    "anchor_y": 116.06,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "quarry_load_12",
+    "rotation": 1,
+    "width": 370,
+    "height": 210,
+    "anchor_x": 136.95,
+    "anchor_y": 54.45,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "quarry_load_12",
+    "rotation": 2,
+    "width": 326,
+    "height": 240,
+    "anchor_x": 302.29,
+    "anchor_y": 123.42,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "quarry_load_12",
+    "rotation": 3,
+    "width": 369,
+    "height": 202,
+    "anchor_x": 233.05,
+    "anchor_y": 189.09,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "quarry_load_2",
+    "rotation": 0,
+    "width": 324,
+    "height": 159,
+    "anchor_x": 22.1,
+    "anchor_y": 116.5,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "quarry_load_2",
+    "rotation": 1,
+    "width": 313,
+    "height": 210,
+    "anchor_x": 80.07,
+    "anchor_y": 54.15,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "quarry_load_2",
+    "rotation": 2,
+    "width": 324,
+    "height": 240,
+    "anchor_x": 301.9,
+    "anchor_y": 123.98,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "quarry_load_2",
+    "rotation": 3,
+    "width": 315,
+    "height": 202,
+    "anchor_x": 232.93,
+    "anchor_y": 188.39,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "quarry_load_3",
+    "rotation": 0,
+    "width": 323,
+    "height": 159,
+    "anchor_x": 20.59,
+    "anchor_y": 116.23,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "quarry_load_3",
+    "rotation": 1,
+    "width": 315,
+    "height": 210,
+    "anchor_x": 81.61,
+    "anchor_y": 54.4,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "quarry_load_3",
+    "rotation": 2,
+    "width": 326,
+    "height": 240,
+    "anchor_x": 302.41,
+    "anchor_y": 123.25,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "quarry_load_3",
+    "rotation": 3,
+    "width": 314,
+    "height": 202,
+    "anchor_x": 233.39,
+    "anchor_y": 189.15,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "quarry_load_4",
+    "rotation": 0,
+    "width": 323,
+    "height": 159,
+    "anchor_x": 20.59,
+    "anchor_y": 116.23,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "quarry_load_4",
+    "rotation": 1,
+    "width": 314,
+    "height": 210,
+    "anchor_x": 80.61,
+    "anchor_y": 54.4,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "quarry_load_4",
+    "rotation": 2,
+    "width": 326,
+    "height": 240,
+    "anchor_x": 302.41,
+    "anchor_y": 123.25,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "quarry_load_4",
+    "rotation": 3,
+    "width": 314,
+    "height": 202,
+    "anchor_x": 233.39,
+    "anchor_y": 189.15,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "quarry_load_5",
+    "rotation": 0,
+    "width": 323,
+    "height": 160,
+    "anchor_x": 21.16,
+    "anchor_y": 116.91,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "quarry_load_5",
+    "rotation": 1,
+    "width": 313,
+    "height": 210,
+    "anchor_x": 80.24,
+    "anchor_y": 54.68,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "quarry_load_5",
+    "rotation": 2,
+    "width": 323,
+    "height": 240,
+    "anchor_x": 301.84,
+    "anchor_y": 123.56,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "quarry_load_5",
+    "rotation": 3,
+    "width": 312,
+    "height": 201,
+    "anchor_x": 232.76,
+    "anchor_y": 188.86,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "quarry_load_6",
+    "rotation": 0,
+    "width": 323,
+    "height": 160,
+    "anchor_x": 21.16,
+    "anchor_y": 116.91,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "quarry_load_6",
+    "rotation": 1,
+    "width": 312,
+    "height": 210,
+    "anchor_x": 79.24,
+    "anchor_y": 54.68,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "quarry_load_6",
+    "rotation": 2,
+    "width": 323,
+    "height": 240,
+    "anchor_x": 301.84,
+    "anchor_y": 123.56,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "quarry_load_6",
+    "rotation": 3,
+    "width": 312,
+    "height": 201,
+    "anchor_x": 232.76,
+    "anchor_y": 188.86,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "quarry_load_7",
+    "rotation": 0,
+    "width": 324,
+    "height": 163,
+    "anchor_x": 21.65,
+    "anchor_y": 116.64,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "quarry_load_7",
+    "rotation": 1,
+    "width": 322,
+    "height": 209,
+    "anchor_x": 88.78,
+    "anchor_y": 53.92,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "quarry_load_7",
+    "rotation": 2,
+    "width": 324,
+    "height": 240,
+    "anchor_x": 302.35,
+    "anchor_y": 123.83,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "quarry_load_7",
+    "rotation": 3,
+    "width": 321,
+    "height": 201,
+    "anchor_x": 233.22,
+    "anchor_y": 188.62,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "quarry_load_8",
+    "rotation": 0,
+    "width": 324,
+    "height": 163,
+    "anchor_x": 21.65,
+    "anchor_y": 116.64,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "quarry_load_8",
+    "rotation": 1,
+    "width": 322,
+    "height": 209,
+    "anchor_x": 88.78,
+    "anchor_y": 53.92,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "quarry_load_8",
+    "rotation": 2,
+    "width": 324,
+    "height": 240,
+    "anchor_x": 302.35,
+    "anchor_y": 123.83,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "quarry_load_8",
+    "rotation": 3,
+    "width": 321,
+    "height": 201,
+    "anchor_x": 233.22,
+    "anchor_y": 188.62,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "quarry_load_9",
+    "rotation": 0,
+    "width": 324,
+    "height": 174,
+    "anchor_x": 22.22,
+    "anchor_y": 116.33,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "quarry_load_9",
+    "rotation": 1,
+    "width": 346,
+    "height": 210,
+    "anchor_x": 113.41,
+    "anchor_y": 54.21,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "quarry_load_9",
+    "rotation": 2,
+    "width": 323,
+    "height": 240,
+    "anchor_x": 301.78,
+    "anchor_y": 124.15,
+    "footprint": [
+      3,
+      3
+    ],
+    "scale": 3
+  },
+  {
+    "name": "quarry_load_9",
+    "rotation": 3,
+    "width": 344,
+    "height": 201,
+    "anchor_x": 232.59,
+    "anchor_y": 188.33,
     "footprint": [
       3,
       3
