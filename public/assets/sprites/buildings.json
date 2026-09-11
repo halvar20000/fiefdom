@@ -3136,9 +3136,9 @@
     "name": "gatehouse",
     "rotation": 1,
     "width": 322,
-    "height": 222,
+    "height": 216,
     "anchor_x": 115.57,
-    "anchor_y": 111.5,
+    "anchor_y": 105.5,
     "footprint": [
       2,
       2
@@ -3149,9 +3149,9 @@
     "name": "gatehouse",
     "rotation": 2,
     "width": 274,
-    "height": 268,
+    "height": 262,
     "anchor_x": 211.12,
-    "anchor_y": 159.78,
+    "anchor_y": 153.78,
     "footprint": [
       2,
       2
@@ -3160,6 +3160,58 @@
   },
   {
     "name": "gatehouse",
+    "rotation": 3,
+    "width": 322,
+    "height": 238,
+    "anchor_x": 206.43,
+    "anchor_y": 201.56,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "gatehouse_shut",
+    "rotation": 0,
+    "width": 274,
+    "height": 222,
+    "anchor_x": 62.88,
+    "anchor_y": 159.5,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "gatehouse_shut",
+    "rotation": 1,
+    "width": 322,
+    "height": 216,
+    "anchor_x": 115.57,
+    "anchor_y": 105.5,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "gatehouse_shut",
+    "rotation": 2,
+    "width": 274,
+    "height": 262,
+    "anchor_x": 211.12,
+    "anchor_y": 153.78,
+    "footprint": [
+      2,
+      2
+    ],
+    "scale": 3
+  },
+  {
+    "name": "gatehouse_shut",
     "rotation": 3,
     "width": 322,
     "height": 238,

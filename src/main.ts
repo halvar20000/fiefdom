@@ -37,7 +37,7 @@ import { hydrate } from './game/backend';
 import { BANNERS } from './game/banners';
 import { MatchRuntime } from './net/match';
 import { packBuilding, packSoldier, unpackSoldier, buildingName,
-         F_TURN_SHIFT, F_TURN_MASK } from './net/wire';
+         F_RAISED, F_TURN_SHIFT, F_TURN_MASK } from './net/wire';
 import { multiplayer } from './ui/lobby';
 import { net } from './net/socket';
 import { accountScreen } from './ui/account';
@@ -553,6 +553,11 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
      * the wire. Absent means 0.
      */
     turn?: number;
+    /**
+     * Gate shut or drawbridge up, for a castle another PLAYER owns. A lord
+     * never touches his gates, so like `turn` this only arrives over the wire.
+     */
+    raised?: boolean;
   }
   /** Ids for the above, unique across every faction on the map. */
   let nextEnemyBuildingId = 1;
@@ -2202,6 +2207,26 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
    * line you drew, and hunting for each one under fire is not a decision, it
    * is an obstacle. Returns how many moved.
    */
+  /**
+   * Shut or open one gatehouse, and repath around the result.
+   *
+   * One at a time, on a click, where the drawbridges all go at once on a key:
+   * a castle has a bridge or two on the one line but a gate on each face of
+   * it, and shutting the north gate against a column while the south one
+   * keeps the woodcutters walking is the decision the gatehouse exists for.
+   * A shut gate is solid to everyone, your own people included -- that is
+   * what a gate is -- so the peasants outside wait, and the ones stood in the
+   * passage are put back onto open ground rather than left inside the stone.
+   */
+  function toggleGate(b: PlacedBuilding): void {
+    const [w, d] = b.def.footprint;
+    b.raised = !b.raised;
+    markSolid(b.x, b.z, w, d, b.raised);
+    if (b.raised) rescueStuckWorkers();
+    staticDirty = true;
+    state.notify(b.raised ? 'Gate shut' : 'Gate opened', 'info');
+  }
+
   function toggleDrawbridges(): number {
     const bridges = state.buildings.filter(b => b.name === 'drawbridge');
     if (!bridges.length) return 0;
@@ -2931,6 +2956,15 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
   }
   const RESTLESS = new Set(['mill', 'quarry']);
   const restless: Restless[] = [];
+  /**
+   * The buildings with a second model for their `raised` state: the bridge
+   * swung up, the portcullis dropped. Anything not here draws its one sprite
+   * whatever the flag says.
+   */
+  const SHUT_SPRITE: Record<string, string> = {
+    drawbridge: 'drawbridge_raised',
+    gatehouse: 'gatehouse_shut',
+  };
 
   /** The sprite one of them draws this instant. */
   function restlessSprite(r: Restless): string {
@@ -3021,9 +3055,9 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     }
     for (const b of state.buildings) {
       const [w, d] = b.def.footprint;
-      // The one building that draws a different model under the same name.
-      if (b.name === 'drawbridge' && b.raised) {
-        push('drawbridge_raised', b.x, b.z, w, d);
+      // The two buildings that draw a different model under the same name.
+      if (b.raised && SHUT_SPRITE[b.name]) {
+        push(SHUT_SPRITE[b.name], b.x, b.z, w, d);
         continue;
       }
       // A PAINTED store draws the square and whatever is stacked on it. A store
@@ -3052,7 +3086,8 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
                           tint: f.stoneTint });
           continue;
         }
-        push(b.name, b.x, b.z, w, d, f.stoneTint, b.turn);
+        push(b.raised && SHUT_SPRITE[b.name] ? SHUT_SPRITE[b.name] : b.name,
+             b.x, b.z, w, d, f.stoneTint, b.turn);
       }
     }
     items.sort((a, b) => a.depth - b.depth);
@@ -3286,17 +3321,15 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
         lastTapT = now; lastTapX = e.clientX; lastTapY = e.clientY;
         if (dbl && selectTypeAt(e.clientX, e.clientY, false)) return;
         if (army.selectAt(w.x, w.z, true, true)) return;
-        const shopT = switchableAt(w.x, w.z);
-        if (shopT) { toggleProduct(shopT); return; }
+        if (clickBuildingAt(w.x, w.z)) return;
         army.clearSelection();
         return;
       }
       if (army.selectAt(w.x, w.z, e.shiftKey)) return;
-      // Nobody under the cursor. A workshop that can cut two things is the one
-      // building a bare click means something to; everything else clears the
-      // selection as it always did.
-      const shop = switchableAt(w.x, w.z);
-      if (shop) { toggleProduct(shop); return; }
+      // Nobody under the cursor. A gatehouse and a workshop that can cut two
+      // things are the buildings a bare click means something to; everything
+      // else clears the selection as it always did.
+      if (clickBuildingAt(w.x, w.z)) return;
       if (!e.shiftKey) army.clearSelection();
       return;
     }
@@ -3682,10 +3715,15 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     return true;
   }
 
-  /** The workshop under a world point, if flipping it is a thing you can do. */
-  function switchableAt(wx: number, wz: number): PlacedBuilding | null {
+  /**
+   * A bare click on a building. True if it meant something: a gatehouse is
+   * shut or opened, a workshop with two products is flipped.
+   */
+  function clickBuildingAt(wx: number, wz: number): boolean {
     const b = buildingAt(Math.floor(wx), Math.floor(wz));
-    return b && b.def.alternate ? b : null;
+    if (!b) return false;
+    if (b.name === 'gatehouse') { toggleGate(b); return true; }
+    return toggleProduct(b);
   }
 
   function recruit(type: string): string {
@@ -3918,17 +3956,27 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
         had = undefined;
         changed = true;
       }
+      const raised = (nb.f & F_RAISED) !== 0;
       if (had) {
         had.hp = nb.h;
         had.staff = nb.s;
+        // A gate shut or a bridge raised on the owner's screen is stone on
+        // this one too, or an ally's column would walk through it here and
+        // stand inside it there.
+        if (!!had.raised !== raised) {
+          had.raised = raised;
+          if (BUILDINGS[name].walkable) markSolid(nb.x, nb.z, w, d, raised);
+          changed = true;
+        }
         continue;
       }
       f.buildings.push({
         id: nb.i, name, x: nb.x, z: nb.z, hp: nb.h, staff: nb.s,
         turn: (nb.f >> F_TURN_SHIFT) & F_TURN_MASK,
+        raised: raised || undefined,
       });
       markArea(nb.x, nb.z, w, d);
-      if (!BUILDINGS[name].walkable) markSolid(nb.x, nb.z, w, d);
+      if (!BUILDINGS[name].walkable || raised) markSolid(nb.x, nb.z, w, d);
       if (name === 'keep') f.keep = { x: nb.x + 1, z: nb.z + 1 };
       changed = true;
     }
@@ -4430,6 +4478,10 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
         // ("make pikes"), not a count of them the way the line above does.
         const other = productionOf(def, !mine.alt)!;
         bits.push(`click to make ${RESOURCE_LABELS[other.output].toLowerCase()}`);
+      }
+      // Same again for the gate: the tooltip is the only place it is explained.
+      if (def.name === 'gatehouse') {
+        bits.push(mine.raised ? 'shut — click to open' : 'open — click to shut');
       }
       if (def.housing) bits.push(`houses ${def.housing}`);
       if (def.storeFor === 'stockpile' || def.storeFor === 'granary') {

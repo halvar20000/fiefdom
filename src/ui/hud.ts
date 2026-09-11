@@ -1490,6 +1490,7 @@ export class Hud {
       '<b>Troops:</b> click select &nbsp; <b>shift-drag</b> box<br>' +
       'double-click all of a kind &nbsp; right-click move<br>' +
       'right-click a <b>tower/gatehouse</b>, or a wall joined to one, to man it<br>' +
+      'click a <b>gatehouse</b> to shut it, again to open &nbsp; <b>G</b> drawbridges<br>' +
       '<b>F</b> lights your pitch ditches &nbsp; <b>Shift-F</b> fullscreen<br>' +
       'push the pointer at a screen edge to scroll &nbsp; <b>Esc</b> pause / save';
   }

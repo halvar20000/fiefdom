@@ -419,7 +419,7 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     // walled out. The gatehouse is how you avoid that, not how you satisfy the
     // guard.
     walkable: true,
-    description: 'A way through your wall. Your people pass; the wall holds.',
+    description: 'A way through your wall. Click it to drop the portcullis, again to raise it.',
   },
   pitch_ditch: {
     name: 'pitch_ditch', label: 'Pitch Ditch', category: 'castle',

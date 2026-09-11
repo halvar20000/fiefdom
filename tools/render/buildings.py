@@ -1146,9 +1146,10 @@ def tower():
     return geom.join(parts, "tower"), (2, 2)
 
 
-def gatehouse():
+def _gatehouse(shut: bool):
     """
-    Gate tower with an arch on every face.
+    Gate tower with an arch on every face. Two sprites, one model, one flag,
+    like the drawbridge: `shut` drops the portcullis to the ground.
 
     Buildings in this game do not rotate -- only the camera does -- so a gate
     with a single fixed passage would be unusable on three sides of a castle.
@@ -1165,34 +1166,47 @@ def gatehouse():
     # four corner piers with the passage crossing between them
     for i, (x, y) in enumerate([(0.0, 0.0), (1.32, 0.0), (0.0, 1.32), (1.32, 1.32)]):
         parts.append(geom.box(f"gh_pier_{i}", (x, y, 0.0), (0.68, 0.68, h), stone))
-    # lintel band tying the piers together above the openings
-    parts.append(geom.box("gh_lintel", (0.0, 0.0, h - 0.30), (2.0, 2.0, 0.30), stone))
+    # Lintel band tying the piers together above the openings. Inset a
+    # centimetre from the pier faces: a box sharing a plane with another box
+    # renders that plane BLACK in Cycles (the shadow ray leaves one face and
+    # lands inside the other), and flush with the piers it painted a black
+    # band across every arch.
+    parts.append(geom.box("gh_lintel", (0.01, 0.01, h - 0.31), (1.98, 1.98, 0.30), stone))
     parts.append(geom.box("gh_deck", (-0.10, -0.10, h), (2.20, 2.20, 0.11), stone))
     parts += geom.crenellate("gh_cr", (-0.10, -0.10), 2.20, 2.20, stone,
                              merlon=0.26, gap=0.20, height=0.24, thickness=0.16, z=h + 0.11)
-    # Portcullis grilles set back in each opening, with real bars rather than a
+    # A portcullis in each of the four arches, with real bars rather than a
     # solid slab -- a portcullis you cannot see through is just a lintel.
+    #
+    # In the MOUTH of each arch, not at the crossing in the middle: the camera
+    # looks into a 0.64-wide opening at forty-five degrees and meets the tunnel
+    # wall after 0.64 of depth, so anything deeper than that is never in a
+    # sprite, from any of the four angles. Open, the grille is drawn up into
+    # the lintel and only the tips of the bars show under it. Shut, it runs
+    # from the lintel to the plinth: at forty pixels the read is bars where
+    # there was a dark hole.
     steel = M.iron()
     bars = geom._Batch()
-    for i in range(2):
-        y = 0.62 + i * 0.74
+    top = h - 0.31
+    z0 = 0.17 if shut else top - 0.20
+    rails = (0.30, 0.58, 0.86) if shut else ()
+    for face in (0.05, 1.90):
         for k in range(5):
-            u = 0.68 + k * 0.155
-            bars.box((u, y, 0.62), (0.035, 0.05, 0.40))
-            bars.box((y, u, 0.62), (0.05, 0.035, 0.40))
-        for z in (0.66, 0.94):
-            bars.box((0.66, y, z), (0.68, 0.05, 0.035))
-            bars.box((y, 0.66, z), (0.05, 0.68, 0.035))
+            u = 0.70 + k * 0.14
+            bars.box((u, face, z0), (0.05, 0.05, top - z0))
+            bars.box((face, u, z0), (0.05, 0.05, top - z0))
+        for z in rails:
+            bars.box((0.68, face, z), (0.64, 0.05, 0.035))
+            bars.box((face, 0.68, z), (0.05, 0.64, 0.035))
     parts.append(bars.finish("gh_grille", steel))
-    # Arch rings over each opening, so the passage is an arch and not a gap
-    # between two piers.
+    # Arch rings over each opening, proud of the face, so the passage is an
+    # arch and not a gap between two piers.
     rings = geom._Batch()
-    for i in range(2):
-        y = 0.62 + i * 0.74
-        rings.box((0.62, y - 0.10, 0.98), (0.76, 0.20, 0.10))
-        rings.box((y - 0.10, 0.62, 0.98), (0.20, 0.76, 0.10))
+    for face in (-0.04, 1.96):
+        rings.box((0.62, face, top - 0.10), (0.76, 0.08, 0.10))
+        rings.box((face, 0.62, top - 0.10), (0.08, 0.76, 0.10))
     parts.append(rings.finish("gh_arch", stone))
-    return geom.join(parts, "gatehouse"), (2, 2)
+    return geom.join(parts, "gatehouse_shut" if shut else "gatehouse"), (2, 2)
 
 
 def barracks():
@@ -1607,7 +1621,8 @@ REGISTRY.update({
     "hunter": hunter,
     "wall": wall,
     "tower": tower,
-    "gatehouse": gatehouse,
+    "gatehouse": lambda: _gatehouse(False),
+    "gatehouse_shut": lambda: _gatehouse(True),
 })
 
 

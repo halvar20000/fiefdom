@@ -23,6 +23,27 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.63.0',
+    date: '2026-09-11',
+    headline: 'A gate you can shut.',
+    sections: [
+      {
+        title: 'Added',
+        items: [
+          'Click a gatehouse and the portcullis drops; click it again and it lifts. A shut gate is stone to everyone — the column outside, and your own people, which is what a gate is — so the peasants out at the woodcutter wait until you open it, and anyone standing in the passage when it shuts is put back onto open ground. One gate at a time, on a click, where the drawbridges all go at once on G: a castle has a bridge or two on the one line but a gate on each face of it, and shutting the north gate against a column while the south one keeps the carts rolling is the decision a gatehouse exists for.',
+          'The tooltip says which way it stands — “open — click to shut” — and so does the building itself: a shut gate shows bars across every arch, an open one only the tips of them under the lintel.',
+          'In a match, a gate shut on the owner’s screen is shut on everyone’s. The same goes for a raised drawbridge, which was sent over the wire but never read at the other end, so an ally’s column walked through it here and stood inside it there.',
+        ],
+      },
+      {
+        title: 'Fixed',
+        items: [
+          'The gatehouse had a black band across every arch. The lintel shared its faces with the piers, and a face that lies exactly on another face renders black; it is set a hair inside them now. And the portcullis it was given — real bars, so you could see through it — stood at the crossing in the middle of the tower, where the camera, looking into a narrow arch at forty-five degrees, meets the tunnel wall before it. Nobody has ever seen it. The bars stand in the mouth of each arch now, where the view actually reaches.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.62.0',
     date: '2026-09-11',
     headline: 'A wall that stops the men already marching.',
