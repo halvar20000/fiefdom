@@ -36,6 +36,10 @@ export interface GarrisonPost {
 
 /** How long a killed soldier lies dying before he is removed, in seconds. */
 export const DEATH_TIME = 1.1;
+/** How close to a tile's corner a step may land inside stone and still count as a touch. */
+const CORNER_SLACK = 0.05;
+/** How close to the middle of his own tile a man must get before setting off from it. */
+const CENTRE_SLACK = 0.3;
 
 export interface Soldier {
   id: number;
@@ -154,6 +158,8 @@ export interface SiegeTarget {
 export interface ArmyWorld {
   findPath(fromX: number, fromZ: number, toX: number, toZ: number): PathNode[] | null;
   blocked(x: number, z: number): boolean;
+  /** Can a man walk a straight line between two points without touching stone? */
+  lineClear?(x1: number, z1: number, x2: number, z2: number): boolean;
   /**
    * Pace multiplier for the ground under a point, 1 on firm going.
    *
@@ -452,9 +458,48 @@ export class Army {
     const route = this.world.findPath(s.x, s.z, target.x, target.z);
     if (!route) return false;
     s.path = route.slice();
+    // A route is laid from tile centre to tile centre, and this man is not
+    // standing on one. Off-centre, the straight line to the first waypoint
+    // can clip the corner of a tile the route squeezes past -- and the step
+    // check below would then refuse it, route him again to the same place,
+    // and refuse that too. So if that first line is not clear, he walks to
+    // the middle of his own tile first, from where every leg was checked.
+    if (s.path.length && this.world.lineClear
+        && !this.world.lineClear(s.x, s.z, s.path[0].x, s.path[0].z)) {
+      s.path.unshift({ x: Math.floor(s.x) + 0.5, z: Math.floor(s.z) + 0.5 });
+    }
     s.tx = target.x; s.tz = target.z;
     s.moving = true;
     return true;
+  }
+
+  /** Would a step to (nx, nz) take this man into a tile that is now solid? */
+  private intoStone(s: Soldier, nx: number, nz: number): boolean {
+    if (!this.world.blocked(nx, nz)) return false;
+    // Still on the tile he is already on: a wall raised over a man's head
+    // leaves him inside it, and he has to be allowed to walk out.
+    if (Math.floor(nx) === Math.floor(s.x) && Math.floor(nz) === Math.floor(s.z)) return false;
+    // A diagonal step past a blocked corner runs exactly through that corner,
+    // and a step can land on it to the last bit of a float. That is a touch,
+    // not a crossing; the next step is on the far side.
+    const fx = nx - Math.floor(nx), fz = nz - Math.floor(nz);
+    const onCorner = (fx < CORNER_SLACK || fx > 1 - CORNER_SLACK)
+      && (fz < CORNER_SLACK || fz > 1 - CORNER_SLACK);
+    return !onCorner;
+  }
+
+  /**
+   * The ground ahead has changed since this man's route was laid: route him
+   * again to where he was going, and if there is no longer a way there, he
+   * stands where he is. A man on his way to man a wall that is now cut off
+   * gives that up too, or he would climb it from wherever he stopped.
+   */
+  private reroute(s: Soldier): void {
+    if (this.send(s, s.tx, s.tz)) return;
+    s.moving = false;
+    s.ordered = false;
+    s.path = [];
+    s.mountAt = null;
   }
 
   private nearestFree(x: number, z: number): { x: number; z: number } {
@@ -706,6 +751,8 @@ export class Army {
       // undone by the next snapshot, as a twitch.
       if (s.net) continue;
       if (dx !== 0 && !this.world.blocked(s.x + dx, s.z)) s.x += dx;
+      // Checked against the x already taken, so the two pushes cannot combine
+      // into the blocked tile diagonally between them.
       if (dz !== 0 && !this.world.blocked(s.x, s.z + dz)) s.z += dz;
     }
   }
@@ -917,20 +964,33 @@ export class Army {
         const wp = s.path.length ? s.path[0] : { x: s.tx, z: s.tz };
         const dx = wp.x - s.x, dz = wp.z - s.z;
         const d = Math.hypot(dx, dz);
-        if (d < 0.06) {
+        // The middle of the tile he is standing on is only a stepping-off
+        // point (see `send`), and near enough is enough: two men sent to the
+        // same one would otherwise hold each other off it for good.
+        const own = s.path.length > 1
+          && wp.x === Math.floor(s.x) + 0.5 && wp.z === Math.floor(s.z) + 0.5;
+        if (d < (own ? CENTRE_SLACK : 0.06)) {
           if (s.path.length) { s.path.shift(); continue; }
           s.moving = false; s.ordered = false;
           this.mountIfAsked(s);
           break;
         }
         s.heading = Math.atan2(dz, dx);
-        if (d <= budget) {
-          s.x = wp.x; s.z = wp.z; budget -= d;
-          if (s.path.length) s.path.shift();
-          else { s.moving = false; s.ordered = false; this.mountIfAsked(s); break; }
-        } else {
-          s.x += (dx / d) * budget; s.z += (dz / d) * budget; budget = 0;
-        }
+        const arrive = d <= budget;
+        const nx = arrive ? wp.x : s.x + (dx / d) * budget;
+        const nz = arrive ? wp.z : s.z + (dz / d) * budget;
+        // The route was checked when it was laid, not since. A wall raised
+        // across it after that -- which is exactly when the player raises
+        // one, with the column already in sight -- was walked straight
+        // through, because nothing looked at the ground again. So every
+        // step is tested against the grid as it is NOW, and a step into
+        // stone means the way has changed: find a new one, or stop.
+        if (this.intoStone(s, nx, nz)) { this.reroute(s); break; }
+        s.x = nx; s.z = nz;
+        if (!arrive) { budget = 0; continue; }
+        budget -= d;
+        if (s.path.length) s.path.shift();
+        else { s.moving = false; s.ordered = false; this.mountIfAsked(s); break; }
       }
     }
 

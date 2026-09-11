@@ -626,6 +626,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     findPath: (fx, fz, tx, tz) => paths.find(Math.floor(fx), Math.floor(fz),
                                              Math.floor(tx), Math.floor(tz)),
     blocked: (x, z) => paths.isBlocked(Math.floor(x), Math.floor(z)),
+    lineClear: (x1, z1, x2, z2) => paths.isLineClear(x1, z1, x2, z2),
     groundSpeed,
     siegeTarget: (s) => {
       // Whose stone this engine is here to break.

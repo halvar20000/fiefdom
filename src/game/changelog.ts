@@ -23,6 +23,20 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.62.0',
+    date: '2026-09-11',
+    headline: 'A wall that stops the men already marching.',
+    sections: [
+      {
+        title: 'Fixed',
+        items: [
+          'Soldiers walked straight through a wall raised after they had set off. A man worked out his route once, when he was ordered, and then walked it without ever looking at the ground again \u2014 so the enemy column that was already on its way when you closed the ring simply kept coming, through the stone, as though it were not there. The wall itself was never the problem; it was solid to anyone who planned a route AFTER it stood. Now every step is checked against the ground as it is. A step into stone means the way has changed: the man finds a new route to where he was going, and if there is no longer one, he stops where he is. Open a gate later and send him again and he walks.',
+          'Two small things under that, so the check never traps a man at a corner. A route no longer cuts diagonally past the corner of a building or a tree \u2014 it ran exactly through the corner point, with a foot in the stone \u2014 and the first leg of every route is now checked from the tile the man is standing on, which it never was. Nothing that could be reached before is out of reach now; only the clip is gone.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.61.0',
     date: '2026-09-10',
     headline: 'A castle you can actually close.',

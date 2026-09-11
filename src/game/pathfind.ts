@@ -139,7 +139,7 @@ export class PathGrid {
             if (this.blocked[ni] === 1 || this.regions[ni] !== -1) continue;
             // match the search's corner rule so labels reflect real movement
             if (dx !== 0 && dz !== 0
-                && this.isBlocked(cx + dx, cz) && this.isBlocked(cx, cz + dz)) continue;
+                && (this.isBlocked(cx + dx, cz) || this.isBlocked(cx, cz + dz))) continue;
             this.regions[ni] = label;
             this.queue[tail++] = ni;
           }
@@ -242,9 +242,14 @@ export class PathGrid {
           const ni = this.idx(nx, nz);
           if (this.blocked[ni] === 1 && ni !== goal) continue;
 
-          // no cutting through the corner between two blocked tiles
+          // No cutting a corner: a diagonal step needs both tiles beside it
+          // open. Past even one blocked tile the line runs through that
+          // tile's corner point, and a unit walking it touches stone --
+          // which the step check in army.ts then reads as a wall in the way.
+          // Costs nothing in reach: with one side open, two straight steps
+          // get there anyway, so the regions are the same.
           if (dx !== 0 && dz !== 0 && !isStart) {
-            if (this.isBlocked(cx + dx, cz) && this.isBlocked(cx, cz + dz)) continue;
+            if (this.isBlocked(cx + dx, cz) || this.isBlocked(cx, cz + dz)) continue;
           }
 
           const step = (dx !== 0 && dz !== 0) ? 1.41421356 : 1;
@@ -284,8 +289,20 @@ export class PathGrid {
       cur = prev;
     }
     out.reverse();
-    out.shift();                       // drop the tile we are already standing on
-    return this.smooth(out);
+    // Smooth from the tile we are standing on, so the first leg is tested
+    // like every other. It used to be dropped BEFORE smoothing, which meant
+    // the first waypoint handed out could be two tiles away with nothing
+    // having checked the line to it -- a building's corner sat in that gap
+    // often enough. The start is walkable by fiat (see `find`), so it is
+    // lifted for the test and put back after.
+    const start = out[0];
+    const si = this.idx(Math.floor(start.x), Math.floor(start.z));
+    const was = this.blocked[si];
+    this.blocked[si] = 0;
+    const path = this.smooth(out);
+    this.blocked[si] = was;
+    if (path[0] === start) path.shift();
+    return path;
   }
 
   /**
