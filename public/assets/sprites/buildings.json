@@ -4576,6 +4576,58 @@
     "scale": 3
   },
   {
+    "name": "moat_undug",
+    "rotation": 0,
+    "width": 106,
+    "height": 58,
+    "anchor_x": 5.46,
+    "anchor_y": 30.03,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "moat_undug",
+    "rotation": 1,
+    "width": 108,
+    "height": 58,
+    "anchor_x": 52.04,
+    "anchor_y": 6.03,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "moat_undug",
+    "rotation": 2,
+    "width": 107,
+    "height": 59,
+    "anchor_x": 100.54,
+    "anchor_y": 29.55,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
+    "name": "moat_undug",
+    "rotation": 3,
+    "width": 107,
+    "height": 58,
+    "anchor_x": 54.96,
+    "anchor_y": 53.8,
+    "footprint": [
+      1,
+      1
+    ],
+    "scale": 3
+  },
+  {
     "name": "oak",
     "rotation": 0,
     "width": 192,

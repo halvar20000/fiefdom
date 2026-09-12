@@ -252,6 +252,12 @@ export interface BuildingDef {
    */
   hp?: number;
   /**
+   * Whether fire takes it. Unset, it is read off the bill: more wood than
+   * stone burns. Set it only where the bill lies -- a moat costs timber for
+   * the revetment and is a ditch full of water.
+   */
+  flammable?: boolean;
+  /**
    * A piece of a defensive LINE, and so buildable on any ground a man can walk.
    *
    * Everything else needs its whole footprint dry and at one elevation. That
@@ -435,19 +441,26 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     // Part of a line, so it crosses rough ground: see onRoughGround.
     onRoughGround: true,
     footprint: [1, 1], cost: { wood: 2 }, workers: 0, terrain: 'any', hp: 70,
+    flammable: false,
     // NOT walkable, and that is the entire building: it blocks, and unlike a
     // wall nobody can stand on it. Paintable because a moat is a run, never a
     // single square.
+    //
+    // Not until it is dug, though. Laying it paints a mark on the ground that
+    // anyone walks over; idle peasants come out with spades and turn the mark
+    // into water a tile at a time (MOAT_DIG_SECONDS each), and only a dug
+    // tile blocks. The wood is the revetment and is spent on laying.
     paintable: true,
-    description: 'A wet ditch. Nothing crosses it and nobody mans it — the '
-               + 'cheapest way to say "not here", and the reason to leave a '
-               + 'drawbridge where you do want them.',
+    description: 'A wet ditch, dug by your idle people once you mark it out. '
+               + 'Nothing crosses it and nobody mans it — the cheapest way '
+               + 'to say "not here", and the reason to leave a drawbridge.',
   },
   drawbridge: {
     name: 'drawbridge', label: 'Drawbridge', category: 'castle',
     // Part of a line, so it crosses rough ground: see onRoughGround.
     onRoughGround: true,
     footprint: [1, 1], cost: { wood: 12, iron: 2 }, workers: 0, terrain: 'any', hp: 90,
+    flammable: false,
     // Walkable while it is down. Raising it marks its tile solid instead --
     // see toggleDrawbridges() -- which is the one building in the game whose
     // passability changes after it is placed.
@@ -461,6 +474,7 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     // Part of a line, so it crosses rough ground: see onRoughGround.
     onRoughGround: true,
     footprint: [1, 1], cost: { wood: 6 }, workers: 0, terrain: 'any', hp: 30,
+    flammable: false,
     // Walkable, and that is the trick, exactly as with the pitch ditch: it has
     // to be crossed to work, so it must not block the path that leads over it.
     walkable: true, paintable: true,
@@ -508,6 +522,7 @@ export const BUILDINGS: Record<string, BuildingDef> = {
   oil_pot: {
     name: 'oil_pot', label: 'Oil Pot', category: 'castle',
     footprint: [1, 1], cost: { oil: 2, wood: 2 }, workers: 0, terrain: 'any',
+    flammable: false,
     hp: 30,
     // Walkable and paintable, like the pit and the water butt beside it: a
     // trap that blocks the path leading over it is a trap nothing walks into.
@@ -1424,6 +1439,45 @@ export const BURN_DPS = 14;
 export const IGNITE_RADIUS = 1.3;
 
 /**
+ * A timber building alight.
+ *
+ * Left alone, a fire takes the whole building in BUILDING_BURN_SECONDS
+ * whatever its size: the rate is the building's health over that time, so a
+ * hovel and a barracks are both a smoking square a minute later if nobody
+ * comes. Ground fire under or against it lights it; so does a slave's torch;
+ * so does a burning neighbour, after FIRE_SPREAD_AFTER seconds of burning,
+ * at FIRE_SPREAD_RATE per second per timber building within
+ * FIRE_SPREAD_RADIUS -- a delay and a rate rather than an instant, or one
+ * pitch pot took a whole town in a single tick.
+ */
+export const BUILDING_BURN_SECONDS = 40;
+export const FIRE_SPREAD_AFTER = 6;
+export const FIRE_SPREAD_RATE = 0.12;
+export const FIRE_SPREAD_RADIUS = 2.8;
+/** How near a ground fire must be to a footprint to light it. */
+export const FIRE_CATCH_RADIUS = 0.9;
+/**
+ * What puts it out. The player's idle people fetch water from a well and
+ * douse it -- MAX_FIREFIGHTERS at a time, DOUSE_SECONDS at the building once
+ * they arrive. A rival lord's people are not simulated; if he owns a well his
+ * fires go out on their own after WELL_QUENCH_SECONDS, and if he does not they
+ * burn like anyone else's.
+ */
+export const MAX_FIREFIGHTERS = 6;
+export const DOUSE_SECONDS = 3.5;
+export const WELL_QUENCH_SECONDS = 8;
+/** Seconds an idle peasant spends turning one moat tile into water. */
+export const MOAT_DIG_SECONDS = 5.5;
+/** Cap on diggers, so a long ditch does not empty the campfire. */
+export const MAX_MOAT_DIGGERS = 8;
+
+/** Whether fire takes this building: the flag if set, else the bill. */
+export function isFlammable(def: BuildingDef): boolean {
+  if (def.flammable !== undefined) return def.flammable;
+  return (def.cost.wood ?? 0) > (def.cost.stone ?? 0);
+}
+
+/**
  * What an engineer mends and what a tunneller undermines, per second.
  *
  * Both are deliberately slow. A wall that comes back as fast as a catapult
@@ -1526,6 +1580,12 @@ export function buildingHp(def: BuildingDef): number {
 export interface SoldierType {
   name: string;
   label: string;
+  /**
+   * Carries a torch: stood at a timber building, he sets it alight. The
+   * slave's whole worth. Not `incendiary`, which lobs fire onto the ground
+   * -- a torch is put to a wall, and the ground under it stays cold.
+   */
+  torch?: boolean;
   /** Gold per recruit. */
   gold: number;
   /** Goods per recruit, on top of the gold. */
@@ -1728,14 +1788,16 @@ export const SOLDIER_TYPES: Record<string, SoldierType> = {
 
   slave: {
     name: 'slave', from: 'mercenary_post', label: 'Slave', gold: 12,
-    cost: {},
+    cost: {}, torch: true,
     // The cheapest thing on the field by a wide margin, and it shows in every
     // number. He exists to be in front of somebody who matters -- a wall's
     // worth of arrows spent on slaves is a wall's worth not spent on your
     // swordsmen.
     hp: 22, speed: 1.55, damage: 3, range: 0.9, cooldown: 1.3,
-    description: 'Barely armed and barely willing. Twelve gold buys a body '
-               + 'between the enemy and someone who cost you eighty.',
+    description: 'Barely armed and barely willing, but he carries a torch: '
+               + 'stand him at a timber building and it burns. Otherwise '
+               + 'twelve gold buys a body between the enemy and someone who '
+               + 'cost you eighty.',
   },
   slinger: {
     name: 'slinger', from: 'mercenary_post', label: 'Slinger', gold: 25,

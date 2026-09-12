@@ -44,6 +44,9 @@ export const F_ALT = 2;
  */
 export const F_TURN_SHIFT = 2;
 export const F_TURN_MASK = 3;
+/** Alight, and a moat still only marked out. Above the turn bits. */
+export const F_ABLAZE = 16;
+export const F_UNDUG = 32;
 
 export interface WireBuildingSource {
   id: number;
@@ -55,6 +58,8 @@ export interface WireBuildingSource {
   raised?: boolean;
   alt?: boolean;
   turn?: number;
+  ablaze?: number;
+  undug?: boolean;
 }
 
 export function packBuilding(b: WireBuildingSource): NetBuilding | null {
@@ -65,7 +70,8 @@ export function packBuilding(b: WireBuildingSource): NetBuilding | null {
     h: Math.max(0, Math.round(b.hp)),
     s: b.staff | 0,
     f: (b.raised ? F_RAISED : 0) | (b.alt ? F_ALT : 0)
-       | ((b.turn ?? 0) & F_TURN_MASK) << F_TURN_SHIFT,
+       | ((b.turn ?? 0) & F_TURN_MASK) << F_TURN_SHIFT
+       | (b.ablaze ? F_ABLAZE : 0) | (b.undug ? F_UNDUG : 0),
   };
 }
 

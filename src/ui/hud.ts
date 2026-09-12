@@ -1491,6 +1491,8 @@ export class Hud {
       'double-click all of a kind &nbsp; right-click move<br>' +
       'right-click a <b>tower/gatehouse</b>, or a wall joined to one, to man it<br>' +
       'click a <b>gatehouse</b> to shut it, again to open &nbsp; <b>G</b> drawbridges<br>' +
+      '<b>H</b> hold ground &nbsp; <b>P</b> then right-click: patrol between here and there<br>' +
+      '<b>Fire</b> takes timber: build a <b>well</b> and idle people run with buckets<br>' +
       '<b>F</b> lights your pitch ditches &nbsp; <b>Shift-F</b> fullscreen<br>' +
       'push the pointer at a screen edge to scroll &nbsp; <b>Esc</b> pause / save';
   }

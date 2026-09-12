@@ -32,6 +32,10 @@ export interface SavedBuilding {
   alt?: number;
   /** Quarter turns it was laid at, 1 to 3. Absent means facing north. */
   t?: number;
+  /** Seconds it has been burning. Absent means not alight. */
+  f?: number;
+  /** A moat not yet dug. Absent means dug, which every older save is. */
+  u?: number;
 }
 
 export interface SavedSoldier {
@@ -41,6 +45,8 @@ export interface SavedSoldier {
   g?: [number, number, number, number];
   /** Holding ground (defensive stance). Absent means aggressive. */
   h?: boolean;
+  /** On patrol: the two ends, and 1 if walking toward the second. */
+  p?: [number, number, number, number, 0 | 1];
 }
 
 export interface SavedAnimal {

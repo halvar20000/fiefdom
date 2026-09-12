@@ -37,7 +37,8 @@ import { hydrate } from './game/backend';
 import { BANNERS } from './game/banners';
 import { MatchRuntime } from './net/match';
 import { packBuilding, packSoldier, unpackSoldier, buildingName,
-         F_RAISED, F_TURN_SHIFT, F_TURN_MASK } from './net/wire';
+         F_RAISED, F_ABLAZE, F_UNDUG, F_TURN_SHIFT, F_TURN_MASK } from './net/wire';
+import { TownWork } from './game/town';
 import { multiplayer } from './ui/lobby';
 import { net } from './net/socket';
 import { accountScreen } from './ui/account';
@@ -54,6 +55,8 @@ import {
   turnSprites,
   MILL_SAIL_PHASES, HAUL_YARD,
   BURN_SECONDS, BURN_RADIUS, BURN_DPS, IGNITE_RADIUS, DEMOLISH_REFUND,
+  BUILDING_BURN_SECONDS, FIRE_SPREAD_AFTER, FIRE_SPREAD_RATE, FIRE_SPREAD_RADIUS,
+  FIRE_CATCH_RADIUS, WELL_QUENCH_SECONDS, isFlammable,
   PIT_TRIGGER_RADIUS, PIT_BLAST_RADIUS, PIT_DAMAGE, WATER_POT_RADIUS,
   OIL_POT_TRIGGER_RADIUS, OIL_POT_BLAST_RADIUS, OIL_POT_DAMAGE,
   REPAIR_RADIUS, REPAIR_PER_SECOND, UNDERMINE_RADIUS, UNDERMINE_PER_SECOND,
@@ -558,6 +561,10 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
      * never touches his gates, so like `turn` this only arrives over the wire.
      */
     raised?: boolean;
+    /** Seconds alight. A lord's fires are ticked here; a player's arrive over the wire. */
+    ablaze?: number;
+    /** A moat only marked out, for a castle another PLAYER owns. */
+    undug?: boolean;
   }
   /** Ids for the above, unique across every faction on the map. */
   let nextEnemyBuildingId = 1;
@@ -705,6 +712,41 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
           f?.lord?.loseWorker(b);
         },
       };
+    },
+    // The nearest timber building of an enemy, for a slave's torch. Nothing a
+    // well is guarding is exempt -- it just gets put out.
+    torchTarget: (s) => {
+      let best: { x: number; z: number; dist: number; hit(n: number): void } | null = null;
+      const consider = (bx: number, bz: number, w: number, d: number, hit: () => void) => {
+        const dist = distToFootprint(s.x, s.z, bx, bz, w, d);
+        if (best && dist >= best.dist) return;
+        best = {
+          x: Math.max(bx, Math.min(s.x, bx + w)),
+          z: Math.max(bz, Math.min(s.z, bz + d)),
+          dist, hit,
+        };
+      };
+      if (atWar(s.side, PLAYER)) {
+        for (const b of state.buildings) {
+          if (b.ablaze || !isFlammable(b.def)) continue;
+          const [w, d] = b.def.footprint;
+          consider(b.x, b.z, w, d, () => igniteBuilding(b));
+        }
+      }
+      for (const f of factions) {
+        if (!atWar(s.side, f.id)) continue;
+        for (const b of f.buildings) {
+          if (b.ablaze || !isFlammable(BUILDINGS[b.name])) continue;
+          const [w, d] = BUILDINGS[b.name].footprint;
+          // Another player's building: his client lights it, and says so in
+          // his next snapshot. A lord's lights here.
+          consider(b.x, b.z, w, d, () => {
+            if (f.net && mp) mp.hit(f.gside, 'f', b.id, 1);
+            else igniteEnemyBuilding(f, b);
+          });
+        }
+      }
+      return best;
     },
     // Allies walk past each other. Without this every side fights every other,
     // which is exactly right for single-player and wrong the moment two humans
@@ -914,7 +956,10 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       if (!placement.placeAt(name, t.x, t.z).ok) continue;
       const b = state.buildings[state.buildings.length - 1];
       markArea(b.x, b.z, pw, pd);
-      if (!def.walkable) markSolid(b.x, b.z, pw, pd);
+      // A moat is laid as a mark and dug by idle hands -- see town.ts -- so
+      // it blocks nothing until the water is in it.
+      if (name === 'moat') b.undug = true;
+      else if (!def.walkable) markSolid(b.x, b.z, pw, pd);
       if (BORDER_BUILDINGS.has(name)) border = true;
       built++;
     }
@@ -2455,6 +2500,112 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       }
     }
     for (const u of army.soldiers) if (burning.has(u.id)) u.hp -= BURN_DPS * dt;
+
+    // Fire on the ground under or against a timber building lights it. That
+    // is how a fire thrower's pot and a lit ditch reach the town at all.
+    for (const f of fires) {
+      const cx = f.x + 0.5, cz = f.z + 0.5;
+      for (const b of state.buildings) {
+        if (b.ablaze || !isFlammable(b.def)) continue;
+        const [w, d] = b.def.footprint;
+        if (distToFootprint(cx, cz, b.x, b.z, w, d) <= FIRE_CATCH_RADIUS) igniteBuilding(b);
+      }
+      for (const fa of factions) {
+        if (fa.net) continue;
+        for (const b of fa.buildings) {
+          if (b.ablaze || !isFlammable(BUILDINGS[b.name])) continue;
+          const [w, d] = BUILDINGS[b.name].footprint;
+          if (distToFootprint(cx, cz, b.x, b.z, w, d) <= FIRE_CATCH_RADIUS) {
+            igniteEnemyBuilding(fa, b);
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * A timber building of the player's catches.
+   *
+   * Told once, with the place, because the answer is always the same and it is
+   * somewhere else: a well, and idle people to run to it.
+   */
+  function igniteBuilding(b: PlacedBuilding): boolean {
+    if (b.ablaze || !isFlammable(b.def)) return false;
+    b.ablaze = 0.001;
+    const [w, d] = b.def.footprint;
+    audio.play('fire');
+    state.notify(`Fire! Your ${b.def.label.toLowerCase()} is burning`, 'warn',
+                 { x: b.x + w / 2, z: b.z + d / 2 });
+    staticDirty = true;
+    return true;
+  }
+
+  /**
+   * A rival's timber building catches. His is simulated by whoever runs him:
+   * a player's over the wire (see torchTarget), a lord's right here.
+   */
+  function igniteEnemyBuilding(f: Faction, b: EnemyBuilding): boolean {
+    if (f.net || b.ablaze || !isFlammable(BUILDINGS[b.name])) return false;
+    b.ablaze = 0.001;
+    staticDirty = true;
+    return true;
+  }
+
+  /**
+   * Burning buildings burn: they take damage, and they light their timber
+   * neighbours. See BUILDING_BURN_SECONDS for the rates and the reasons.
+   *
+   * What puts a fire out is elsewhere. The player's are drowned by his
+   * people (town.ts); a lord's go out on their own after a while if he owns
+   * a well, since his people are not walked -- and burn to the ground if he
+   * does not, exactly as the player's would.
+   */
+  function updateBuildingFires(dt: number): void {
+    const spreadFrom = (bx: number, bz: number, w: number, d: number, burnt: number) => {
+      if (burnt < FIRE_SPREAD_AFTER) return;
+      const chance = 1 - Math.exp(-dt * FIRE_SPREAD_RATE);
+      const cx = bx + w / 2, cz = bz + d / 2;
+      for (const o of state.buildings) {
+        if (o.ablaze || !isFlammable(o.def)) continue;
+        const [ow, od] = o.def.footprint;
+        if (distToFootprint(cx, cz, o.x, o.z, ow, od) > FIRE_SPREAD_RADIUS) continue;
+        if (Math.random() < chance) igniteBuilding(o);
+      }
+      for (const f of factions) {
+        if (f.net) continue;
+        for (const o of f.buildings) {
+          if (o.ablaze || !isFlammable(BUILDINGS[o.name])) continue;
+          const [ow, od] = BUILDINGS[o.name].footprint;
+          if (distToFootprint(cx, cz, o.x, o.z, ow, od) > FIRE_SPREAD_RADIUS) continue;
+          if (Math.random() < chance) igniteEnemyBuilding(f, o);
+        }
+      }
+    };
+
+    for (const b of [...state.buildings]) {
+      if (!b.ablaze) continue;
+      b.ablaze += dt;
+      const [w, d] = b.def.footprint;
+      spreadFrom(b.x, b.z, w, d, b.ablaze);
+      damagePlayerBuilding(b, (buildingHp(b.def) / BUILDING_BURN_SECONDS) * dt);
+    }
+    for (const f of factions) {
+      if (f.net) continue;
+      const hasWell = f.buildings.some(b => b.name === 'well');
+      for (const b of [...f.buildings]) {
+        if (!b.ablaze) continue;
+        b.ablaze += dt;
+        if (hasWell && b.ablaze >= WELL_QUENCH_SECONDS) {
+          b.ablaze = 0;
+          staticDirty = true;
+          continue;
+        }
+        const def = BUILDINGS[b.name];
+        const [w, d] = def.footprint;
+        spreadFrom(b.x, b.z, w, d, b.ablaze);
+        damageEnemyBuilding(f, b, (buildingHp(def) / BUILDING_BURN_SECONDS) * dt);
+      }
+    }
   }
 
   /** Distance from a point to the nearest edge of a footprint. */
@@ -2965,6 +3116,11 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     drawbridge: 'drawbridge_raised',
     gatehouse: 'gatehouse_shut',
   };
+  /** The model a building draws this instant: shut, marked out, or itself. */
+  const modelOf = (b: { name: string; raised?: boolean; undug?: boolean }): string =>
+    b.raised && SHUT_SPRITE[b.name] ? SHUT_SPRITE[b.name]
+    : b.undug ? `${b.name}_undug`
+    : b.name;
 
   /** The sprite one of them draws this instant. */
   function restlessSprite(r: Restless): string {
@@ -3055,9 +3211,10 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     }
     for (const b of state.buildings) {
       const [w, d] = b.def.footprint;
-      // The two buildings that draw a different model under the same name.
-      if (b.raised && SHUT_SPRITE[b.name]) {
-        push(SHUT_SPRITE[b.name], b.x, b.z, w, d);
+      // The buildings that draw a different model under the same name.
+      const model = modelOf(b);
+      if (model !== b.name) {
+        push(model, b.x, b.z, w, d);
         continue;
       }
       // A PAINTED store draws the square and whatever is stacked on it. A store
@@ -3086,8 +3243,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
                           tint: f.stoneTint });
           continue;
         }
-        push(b.raised && SHUT_SPRITE[b.name] ? SHUT_SPRITE[b.name] : b.name,
-             b.x, b.z, w, d, f.stoneTint, b.turn);
+        push(modelOf(b), b.x, b.z, w, d, f.stoneTint, b.turn);
       }
     }
     items.sort((a, b) => a.depth - b.depth);
@@ -3117,6 +3273,12 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
   // barracks or siege camp), so one flag governs everything that comes out.
   let rallyPoint: { x: number; z: number } | null = null;
   let placingRally = false;
+  /**
+   * P was pressed with troops selected: the next right-click is the far end
+   * of their beat rather than a place to go. Cleared by the click, by Esc,
+   * and by the selection emptying.
+   */
+  let placingPatrol = false;
   const rallyFlag = document.createElement('div');
   rallyFlag.style.cssText = 'position:fixed;pointer-events:none;display:none;'
     + 'z-index:22;transform:translate(-2px,-100%);font-size:22px;line-height:1;'
@@ -3439,6 +3601,13 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     const w = pickWorld(clientX, clientY);
     const tx = Math.floor(w.x), tz = Math.floor(w.z);
 
+    if (placingPatrol) {
+      placingPatrol = false;
+      const n = army.orderPatrol(w.x, w.z);
+      state.notify(n ? `${n} on patrol` : 'They cannot reach there', n ? 'info' : 'warn');
+      return true;
+    }
+
     const post = state.buildings.find(b => {
       if (!canGarrison(b.name)) return false;
       const [bw, bd] = b.def.footprint;
@@ -3565,6 +3734,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       // is the building, with the wrecking tool armed it is the tool;
       // otherwise it is the game itself.
       if (placingRally) { placingRally = false; document.body.style.cursor = ''; }
+      else if (placingPatrol) { placingPatrol = false; state.notify('Patrol cancelled', 'info'); }
       else if (placement.selected) { placement.cancel(); refreshOverlay(); }
       else if (hud.demolishing) hud.setDemolish(false);
       else openPause();
@@ -3632,6 +3802,13 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     if (k === 'm') hud.toggleMarket();
     if (k === 't') hud.toggleStats();
     if (k === 'h') toggleHold();
+    if (k === 'p') {
+      if (!army.selected.length) state.notify('Select troops first', 'warn');
+      else {
+        placingPatrol = true;
+        state.notify('Patrol: right-click the far end of their beat', 'info');
+      }
+    }
     if (k === 'g') {
       // Debug view: paint every tile a unit is forbidden to walk on.
       // If a figure is ever standing on red, movement is at fault; if it is
@@ -3880,6 +4057,36 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
   }
 
 
+  // --- idle hands: diggers and firefighters ---------------------------------
+  //
+  // See town.ts. What they need of the world is a route, a spot to step out
+  // from, and to be told when a tile is water or a fire is out.
+  const town = new TownWork(state, {
+    findPath: (fx, fz, tx, tz) => paths.find(fx, fz, tx, tz),
+    isBlocked: (x, z) => paths.isBlocked(x, z),
+    nearestOpen: (x, z, r) => paths.nearestOpen(x, z, r),
+    // The last figure shown at the fire is the one who leaves: the idle count
+    // drops by one as the job starts, so that is exactly the figure that
+    // stops being drawn, and the new one appears where he stood.
+    spawn: () => {
+      const shown = Math.min(wanderers.length, state.idle);
+      const u = wanderers[Math.max(0, shown - 1)];
+      return u ? { x: u.x, z: u.z } : { x: fire.x, z: fire.z };
+    },
+    home: () => ({ x: fire.x, z: fire.z + 1 }),
+    onDug: (b) => {
+      markSolid(b.x, b.z, 1, 1);
+      rescueStuckWorkers();
+      staticDirty = true;
+    },
+    onDoused: (b) => {
+      b.ablaze = 0;
+      staticDirty = true;
+      state.notify(`The fire at your ${b.def.label.toLowerCase()} is out`, 'info');
+    },
+    notify: (text, kind) => state.notify(text, kind),
+  });
+
   // --- multiplayer ----------------------------------------------------------
   //
   // Everything below is inert in a single-player game: `mp` is null, none of it
@@ -3906,6 +4113,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
           .map(b => packBuilding({
             id: b.id, name: b.name, x: b.x, z: b.z, hp: b.hp, staff: b.staff,
             raised: b.raised, alt: b.alt, turn: b.turn,
+            ablaze: b.ablaze, undug: b.undug,
           }))
           .filter((b): b is NetBuilding => b !== null),
         soldiers,
@@ -3957,15 +4165,24 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
         changed = true;
       }
       const raised = (nb.f & F_RAISED) !== 0;
+      const undug = (nb.f & F_UNDUG) !== 0;
+      const ablaze = (nb.f & F_ABLAZE) !== 0;
+      // What his building blocks, this instant: a moat only marked out
+      // blocks nothing, a shut gate blocks everything.
+      const solid = (!BUILDINGS[name].walkable && !undug) || raised;
       if (had) {
         had.hp = nb.h;
         had.staff = nb.s;
+        // Alight or not is drawn, nothing more: his fire is his to tick.
+        if (!!had.ablaze !== ablaze) { had.ablaze = ablaze ? 1 : 0; changed = true; }
         // A gate shut or a bridge raised on the owner's screen is stone on
         // this one too, or an ally's column would walk through it here and
-        // stand inside it there.
-        if (!!had.raised !== raised) {
-          had.raised = raised;
-          if (BUILDINGS[name].walkable) markSolid(nb.x, nb.z, w, d, raised);
+        // stand inside it there. A moat dug there is water here.
+        const wasSolid = (!BUILDINGS[name].walkable && !had.undug) || !!had.raised;
+        had.raised = raised;
+        had.undug = undug;
+        if (wasSolid !== solid) {
+          markSolid(nb.x, nb.z, w, d, solid);
           changed = true;
         }
         continue;
@@ -3974,9 +4191,11 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
         id: nb.i, name, x: nb.x, z: nb.z, hp: nb.h, staff: nb.s,
         turn: (nb.f >> F_TURN_SHIFT) & F_TURN_MASK,
         raised: raised || undefined,
+        undug: undug || undefined,
+        ablaze: ablaze ? 1 : undefined,
       });
       markArea(nb.x, nb.z, w, d);
-      if (!BUILDINGS[name].walkable || raised) markSolid(nb.x, nb.z, w, d);
+      if (solid) markSolid(nb.x, nb.z, w, d);
       if (name === 'keep') f.keep = { x: nb.x + 1, z: nb.z + 1 };
       changed = true;
     }
@@ -4053,6 +4272,17 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
           const b = f?.buildings.find(x => x.id === h.i);
           if (f && b) damageEnemyBuilding(f, b, h.n);
         }
+      } else if (h.kind === 'f') {
+        // A torch put to one of mine. Lighting is the owner's to do, like a
+        // blow is the owner's to apply, so every screen agrees on what burns.
+        if (side === PLAYER) {
+          const b = state.buildings.find(x => x.id === h.i);
+          if (b) igniteBuilding(b);
+        } else {
+          const f = factionOf(side);
+          const b = f?.buildings.find(x => x.id === h.i);
+          if (f && b) igniteEnemyBuilding(f, b);
+        }
       } else if (h.kind === 'u') {
         const u = army.byId(h.i);
         // Only ever one of my own, alive, on the side the sender named.
@@ -4104,7 +4334,8 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     let sig = 0;
     for (const b of state.buildings) {
       sig = (sig * 31 + b.id + b.hp * 7 + b.staff * 3
-             + (b.raised ? 1 : 0) + (b.alt ? 2 : 0)) | 0;
+             + (b.raised ? 1 : 0) + (b.alt ? 2 : 0)
+             + (b.ablaze ? 4 : 0) + (b.undug ? 8 : 0)) | 0;
     }
     for (const f of factions) {
       if (f.net) continue;
@@ -4156,6 +4387,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     if (syncClock === 0) enemyWorkers.sync(factions);   // on the same 1s beat
 
     updateWanderers(dt);
+    town.update(dt);
     herd.update(dt, state.elapsed);
     army.update(dt);
     trackStats();
@@ -4166,6 +4398,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     updateSappers(dt);
     updateTraps();
     updateFires(dt);
+    updateBuildingFires(dt);
     projectiles.update(dt);
 
     // Store sprites are part of the static list, so a pile changing level has to
@@ -4483,6 +4716,8 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       if (def.name === 'gatehouse') {
         bits.push(mine.raised ? 'shut — click to open' : 'open — click to shut');
       }
+      if (mine.undug) bits.push('marked out — waiting to be dug');
+      if (mine.ablaze) bits.push('BURNING');
       if (def.housing) bits.push(`houses ${def.housing}`);
       if (def.storeFor === 'stockpile' || def.storeFor === 'granary') {
         // Store squares hold nothing themselves; what sits on this one comes
@@ -4527,6 +4762,8 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
         const def = BUILDINGS[b.name];
         const full = buildingHp(def);
         const bits = [f.name];
+        if (b.undug) bits.push('marked out');
+        if (b.ablaze) bits.push('burning');
         if (b.hp < full) bits.push(`${Math.max(0, Math.round(b.hp))}/${full} hp`);
         return { title: def.label, sub: bits.join(' · '), foe: true };
       }
@@ -4701,6 +4938,37 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
         depth: depthKey(f.x + 0.5, f.z + 0.5, rot),
       });
     }
+    // A burning building wears a flame on every tile it covers, drawn a
+    // little above the ground so it sits in the building rather than at its
+    // feet. Same three variants, seeded by the tile so neighbours flicker
+    // out of step.
+    const flamesOn = (bx: number, bz: number, w: number, d: number) => {
+      for (let dz = 0; dz < d; dz++) {
+        for (let dx = 0; dx < w; dx++) {
+          const x = bx + dx, z = bz + dz;
+          const v = 1 + ((Math.floor(state.elapsed * 7) + ((x * 7 + z * 13) & 7)) % 3);
+          const key = `pitch_fire_${v}_${rot}`;
+          if (!atlas.frames[key]) continue;
+          const [fx, fz] = spriteAnchor(x, z, 1);
+          figures.push({
+            key, x: fx, z: fz, y: terrain.heightAt(x, z) + 0.35,
+            bias: footprintDepthBias(1, 1, rot),
+            // A hair nearer than the building's own centre, so on the tile
+            // the building is sorted by, the flame is painted over it rather
+            // than under it by the luck of a tie.
+            depth: depthKey(x + 0.5, z + 0.5, rot) + 0.01,
+          });
+        }
+      }
+    };
+    for (const b of state.buildings) {
+      if (b.ablaze) flamesOn(b.x, b.z, b.def.footprint[0], b.def.footprint[1]);
+    }
+    for (const f of factions) {
+      for (const b of f.buildings) {
+        if (b.ablaze) flamesOn(b.x, b.z, BUILDINGS[b.name].footprint[0], BUILDINGS[b.name].footprint[1]);
+      }
+    }
 
     // Turning sails and filling yards. Everything about where these land is
     // the static list's -- see Restless -- and only which frame is picked
@@ -4732,6 +5000,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       const u = wanderers[i];
       addFigure(u.x, u.z, u.heading, u.moving ? 'walk' : 'idle', u.phase);
     }
+    for (const j of town.jobs) addFigure(j.x, j.z, j.heading, TownWork.clipOf(j), j.phase);
     figures.sort((a, b) => a.depth - b.depth);
 
     sprites.clear();
@@ -4814,7 +5083,10 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       gold: state.gold,
       stock: { ...state.stock },
       population: state.population,
-      idle: state.idle,
+      // Anyone out digging or carrying water is counted back in: the jobs are
+      // not saved, and a man who was not at the fire when it was saved would
+      // otherwise never come back to it.
+      idle: state.idle + town.jobs.length,
       popularity: state.popularity,
       rations: state.rations,
       taxLevel: state.taxLevel,
@@ -4826,6 +5098,8 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
         up: b.raised ? 1 : undefined,
         alt: b.alt ? 1 : undefined,
         t: b.turn || undefined,
+        f: b.ablaze || undefined,
+        u: b.undug ? 1 : undefined,
       })),
       // Factions another player owns are left out: their economy is a set of
       // numbers on someone else's machine that this client is never told, so
@@ -4849,6 +5123,10 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       soldiers: army.soldiers.map(u => ({
         t: u.type, side: u.side, x: u.x, z: u.z, hp: u.hp,
         ...(u.hold ? { h: true } : {}),
+        ...(u.patrol
+          ? { p: [u.patrol.ax, u.patrol.az, u.patrol.bx, u.patrol.bz,
+                  u.patrol.toB ? 1 : 0] as [number, number, number, number, 0 | 1] }
+          : {}),
         ...(u.garrison
           ? { g: [u.garrison.x, u.garrison.z, u.garrison.sx, u.garrison.sz] as
                  [number, number, number, number] }
@@ -4909,7 +5187,11 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       // And which way it was turned. Absent in an older save, which reads as
       // facing the way everything faced before the key existed.
       b.turn = sb.t ?? 0;
-      if (!def.walkable || b.raised) markSolid(sb.x, sb.z, w, d);
+      // Still burning, and a moat still only marked out. Absent in an older
+      // save: nothing was alight, and every moat was dug the moment it was laid.
+      if (sb.f) b.ablaze = sb.f;
+      if (sb.u) b.undug = true;
+      if ((!def.walkable && !b.undug) || b.raised) markSolid(sb.x, sb.z, w, d);
     }
     for (const sf of sv.factions) {
       const f = factionOf(sf.id);
@@ -5019,6 +5301,9 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       if (!u) continue;
       u.hp = su.hp;
       if (su.h) u.hold = true;
+      if (su.p) {
+        u.patrol = { ax: su.p[0], az: su.p[1], bx: su.p[2], bz: su.p[3], toB: su.p[4] === 1 };
+      }
       if (su.g) {
         // Recomputed from the building rather than serialised: a save made
         // before posts carried a reach would otherwise put a man on a lookout
@@ -5047,6 +5332,9 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     }
     state.population = sv.population;
     state.idle = sv.idle;
+    // Whoever was out with a spade or a bucket in the old game is not in this
+    // one; the save counted them back in at the fire.
+    town.jobs.length = 0;
     state.popularity = sv.popularity;
     state.rations = sv.rations as typeof state.rations;
     state.taxLevel = sv.taxLevel;
@@ -5140,6 +5428,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     },
     decorations, workerWorld, groundType, regrowing, paths, wanderers, hud, herd, army, enemyWorkers,
     recruit, atlas, spawnRaid, factions, fires, lightPitch, projectiles,
+    town, igniteBuilding,
     manable: () => [...manableTiles(state.buildings)],
     snapshot, applySave, openPause,
     isPaused: () => paused,

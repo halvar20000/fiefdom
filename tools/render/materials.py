@@ -251,6 +251,22 @@ def rough_stone(name="RoughStone"):
     return mat
 
 
+def turned_earth(name="TurnedEarth"):
+    """Freshly dug soil -- the mark of a moat before it is a moat."""
+    mat, nt, bsdf = _new(name)
+    pos = _pos(nt, 1.0)
+    clods = _noise(nt, pos, scale=26.0, detail=7.0, roughness=0.6)
+    ramp = _ramp(nt, [
+        (0.30, (0.13, 0.09, 0.06, 1.0)),
+        (0.55, (0.24, 0.17, 0.11, 1.0)),
+        (0.80, (0.33, 0.25, 0.17, 1.0)),
+    ], clods.outputs["Fac"])
+    nt.links.new(ramp.outputs["Color"], bsdf.inputs["Base Color"])
+    _set(bsdf, "Roughness", 0.97)
+    _bump(nt, bsdf, clods.outputs["Fac"], strength=0.9, distance=0.04)
+    return mat
+
+
 def timber(name="Timber", dark=False):
     """Structural beams and planking. Grain runs along UV.x."""
     mat, nt, bsdf = _new(name)

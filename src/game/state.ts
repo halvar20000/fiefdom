@@ -49,6 +49,23 @@ export interface PlacedBuilding {
    * things. Read it through `productionOf`, never directly.
    */
   alt?: boolean;
+  /**
+   * Seconds this building has been burning. Absent or 0 is not burning.
+   *
+   * On the placed building because it is a state, not a kind: two hovels
+   * side by side are one alight and one not. What lights it, what it does
+   * while alight and what puts it out all live in main.ts with the ground
+   * fires; the number here is the one thing everybody -- the renderer, the
+   * tooltip, the firefighters -- has to agree on.
+   */
+  ablaze?: number;
+  /**
+   * A moat that is marked out and not yet dug: walkable earth until an idle
+   * peasant has spent MOAT_DIG_SECONDS on it. Only ever set on a moat, and
+   * only true; a dug tile clears it. Absent means dug, so a save from before
+   * moats were dug loads exactly as it was.
+   */
+  undug?: boolean;
 }
 
 export interface Notice {

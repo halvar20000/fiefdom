@@ -119,7 +119,8 @@ export interface NetBuilding {
   s: number;
   /**
    * Bit 1: a drawbridge raised. Bit 2: a workshop on its alternate product.
-   * Bits 3-4: the quarter turn it was laid at. See wire.ts.
+   * Bits 3-4: the quarter turn it was laid at. Bit 5: alight. Bit 6: a moat
+   * not yet dug. See wire.ts.
    */
   f: number;
 }
@@ -148,7 +149,7 @@ export type SimMessage =
    * health bar and buys the thing that matters -- two players can never
    * disagree about whether a keep is still standing.
    */
-  | { k: 'hit'; to: number; g: number; kind: 'b' | 'u' | 'w'; i: number; n: number }
+  | { k: 'hit'; to: number; g: number; kind: 'b' | 'u' | 'w' | 'f'; i: number; n: number }
   /** A tree cut down, so the stump appears on every screen, not just the feller's. */
   | { k: 'fell'; i: number }
   /** Ground set alight by an incendiary. Cosmetic, and cheap to keep in step. */

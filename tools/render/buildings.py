@@ -2589,6 +2589,19 @@ def moat():
     return geom.join(parts, "moat"), (1, 1)
 
 
+def moat_undug():
+    """
+    A moat that has been marked out and not yet dug.
+
+    Same tiling rule as the moat: the whole tile, edge to edge, and nothing
+    placed on it, or a painted run becomes a row of pegs. Turned earth a
+    little below the grass is the read -- a scar where the water will be.
+    """
+    earth = M.turned_earth()
+    parts = [geom.box("mu_earth", (0.0, 0.0, 0.0), (1.0, 1.0, 0.035), earth)]
+    return geom.join(parts, "moat_undug"), (1, 1)
+
+
 def _drawbridge(raised: bool):
     """The deck, flat or swung up. Two sprites, one model, one flag."""
     timber_l = M.timber("BridgeDeck")
@@ -2631,6 +2644,7 @@ def _drawbridge(raised: bool):
 
 REGISTRY.update({
     "moat": moat,
+    "moat_undug": moat_undug,
     "drawbridge": lambda: _drawbridge(False),
     "drawbridge_raised": lambda: _drawbridge(True),
 })

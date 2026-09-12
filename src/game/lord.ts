@@ -62,6 +62,10 @@ export const BUILD_PLAN: { name: string; want: number }[] = [
   // simply skips whichever has no site.
   { name: 'apple_orchard', want: 1 },
   { name: 'dairy_farm', want: 1 },
+  // A well, because fire takes timber now and his people are not walked: a
+  // lord with a well has his fires go out (WELL_QUENCH_SECONDS), one without
+  // watches his town burn to the ground from one slave's torch.
+  { name: 'well', want: 1 },
   { name: 'barracks', want: 1 },      // nothing military until here
   // The barracks alone raises nobody now: a recruit is issued kit off the rack,
   // so the armoury and a poleturner come with it. Spears first because they are

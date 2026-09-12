@@ -100,6 +100,15 @@ export interface Soldier {
    */
   hold: boolean;
   /**
+   * Walking a beat between two points until told otherwise.
+   *
+   * He looks around on the way, like a man with no orders at all -- a patrol
+   * that marched past a raider would be a parade -- and when the fight is
+   * over he picks the beat back up from wherever it left him. Any other
+   * order ends it. `toB` is which end he is heading for.
+   */
+  patrol: { ax: number; az: number; bx: number; bz: number; toB: boolean } | null;
+  /**
    * A wall is not in this man's way, this tick.
    *
    * True for anything that climbs by nature (the assassin) and for anyone
@@ -181,6 +190,15 @@ export interface ArmyWorld {
    * until the lord can spare someone to walk in a replacement.
    */
   civilianTarget?(s: Soldier, reach: number): SiegeTarget | null;
+  /**
+   * Nearest timber building of an enemy, for a man carrying a torch.
+   *
+   * Same bargain as the engines: he puts the torch to what is already in
+   * reach and never goes looking, so a slave is parked at a hovel the way a
+   * ram is parked at a wall. `hit` sets it alight; the world decides what
+   * that means for the building.
+   */
+  torchTarget?(s: Soldier): SiegeTarget | null;
   /**
    * A ranged attack was launched: spawn something the eye can follow.
    *
@@ -295,7 +313,7 @@ export class Army {
       hp, moving: false, selected: false,
       path: [], tx: x, tz: z,
       target: null, cooldown: 0, swing: 0, dying: 0, ordered: false,
-      garrison: null, mountAt: null, hold: false, escalade: !!def.climbs,
+      garrison: null, mountAt: null, hold: false, patrol: null, escalade: !!def.climbs,
       covered: false, net: true,
     };
     this.soldiers.push(s);
@@ -332,7 +350,7 @@ export class Army {
       hp: def.hp, moving: false, selected: false,
       path: [], tx: x, tz: z,
       target: null, cooldown: Math.random() * 0.4, swing: 0, dying: 0, ordered: false,
-      garrison: null, mountAt: null, hold: false, escalade: !!def.climbs,
+      garrison: null, mountAt: null, hold: false, patrol: null, escalade: !!def.climbs,
       covered: false,
     };
     this.soldiers.push(s);
@@ -414,6 +432,7 @@ export class Army {
     for (const s of this.selected) {
       if (s.hold === on) continue;
       s.hold = on;
+      if (on) s.patrol = null;
       if (on && !s.garrison && !s.ordered) { s.moving = false; s.path = []; }
       n++;
     }
@@ -444,12 +463,60 @@ export class Army {
       if (!this.send(s, x + ox * 1.1, z + oz * 1.1)) return;
       s.ordered = true;
       s.target = null;
+      s.patrol = null;
       // A move order is also the order to come down.
       s.garrison = null;
       s.mountAt = null;
       ordered++;
     });
     return ordered;
+  }
+
+  /**
+   * Order the selection to walk a beat between where each man stands and a
+   * point. Returns how many set off.
+   *
+   * Each man's own spot is his first end, spread about the far point as a
+   * move order spreads its arrivals, so a squad on patrol covers a stretch
+   * rather than a line of men walking one tile. Not `ordered`: an ordered
+   * march ignores what it passes, and a patrol is there to notice it.
+   */
+  orderPatrol(x: number, z: number): number {
+    const sel = this.selected;
+    if (!sel.length) return 0;
+    const side = Math.ceil(Math.sqrt(sel.length));
+    let n = 0;
+    sel.forEach((s, i) => {
+      const ox = (i % side) - (side - 1) / 2;
+      const oz = Math.floor(i / side) - (side - 1) / 2;
+      const bx = x + ox * 1.1, bz = z + oz * 1.1;
+      if (!this.send(s, bx, bz)) return;
+      s.ordered = false;
+      s.target = null;
+      s.garrison = null;
+      s.mountAt = null;
+      s.patrol = { ax: s.x, az: s.z, bx, bz, toB: true };
+      n++;
+    });
+    return n;
+  }
+
+  /**
+   * Pick the beat back up: walk to the end he was heading for, flipping to
+   * the other end if he is already there. Called whenever a patrolling man
+   * finds himself standing still with nothing to fight.
+   */
+  private continuePatrol(s: Soldier): void {
+    const p = s.patrol;
+    if (!p) return;
+    let x = p.toB ? p.bx : p.ax, z = p.toB ? p.bz : p.az;
+    if (Math.hypot(x - s.x, z - s.z) < 0.8) {
+      p.toB = !p.toB;
+      x = p.toB ? p.bx : p.ax; z = p.toB ? p.bz : p.az;
+    }
+    // Nowhere to walk -- the beat is walled off -- and the order dies rather
+    // than being retried every tick for ever.
+    if (!this.send(s, x, z)) s.patrol = null;
   }
 
   /** Route one unit to a point. Returns false if there is no way there. */
@@ -601,6 +668,7 @@ export class Army {
     const r = n === 0 ? 0 : spread * (1 + Math.floor(n / 8) * 0.5);
     s.mountAt = { x, z, sx: cx + Math.cos(a) * r, sz: cz + Math.sin(a) * r, reach };
     s.garrison = null;
+    s.patrol = null;
     s.ordered = true;
     s.target = null;
     return true;
@@ -901,7 +969,27 @@ export class Army {
               s.cooldown = s.def.cooldown;
               s.swing = SWING_TIME;
             }
+            continue;
           }
+          // Nobody at all to fight. A torch goes to the nearest timber in
+          // reach; held or not makes no difference, he is not moving.
+          if (s.def.torch) {
+            const t = this.world.torchTarget?.(s) ?? null;
+            if (t && t.dist <= reach) {
+              s.heading = Math.atan2(t.z - s.z, t.x - s.x);
+              engaged.add(s.id);
+              s.moving = false;
+              s.path = [];
+              if (s.cooldown <= 0) {
+                t.hit(1);
+                s.cooldown = s.def.cooldown;
+                s.swing = SWING_TIME;
+              }
+              continue;
+            }
+          }
+          // A patrolling man with nothing in front of him walks his beat.
+          if (s.patrol && !s.moving && !s.garrison) this.continuePatrol(s);
         }
         continue;
       }
@@ -973,6 +1061,7 @@ export class Army {
           if (s.path.length) { s.path.shift(); continue; }
           s.moving = false; s.ordered = false;
           this.mountIfAsked(s);
+          this.continuePatrol(s);
           break;
         }
         s.heading = Math.atan2(dz, dx);
@@ -990,7 +1079,12 @@ export class Army {
         if (!arrive) { budget = 0; continue; }
         budget -= d;
         if (s.path.length) s.path.shift();
-        else { s.moving = false; s.ordered = false; this.mountIfAsked(s); break; }
+        else {
+          s.moving = false; s.ordered = false;
+          this.mountIfAsked(s);
+          this.continuePatrol(s);
+          break;
+        }
       }
     }
 

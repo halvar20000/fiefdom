@@ -23,6 +23,24 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.64.0',
+    date: '2026-09-12',
+    headline: 'Fire takes timber.',
+    sections: [
+      {
+        title: 'Added',
+        items: [
+          'Buildings burn. Fire on the ground under or against anything built more of wood than stone \u2014 a fire thrower\u2019s pot, your own lit pitch ditch \u2014 sets it alight, and a burning building lights its timber neighbours within a few tiles after it has burned a while. Left alone, a fire takes the whole building in forty seconds, hovel or barracks alike. Walls, towers, the keep and anything else of stone do not burn; nor does a moat, a drawbridge or a water butt. The tooltip says BURNING, and so do the flames.',
+          'The slave carries a torch. Stood at a timber building of the enemy\u2019s, he puts it to the wall \u2014 he never goes looking, like a ram parked at a gate, so twelve gold and a walk is what it costs to start a fire in somebody\u2019s town. His own three damage is still what it was.',
+          'What puts a fire out is a well and idle people. Build a well and up to six of them leave the campfire with buckets, fill them beside the well, run to the fire and drown it; then on to the next one, or home. No well, and your people have no water: they stand and watch, and you are told so once. A rival lord\u2019s people are not walked, so if he owns a well his fires go out on their own after a few seconds, and he now builds one. If he does not, his town burns exactly as yours would.',
+          'A moat is dug, not conjured. Laying it marks the ground \u2014 turned earth anyone walks over \u2014 and up to eight idle people come out with spades and turn it into water a tile at a time, five and a half seconds each. Only a dug tile blocks. The timber is spent on laying, as before, and a drawbridge goes down wherever it always did.',
+          'Patrol. Select troops, press P, right-click the far end, and each man walks a beat between where he stood and there until told otherwise. He looks around on the way, like a man with no orders \u2014 a patrol that marched past a raider would be a parade \u2014 chases what he sees, and picks the beat back up when the fight is over. Any other order ends it.',
+          'In a match, a building alight on the owner\u2019s screen shows flames on everyone\u2019s, a moat marked out there is walkable here, and a torch put to another player\u2019s building lights it on his machine and nowhere else \u2014 the same rule as a blow.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.63.0',
     date: '2026-09-11',
     headline: 'A gate you can shut.',

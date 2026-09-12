@@ -64,7 +64,8 @@ export interface RemoteFaction {
 export interface IncomingHit {
   /** Which of my factions was hit -- mine, or an AI lord's if I am the host. */
   g: number;
-  kind: 'b' | 'u' | 'w';
+  /** A blow on a building, a soldier, a labourer's building -- or a torch put to a building. */
+  kind: 'b' | 'u' | 'w' | 'f';
   /** My own id for the building, soldier, or the building a labourer works. */
   i: number;
   n: number;
@@ -258,7 +259,7 @@ export class MatchRuntime {
    * which is the id that arrived in their snapshot, so it is theirs already and
    * needs no translation.
    */
-  hit(g: number, kind: 'b' | 'u' | 'w', i: number, n: number): void {
+  hit(g: number, kind: 'b' | 'u' | 'w' | 'f', i: number, n: number): void {
     const amount = Math.round(n);
     if (amount <= 0) return;
     this.send({ k: 'hit', to: this.ownerOf(g), g, kind, i, n: amount });
