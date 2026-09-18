@@ -34,6 +34,10 @@ export interface LordWorld {
    * ever be wrong, because the line is sized to the ground he was seated on.
    */
   ringOpen(): number;
+  /** How many gatehouses his plan calls for: one per ring of wall. */
+  gatesWanted(): number;
+  /** And how many towers: a bastioned plan has eight, a plain one four. */
+  towersWanted(): number;
   /**
    * Where a column can actually get to when it cannot get to `target`: the
    * reachable ground nearest it, which against a walled castle is the foot of
@@ -119,7 +123,7 @@ export const BUILD_PLAN: { name: string; want: number }[] = [
   // -- and a tower for each corner.
   { name: 'gatehouse', want: 1 },
   { name: 'wall', want: 1 },
-  { name: 'tower', want: 4 },
+  { name: 'tower', want: 4 },       // the count is the plan's -- see LordWorld.towersWanted
   { name: 'siege_camp', want: 1 },
   // Heavy kit last, and both halves of it together: a blacksmith on its own
   // makes swords for swordsmen he still has no mail for.
@@ -462,7 +466,11 @@ export class Lord {
     for (const step of BUILD_PLAN) {
       const done = step.name === 'wall'
         ? this.world.ringOpen() === 0
-        : this.count(step.name) >= step.want;
+        : step.name === 'gatehouse'
+          ? this.count('gatehouse') >= this.world.gatesWanted()
+        : step.name === 'tower'
+          ? this.count('tower') >= this.world.towersWanted()
+          : this.count(step.name) >= step.want;
       if (done) continue;
       const def = BUILDINGS[step.name];
       if (!def) continue;

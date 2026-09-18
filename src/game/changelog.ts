@@ -23,6 +23,25 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.71.0',
+    date: '2026-09-18',
+    headline: 'Castles from a blueprint.',
+    sections: [
+      {
+        title: 'Added',
+        items: [
+          'Rival lords build their castles from blueprints, the way Crusader\u2019s lords stamped their AIV layouts: a square keep, a bastioned square with eight towers, a broad ward, a close ring, and a walled bailey round an inner citadel with a gate in each ring. Drawn in ASCII in castles.ts \u2014 # for wall, T for a tower, G for where a gate may go, K for the keep \u2014 and checked on load, so a plan with a hole in it is an error, not a castle with a gap. Heavy lords reach for the big plans, easy ones for the modest; lords on one map take different shapes; a shape that lands on water or off the map gives way to the next. The plan is kept in the save.',
+        ],
+      },
+      {
+        title: 'Fixed',
+        items: [
+          'A loaded game drew a rival\u2019s wall plan round the wrong centre: seating him from the save was a search that landed a tile or two off the keep the save then put back, so he set about a second wall beside the one he already had. The plan is now laid again round the restored keep, with his own stone counted as his own.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.70.0',
     date: '2026-09-18',
     headline: 'A bug report that arrives filled in, and tests that run.',

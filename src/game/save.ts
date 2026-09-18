@@ -80,6 +80,8 @@ export interface SavedFaction {
   id: number;
   /** "Aldric the Red". Absent on older saves, which get a fresh one. */
   name?: string;
+  /** The castle blueprint his walls follow. Absent on older saves: the square. */
+  plan?: string;
   buildings: SavedBuilding[];
   defeated: boolean;
   gold: number; stock: Record<string, number>;
