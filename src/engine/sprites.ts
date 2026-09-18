@@ -4,6 +4,15 @@ export interface Frame {
   x: number; y: number; w: number; h: number;   // px in the atlas
   ax: number; ay: number;                        // anchor px, from the frame's top-left
   /**
+   * Which page of the atlas holds it. The atlas is a texture ARRAY: one
+   * layer would be the whole catalogue in a single 8192-high strip, and
+   * that strip was full -- the fourth and fifth clip of a soldier were
+   * cut for want of rows. A second page is the same texture with another
+   * layer, sampled by index, so the budget is now memory rather than a
+   * hardware limit. Absent means the first page.
+   */
+  page?: number;
+  /**
    * The render scale this ONE frame was baked at, as a multiple of zoom 1.0.
    *
    * Per frame rather than per atlas because the two are genuinely allowed to
@@ -53,8 +62,9 @@ export class SpriteBatch {
   private aUV: THREE.InstancedBufferAttribute;
   private aTint: THREE.InstancedBufferAttribute;
   private aBias: THREE.InstancedBufferAttribute;
+  private aPage: THREE.InstancedBufferAttribute;
 
-  constructor(texture: THREE.Texture, capacity: number) {
+  constructor(texture: THREE.DataArrayTexture, capacity: number) {
     this.capacity = capacity;
 
     const base = new THREE.BufferGeometry();
@@ -71,7 +81,8 @@ export class SpriteBatch {
     this.aUV = new THREE.InstancedBufferAttribute(new Float32Array(capacity * 4), 4);
     this.aTint = new THREE.InstancedBufferAttribute(new Float32Array(capacity * 3), 3);
     this.aBias = new THREE.InstancedBufferAttribute(new Float32Array(capacity), 1);
-    for (const a of [this.aPos, this.aRect, this.aUV, this.aTint, this.aBias]) {
+    this.aPage = new THREE.InstancedBufferAttribute(new Float32Array(capacity), 1);
+    for (const a of [this.aPos, this.aRect, this.aUV, this.aTint, this.aBias, this.aPage]) {
       a.setUsage(THREE.DynamicDrawUsage);
     }
 
@@ -80,6 +91,7 @@ export class SpriteBatch {
     this.geom.setAttribute('iUV', this.aUV);
     this.geom.setAttribute('iTint', this.aTint);
     this.geom.setAttribute('iBias', this.aBias);
+    this.geom.setAttribute('iPage', this.aPage);
     this.geom.instanceCount = 0;
 
     texture.magFilter = THREE.LinearFilter;
@@ -106,6 +118,7 @@ export class SpriteBatch {
         in vec4 iUV;     // u0, v0, du, dv
         in vec3 iTint;
         in float iBias;
+        in float iPage;
 
         uniform mat4 modelViewMatrix;
         uniform mat4 projectionMatrix;
@@ -113,6 +126,7 @@ export class SpriteBatch {
 
         out vec2 vUv;
         out vec3 vTint;
+        flat out float vPage;
 
         void main() {
           vec4 anchorView = modelViewMatrix * vec4(iPos, 1.0);
@@ -128,6 +142,7 @@ export class SpriteBatch {
           // the quad's top (position.y == 1) must map to v0 + dv, not v0.
           vUv = iUV.xy + position.xy * iUV.zw;
           vTint = iTint;
+          vPage = iPage;
           gl_Position = projectionMatrix * anchorView;
         }
       `,
@@ -135,11 +150,13 @@ export class SpriteBatch {
         precision highp float;
         in vec2 vUv;
         in vec3 vTint;
-        uniform sampler2D uAtlas;
+        flat in float vPage;
+        precision highp sampler2DArray;
+        uniform sampler2DArray uAtlas;
         out vec4 fragColor;
 
         void main() {
-          vec4 texel = texture(uAtlas, vUv);
+          vec4 texel = texture(uAtlas, vec3(vUv, vPage));
           // Only drop what is genuinely empty. Anything above that keeps its
           // alpha so shadows stay translucent.
           if (texel.a < 0.02) discard;
@@ -179,6 +196,7 @@ export class SpriteBatch {
 
     this.aTint.setXYZ(i, tint[0], tint[1], tint[2]);
     this.aBias.setX(i, depthBias);
+    this.aPage.setX(i, frame.page ?? 0);
   }
 
   /**
@@ -193,6 +211,7 @@ export class SpriteBatch {
     const n = this.count;
     for (const [attr, itemSize] of [
       [this.aPos, 3], [this.aRect, 4], [this.aUV, 4], [this.aTint, 3], [this.aBias, 1],
+      [this.aPage, 1],
     ] as [THREE.InstancedBufferAttribute, number][]) {
       attr.clearUpdateRanges();
       attr.addUpdateRange(0, n * itemSize);

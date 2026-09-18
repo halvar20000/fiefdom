@@ -104,7 +104,10 @@ interface UnitMetaEntry {
 }
 
 export interface PackedAtlas extends Atlas {
-  texture: THREE.CanvasTexture;
+  /** One layer per page; every page the same size. */
+  texture: THREE.DataArrayTexture;
+  /** The pages as drawn, for anything that needs the pixels on the CPU side. */
+  pages: HTMLCanvasElement[];
 }
 
 export interface BuildingAtlas extends PackedAtlas {
@@ -141,6 +144,7 @@ interface PackEntry {
  */
 async function packFrames(
   base: string, entries: PackEntry[], scale: number, padding = 2, maxW = 2048,
+  maxH = 8192,
 ): Promise<PackedAtlas> {
   const loaded = await Promise.all(entries.map(async e => ({
     e, img: await loadImage(`${base}/${e.file}${V}`),
@@ -148,19 +152,27 @@ async function packFrames(
 
   loaded.sort((a, b) => b.e.height - a.e.height);   // shelf pack, tallest first
 
-  let x = padding, y = padding, shelfH = 0, usedW = 0;
-  const placed: { e: PackEntry; img: HTMLImageElement; px: number; py: number }[] = [];
+  // Shelves across the width, and when the next shelf would run past the
+  // height a GPU can take, a new PAGE: another layer of the same texture.
+  // One page used to be the whole budget, and it was spent.
+  let x = padding, y = padding, shelfH = 0, usedW = 0, page = 0;
+  const pageH: number[] = [];
+  const placed: { e: PackEntry; img: HTMLImageElement; px: number; py: number; page: number }[] = [];
 
   for (const item of loaded) {
     const w = item.e.width + padding;
     const h = item.e.height + padding;
     if (x + w > maxW) { x = padding; y += shelfH; shelfH = 0; }
-    placed.push({ e: item.e, img: item.img, px: x, py: y });
+    if (y + Math.max(shelfH, h) + padding > maxH && y > padding) {
+      pageH[page] = y + shelfH + padding;
+      page++; x = padding; y = padding; shelfH = 0;
+    }
+    placed.push({ e: item.e, img: item.img, px: x, py: y, page });
     x += w;
     usedW = Math.max(usedW, x);
     shelfH = Math.max(shelfH, h);
   }
-  const totalH = y + shelfH + padding;
+  pageH[page] = y + shelfH + padding;
 
   // Exact size, NOT rounded up to a power of two.
   //
@@ -174,34 +186,57 @@ async function packFrames(
   // twice over is not affordable.
   //
   // Rounded to a multiple of four only, which keeps row strides aligned.
+  // Every page is the tallest page's height: layers of one texture share a
+  // size, and a second page is usually a short one.
   const quad = (n: number) => Math.ceil(Math.max(1, n) / 4) * 4;
-  const canvas = document.createElement('canvas');
   // Clamped to maxW. Every sprite is placed with its right edge at or inside
   // maxW, so the clamp cannot cut anything off -- but a full shelf plus the
   // trailing padding, rounded up, lands a few pixels PAST the limit we chose
   // maxW to respect, and those few pixels are the difference between fitting a
   // GPU's maximum texture size and failing to upload at all.
-  canvas.width = Math.min(maxW, quad(usedW + padding));
-  canvas.height = quad(totalH);
-  if (canvas.height > maxW) {
-    console.warn(`[assets] atlas is ${canvas.width}x${canvas.height}; taller `
-      + `than ${maxW} will not upload on some hardware. Trim sprites, drop `
-      + 'animation frames, or split the atlas across texture-array layers.');
+  const W = Math.min(maxW, quad(usedW + padding));
+  const H = Math.min(maxH, quad(Math.max(...pageH)));
+  const pages: HTMLCanvasElement[] = [];
+  const ctxs: CanvasRenderingContext2D[] = [];
+  for (let p = 0; p <= page; p++) {
+    const canvas = document.createElement('canvas');
+    canvas.width = W;
+    canvas.height = H;
+    pages.push(canvas);
+    ctxs.push(canvas.getContext('2d')!);
   }
-  const ctx = canvas.getContext('2d')!;
+  if (page > 0) {
+    console.log(`[assets] atlas is ${page + 1} pages of ${W}x${H}`);
+  }
 
   const frames: Record<string, Frame> = {};
   for (const p of placed) {
-    ctx.drawImage(p.img, p.px, p.py);
+    ctxs[p.page].drawImage(p.img, p.px, p.py);
     frames[p.e.key] = {
       x: p.px, y: p.py, w: p.e.width, h: p.e.height,
       ax: p.e.ax, ay: p.e.ay, scale: p.e.scale,
+      ...(p.page ? { page: p.page } : {}),
     };
   }
 
-  const texture = new THREE.CanvasTexture(canvas);
+  // The pages, stacked into one array texture. A canvas texture flips its
+  // rows on upload and the UV maths in SpriteBatch counts on that; an array
+  // texture cannot be flipped by the driver, so the rows are laid bottom-up
+  // here and the maths stays as it was.
+  const layer = W * H * 4;
+  const data = new Uint8Array(layer * pages.length);
+  for (let p = 0; p < pages.length; p++) {
+    const px = ctxs[p].getImageData(0, 0, W, H).data;
+    const row = W * 4;
+    for (let r = 0; r < H; r++) {
+      data.set(px.subarray(r * row, (r + 1) * row), p * layer + (H - 1 - r) * row);
+    }
+  }
+  const texture = new THREE.DataArrayTexture(data, W, H, pages.length);
+  texture.format = THREE.RGBAFormat;
+  texture.type = THREE.UnsignedByteType;
   texture.needsUpdate = true;
-  return { image: '', size: [canvas.width, canvas.height], scale, frames, texture };
+  return { image: '', size: [W, H], scale, frames, texture, pages };
 }
 
 export async function buildSpriteAtlas(
@@ -269,7 +304,10 @@ export async function buildCombinedAtlas(base: string): Promise<CombinedAtlas> {
   // strip nearly 9000 tall -- past the 8192 texture limit of a good deal of
   // hardware. Laid out 8192 wide it comes out around 8192x5000, with both
   // dimensions inside the limit.
-  const packed = await packFrames(base, entries, bMeta[0]?.scale ?? 2, 2, 8192);
+  // ?atlasH=4096 on the URL forces the catalogue onto several shorter pages,
+  // to exercise the paging on hardware that would never otherwise need it.
+  const maxH = Number(new URLSearchParams(location.search).get('atlasH')) || 8192;
+  const packed = await packFrames(base, entries, bMeta[0]?.scale ?? 2, 2, 8192, maxH);
   return {
     ...packed, footprints,
     directions: uMeta.directions, clips: uMeta.clips,

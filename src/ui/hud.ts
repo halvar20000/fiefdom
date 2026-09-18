@@ -1307,11 +1307,10 @@ export class Hud {
    * barracks instead of every icon being stretched to the same size.
    */
   setIcons(atlas: {
-    frames: Record<string, { x: number; y: number; w: number; h: number }>;
-    texture: { image: unknown };
+    frames: Record<string, { x: number; y: number; w: number; h: number; page?: number }>;
+    pages: HTMLCanvasElement[];
   }): void {
-    const src = atlas.texture?.image as CanvasImageSource | undefined;
-    if (!src) return;
+    if (!atlas.pages.length) return;
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     for (const el of Array.from(this.buildPanel.querySelectorAll('canvas'))) {
       const cv = el as HTMLCanvasElement;
@@ -1333,7 +1332,7 @@ export class Hud {
       ctx.scale(dpr, dpr);
       const k = Math.min(W / f.w, H / f.h, 1);
       const w = f.w * k, h = f.h * k;
-      ctx.drawImage(src, f.x, f.y, f.w, f.h, (W - w) / 2, (H - h) / 2, w, h);
+      ctx.drawImage(atlas.pages[f.page ?? 0], f.x, f.y, f.w, f.h, (W - w) / 2, (H - h) / 2, w, h);
     }
   }
 

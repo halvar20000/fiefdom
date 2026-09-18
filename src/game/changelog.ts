@@ -23,6 +23,19 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.73.0',
+    date: '2026-09-18',
+    headline: 'Room in the atlas for the clips that were cut.',
+    sections: [
+      {
+        title: 'Changed',
+        items: [
+          'The sprite atlas is a texture array now, not one sheet. The whole catalogue used to be packed into a single strip no taller than 8192 pixels, the most a good deal of hardware will take, and that strip was full: a soldier renders three clips rather than five for want of rows. The packer now starts a new page when a shelf would run past the limit and the pages are the layers of one texture, sampled by index, so the budget is memory rather than a hardware ceiling. Today\u2019s catalogue still fits one page and nothing looks different; the next clip has somewhere to go. ?atlasH=4096 on the address forces several short pages, to try the seam on any machine.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.72.0',
     date: '2026-09-18',
     headline: 'A column that arrives as a crowd.',
