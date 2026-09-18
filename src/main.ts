@@ -690,6 +690,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
   const army = new Army({
     findPath: (fx, fz, tx, tz) => paths.find(Math.floor(fx), Math.floor(fz),
                                              Math.floor(tx), Math.floor(tz)),
+    flowTo: (gx, gz) => paths.flowField(gx, gz, state.elapsed),
     blocked: (x, z) => paths.isBlocked(Math.floor(x), Math.floor(z)),
     lineClear: (x1, z1, x2, z2) => paths.isLineClear(x1, z1, x2, z2),
     groundSpeed,

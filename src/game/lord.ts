@@ -629,10 +629,13 @@ export class Lord {
     const siege = this.world.siegePoint(target);
     const goal = siege ?? target;
     let sent = 0;
+    // One flow field for the whole column: every man walks the same
+    // gradient and stops a rank's distance short of the point, the first
+    // eight at `spread`, the next eight half a tile further, and so on. They
+    // arrive as a crowd along the face rather than a file on one tile.
     ready.forEach((s, i) => {
       const ring = spread + 0.5 * Math.floor(i / 8);
-      const a = (i % 8) / 8 * Math.PI * 2;
-      if (!this.army.send(s, goal.x + Math.cos(a) * ring, goal.z + Math.sin(a) * ring)) return;
+      if (!this.army.sendFlow(s, goal.x, goal.z, ring)) return;
       this.sentIds.add(s.id);
       sent++;
     });
@@ -664,8 +667,7 @@ export class Lord {
     for (const s of this.troops) {
       if (!this.sentIds.has(s.id) || s.moving || s.target !== null) continue;
       if (Math.hypot(s.x - target.x, s.z - target.z) < 4) continue;
-      const a = (i++ % 8) / 8 * Math.PI * 2;
-      this.army.send(s, target.x + Math.cos(a) * 1.4, target.z + Math.sin(a) * 1.4);
+      this.army.sendFlow(s, target.x, target.z, 1.4 + 0.5 * Math.floor(i++ / 8));
     }
     this.siegeOn = null;
   }

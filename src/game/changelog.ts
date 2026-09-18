@@ -23,6 +23,19 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.72.0',
+    date: '2026-09-18',
+    headline: 'A column that arrives as a crowd.',
+    sections: [
+      {
+        title: 'Changed',
+        items: [
+          'A rival\u2019s column marches on a flow field: one search out from the point it is bound for leaves every tile knowing the way, and every man walks it by reading the ground under his feet. Twenty men cost one search instead of twenty; when a wall goes up in front of them the field is rebuilt once and the whole column bends with it; and they arrive as a crowd fanning out along the face \u2014 the first ranks at the foot of the wall, the next half a tile back \u2014 instead of a file queuing for one tile. Pressing a siege through a breach uses it too. Measured: twenty-four spearmen sent at a sealed keep all stopped outside the line, spread over a dozen tiles of its face, none stuck.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.71.0',
     date: '2026-09-18',
     headline: 'Castles from a blueprint.',

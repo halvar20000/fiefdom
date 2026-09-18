@@ -12,6 +12,43 @@
 
 export interface PathNode { x: number; z: number }
 
+/**
+ * One destination, every tile's way to it.
+ *
+ * A column of twenty men sent to one gate used to be twenty A* searches to
+ * one gate. This is one search FROM the gate -- Dijkstra outward over the
+ * grid -- that leaves every tile knowing how far the gate is and which
+ * neighbour is a step nearer. Any number of men then walk it by reading the
+ * tile under their feet, which is what makes them arrive as a crowd fanning
+ * out along the wall instead of a queue on one tile: each stops where the
+ * distance falls to his share, and the ones behind flow round him.
+ *
+ * `dir` is an index into DIRS, or -1 where the goal cannot be reached.
+ * `dist` is in tiles, Infinity where unreachable.
+ */
+export interface FlowField {
+  gx: number;
+  gz: number;
+  /** Row stride of `dist` and `dir`: the grid's width. */
+  width: number;
+  /** The grid version it was built against; stale once walls have changed. */
+  version: number;
+  /** When it was built, in the caller's clock, to pace the rebuilding. */
+  builtAt: number;
+  dist: Float32Array;
+  dir: Int8Array;
+}
+
+/** The eight neighbours, in the order `FlowField.dir` indexes them. */
+export const DIRS: [number, number][] = [
+  [1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1],
+];
+
+/** How long a field is walked on after the ground changed before it is rebuilt. */
+const FLOW_STALE_SECONDS = 1.5;
+/** Fields kept: each is two arrays the size of the map. */
+const FLOW_CACHE = 8;
+
 /** Sampled across the unit's width, not just its centre line. */
 const LOS_OFFSETS = [-0.35, 0, 0.35];
 
@@ -45,6 +82,10 @@ export class PathGrid {
   private regionsDirty = true;
   private queue: Int32Array;
 
+  /** Bumped on every change to `blocked`, so a flow field knows it is stale. */
+  version = 0;
+  private flows = new Map<number, FlowField>();
+
   constructor(width: number, height: number) {
     this.width = width;
     this.height = height;
@@ -77,6 +118,7 @@ export class PathGrid {
     if (this.blocked[i] === (v ? 1 : 0)) return;
     this.blocked[i] = v ? 1 : 0;
     this.regionsDirty = true;
+    this.version++;
   }
 
   fill(x: number, z: number, w: number, d: number, v: boolean): void {
@@ -148,6 +190,94 @@ export class PathGrid {
       label++;
     }
     this.regionsDirty = false;
+  }
+
+  /**
+   * The flow field to a goal tile, built or fetched from the cache.
+   *
+   * A field is reused while the ground it was built on has not changed, and
+   * for FLOW_STALE_SECONDS after it has: a siege is exactly when walls go up
+   * and come down every few seconds, and the step check in army.ts already
+   * refuses a step into new stone, so walking a slightly old field for a
+   * moment costs nothing and rebuilding one every tick would cost the frame.
+   * `now` is the caller's clock, in seconds.
+   */
+  flowField(gx: number, gz: number, now: number): FlowField | null {
+    if (!this.inBounds(gx, gz)) return null;
+    if (this.isBlocked(gx, gz)) {
+      const open = this.nearestOpen(gx, gz);
+      if (!open) return null;
+      gx = open.x; gz = open.z;
+    }
+    const key = this.idx(gx, gz);
+    const have = this.flows.get(key);
+    if (have && (have.version === this.version || now - have.builtAt < FLOW_STALE_SECONDS)) {
+      return have;
+    }
+    const field = this.buildFlow(gx, gz, now, have);
+    if (!have) {
+      // Oldest out, once there are more than the cache holds.
+      if (this.flows.size >= FLOW_CACHE) {
+        let oldest: number | null = null, at = Infinity;
+        for (const [k, f] of this.flows) if (f.builtAt < at) { at = f.builtAt; oldest = k; }
+        if (oldest !== null) this.flows.delete(oldest);
+      }
+      this.flows.set(key, field);
+    }
+    return field;
+  }
+
+  /** Dijkstra out from the goal, over the same neighbour rule the search uses. */
+  private buildFlow(gx: number, gz: number, now: number, reuse?: FlowField): FlowField {
+    const n = this.width * this.height;
+    const f: FlowField = reuse ?? {
+      gx, gz, width: this.width, version: 0, builtAt: 0,
+      dist: new Float32Array(n), dir: new Int8Array(n),
+    };
+    f.gx = gx; f.gz = gz; f.version = this.version; f.builtAt = now;
+    const dist = f.dist, dir = f.dir;
+    dist.fill(Infinity);
+    dir.fill(-1);
+    // The search's heap orders by fScore; borrow it with fScore as distance.
+    const gen = ++this.generation;
+    this.heapLen = 0;
+    const goal = this.idx(gx, gz);
+    dist[goal] = 0;
+    this.fScore[goal] = 0;
+    this.stamp[goal] = gen;
+    this.closed[goal] = 0;
+    this.heapPush(goal);
+    while (this.heapLen > 0) {
+      const cur = this.heapPop();
+      if (this.closed[cur] === 1 && this.stamp[cur] === gen) continue;
+      this.closed[cur] = 1;
+      const cx = cur % this.width;
+      const cz = (cur - cx) / this.width;
+      const dc = dist[cur];
+      for (let k = 0; k < DIRS.length; k++) {
+        const [dx, dz] = DIRS[k];
+        const nx = cx + dx, nz = cz + dz;
+        if (!this.inBounds(nx, nz)) continue;
+        const ni = this.idx(nx, nz);
+        if (this.blocked[ni] === 1) continue;
+        // Corner rule, seen from the neighbour: his diagonal step towards
+        // us needs both tiles beside it open, the same as in `find`.
+        if (dx !== 0 && dz !== 0
+            && (this.isBlocked(cx + dx, cz) || this.isBlocked(cx, cz + dz))) continue;
+        const step = (dx !== 0 && dz !== 0) ? 1.41421356 : 1;
+        const d = dc + step;
+        if (d >= dist[ni]) continue;
+        dist[ni] = d;
+        // The neighbour walks the opposite way to reach us: DIRS pairs are
+        // laid out so that the reverse of k is k ^ 1.
+        dir[ni] = k ^ 1;
+        this.stamp[ni] = gen;
+        this.closed[ni] = 0;
+        this.fScore[ni] = d;
+        this.heapPush(ni);
+      }
+    }
+    return f;
   }
 
   /** Component label at a tile, or -1 if blocked / out of bounds. */

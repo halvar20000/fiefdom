@@ -2,7 +2,7 @@ import {
   SOLDIER_TYPES, GARRISON_RANGE_BONUS, RANGED_THRESHOLD, LADDER_RADIUS,
   ESCALADE_REACH, SHIELD_RADIUS, SHIELD_REDUCTION, type SoldierType,
 } from './defs';
-import type { PathNode } from './pathfind';
+import { DIRS, type PathNode, type FlowField } from './pathfind';
 
 /**
  * Which faction a unit belongs to. 0 is the player, 1.. are rival lords.
@@ -54,6 +54,12 @@ export interface Soldier {
   moving: boolean;
   selected: boolean;
   path: PathNode[];
+  /**
+   * Walking a flow field instead of a path -- see `sendFlow`. He reads the
+   * field at the tile under him each step and stops once the goal is within
+   * `stop` tiles, so a column shares one field and arrives as a crowd.
+   */
+  flow: { gx: number; gz: number; stop: number } | null;
   tx: number;
   tz: number;
   /** Id of the unit being fought, or null. */
@@ -166,6 +172,8 @@ export interface SiegeTarget {
 
 export interface ArmyWorld {
   findPath(fromX: number, fromZ: number, toX: number, toZ: number): PathNode[] | null;
+  /** One field for everyone bound for the same tile -- see PathGrid.flowField. */
+  flowTo?(gx: number, gz: number): FlowField | null;
   blocked(x: number, z: number): boolean;
   /** Can a man walk a straight line between two points without touching stone? */
   lineClear?(x1: number, z1: number, x2: number, z2: number): boolean;
@@ -311,7 +319,7 @@ export class Army {
       id: Army.netLocalId(side, netId), netId, side, type, def, x, z,
       heading, phase: (netId % 7) * 0.3,
       hp, moving: false, selected: false,
-      path: [], tx: x, tz: z,
+      path: [], flow: null, tx: x, tz: z,
       target: null, cooldown: 0, swing: 0, dying: 0, ordered: false,
       garrison: null, mountAt: null, hold: false, patrol: null, escalade: !!def.climbs,
       covered: false, net: true,
@@ -348,7 +356,7 @@ export class Army {
       id: this.nextId++, side, type, def, x, z,
       heading: -Math.PI / 2, phase: Math.random() * 2,
       hp: def.hp, moving: false, selected: false,
-      path: [], tx: x, tz: z,
+      path: [], flow: null, tx: x, tz: z,
       target: null, cooldown: Math.random() * 0.4, swing: 0, dying: 0, ordered: false,
       garrison: null, mountAt: null, hold: false, patrol: null, escalade: !!def.climbs,
       covered: false,
@@ -519,11 +527,61 @@ export class Army {
     if (!this.send(s, x, z)) s.patrol = null;
   }
 
+  /**
+   * Put a man on the flow field to a goal, to stop `stop` tiles short of it.
+   *
+   * For a column with one destination: the field is built once and every
+   * man reads it, so twenty men cost one search, and when the ground changes
+   * -- a wall goes up in front of them -- the field is rebuilt once and the
+   * whole column bends with it, with no reroute per man. Each man's `stop`
+   * is his share of the distance: the first ranks stop at the foot of the
+   * wall, the ones behind a little further out, and the separation pushes
+   * them sideways along it. Falls back to a path where no field reaches.
+   */
+  sendFlow(s: Soldier, x: number, z: number, stop: number): boolean {
+    const gx = Math.floor(x), gz = Math.floor(z);
+    const field = this.world.flowTo?.(gx, gz);
+    if (!field) return this.send(s, x, z);
+    const here = Math.floor(s.z) * field.width + Math.floor(s.x);
+    if (!(field.dist[here] < Infinity)) return this.send(s, x, z);
+    s.flow = { gx: field.gx, gz: field.gz, stop };
+    s.path = [];
+    s.tx = field.gx + 0.5; s.tz = field.gz + 0.5;
+    s.moving = true;
+    return true;
+  }
+
+  /**
+   * The next point a man on a field walks to: the centre of the tile the
+   * field points at, or of one further along while the straight line to it
+   * is clear, so he does not staircase along the grid diagonals.
+   */
+  private flowWaypoint(s: Soldier, field: FlowField): PathNode | null | 'arrived' {
+    const w = field.width;
+    let cx = Math.floor(s.x), cz = Math.floor(s.z);
+    let i = cz * w + cx;
+    if (!(field.dist[i] < Infinity)) return null;
+    if (field.dist[i] <= s.flow!.stop) return 'arrived';
+    let wp: PathNode | null = null;
+    for (let step = 0; step < 4; step++) {
+      const k = field.dir[i];
+      if (k < 0) break;
+      cx += DIRS[k][0]; cz += DIRS[k][1];
+      i = cz * w + cx;
+      const cand = { x: cx + 0.5, z: cz + 0.5 };
+      if (step > 0 && this.world.lineClear && !this.world.lineClear(s.x, s.z, cand.x, cand.z)) break;
+      wp = cand;
+      if (field.dist[i] <= s.flow!.stop) break;
+    }
+    return wp;
+  }
+
   /** Route one unit to a point. Returns false if there is no way there. */
   send(s: Soldier, x: number, z: number): boolean {
     const target = this.nearestFree(x, z);
     const route = this.world.findPath(s.x, s.z, target.x, target.z);
     if (!route) return false;
+    s.flow = null;
     s.path = route.slice();
     // A route is laid from tile centre to tile centre, and this man is not
     // standing on one. Off-centre, the straight line to the first waypoint
@@ -562,6 +620,9 @@ export class Army {
    * gives that up too, or he would climb it from wherever he stopped.
    */
   private reroute(s: Soldier): void {
+    // A man on a field is not rerouted: the field is rebuilt on its own
+    // clock, and until then he waits at the new stone rather than searching.
+    if (s.flow) return;
     if (this.send(s, s.tx, s.tz)) return;
     s.moving = false;
     s.ordered = false;
@@ -1049,7 +1110,28 @@ export class Army {
       const going = this.world.groundSpeed?.(s.x, s.z, !!s.def.siege) ?? 1;
       let budget = s.def.speed * going * dt;
       while (budget > 0) {
-        const wp = s.path.length ? s.path[0] : { x: s.tx, z: s.tz };
+        let wp: PathNode;
+        if (s.flow) {
+          const field = this.world.flowTo?.(s.flow.gx, s.flow.gz);
+          const next = field ? this.flowWaypoint(s, field) : null;
+          if (next === 'arrived') {
+            s.flow = null; s.moving = false; s.ordered = false;
+            this.mountIfAsked(s);
+            break;
+          }
+          if (!next) {
+            // Nowhere the field can take him from here -- shoved into a
+            // pocket, or the goal sealed. Try a path of his own; failing
+            // that he stands.
+            const gx = s.flow.gx + 0.5, gz = s.flow.gz + 0.5;
+            s.flow = null;
+            if (!this.send(s, gx, gz)) { s.moving = false; s.ordered = false; }
+            break;
+          }
+          wp = next;
+        } else {
+          wp = s.path.length ? s.path[0] : { x: s.tx, z: s.tz };
+        }
         const dx = wp.x - s.x, dz = wp.z - s.z;
         const d = Math.hypot(dx, dz);
         // The middle of the tile he is standing on is only a stepping-off
@@ -1058,6 +1140,7 @@ export class Army {
         const own = s.path.length > 1
           && wp.x === Math.floor(s.x) + 0.5 && wp.z === Math.floor(s.z) + 0.5;
         if (d < (own ? CENTRE_SLACK : 0.06)) {
+          if (s.flow) continue;   // the field hands out the next tile
           if (s.path.length) { s.path.shift(); continue; }
           s.moving = false; s.ordered = false;
           this.mountIfAsked(s);
@@ -1078,6 +1161,7 @@ export class Army {
         s.x = nx; s.z = nz;
         if (!arrive) { budget = 0; continue; }
         budget -= d;
+        if (s.flow) continue;   // on the next tile; the field says where now
         if (s.path.length) s.path.shift();
         else {
           s.moving = false; s.ordered = false;
