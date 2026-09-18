@@ -1,0 +1,74 @@
+name: Bug report
+description: Something in the game is broken, wrong or stuck.
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time. The more of this you can fill in, the faster it gets fixed — but a half-filled report is far better than none.
+  - type: input
+    id: version
+    attributes:
+      label: Game version
+      description: Shown in the main menu, or the tag of the container you run (`ghcr.io/halvar20000/fiefdom:<tag>`).
+      placeholder: "1.64.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Mode
+      options:
+        - Single-player
+        - Multiplayer (host)
+        - Multiplayer (joined)
+        - Map editor
+    validations:
+      required: true
+  - type: dropdown
+    id: browser
+    attributes:
+      label: Browser
+      options:
+        - Chrome / Chromium / Edge
+        - Firefox
+        - Safari
+        - Other (say which below)
+    validations:
+      required: true
+  - type: dropdown
+    id: hosting
+    attributes:
+      label: How are you running it?
+      options:
+        - Docker container (own server / Unraid)
+        - Local dev build (`npm run dev`)
+        - Someone else's server
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, what happened instead.
+      placeholder: |
+        1. Built a granary next to the keep
+        2. Assigned three peasants
+        3. Expected them to carry wheat; instead they stand still and the wheat pile never grows
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Does it happen every time?
+      description: If you can reproduce it, say how. If it is random, say roughly how often.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Browser console output
+      description: Press F12 → Console, copy anything red. Paste as-is; it will be formatted as code.
+      render: text
+  - type: textarea
+    id: save
+    attributes:
+      label: Screenshot
+      description: Drag a screenshot or a short screen recording into this box. A picture of the stuck peasant beats a paragraph about him.

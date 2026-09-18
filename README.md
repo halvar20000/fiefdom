@@ -80,6 +80,20 @@ Two details that matter:
 CI publishes amd64 **and** arm64 — plenty of home servers are ARM, and an
 x86-only image fails at install time with a message nobody can act on.
 
+## Feedback and ideas
+
+The game is shaped by the people who play it, and there are not many of them
+yet, so one message carries weight.
+
+* **Something broken?** [Open a bug report](https://github.com/halvar20000/fiefdom/issues/new?template=bug_report.yml).
+  Version (bottom of the main menu), what you did, what happened.
+* **Want something?** Say so in
+  [Discussions → Ideas](https://github.com/halvar20000/fiefdom/discussions/categories/ideas),
+  or 👍 an idea already there — the pinned **roadmap** thread lists what is
+  being considered, and the votes decide the order.
+* **A question, a castle to show off, a custom map?** Discussions has a place
+  for each.
+
 ## Start menu and map choice
 
 The game opens on a title screen listing twelve maps. Nothing is generated
