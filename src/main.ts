@@ -1789,6 +1789,15 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
   };
 
   /**
+   * Whether the static scene (terrain, buildings, scatter) needs rebuilding.
+   *
+   * Declared up here, before the rivals are seated, because seating them can
+   * already fell a tree on a wall line -- and a `let` further down is in its
+   * temporal dead zone until evaluation reaches it, which is a crash at start.
+   */
+  let staticDirty = true;
+
+  /**
    * Raise one castle per rival the map asks for.
    *
    * Each starts as a keep and a single hovel; everything after that the lord
@@ -2289,7 +2298,6 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
   const DEATH_SECONDS = DEATH_TIME;
 
   let builtRotation = -1;
-  let staticDirty = true;
 
   /**
    * Is anybody standing on this tile?

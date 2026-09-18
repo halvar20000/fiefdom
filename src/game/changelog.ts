@@ -23,6 +23,19 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.65.1',
+    date: '2026-09-18',
+    headline: 'A map of your own making starts again.',
+    sections: [
+      {
+        title: 'Fixed',
+        items: [
+          'Starting a game on a painted map could fail with \u201ccan\u2019t access lexical declaration before initialization\u201d and never open. Since 1.65.0 a rival\u2019s wall line is cleared of trees when he is seated, which marks the scene for rebuilding \u2014 and that mark was declared five hundred lines further down, so writing it before the game had got that far was a crash. Any map with a tree on a rival\u2019s ring was affected; a hand-placed keep on wooded ground hit it nearly every time.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.65.0',
     date: '2026-09-18',
     headline: 'A rival who shuts his gate, and a farmer in his field.',
