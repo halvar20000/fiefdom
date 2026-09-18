@@ -1,6 +1,6 @@
 import {
-  listSlots, writeSlot, clearSlot, setBootIntent, playTime, savedWhen,
-  type SaveGame,
+  listSlots, listAutosaves, writeSlot, clearSlot, setBootIntent, playTime,
+  savedWhen, AUTOSAVE_INTERVAL, type SaveGame,
 } from '../game/save';
 import { versionButton, VERSION_CSS } from './whatsnew';
 
@@ -193,6 +193,32 @@ export function showPause(hooks: PauseHooks): void {
         row.style.gridTemplateColumns = '1fr auto auto auto';
       }
 
+      slotsWrap.appendChild(row);
+    }
+
+    // The autosave ring, newest first. Load only: these are the game's own
+    // copies, and a button to save over one would only ever be pressed by
+    // mistake -- the next autosave is going to replace it anyway.
+    const autos = listAutosaves();
+    if (!autos.length) return;
+    const head = document.createElement('h4');
+    head.textContent = `Autosaves — every ${AUTOSAVE_INTERVAL / 60} minutes of play`;
+    slotsWrap.appendChild(head);
+    for (const info of autos) {
+      const row = document.createElement('div');
+      row.className = 'slot';
+      row.style.gridTemplateColumns = '1fr auto';
+      const who = document.createElement('div');
+      who.className = 'who';
+      who.innerHTML = `${info.save!.map.name} — ${playTime(info.save!.elapsed)}` +
+        `<div class="when">${savedWhen(info.save!.savedAt)}</div>`;
+      const loadBtn = document.createElement('button');
+      loadBtn.textContent = 'Load';
+      loadBtn.onclick = () => {
+        setBootIntent({ kind: 'load', slot: info.slot });
+        location.reload();
+      };
+      row.append(who, loadBtn);
       slotsWrap.appendChild(row);
     }
   };

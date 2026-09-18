@@ -1,5 +1,5 @@
 import { MAPS, ratings, type MapDef } from '../game/maps';
-import { listSlots, setBootIntent, playTime, savedWhen } from '../game/save';
+import { listSlots, listAutosaves, setBootIntent, playTime, savedWhen, isAutosave } from '../game/save';
 import { listMaps, deleteMap, defOf, type CustomMap } from '../game/custom';
 import { versionButton, VERSION_CSS } from './whatsnew';
 import { currentUser, isSignedIn, store } from '../game/backend';
@@ -319,8 +319,10 @@ export function showMenu(): Promise<MenuChoice> {
     });
 
     // Saved games, if there are any. Hidden entirely when there are none --
-    // an empty "Saved games" heading on a first run is just noise.
-    const saved = listSlots().filter(i => i.save);
+    // an empty "Saved games" heading on a first run is just noise. The
+    // autosaves come after the manual slots, newest first: a closed tab is
+    // exactly the moment this list is for.
+    const saved = [...listSlots().filter(i => i.save), ...listAutosaves()];
     if (saved.length) {
       const wrap = document.createElement('div');
       wrap.className = 'saves';
@@ -331,8 +333,8 @@ export function showMenu(): Promise<MenuChoice> {
         const row = document.createElement('div');
         row.className = 'slot';
         const who = document.createElement('div');
-        who.innerHTML = `<b>${info.slot}.</b> ${info.save!.map.name}` +
-          ` — ${playTime(info.save!.elapsed)}` +
+        who.innerHTML = `<b>${isAutosave(info.slot) ? 'Autosave' : `${info.slot}.`}</b>` +
+          ` ${info.save!.map.name} — ${playTime(info.save!.elapsed)}` +
           `<div class="when">${savedWhen(info.save!.savedAt)}</div>`;
         const btn = document.createElement('button');
         btn.textContent = 'Load';

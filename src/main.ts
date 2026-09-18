@@ -32,7 +32,10 @@ import { showGameOver } from './ui/gameover';
 import type { MapDef } from './game/maps';
 import { MAP_W, MAP_H } from './game/maps';
 import type { LordSetup } from './ui/lords';
-import { SAVE_VERSION, takeBootIntent, readSlot, playTime, type SaveGame } from './game/save';
+import {
+  SAVE_VERSION, AUTOSAVE_INTERVAL, takeBootIntent, readSlot, writeAutosave, playTime,
+  type SaveGame,
+} from './game/save';
 import { hydrate } from './game/backend';
 import { BANNERS } from './game/banners';
 import { MatchRuntime } from './net/match';
@@ -4744,6 +4747,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     // time, so a paused settlement is still one you can look around and plan
     // in -- unlike the Esc menu, which stops the frame outright.
     advanceSim(dt * state.speedMult);
+    autosave();
     netTick(dt);
     matchChat?.tick();
 
@@ -5645,6 +5649,33 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
   }
 
   if (restore) applySave(restore);
+
+  // --- autosave -----------------------------------------------------------
+
+  /**
+   * Written every AUTOSAVE_INTERVAL seconds of PLAY time, into the ring
+   * (see save.ts). Play time, not wall time: a paused game or a menu left
+   * open must not fill the ring with three identical copies and push out
+   * the one from before the mistake. The clock starts from now, whether now
+   * is a fresh keep or a restored one: there is nothing to lose yet, and a
+   * copy of the save just loaded is no use to anybody.
+   *
+   * Not in a match -- a save is one castle's worth of a world three other
+   * people live in, and the pause menu hides the slots for the same reason --
+   * and not once the game has ended, which would only overwrite the last
+   * autosave of a castle still standing with one of it in ashes.
+   */
+  let nextAutosave = state.elapsed + AUTOSAVE_INTERVAL;
+  function autosave(): void {
+    if (mp || gameEnded || state.elapsed < nextAutosave) return;
+    nextAutosave = state.elapsed + AUTOSAVE_INTERVAL;
+    const err = writeAutosave(snapshot());
+    // Say so, quietly, either way. Knowing the ring exists is what makes a
+    // player reach for it after a crash; a write that failed is a save that
+    // silently did not happen, which is the one thing this must never do.
+    if (err) state.notify(`Autosave failed: ${err}`, 'warn');
+    else state.notify('Autosaved.');
+  }
 
   /**
    * Put a lord at every keep that has not got one.

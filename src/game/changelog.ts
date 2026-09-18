@@ -23,6 +23,20 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.67.0',
+    date: '2026-09-18',
+    headline: 'The game saves itself, and never turns an old save away.',
+    sections: [
+      {
+        title: 'Added',
+        items: [
+          'Autosave. Every five minutes of play the game writes itself into a ring of three autosaves, kept beside the manual slots \u2014 never over them \u2014 so a closed tab or a crash costs a quarter of an hour at most rather than the evening. They are listed under the manual slots in the pause menu and on the title screen, newest first, and load like any other save. Play time, not the clock: a game left paused does not fill the ring with three identical copies. Not in a match, where a save has never made sense, and not after the keep has fallen.',
+          'A save from an older build is brought up to date rather than refused. Each change to the save shape is now a step on a ladder, and a save is walked up it on load; the one such change so far, from one rival lord to three on 21 August, is on it, so a save from the first day saving existed loads again. Only a save from a NEWER build than the one running is turned away, and the slot says so \u2014 \u201cfrom a newer build (v5) \u2014 update the game\u201d \u2014 instead of \u201cunreadable\u201d.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.66.0',
     date: '2026-09-18',
     headline: 'A keep that gets its meadow.',
