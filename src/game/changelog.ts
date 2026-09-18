@@ -23,6 +23,20 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.69.0',
+    date: '2026-09-18',
+    headline: 'The land has seasons, and the frame has a clock.',
+    sections: [
+      {
+        title: 'Added',
+        items: [
+          'Seasons. Now and then the land leans on one trade for a few minutes and the herald says so: a fine harvest and the wheat comes in half again as fast, blight and it comes in at half; the orchards heavy with fruit or stripped by locusts, the herds fat or struck by murrain, game plentiful or fled, the waters teeming or run low, a good seam in the quarry, a rich vein in the mine. Never before the eighth minute, one at a time, three to four minutes long and five to nine apart, drawn from the trades you actually keep \u2014 and felt by every lord on the map alike, so a blight is in the rivals\u2019 wheat too. Hover a farm and the season is written on it. Kept in the save. Not in a match, where each player would roll their own weather.',
+          'I shows where the frame\u2019s time goes: each system of the game loop \u2014 economy, workers, town, herd, army, rivals, siege, stores, and then cursor, hud, minimap, draw \u2014 as milliseconds per frame averaged over two seconds, with the worst frame beside it. A dev view like G, and the answer to \u201cit stutters on the big map\u201d is which line of it is fat. The same figures are on the console as __game.profile().',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.68.0',
     date: '2026-09-18',
     headline: 'Lords with names, and a map that names itself.',

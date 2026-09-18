@@ -82,6 +82,8 @@ export function totalHeld(b: PlacedBuilding): number {
 
 export interface WorkerWorld {
   heightAt(x: number, z: number): number;
+  /** The land's luck for a trade: 1, or a season's factor. See fortune.ts. */
+  fortune(output: Resource): number;
   /** Nearest store building of the given kind, or null if none exists. */
   nearestStore(kind: Store, x: number, z: number): PlacedBuilding | null;
   /**
@@ -436,7 +438,9 @@ export class WorkerPool {
         case 'toWork': {
           if (!this.arrive(w, dt)) break;
           w.state = 'working';
-          w.timer = prod.seconds;
+          // A good season is a shorter cycle, a bad one a longer; the load
+          // at the end of it is the same. Read once, as the work starts.
+          w.timer = prod.seconds / this.world.fortune(prod.output);
           break;
         }
 

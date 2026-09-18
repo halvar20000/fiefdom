@@ -46,6 +46,8 @@ export interface LordWorld {
   /** Drop or raise his portcullis. A no-op with no gatehouse standing. */
   setGate(shut: boolean): void;
   notify(text: string): void;
+  /** The land's luck for a trade, the same one the player is under. */
+  fortune(output: Resource): number;
 }
 
 /**
@@ -395,7 +397,7 @@ export class Lord {
       const perSec = prod.amount / prod.seconds;
       // The difficulty economy bonus: the whole cycle runs faster, inputs and
       // output alike, so ratios hold and the chain simply works harder.
-      const want = perSec * dt * this.cfg.economy;
+      const want = perSec * dt * this.cfg.economy * this.world.fortune(prod.output);
       if (this.roomFor(prod.output) <= 0) continue;
 
       // Same input chain the player's buildings run on: a mill with no wheat

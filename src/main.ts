@@ -39,6 +39,8 @@ import {
 import { hydrate } from './game/backend';
 import { BANNERS } from './game/banners';
 import { lordName } from './game/names';
+import { Profiler, ProfileOverlay } from './engine/profile';
+import { Fortunes } from './game/fortune';
 import { MatchRuntime } from './net/match';
 import { packBuilding, packSoldier, unpackSoldier, buildingName,
          F_RAISED, F_ABLAZE, F_UNDUG, F_TURN_SHIFT, F_TURN_MASK } from './net/wire';
@@ -1150,8 +1152,16 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     return d < (store.x - b.x) ** 2 + (store.z - b.z) ** 2;
   }
 
+  // The land's luck -- see fortune.ts. Drawn from the trades the player
+  // keeps, and felt by every lord on the map alike.
+  const fortunes = new Fortunes(
+    () => new Set(state.buildings.map(b => b.def.produces?.output).filter((o): o is Resource => !!o)),
+    (text, kind) => state.notify(text, kind),
+  );
+
   const workerWorld: WorkerWorld = {
     heightAt: (x, z) => terrain.heightAt(x, z),
+    fortune: o => fortunes.factor(o),
     groundSpeed,
     nearestStore: nearestStoreAt,
 
@@ -3192,6 +3202,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     f.lord = new Lord(army, {
       buildings: () => f.buildings,
       build: (name: string) => lordBuild(f, name),
+      fortune: o => fortunes.factor(o),
       // Found LIVE: he builds his barracks partway through and may lose it.
       muster: () => {
         const bar = f.buildings.find(b => b.name === 'barracks');
@@ -4093,6 +4104,11 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
         state.notify('Patrol: right-click the far end of their beat', 'info');
       }
     }
+    if (k === 'i') {
+      // Where the frame's time goes, by system. A dev view like G: the
+      // answer to "it stutters on a big map" is which line of this is fat.
+      if (profileOverlay.toggle()) state.notify('Frame timing shown (I to hide)');
+    }
     if (k === 'g') {
       // Debug view: paint every tile a unit is forbidden to walk on.
       // If a figure is ever standing on red, movement is at fault; if it is
@@ -4653,6 +4669,8 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
   let paused = false;
   let last = performance.now();
   let syncClock = 0;
+  const prof = new Profiler();
+  const profileOverlay = new ProfileOverlay(prof);
 
   /**
    * One step of the world. The ONLY place the simulation advances.
@@ -4661,9 +4679,15 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
    * fixed-step test path and real play cannot disagree about what a tick does.
    */
   function simulateStep(dt: number): void {
+    // Each stage marks itself off for the profiler (I to show it). The marks
+    // are the only thing between the calls; the order is the order it was.
+    prof.step();
     state.tickEconomy(dt);
+    if (!mp) fortunes.update(state.elapsed);
+    prof.mark('economy');
     regrowForest();
     workers.update(dt);
+    prof.mark('workers');
     syncClock += dt;
     if (syncClock > 1) {
       syncClock = 0;
@@ -4673,26 +4697,34 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     }
 
     if (syncClock === 0) enemyWorkers.sync(factions);   // on the same 1s beat
+    prof.mark('sync');
 
     updateWanderers(dt);
     town.update(dt);
+    prof.mark('town');
     herd.update(dt, state.elapsed);
+    prof.mark('herd');
     army.update(dt);
+    prof.mark('army');
     trackStats();
     standingClock += dt;
     if (standingClock > 6) { standingClock = 0; checkStanding(); }
+    prof.mark('stats');
     updateRaids(dt);
     enemyWorkers.update(dt, factions);
+    prof.mark('rivals');
     updateSappers(dt);
     updateTraps();
     updateFires(dt);
     updateBuildingFires(dt);
     projectiles.update(dt);
+    prof.mark('siege');
 
     // Store sprites are part of the static list, so a pile changing level has to
     // invalidate it. sync() returns true only when what is DRAWN moved, not on
     // every unit deposited, so this rebuilds a few times a minute.
     if (syncStores()) staticDirty = true;
+    prof.mark('stores');
   }
 
   /**
@@ -4724,6 +4756,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       requestAnimationFrame(frame);
       return;
     }
+    prof.frame();
 
     const pan = 420 * dt;
     if (keys.has('arrowleft') || keys.has('a')) iso.panByPixels(-pan, 0);
@@ -4759,10 +4792,12 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     // camera, the ghost and the HUD above and below this line stay on real
     // time, so a paused settlement is still one you can look around and plan
     // in -- unlike the Esc menu, which stops the frame outright.
+    prof.mark('input');
     advanceSim(dt * state.speedMult);
     autosave();
     netTick(dt);
     matchChat?.tick();
+    prof.mark('net');
 
     // --- placement ghost ---
     if (placement.selected) {
@@ -4804,13 +4839,18 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       } else hud.hideTip();
     }
 
+    prof.mark('cursor');
     updateTroubleFlags();
     updateRallyFlag();
     updateStanceButton();
     updateAmbience(performance.now());
     audio.tickAmbience();
+    prof.mark('hud');
     drawMinimap();
+    prof.mark('minimap');
     drawScene();
+    prof.mark('draw');
+    prof.end();
     requestAnimationFrame(frame);
   }
 
@@ -4996,6 +5036,10 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       if (making) {
         bits.push(`${making.amount} ${goodName(making.output, making.amount)}`
                   + ` / ${making.seconds}s`);
+        // The season, where it is felt: hover the farm and the blight is
+        // written on it, long after the herald's line has scrolled away.
+        const luck = fortunes.factor(making.output);
+        if (luck !== 1) bits.push(luck > 1 ? `good season ×${luck}` : `bad season ×${luck}`);
       }
       if (def.alternate) {
         // The switch has no button anywhere, so the tooltip has to be the
@@ -5433,6 +5477,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       fires: fires.map(f => [f.x, f.z, f.until] as [number, number, number]),
       rally: rallyPoint,
       difficulty,
+      fortune: fortunes.save(),
     };
   }
 
@@ -5638,6 +5683,9 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     state.taxLevel = sv.taxLevel;
     Object.assign(state.trade, sv.trade);
     state.elapsed = sv.elapsed;
+    // The season, if the save knew of seasons. An older save starts from
+    // clear weather and the usual wait for the first.
+    if (sv.fortune) fortunes.restore(sv.fortune);
     rallyPoint = sv.rally ?? null;   // absent on saves made before the flag existed
 
     // sync() alone: it creates exactly one worker per staffed slot, which is
@@ -5776,6 +5824,11 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     manable: () => [...manableTiles(state.buildings)],
     snapshot, applySave, openPause,
     isPaused: () => paused,
+    /** The season in force, or null. `fortunes.update` runs it. */
+    fortunes,
+    /** Frame timing by subsystem, averaged over the last two seconds. */
+    profile: () => prof.report(),
+    profileLines: () => prof.lines().join('\n'),
     // Kept singular-friendly for the console: no argument means the first
     // rival, which is the common case while poking at a game.
     lord: (i = 0) => factions[i]?.lord,

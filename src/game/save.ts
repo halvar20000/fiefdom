@@ -1,4 +1,5 @@
 import type { MapDef } from './maps';
+import type { SavedFortune } from './fortune';
 import { store } from './backend';
 
 /**
@@ -114,6 +115,8 @@ export interface SaveGame {
   rally?: { x: number; z: number } | null;
   /** How hard the rival lords play. Absent on older saves (treated as normal). */
   difficulty?: 'easy' | 'normal' | 'heavy';
+  /** The season in force and when the next is due. Absent on older saves. */
+  fortune?: SavedFortune;
 }
 
 export interface SlotInfo {
