@@ -1,4 +1,4 @@
-import { BUILDINGS, storeOf } from './defs';
+import { BUILDINGS, storeOf, turnPoint } from './defs';
 import type { PathNode } from './pathfind';
 
 /**
@@ -26,6 +26,8 @@ export interface EWBuilding {
   z: number;
   /** Workers the lord has assigned. The source of truth for how many figures. */
   staff: number;
+  /** Quarter turns it stands at; only ever set for another player's farm. */
+  turn?: number;
 }
 
 /** A rival, as far as its workforce is concerned. */
@@ -115,12 +117,13 @@ export class EnemyWorkers {
         let n = 0;
         for (const w of this.workers) if (w.b === b) n++;
         while (n < b.staff && this.workers.length < MAX_WORKERS) {
+          const at = this.post(b);
           this.workers.push({
             id: this.nextId++, side: f.id,
-            x: b.x + 0.5, z: b.z + 0.5, heading: 0, phase: Math.random() * 10,
+            x: at.x, z: at.z, heading: 0, phase: Math.random() * 10,
             speed: 1.4 + Math.random() * 0.4,
             b, state: 'work', timer: Math.random() * 2,
-            tx: b.x + 0.5, tz: b.z + 0.5, path: [], carrying: false,
+            tx: at.x, tz: at.z, path: [], carrying: false,
             workClip: def.workClip ?? 'dig', hp: WORKER_HP,
           });
           n++;
@@ -150,6 +153,22 @@ export class EnemyWorkers {
       if (d < bestD) { bestD = d; best = this.approach(s); }
     }
     return best;
+  }
+
+  /**
+   * Where this job is done: on the building's own ground if it says so (a
+   * farm's field, the pen), otherwise at the door. The same rule the player's
+   * hands follow, so a rival's farms are worked in the field too.
+   */
+  private post(b: EWBuilding): { x: number; z: number } {
+    const spots = BUILDINGS[b.name].workOn;
+    if (spots) {
+      let n = 0;
+      for (const w of this.workers) if (w.b === b) n++;
+      const o = turnPoint(BUILDINGS[b.name], b.turn ?? 0, spots[n % spots.length]);
+      return { x: b.x + o.x, z: b.z + o.z };
+    }
+    return this.approach(b);
   }
 
   /** A walkable tile just outside a building, to stand on when visiting it. */
@@ -214,7 +233,7 @@ export class EnemyWorkers {
         case 'toStore': {
           if (!this.arrive(w, dt)) break;
           w.carrying = false;
-          const home = this.approach(b);
+          const home = this.post(b);
           this.goTo(w, home.x, home.z, 'back');
           break;
         }
@@ -230,6 +249,11 @@ export class EnemyWorkers {
 
   private moving(w: EnemyWorker): boolean {
     return w.state === 'toStore' || w.state === 'back';
+  }
+
+  /** Indoors at his trade, exactly as the player's hands are. */
+  hidden(w: EnemyWorker): boolean {
+    return w.state === 'work' && !!w.b && !!BUILDINGS[w.b.name].workInside;
   }
 
   /** Which animation to draw this figure with -- the same clips the player uses. */

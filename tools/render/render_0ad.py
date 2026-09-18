@@ -37,24 +37,34 @@ OUT_SUBDIR = "0ad"
 UNIT_HEIGHT_TILES = 0.52
 DIRECTIONS = 8
 
-#: game clip -> (source .dae, frames)
+#: game clip -> (source .dae, frames, cycle seconds)
 #:
-#: `fish` is new: the fishery has been miming a woodcutter's swing since it was
-#: built, for want of anything better. `death` is new too -- soldiers have
-#: simply vanished until now.
-#: Third field is the cycle length in seconds -- see the note on CLIPS in
-#: render_units.py. Frame counts were raised with the rest of the animation in
-#: the zoom pass; the sprites on disk are still the older, coarser sampling,
-#: because these four clips need the 0 A.D. source archive and it is not
-#: vendored (see docs/THIRD-PARTY.md). They keep their own `scale` in the
-#: manifest and the engine draws each sprite at the scale it was baked at, so
-#: the mismatch costs a little sharpness at full zoom on four clips and
-#: nothing else. Re-run this script against the archive to close the gap.
+#: The third field is the cycle length in seconds -- see the note on CLIPS in
+#: render_units.py. The archive is not vendored (see docs/THIRD-PARTY.md); the
+#: files named here live under binaries/data/mods/public/art/animation/biped/
+#: in the 0 A.D. tree, in the gatherer, citizen, fisher and infantry folders,
+#: and --src is a flat directory holding just those.
+#:
+#: Why so many. A peasant used to have four things he could do with his hands
+#: -- dig, swing a pick, swing an axe, cast a line -- and every trade in the
+#: catalogue was drawn with the nearest of them, so the miller and the dairy
+#: hand both stood beside their buildings digging. Each clip below is a trade's
+#: own motion: a hoe for the wheat, a reach into the branches for the orchard
+#: and the hop bines, a hand to the udder, feed scattered for the pigs, a
+#: knife for the hunter's kill, a carcass dressed on the slaughterhouse floor,
+#: a mallet for the trades that shape things at a bench.
 CLIPS = {
-    "chop":  ("gather_wood.dae", 8, 0.6),
-    "carry": ("carry_wood_m.dae", 12, 0.8),
-    "fish":  ("hele_gather_fish.dae", 10, 0.8),
-    "death": ("death_a.dae", 8, 0.6),
+    "chop":     ("gather_wood.dae", 8, 0.6),
+    "carry":    ("carry_wood_m.dae", 12, 0.8),
+    "fish":     ("hele_gather_fish.dae", 10, 0.8),
+    "death":    ("death_a.dae", 8, 0.6),
+    "farm":     ("farming.dae", 12, 1.2),          # hoeing a furrow
+    "pick":     ("gather_fruit_m.dae", 16, 2.0),   # reaching into the branches
+    "milk":     ("gather_berries.dae", 10, 1.2),   # crouched at the beast
+    "feed":     ("seeding.dae", 10, 1.0),          # scattering from a bag
+    "slaughter": ("slaughter.dae", 8, 0.8),        # the knife, crouched
+    "butcher":  ("gather_meat.dae", 12, 1.6),      # kneeling over a carcass
+    "craft":    ("build.dae", 8, 0.6),             # a mallet at a bench
 }
 
 

@@ -364,10 +364,11 @@ limit. Skipping it costs a third of the atlas in transparent air. It is
 idempotent, so running it after a one-body re-render is the normal thing to do.
 
 About forty minutes for the whole set on twenty-four cores. The `--only` lists
-are not decoration: `carry`, `chop`, `fish` and `death` come from the 0 A.D.
-motion set via `render_0ad.py`, which writes the same clip keys, so rendering
-those clips from Mixamo as well silently replaces a hand-picked woodcutting
-swing with a baseball bat.
+are not decoration: `carry`, `chop`, `fish`, `death` and the trade clips
+(`farm`, `pick`, `milk`, `feed`, `slaughter`, `butcher`, `craft`) come from
+the 0 A.D. motion set via `render_0ad.py`, which writes the same clip keys, so
+rendering those clips from Mixamo as well silently replaces a hand-picked
+woodcutting swing with a baseball bat.
 
 Units render from the Mixamo rig in `assets/source/mixamo/`. `--body peasant`
 (default) generates a hooded-tunic body onto that skeleton; `--body ybot` uses
@@ -601,13 +602,13 @@ already sitting three pixels from every edge and rewrites nothing.
 ### Sprites may differ in scale
 
 `Frame.scale` is per frame, not per atlas, and the renderer draws each sprite at
-the scale it was baked at. This is not hypothetical tidiness: the four 0 A.D.
-motion clips can only be re-rendered against an archive that is not vendored
-here (see `docs/THIRD-PARTY.md`), so when everything else moved to scale 3 they
-stayed at 2. Reading one atlas-wide scale for all of them would have drawn a
-carrying peasant half again the size of a walking one. As it is they cost a
-little sharpness at full zoom on four clips and nothing else, and re-running
-`render_0ad.py` against the archive closes the gap with no code change.
+the scale it was baked at. This is not hypothetical tidiness: the 0 A.D.
+motion clips can only be re-rendered against source files that are not
+vendored here (see `docs/THIRD-PARTY.md`), so when everything else moved to
+scale 3 they stayed at 2 until 1.65.0 re-rendered them. Reading one
+atlas-wide scale for all of them would have drawn a carrying peasant half
+again the size of a walking one. The mechanism stays: any clip rendered at a
+scale of its own is drawn at that scale.
 
 ### More frames must not mean slower
 
@@ -1530,11 +1531,18 @@ radiating from the keep, 90 vertices, on-camera.
 
 ## Borrowed animation: 0 A.D.
 
-Four worker and soldier animations are 0 A.D.'s, by Wildfire Games, under CC
-BY-SA 3.0 — the woodcutter's chop, the carrying walk, the fisherman, and a
-death. They are retargeted onto Fiefdom's own character and rendered through
-the same pipeline as everything else, so they match in scale, palette and
-lighting.
+Eleven worker and soldier animations are 0 A.D.'s, by Wildfire Games, under
+CC BY-SA 3.0 — the woodcutter's chop, the carrying walk, the fisherman, a
+death, and since 1.65.0 a trade's own motion for the rest of the workforce:
+hoeing for the wheat farm, reaching into the branches for the orchard and the
+hops, milking, scattering feed, the hunter's knife, the slaughterhouse's
+dressing of a carcass, and a mallet at the bench for the fletcher, the tanner
+and the armourer. They are retargeted onto Fiefdom's own character and
+rendered through the same pipeline as everything else, so they match in
+scale, palette and lighting. The clip list and its sources are `CLIPS` in
+`tools/render/render_0ad.py`; the source files come from
+`binaries/data/mods/public/art/animation/biped/` in the 0 A.D. tree, and
+`--src` is a flat directory holding just those.
 
 Because they are an adaptation of CC BY-SA 3.0 work they cannot be relicensed
 under this project's AGPL-3.0, so they sit in `public/assets/sprites/0ad/` with
@@ -1550,6 +1558,27 @@ axis is lost, which is invisible at 80x66. It took three tries to get right —
 a world-space delta folded the figure into a contortion, and two sign and
 frame-of-reference mistakes laid it flat on the ground — all recorded in the
 commit that added the tools.
+
+### Every trade its own motion, and the farm worked from inside (1.65.0)
+
+A peasant had four things he could do with his hands — dig, swing a pick,
+swing an axe, cast a line — and every trade was drawn with the least wrong of
+them, so the miller and the dairy hand both stood beside their buildings
+digging. `workClip` now names a motion per trade (see the table in
+`render_0ad.py`), and three trades whose whole job is indoors — the mill, the
+bakery, the brewery — set `workInside` instead: the hand walks to the door and
+is not drawn until the cycle is over, the way a Stronghold baker steps into the
+bakery. The mill's sails are its animation.
+
+Farms are worked from inside the footprint. `workOn` is a list of spots on the
+building's own ground — the middle furrow, between the hop poles, the cow's
+flank, beside the trough — and `openFrom` says which footprint rows are open
+ground: every farm here is modelled house-at-the-back, field in front, so the
+house row is solid and the field rows are walked over (by the hand, and by
+anyone else cutting across, which is also how Stronghold's farms behave). The
+whole footprint is still *occupied*, so nothing is built on the field. Both
+follow the building's turn through `turnPoint` and `solidBox`, since farms
+turn now too. The rival lords' farmhands stand in the same spots.
 
 ## Per-object ambience
 
@@ -2463,6 +2492,46 @@ and the first that will take a 2x2 gets the gate; the wall is then built around
 whatever the gate occupies. Verified the castle interior, the gate and the open
 map are all one path region, so his troops can actually get out — which is
 easy to get wrong and produces an opponent who never attacks.
+
+### A castle that closes (1.65.0)
+
+The ring above was never finished. Measured at thirty minutes on Normal: 26
+of 56 tiles walled, no gate, no tower, and his town spread twelve tiles out
+with the wall fragments in the middle of it. Three causes, all in
+`planCastle` / `lordBuild`:
+
+* **His own buildings sat on the line.** Everything spiralled out from the
+  keep, straight across the ring. The plan's tiles — ring, gate, four corner
+  towers — are now *reserved* before his first hovel goes down, and
+  `findEnemySite` sites what belongs inside (houses, stores, barracks,
+  workshops) inside while there is room, and what is tied to the ground
+  (`OUTLYING`: farms, quarries, mines, woodcutters, the hunter and fishery)
+  strictly outside.
+* **The plan asked for fewer walls than the ring had**, and kept two tiles
+  either side of the gate clear on purpose. The wall step now runs until
+  `ringOpen()` is zero, the gate takes exactly its own two tiles, and the
+  corners are walled first and rebuilt as towers when the twenty stone is
+  there, rather than left open while he saves.
+* **The line broke at every slope**, because his placement held walls to level
+  ground the player's do not need. It uses `onRoughGround` now, and trees on
+  the line are felled when he is seated.
+
+The ring is the largest of 9, 8 or 7 whose tiles are dry ground, a third
+quarry goes in before the wall does, and he drops his portcullis when hostile
+soldiers come within `GATE_ALARM_RADIUS` of the gate and raises it again when
+they leave (never while a column of his own is setting out). Measured: ring
+closed with four towers and a gate at 35 minutes on Normal.
+
+### He lays siege to a sealed castle
+
+A player who walled his keep in was never attacked again: the route to the
+keep failed, `send` refused every man, and the column never left. `march` now
+asks `siegePoint` for the reachable ground nearest the keep — the foot of
+whatever wall is in the way, on the face nearest his own gate — and sends the
+column there. Engines batter what is in reach, archers shoot the wall, and
+`press` walks the column in the moment a way through opens. Measured: column
+halts at the wall, a breach is opened, and the keep is being sacked fifteen
+seconds later.
 
 ## M2, part five: siege engines and destructible buildings
 

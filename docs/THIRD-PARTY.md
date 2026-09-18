@@ -7,9 +7,11 @@ material listed here.
 
 `public/assets/sprites/0ad/` holds sprites rendered from Fiefdom's own peasant
 mesh driven by animations from [0 A.D.](https://play0ad.com) by Wildfire Games.
-The clips used are `gather_wood`, `carry_wood`, `hele_gather_fish` and
-`death_a`, reaching the game as the `chop`, `carry`, `fish` and `death`
-animations. The tools that read and retarget them
+The clips used are `gather_wood`, `carry_wood_m`, `hele_gather_fish`,
+`death_a`, `farming`, `gather_fruit_m`, `gather_berries`, `seeding`,
+`slaughter`, `gather_meat` and `build`, reaching the game as the `chop`,
+`carry`, `fish`, `death`, `farm`, `pick`, `milk`, `feed`, `slaughter`,
+`butcher` and `craft` animations. The tools that read and retarget them
 (`tools/render/collada_anim.py`, `tools/render/retarget.py`) are ours and carry
 no third-party licence; the rendered sprites do.
 

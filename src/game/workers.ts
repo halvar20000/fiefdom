@@ -879,6 +879,17 @@ export class WorkerPool {
     }
   }
 
+  /**
+   * Not drawn at all: he has stepped inside to do the work.
+   *
+   * Only while the cycle runs. He is still a figure with a position -- the
+   * door -- so the seal-off guard and the firefighting muster still count
+   * him, and he reappears there with the load.
+   */
+  hidden(w: Worker): boolean {
+    return w.state === 'working' && !!w.building?.def.workInside;
+  }
+
   /** Workers are drawn walking whenever they are between places. */
   isMoving(w: Worker): boolean {
     return w.state === 'toWork' || w.state === 'toStore'

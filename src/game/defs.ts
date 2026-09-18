@@ -105,6 +105,11 @@ export type Category = 'castle' | 'industry' | 'farm' | 'food' | 'town' | 'weapo
  * it is what forces you to build outward from the keep instead of stacking
  * everything in one tidy square.
  */
+/** Every motion a worker can be drawn doing at his job. */
+export type WorkClip =
+  | 'chop' | 'mine' | 'dig' | 'fish'
+  | 'farm' | 'pick' | 'milk' | 'feed' | 'slaughter' | 'butcher' | 'craft';
+
 export type TerrainNeed = 'any' | 'green' | 'rock' | 'sand' | 'marsh';
 
 /**
@@ -328,8 +333,46 @@ export interface BuildingDef {
    * carriers whose whole job is to walk onto it would path around the edge.
    */
   walkable?: boolean;
-  /** Animation its workers play while producing. */
-  workClip?: 'chop' | 'mine' | 'dig' | 'fish';
+  /**
+   * Animation its workers play while producing.
+   *
+   * Each is a trade's own motion (see CLIPS in tools/render/render_0ad.py),
+   * not the nearest of four: the four were dig, pick, axe and line, and every
+   * other trade in the catalogue was drawn with whichever of those was least
+   * wrong -- which put a miller and a dairy hand beside their buildings
+   * digging, and read as a bug to anyone who looked for more than a moment.
+   */
+  workClip?: WorkClip;
+  /**
+   * The work is done indoors. The hand walks to the door and is not drawn
+   * until the cycle is over, the way a Stronghold baker steps into the bakery.
+   *
+   * For the trades whose whole job is inside four walls -- the mill, the
+   * bakery, the brewery -- there is no honest thing to draw at the door, and
+   * anything mimed there was worse than nothing.
+   */
+  workInside?: boolean;
+  /**
+   * Where on its OWN footprint the work is done, as offsets from the
+   * footprint origin, one per worker slot (cycled if there are more).
+   *
+   * A farm's field, a paddock, the trough. Without this every hand stood on a
+   * ring just outside the footprint, hoeing the lawn beside the wheat.
+   * Everything from `openFrom` on has to be open ground for him to get there.
+   */
+  workOn?: { x: number; z: number }[];
+  /**
+   * The footprint rows from this one on (counted from the far, north edge)
+   * are open ground: walked over, not built through. A farm is a house and a
+   * field, and only the house is solid; the field is where its hand works
+   * and where anyone else may walk, which is also how Stronghold's farms
+   * behave. The whole footprint is still occupied -- nothing else can be
+   * built on the field.
+   *
+   * Every farm here is modelled the same way round, house at the back
+   * (row 0) and field in front, which is what lets this be one number.
+   */
+  openFrom?: number;
   /**
    * This building keeps a stock of a good on the premises, fetched from the
    * stockpile by its own worker. Used by the inn: the ale has to physically
@@ -786,27 +829,32 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     footprint: [3, 3], cost: { wood: 20 }, workers: 1, terrain: 'green',
     produces: { output: 'wheat', amount: 2, seconds: 13, to: 'stockpile' },
     description: 'Grows wheat. Needs green land.',
-    workClip: 'dig',
+    // Hoeing the middle furrow. Spots are read off the model in
+    // tools/render/buildings.py: engine z is 3 minus the Blender y.
+    workClip: 'farm', openFrom: 1, workOn: [{ x: 1.5, z: 2.1 }],
   },
   apple_orchard: {
     name: 'apple_orchard', label: 'Apple Orchard', category: 'farm',
     footprint: [3, 3], cost: { wood: 15 }, workers: 1, terrain: 'green',
     produces: { output: 'apples', amount: 3, seconds: 13, to: 'granary' },
     description: 'Grows apples. Needs green land.',
-    workClip: 'dig',
+    // Reaching into the branches, between the second and fourth trees.
+    workClip: 'pick', openFrom: 1, workOn: [{ x: 1.3, z: 2.0 }],
   },
   dairy_farm: {
     name: 'dairy_farm', label: 'Dairy Farm', category: 'farm',
     footprint: [3, 3], cost: { wood: 20 }, workers: 1, terrain: 'green',
     produces: { output: 'cheese', amount: 2, seconds: 15, to: 'granary' },
     description: 'Keeps cows for cheese. Needs green land.',
-    workClip: 'dig',
+    // Crouched at the cow's flank, inside the paddock.
+    workClip: 'milk', openFrom: 1, workOn: [{ x: 1.5, z: 2.05 }],
   },
   pig_farm: {
     name: 'pig_farm', label: 'Pig Farm', category: 'farm',
     footprint: [3, 3], cost: { wood: 20 }, workers: 1, terrain: 'green',
     produces: { output: 'pigs', amount: 1, seconds: 18, to: 'stockpile' },
-    workClip: 'dig',
+    // Scattering feed beside the trough, in the pen.
+    workClip: 'feed', openFrom: 1, workOn: [{ x: 1.55, z: 2.25 }],
     description: 'Raises pigs. Needs green land.',
   },
   slaughterhouse: {
@@ -817,7 +865,9 @@ export const BUILDINGS: Record<string, BuildingDef> = {
       inputs: { pigs: 1 }, to: 'granary',
       byproduct: { output: 'hides', amount: 2 },
     },
-    workClip: 'chop',
+    // Kneeling over the carcass at the block: a cleaver swung at thin air was
+    // the woodcutter's chop, and read as one.
+    workClip: 'butcher',
     description: 'Butchers pigs into meat, and the hides come off with it — '
                + 'they pile up in the stockpile whether you have a tanner or not.',
   },
@@ -826,7 +876,9 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     name: 'hunter', label: "Hunter's Hut", category: 'farm',
     footprint: [2, 2], cost: { wood: 20 }, workers: 1, terrain: 'any',
     produces: { output: 'meat', amount: 2, seconds: 16, to: 'granary' },
-    workClip: 'chop',
+    // The knife, crouched at the animal he has stalked. He used to swing an
+    // axe at it.
+    workClip: 'slaughter',
     description: 'Hunts gazelle on the open land. Needs no green ground.',
   },
   depot: {
@@ -849,7 +901,8 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     name: 'hops_farm', label: 'Hops Farm', category: 'farm',
     footprint: [3, 3], cost: { wood: 20 }, workers: 1, terrain: 'green',
     produces: { output: 'hops', amount: 2, seconds: 14, to: 'stockpile' },
-    workClip: 'dig',
+    // Picking from the bines, between two rows of poles.
+    workClip: 'pick', openFrom: 1, workOn: [{ x: 1.23, z: 2.2 }],
     description: 'Grows hops for brewing. Needs green land.',
   },
   brewery: {
@@ -859,7 +912,8 @@ export const BUILDINGS: Record<string, BuildingDef> = {
       output: 'ale', amount: 2, seconds: 12,
       inputs: { hops: 2 }, to: 'stockpile',
     },
-    workClip: 'dig',
+    // The work is at the vats: he goes in.
+    workInside: true,
     description: 'Brews hops into ale.',
   },
   inn: {
@@ -877,7 +931,9 @@ export const BUILDINGS: Record<string, BuildingDef> = {
       inputs: { wheat: 2 }, to: 'stockpile',
     },
     description: 'Grinds wheat into flour.',
-    workClip: 'dig',
+    // The sails are the animation. The miller carries his sack in and comes
+    // out with flour; he used to stand at the foot of the tower digging.
+    workInside: true,
   },
   bakery: {
     name: 'bakery', label: 'Bakery', category: 'food',
@@ -887,7 +943,8 @@ export const BUILDINGS: Record<string, BuildingDef> = {
       inputs: { flour: 2 }, to: 'granary',
     },
     description: 'Bakes flour into bread. Two loaves per sack.',
-    workClip: 'dig',
+    // At the oven, indoors.
+    workInside: true,
   },
 
   // --- the weapons chain: four workshops feeding one store ---------------
@@ -929,7 +986,7 @@ export const BUILDINGS: Record<string, BuildingDef> = {
       output: 'crossbows', amount: 1, seconds: 22,
       inputs: { wood: 3, iron: 1 }, to: 'armoury',
     },
-    workClip: 'chop',
+    workClip: 'craft',   // a mallet at the bench, not an axe
     description: 'Makes bows from timber. No bow, no archer — and given a '
                + 'little iron for the lock, crossbows instead.',
   },
@@ -956,7 +1013,7 @@ export const BUILDINGS: Record<string, BuildingDef> = {
       output: 'armour', amount: 1, seconds: 17,
       inputs: { hides: 3 }, to: 'armoury',
     },
-    workClip: 'dig',
+    workClip: 'craft',   // working a hide on the frame
     description: 'Cures hides into leather armour. The same rack a swordsman '
                + 'takes his mail from, filled off the back of your pig farms '
                + 'instead of your iron mines.',
@@ -968,7 +1025,7 @@ export const BUILDINGS: Record<string, BuildingDef> = {
       output: 'armour', amount: 1, seconds: 21,
       inputs: { iron: 2 }, to: 'armoury',
     },
-    workClip: 'mine',
+    workClip: 'craft',   // riveting at the bench; the smith keeps the big hammer
     description: 'Forges mail. A swordsman needs a suit as well as a blade.',
   },
 };
@@ -1129,7 +1186,52 @@ export const TURNABLE: ReadonlySet<string> = new Set([
   'hovel', 'garden', 'well', 'pond', 'statue', 'dancing_bear', 'market',
   'woodcutter', 'bakery', 'poleturner', 'fletcher', 'blacksmith', 'armourer',
   'stairs', 'perimeter_turret',
+  // The second batch: the farms, which are laid in rows and were the first
+  // thing most people tried the key on, and the rest of the outlying trades.
+  // Ten more is what the atlas had room for -- it packs to about 7800 of its
+  // 8192 rows with these in, and the brewery alone would have been another
+  // 150.
+  'wheat_farm', 'hops_farm', 'apple_orchard', 'dairy_farm', 'pig_farm',
+  'hunter', 'fishery', 'iron_mine', 'tanner',
 ]);
+
+/**
+ * A point on a building's own footprint, turned as the building is.
+ *
+ * `turn_object` in tools/render/rig.py spins the model +90 degrees about the
+ * middle of its footprint per quarter, in Blender's frame. The engine's z
+ * runs the other way from Blender's y, so seen from above in the engine's
+ * frame one quarter takes a point (rx, rz) relative to the middle to
+ * (rz, -rx): what stood along the north edge stands along the west one.
+ * Only square footprints turn, so the box itself does not change shape.
+ */
+export function turnPoint(def: BuildingDef, turn: number,
+                          p: { x: number; z: number }): { x: number; z: number } {
+  const [w, d] = def.footprint;
+  let rx = p.x - w / 2, rz = p.z - d / 2;
+  for (let t = ((turn % TURNS) + TURNS) % TURNS; t > 0; t--) {
+    [rx, rz] = [rz, -rx];
+  }
+  return { x: rx + w / 2, z: rz + d / 2 };
+}
+
+/**
+ * The part of a placed building's footprint that blocks the way, as an
+ * offset box: the whole footprint, or for a building with an `openFrom`
+ * the house rows alone, turned as the building is.
+ */
+export function solidBox(def: BuildingDef, turn = 0):
+    { x: number; z: number; w: number; d: number } {
+  const [w, d] = def.footprint;
+  const k = def.openFrom;
+  if (k === undefined || k >= d) return { x: 0, z: 0, w, d };
+  switch (((turn % TURNS) + TURNS) % TURNS) {
+    case 0: return { x: 0, z: 0, w, d: k };          // house along the north edge
+    case 1: return { x: 0, z: 0, w: k, d };          // west
+    case 2: return { x: 0, z: d - k, w, d: k };      // south
+    default: return { x: w - k, z: 0, w: k, d };     // east
+  }
+}
 
 /** Quarter turns a turnable building has art for, turn 0 included. */
 export const TURNS = 4;
@@ -2020,6 +2122,13 @@ export const SOLDIER_ORDER: string[] =
  * costed, sprited and unrecruitable in silence. Reported through the same
  * startup banner as a stale manifest.
  */
+/** Every work clip some building asks for, each once. */
+export function workClips(): WorkClip[] {
+  const out = new Set<WorkClip>();
+  for (const def of Object.values(BUILDINGS)) if (def.workClip) out.add(def.workClip);
+  return [...out];
+}
+
 export function unlistedSoldiers(): string[] {
   const listed = new Set(SOLDIER_ORDER);
   return Object.keys(SOLDIER_TYPES)

@@ -5,6 +5,7 @@ import {
   BUILDINGS, BUILD_MENU, PRICES, RATIONS, RATION_LEVELS, TAX_LEVELS,
   RESOURCE_LABELS, ALL_RESOURCES, RESOURCE_BAR, FOOD_RESOURCES, goodName,
   SOLDIER_TYPES, SOLDIER_ORDER, SPEED_LEVELS, SPRITE_STANDIN, storeSquare,
+  TURNABLE,
   type RationLevel, type Resource,
 } from '../game/defs';
 import type { GameState } from '../game/state';
@@ -154,6 +155,10 @@ const CSS = `
   background: rgba(240,200,105,.22); color: var(--gold); font-weight: 600;
   font-variant-numeric: tabular-nums; }
 #buildmenu button.on .n { background: rgba(0,0,0,.35); color: #fff; }
+/* The turn mark: this one can be set down facing any of four ways. */
+#buildmenu button .t {
+  position: absolute; top: 2px; left: 4px; font-size: 11px; line-height: 13px;
+  color: var(--gold); opacity: .75; }
 
 #buildbar button.demolish { grid-column: 1 / -1; color: #e8b9a4; }
 #buildbar button.demolish:hover { border-color: rgba(226,121,79,.6); }
@@ -1019,6 +1024,13 @@ export class Hud {
         const b = document.createElement('button');
         b.dataset.name = name;
         b.title = `${def.label} — ${cost}\n${def.description}`;
+        // Say which ones turn, on the button and in its tooltip. The key was
+        // there for a month and read as broken, because the first building
+        // most people tried it on was one of the fifty that do not turn.
+        if (TURNABLE.has(name)) {
+          b.title += '\nTurns: press , or . with it in hand';
+          b.insertAdjacentHTML('beforeend', '<span class="t" aria-hidden="true">\u21bb</span>');
+        }
         const tally = document.createElement('span');
         tally.className = 'n';
         b.appendChild(tally);

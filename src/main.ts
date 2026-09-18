@@ -52,7 +52,7 @@ import {
   GARRISON_HEIGHT, garrisonReach, MARSH_SPEED_FOOT, MARSH_SPEED_SIEGE,
   BUILD_MENU, SOLDIER_ORDER, unlistedBuildings, unlistedSoldiers,
   unlistedResources, storeSprites, millPhaseSprites, quarryLoadSprites,
-  turnSprites,
+  turnSprites, workClips, turnPoint, solidBox,
   MILL_SAIL_PHASES, HAUL_YARD,
   BURN_SECONDS, BURN_RADIUS, BURN_DPS, IGNITE_RADIUS, DEMOLISH_REFUND,
   BUILDING_BURN_SECONDS, FIRE_SPREAD_AFTER, FIRE_SPREAD_RATE, FIRE_SPREAD_RADIUS,
@@ -208,6 +208,11 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     // anywhere says why. The key is `${clip}_${dir}_${frame}`, so asking after
     // `<type>_idle_0` is asking after facing 0, frame 0 of his idle.
     ...missingSprites(SOLDIER_ORDER.map(n => `${n}_idle_0`), atlas.frames),
+    // Every motion a trade asks its hand to make. A clip with no frames falls
+    // back to the idle in the draw loop, so a farmer would simply stand in his
+    // field -- plausible enough that nobody would report it as missing art.
+    // The check appends the facing, so `<clip>_0` asks after facing 0, frame 0.
+    ...missingSprites(workClips().map(c => `${c}_0`), atlas.frames),
     // And the yards. A good with no pile art is stored and counted while the
     // square it sits on draws nothing at all.
     ...missingSprites(storeSprites(), atlas.frames),
@@ -305,6 +310,20 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
   const markSolid = (x: number, z: number, w: number, d: number, v = true) => {
     paths.fill(x, z, w, d, v);
   };
+  /**
+   * Mark the part of a building that actually blocks the way.
+   *
+   * The whole footprint for almost everything. A farm is a house and a field,
+   * and only the house is solid -- see `openFrom` in defs and `solidBox` --
+   * so its hand can get into the field to work it and anyone else can cut
+   * across. Which rows those are depends on the way the farm was turned.
+   * Clearing on demolition still uses the full footprint: unblocking a tile
+   * that was never blocked is nothing.
+   */
+  const markSolidFor = (name: string, x: number, z: number, turn = 0) => {
+    const box = solidBox(BUILDINGS[name], turn);
+    markSolid(x + box.x, z + box.z, box.w, box.d);
+  };
 
   /**
    * A tree, rock or bush arrives on a tile, or leaves it.
@@ -380,7 +399,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
    * tile and giving up on the wall.
    */
   function sealsOff(name: string, x: number, z: number,
-                    w: number, d: number): string | null {
+                    w: number, d: number, turn = 0): string | null {
     // Snapshot before the trial, and put back exactly what was there.
     //
     // It used to hand the tiles back CLEARED, and every caller then cleared
@@ -389,6 +408,10 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     // pair of them quietly unblocked a tile that has been solid since the map
     // was made: a hole in the line, on ground the player is not allowed to
     // build on, that nothing would ever close.
+    // Only the part that will actually block -- a farm's field is open ground
+    // and cannot shut anything in.
+    const box = solidBox(BUILDINGS[name], turn);
+    x += box.x; z += box.z; w = box.w; d = box.d;
     const before: boolean[] = [];
     for (let dz = 0; dz < d; dz++)
       for (let dx = 0; dx < w; dx++) before.push(paths.isBlocked(x + dx, z + dz));
@@ -557,8 +580,9 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
      */
     turn?: number;
     /**
-     * Gate shut or drawbridge up, for a castle another PLAYER owns. A lord
-     * never touches his gates, so like `turn` this only arrives over the wire.
+     * Gate shut or drawbridge up. A lord drops his portcullis with an enemy
+     * at it (see Lord.keepGate); for a castle another PLAYER owns it arrives
+     * over the wire.
      */
     raised?: boolean;
     /** Seconds alight. A lord's fires are ticked here; a player's arrive over the wire. */
@@ -577,9 +601,21 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     stoneTint: [number, number, number];
     buildings: EnemyBuilding[];
     keep: { x: number; z: number } | null;
-    /** Wall-ring positions and the slot reserved for his gate. */
+    /**
+     * His castle plan: the closed square of wall tiles round the keep, the
+     * gate's origin on the side facing the player, and the four corner
+     * towers' origins. Laid out once when he is seated -- see planCastle --
+     * and reserved, so nothing of his own is ever built across the line.
+     */
     ring: [number, number][];
+    ringR: number;
     gate: [number, number] | null;
+    towers: [number, number][];
+    /**
+     * Tile indices the plan has spoken for: the ring, the gate, the towers.
+     * Ordinary buildings keep off them, which is what lets the ring close.
+     */
+    reserved: Set<number>;
     lord: Lord;
     defeated: boolean;
     /**
@@ -951,7 +987,8 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       if (!check.ok) { refusal ||= check.reason; continue; }
       // A walkable building cannot seal anything off, so it skips the test --
       // which also means painting a large yard never trips "would block the way".
-      const seals = def.walkable ? null : sealsOff(name, t.x, t.z, pw, pd);
+      const seals = def.walkable ? null
+        : sealsOff(name, t.x, t.z, pw, pd, placement.facing);
       if (seals) { refusal ||= seals; continue; }
       if (!placement.placeAt(name, t.x, t.z).ok) continue;
       const b = state.buildings[state.buildings.length - 1];
@@ -959,7 +996,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       // A moat is laid as a mark and dug by idle hands -- see town.ts -- so
       // it blocks nothing until the water is in it.
       if (name === 'moat') b.undug = true;
-      else if (!def.walkable) markSolid(b.x, b.z, pw, pd);
+      else if (!def.walkable) markSolidFor(name, b.x, b.z, b.turn);
       if (BORDER_BUILDINGS.has(name)) border = true;
       built++;
     }
@@ -1338,6 +1375,15 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
         return snapOpen({ x: sx + 0.5 + (wx - sx) * 0.32, z: sz + 0.5 + (wz - sz) * 0.32 }, w);
       }
 
+      // On its own ground: the field, the paddock, the trough. The rows from
+      // `openFrom` are open, so the spot is reachable and snapOpen leaves it.
+      if (b.def.workOn) {
+        const o = turnPoint(b.def, b.turn ?? 0, b.def.workOn[w.slot % b.def.workOn.length]);
+        return snapOpen({ x: b.x + o.x, z: b.z + o.z }, w);
+      }
+      // Indoors: he walks to the door and steps in. See `hidden` in workers.
+      if (b.def.workInside) return workerWorld.approach(b, w.x, w.z);
+
       const ang = (w.slot / Math.max(1, b.def.workers)) * Math.PI * 2 + b.id;
       const rad = Math.max(fw, fd) * 0.55 + 0.6;
       return snapOpen({ x: c.x + Math.cos(ang) * rad, z: c.z + Math.sin(ang) * rad }, w);
@@ -1463,7 +1509,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       }
       const b = state.addBuilding(name, site.x, site.z);
       markArea(site.x, site.z, w, d);
-      markSolid(site.x, site.z, w, d);
+      markSolidFor(name, site.x, site.z);
       return b;
     }
     return null;
@@ -1573,21 +1619,155 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     return true;
   };
 
+  /** How near a hostile soldier has to be for a lord to drop his portcullis. */
+  const GATE_ALARM_RADIUS = 12;
+
+  /** The pieces of the plan itself: the only things allowed on reserved ground. */
+  const CASTLE_PIECES = new Set(['wall', 'tower', 'gatehouse']);
+
+  /**
+   * The lord's buildings that belong OUTSIDE his walls: everything tied to
+   * the ground it stands on. A quarry goes where the rock is and a farm where
+   * the grass is, and neither is worth the bailey it would take up. Everything
+   * else -- houses, stores, the barracks, the workshops -- goes inside while
+   * there is room, which is what makes his castle a castle rather than a wall
+   * standing in the middle of a town.
+   */
+  const OUTLYING = new Set([
+    'woodcutter', 'quarry', 'ox_tether', 'iron_mine', 'pitch_rig',
+    'wheat_farm', 'apple_orchard', 'dairy_farm', 'pig_farm', 'hops_farm',
+    'hunter', 'fishery',
+  ]);
+
+  /** Is any tile of this footprint spoken for by the castle plan? */
+  const onReserved = (f: Faction, x: number, z: number, w: number, d: number): boolean => {
+    for (let dz = 0; dz < d; dz++) {
+      for (let dx = 0; dx < w; dx++) {
+        if (f.reserved.has((z + dz) * MAP_W + (x + dx))) return true;
+      }
+    }
+    return false;
+  };
+
+  /**
+   * Lay out a rival's castle round his keep: a closed square of wall, a gate
+   * on the side facing the player, a tower on each corner.
+   *
+   * It used to be a seven-tile ring that was never finished. Three things saw
+   * to that: his own buildings spiralled out from the keep straight across the
+   * line, so a hovel or a bakery sat on a third of it; the plan asked for
+   * fewer wall tiles than the ring had; and the two tiles either side of the
+   * gate were kept clear on purpose, a hole nothing ever closed. Measured at
+   * thirty minutes on Normal: 26 of 56 tiles walled, no gate, no tower, his
+   * town spread to twelve tiles out with the wall fragments in the middle of
+   * it. Now the line is reserved before his first hovel goes down, the wall
+   * step in his plan runs until the ring has no open tile left, and the gate
+   * takes exactly its own two tiles of the line.
+   *
+   * The radius is the largest that fits: a ring is refused where more than a
+   * few of its tiles are water or off the map, since the wall would then be
+   * a fence with a hole in it. Trees and rocks on the line are cleared here
+   * -- he has had them felled -- rather than left to block his wall forever.
+   */
+  function planCastle(f: Faction, c: { x: number; z: number }): void {
+    const WATER = GROUND_TYPES.indexOf('water');
+    const badTile = (x: number, z: number) =>
+      x < 1 || z < 1 || x >= MAP_W - 1 || z >= MAP_H - 1
+      || groundType[z * MAP_W + x] === WATER
+      || (occupied[z * MAP_W + x] && !scatterGrid[z * MAP_W + x]);
+
+    for (const R of [9, 8, 7]) {
+      const ring: [number, number][] = [];
+      for (let k = -R; k <= R; k++) {
+        ring.push([c.x + k, c.z - R], [c.x + k, c.z + R]);
+        if (k > -R && k < R) ring.push([c.x - R, c.z + k], [c.x + R, c.z + k]);
+      }
+      const bad = ring.filter(([x, z]) => badTile(x, z)).length;
+      if (bad > ring.length * 0.08 && R > 7) continue;
+
+      // Tower origins: the 2x2 sits on the corner and reaches inward.
+      const towers: [number, number][] = [
+        [c.x - R, c.z - R], [c.x + R - 1, c.z - R],
+        [c.x - R, c.z + R - 1], [c.x + R - 1, c.z + R - 1],
+      ];
+      // The gate: on the side facing the player, well clear of the corners,
+      // its 2x2 on level, dry ground. Its origin is a ring tile such that the
+      // footprint covers exactly two tiles of the line.
+      const gates: [number, number][] = [];
+      for (let k = -R + 3; k <= R - 4; k++) {
+        gates.push([c.x + k, c.z - R], [c.x + k, c.z + R],
+                   [c.x - R, c.z + k], [c.x + R, c.z + k]);
+      }
+      f.gate = gates
+        .sort((a, b) => Math.hypot(a[0] - kx, a[1] - kz) - Math.hypot(b[0] - kx, b[1] - kz))
+        .find(([gx, gz]) => isBuildable(terrain, gx, gz, 2, 2)
+          && ![[0, 0], [1, 0], [0, 1], [1, 1]].some(([dx, dz]) => badTile(gx + dx, gz + dz)))
+        ?? null;
+      f.ring = ring;
+      f.ringR = R;
+      f.towers = towers;
+
+      f.reserved.clear();
+      const reserve = (x: number, z: number) => {
+        if (x < 0 || z < 0 || x >= MAP_W || z >= MAP_H) return;
+        f.reserved.add(z * MAP_W + x);
+        // Clear the line of scatter: a tree on the wall's line is a tree he
+        // has cut down. Gone for good, not felled and regrowing.
+        if (scatterGrid[z * MAP_W + x]) {
+          for (const t of decorations) {
+            if (t.alive && t.x === x && t.z === z) t.alive = false;
+          }
+          markScatter(x, z, false);
+          staticDirty = true;
+        }
+      };
+      for (const [x, z] of ring) reserve(x, z);
+      for (const [tx, tz] of towers) {
+        for (const [dx, dz] of [[0, 0], [1, 0], [0, 1], [1, 1]]) reserve(tx + dx, tz + dz);
+      }
+      if (f.gate) {
+        for (const [dx, dz] of [[0, 0], [1, 0], [0, 1], [1, 1]]) {
+          reserve(f.gate[0] + dx, f.gate[1] + dz);
+        }
+      }
+      return;
+    }
+  }
+
+  /**
+   * How many tiles of the line are still open -- neither walled, towered nor
+   * gated, and not water. Zero is a closed castle, and is what tells the
+   * lord's plan that the wall step is done.
+   */
+  function ringOpen(f: Faction): number {
+    const WATER = GROUND_TYPES.indexOf('water');
+    let n = 0;
+    for (const [x, z] of f.ring) {
+      if (occupied[z * MAP_W + x]) continue;
+      if (groundType[z * MAP_W + x] === WATER) continue;
+      n++;
+    }
+    return n;
+  }
+
   const placeEnemyAt = (f: Faction, name: string, x: number, z: number): boolean => {
     const [w, d] = BUILDINGS[name].footprint;
     if (x < 1 || z < 1 || x + w >= MAP_W - 1 || z + d >= MAP_H - 1) return false;
-    if (!isBuildable(terrain, x, z, w, d)) return false;
+    // A wall crosses broken ground exactly as the player's does -- see
+    // onRoughGround. Held to level ground, his line broke at every slope.
+    if (!BUILDINGS[name].onRoughGround && !isBuildable(terrain, x, z, w, d)) return false;
     if (!enemyTerrainOk(name, x, z)) return false;
     for (let dz = 0; dz < d; dz++) {
       for (let dx = 0; dx < w; dx++) if (occupied[(z + dz) * MAP_W + (x + dx)]) return false;
     }
+    if (!CASTLE_PIECES.has(name) && onReserved(f, x, z, w, d)) return false;
     if (!enemyGapOk(f, name, x, z)) return false;
     f.buildings.push({
       id: nextEnemyBuildingId++, name, x, z,
       hp: buildingHp(BUILDINGS[name]), staff: 0,
     });
     markArea(x, z, w, d);
-    if (!BUILDINGS[name].walkable) markSolid(x, z, w, d);
+    if (!BUILDINGS[name].walkable) markSolidFor(name, x, z);
     return true;
   };
 
@@ -1635,7 +1815,8 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       const f: Faction = {
         id: i + 1, name: mpNames[i] ?? colour.name,
         unitTint: colour.unit, stoneTint: colour.stone,
-        buildings: [], keep: null, ring: [], gate: null,
+        buildings: [], keep: null, ring: [], ringR: 0, gate: null, towers: [],
+        reserved: new Set<number>(),
         lord: null as unknown as Lord, defeated: false,
         gside: mpSides[i] ?? i + 1,
         net: mp ? mp.ownerOf(mpSides[i] ?? i + 1) !== mp.you : false,
@@ -1672,18 +1853,9 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
         const c = { x: keepSite.x + 1, z: keepSite.z + 1 };
         f.keep = c;
         placedKeeps.push(c);
+        // The plan first, so the first hovel already keeps off the line.
+        planCastle(f, c);
         placeEnemyNear(f, 'hovel', keepSite.x - 5, keepSite.z + 3, 10);
-
-        const R = 7;
-        const ring: [number, number][] = [];
-        for (let k = -R; k <= R - 1; k++) {
-          ring.push([c.x + k, c.z - R], [c.x + k, c.z + R],
-                    [c.x - R, c.z + k], [c.x + R, c.z + k]);
-        }
-        f.ring = ring;
-        f.gate = [...ring]
-          .sort((a, b) => Math.hypot(a[0] - kx, a[1] - kz) - Math.hypot(b[0] - kx, b[1] - kz))
-          .find(([wx, wz]) => isBuildable(terrain, wx, wz, 2, 2)) ?? null;
 
         sited = true;
         console.log(`[lords] ${f.name} at ${c.x},${c.z} — ` +
@@ -1842,21 +2014,39 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     if (!f.keep) return null;
     const [w, d] = BUILDINGS[name].footprint;
     const c = anchor ?? f.keep;
-    for (let r = 2; r <= maxR; r++) {
-      for (let a = 0; a < r * 8; a++) {
-        const ang = (a / (r * 8)) * Math.PI * 2;
-        const x = Math.round(c.x + Math.cos(ang) * r) - Math.floor(w / 2);
-        const z = Math.round(c.z + Math.sin(ang) * r) - Math.floor(d / 2);
-        if (x < 1 || z < 1 || x + w >= MAP_W - 1 || z + d >= MAP_H - 1) continue;
-        if (!isBuildable(terrain, x, z, w, d)) continue;
-        if (!enemyTerrainOk(name, x, z)) continue;
-        let clear = true;
-        for (let dz = 0; dz < d && clear; dz++) {
-          for (let dx = 0; dx < w; dx++) {
-            if (occupied[(z + dz) * MAP_W + (x + dx)]) { clear = false; break; }
+    const k = f.keep;
+    // Which side of the wall a footprint is on, by its farthest tile from the
+    // keep. Inside means clear of the line by a tile, outside means clear of
+    // it by a tile the other way -- the line itself and the tiles it needs
+    // are reserved, so the cases are exhaustive once the ring exists.
+    const side = (x: number, z: number): 'in' | 'out' => {
+      const far = Math.max(Math.abs(x - k.x), Math.abs(x + w - 1 - k.x),
+                           Math.abs(z - k.z), Math.abs(z + d - 1 - k.z));
+      return far < f.ringR ? 'in' : 'out';
+    };
+    // What belongs outside is only ever sited outside; what belongs inside
+    // is sited inside while there is room and outside when there is not.
+    const passes: ('in' | 'out')[] = !f.ringR ? ['in', 'out']
+      : OUTLYING.has(name) ? ['out'] : ['in', 'out'];
+    for (const want of passes) {
+      for (let r = 2; r <= maxR; r++) {
+        for (let a = 0; a < r * 8; a++) {
+          const ang = (a / (r * 8)) * Math.PI * 2;
+          const x = Math.round(c.x + Math.cos(ang) * r) - Math.floor(w / 2);
+          const z = Math.round(c.z + Math.sin(ang) * r) - Math.floor(d / 2);
+          if (x < 1 || z < 1 || x + w >= MAP_W - 1 || z + d >= MAP_H - 1) continue;
+          if (f.ringR && side(x, z) !== want) continue;
+          if (!isBuildable(terrain, x, z, w, d)) continue;
+          if (!enemyTerrainOk(name, x, z)) continue;
+          if (onReserved(f, x, z, w, d)) continue;
+          let clear = true;
+          for (let dz = 0; dz < d && clear; dz++) {
+            for (let dx = 0; dx < w; dx++) {
+              if (occupied[(z + dz) * MAP_W + (x + dx)]) { clear = false; break; }
+            }
           }
+          if (clear && enemyGapOk(f, name, x, z)) return [x, z];
         }
-        if (clear && enemyGapOk(f, name, x, z)) return [x, z];
       }
     }
     return null;
@@ -1865,23 +2055,43 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
   /** Build one thing for the lord. Returns false if there is nowhere to put it. */
   function lordBuild(f: Faction, name: string): boolean {
     if (name === 'wall') {
-      for (const [wx, wz] of f.ring) {
-        // keep the gate's 2x2 and a tile of clearance either side of it free
-        if (f.gate && Math.abs(wx - f.gate[0]) <= 2
-                   && Math.abs(wz - f.gate[1]) <= 2) continue;
+      // The gate's own tiles are its; everything else on the line gets a
+      // wall, the corners included (a tower replaces them later), the side
+      // facing the player first so the part of the castle an attack meets is
+      // the part that closes first.
+      const inPiece = (x: number, z: number) =>
+        f.gate && x >= f.gate[0] && x < f.gate[0] + 2
+               && z >= f.gate[1] && z < f.gate[1] + 2;
+      const line = [...f.ring]
+        .sort((a, b) => Math.hypot(a[0] - kx, a[1] - kz) - Math.hypot(b[0] - kx, b[1] - kz));
+      for (const [wx, wz] of line) {
+        if (inPiece(wx, wz)) continue;
         if (occupied[wz * MAP_W + wx]) continue;
         if (placeEnemyAt(f, 'wall', wx, wz)) { staticDirty = true; return true; }
       }
       return false;
     }
     if (name === 'tower') {
-      // A tower belongs ON the wall line, at a corner if one is free.
-      const corners = f.ring.filter(([wx, wz]) =>
-        f.keep && Math.abs(wx - f.keep.x) === 7 && Math.abs(wz - f.keep.z) === 7);
-      for (const [wx, wz] of [...corners, ...f.ring]) {
-        if (f.gate && Math.abs(wx - f.gate[0]) <= 3
-                   && Math.abs(wz - f.gate[1]) <= 3) continue;
-        if (placeEnemyAt(f, 'tower', wx, wz)) { staticDirty = true; return true; }
+      // A tower stands on a corner the wall has usually already turned: the
+      // line is closed with plain wall first, because a corner left open for
+      // the twenty stone a tower costs is a hole in the castle for as long as
+      // he is saving. The wall tiles under it come down and the tower goes up
+      // in their place -- he has rebuilt his corner, which is what a mason
+      // would do.
+      for (const [tx, tz] of f.towers) {
+        const under = f.buildings.filter(b => b.x >= tx && b.x < tx + 2
+                                            && b.z >= tz && b.z < tz + 2);
+        if (under.some(b => b.name !== 'wall')) continue;
+        for (const b of under) {
+          evictGarrison(b.x, b.z);
+          razeTiles(b.x, b.z, 1, 1);
+          f.buildings.splice(f.buildings.indexOf(b), 1);
+        }
+        if (placeEnemyAt(f, 'tower', tx, tz)) { staticDirty = true; return true; }
+        // The ground would not take a tower: put the wall back.
+        for (const b of under) {
+          placeEnemyAt(f, 'wall', b.x, b.z);
+        }
       }
       return false;
     }
@@ -3025,6 +3235,56 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
         }
         return null;
       },
+      ringOpen: () => ringOpen(f),
+      siegePoint: (t) => {
+        // From where his column sets out: the barracks door, or the keep.
+        const bar = f.buildings.find(b => b.name === 'barracks');
+        const from = bar ? { x: bar.x + 1, z: bar.z + 4 } : f.keep;
+        if (!from) return null;
+        const start = paths.nearestOpen(Math.floor(from.x), Math.floor(from.z), 6);
+        if (!start) return null;
+        const region = paths.regionAt(start.x, start.z);
+        // The target is a keep, so the tile itself is stone: ask after the
+        // open ground beside it, exactly as `send` will.
+        const goal = paths.nearestOpen(Math.floor(t.x), Math.floor(t.z), 6);
+        if (goal && paths.regionAt(goal.x, goal.z) === region) return null;
+        // Sealed. The nearest ring of tiles round the keep with any of his
+        // own region in it is the foot of whatever wall is in the way, and
+        // of those the one nearest his own gate is the face his column
+        // actually arrives at -- the first tile found would as often be the
+        // far corner, and the men walked round the castle to stand there.
+        // Forty tiles covers any castle a player has the stone for.
+        const tx = Math.floor(t.x), tz = Math.floor(t.z);
+        for (let r = 1; r <= 40; r++) {
+          let best: { x: number; z: number } | null = null;
+          let bestD = Infinity;
+          for (let dz = -r; dz <= r; dz++) {
+            for (let dx = -r; dx <= r; dx++) {
+              if (Math.max(Math.abs(dx), Math.abs(dz)) !== r) continue;
+              const x = tx + dx, z = tz + dz;
+              if (paths.isBlocked(x, z) || paths.regionAt(x, z) !== region) continue;
+              const d = Math.hypot(x - start.x, z - start.z);
+              if (d < bestD) { bestD = d; best = { x: x + 0.5, z: z + 0.5 }; }
+            }
+          }
+          if (best) return best;
+        }
+        return null;
+      },
+      gateThreatened: () => {
+        const g = f.buildings.find(b => b.name === 'gatehouse');
+        if (!g) return false;
+        const gx = g.x + 1, gz = g.z + 1;
+        return army.soldiers.some(u => u.hp > 0 && atWar(f.id, u.side)
+          && Math.hypot(u.x - gx, u.z - gz) < GATE_ALARM_RADIUS);
+      },
+      setGate: (shut: boolean) => {
+        const g = f.buildings.find(b => b.name === 'gatehouse');
+        if (!g || !!g.raised === shut) return;
+        g.raised = shut;
+        markSolid(g.x, g.z, 2, 2, shut);
+        staticDirty = true;
+      },
       notify: (t: string) => state.notify(`${f.name}: ${t}`, 'warn'),
     }, f.id, difficulty);
   }
@@ -3297,8 +3557,8 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
   function turnGhost(quarters: number): void {
     if (!placement.selected) return;
     if (!placement.turnBy(quarters)) {
-      state.notify(`${BUILDINGS[placement.selected].label} only stands one way`,
-                   'warn');
+      state.notify(`${BUILDINGS[placement.selected].label} only stands one way `
+                   + '\u2014 the buildings marked \u21bb in the menu turn', 'warn');
     }
     // Nothing to refresh: the ghost is drawn from `placement.facing` every
     // frame, and a square footprint means turning cannot change where it fits.
@@ -4182,7 +4442,8 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
         had.raised = raised;
         had.undug = undug;
         if (wasSolid !== solid) {
-          markSolid(nb.x, nb.z, w, d, solid);
+          if (solid) markSolidFor(name, nb.x, nb.z, had.turn);
+          else markSolid(nb.x, nb.z, w, d, false);
           changed = true;
         }
         continue;
@@ -4195,7 +4456,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
         ablaze: ablaze ? 1 : undefined,
       });
       markArea(nb.x, nb.z, w, d);
-      if (solid) markSolid(nb.x, nb.z, w, d);
+      if (solid) markSolidFor(name, nb.x, nb.z, (nb.f >> F_TURN_SHIFT) & F_TURN_MASK);
       if (name === 'keep') f.keep = { x: nb.x + 1, z: nb.z + 1 };
       changed = true;
     }
@@ -4339,7 +4600,10 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     }
     for (const f of factions) {
       if (f.net) continue;
-      for (const b of f.buildings) sig = (sig * 31 + b.id + b.hp * 7 + b.staff * 3) | 0;
+      for (const b of f.buildings) {
+        // A lord's gate now moves, so its state is in the fingerprint too.
+        sig = (sig * 31 + b.id + b.hp * 7 + b.staff * 3 + (b.raised ? 1 : 0)) | 0;
+      }
     }
     return sig;
   }
@@ -4491,8 +4755,12 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
             : placement.lastCheck.reason || 'Nothing can be laid here',
           runPlan.count > 0);
       } else {
+        // A turnable building says so on its ghost -- ", ." is the whole
+        // instruction, and the ghost is the one place a player is looking
+        // at the moment it applies.
         hud.showGhost(mouseX, mouseY,
-          ok ? def.label : placement.lastCheck.reason, ok);
+          ok ? (placement.turnable ? `${def.label} \u00b7 , . to turn` : def.label)
+             : placement.lastCheck.reason, ok);
       }
     } else {
       runPlan = { tiles: [], legal: [], count: 0 };
@@ -4838,11 +5106,13 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     };
 
     for (const w of workers.workers) {
+      if (workers.hidden(w)) continue;      // indoors at his trade
       addFigure(w.x, w.z, w.heading, workers.clipFor(w), w.phase);
     }
     // The rival lords' operators, the same peasant body under his colour so a
     // glance says whose men are working which castle.
     for (const w of enemyWorkers.workers) {
+      if (enemyWorkers.hidden(w)) continue;
       const dir = (unitDirectionIndex(w.heading, rot) + DIRECTION_OFFSET) & 7;
       const clip = enemyWorkers.clipFor(w);
       const n = clipFrames(clip);
@@ -5191,7 +5461,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       // save: nothing was alight, and every moat was dug the moment it was laid.
       if (sb.f) b.ablaze = sb.f;
       if (sb.u) b.undug = true;
-      if ((!def.walkable && !b.undug) || b.raised) markSolid(sb.x, sb.z, w, d);
+      if ((!def.walkable && !b.undug) || b.raised) markSolidFor(sb.n, sb.x, sb.z, b.turn);
     }
     for (const sf of sv.factions) {
       const f = factionOf(sf.id);
@@ -5207,7 +5477,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
           x: sb.x, z: sb.z, hp: sb.hp, staff: sb.staff,
         });
         markArea(sb.x, sb.z, w, d);
-        if (!def.walkable) markSolid(sb.x, sb.z, w, d);
+        if (!def.walkable) markSolidFor(sb.n, sb.x, sb.z);
       }
       const ek = f.buildings.find(b => b.name === 'keep');
       if (ek) f.keep = { x: ek.x + 1, z: ek.z + 1 };

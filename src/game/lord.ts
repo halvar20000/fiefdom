@@ -28,6 +28,23 @@ export interface LordWorld {
   target(): { x: number; z: number } | null;
   /** An unmanned wall or tower of his, for the garrison to stand on. */
   garrisonPost(): { x: number; z: number; cx: number; cz: number; reach: number } | null;
+  /**
+   * Tiles of his planned wall line still open. Zero is a closed castle, and
+   * is what ends the wall step of his plan -- a count in the plan could only
+   * ever be wrong, because the line is sized to the ground he was seated on.
+   */
+  ringOpen(): number;
+  /**
+   * Where a column can actually get to when it cannot get to `target`: the
+   * reachable ground nearest it, which against a walled castle is the foot of
+   * the wall. Null when the target itself can be reached, which is the usual
+   * case and means no siege is needed.
+   */
+  siegePoint(target: { x: number; z: number }): { x: number; z: number } | null;
+  /** Are hostile soldiers close to his gate? */
+  gateThreatened(): boolean;
+  /** Drop or raise his portcullis. A no-op with no gatehouse standing. */
+  setGate(shut: boolean): void;
   notify(text: string): void;
 }
 
@@ -88,9 +105,19 @@ export const BUILD_PLAN: { name: string; want: number }[] = [
   // afforded a siege camp at all. Walls at 3 stone each outrun a single quarry.
   { name: 'quarry', want: 2 },
   { name: 'ox_tether', want: 2 },
+  // A third quarry before the castle goes up. Two kept the wall a decade in
+  // the building: 58 tiles and a gate is 190 stone, and two quarries at
+  // twelve a minute between them had the ring closing at thirty-five
+  // minutes on Normal. On a map with no third rock face the step is skipped.
+  { name: 'quarry', want: 3 },
+  { name: 'ox_tether', want: 3 },
+  // The castle: gate first, so the line never shuts his own people out, then
+  // the whole ring. `want` for the wall is not a count -- the step is done
+  // when the world says no tile of the line is open (see LordWorld.ringOpen)
+  // -- and a tower for each corner.
   { name: 'gatehouse', want: 1 },
-  { name: 'wall', want: 28 },
-  { name: 'tower', want: 2 },
+  { name: 'wall', want: 1 },
+  { name: 'tower', want: 4 },
   { name: 'siege_camp', want: 1 },
   // Heavy kit last, and both halves of it together: a blacksmith on its own
   // makes swords for swordsmen he still has no mail for.
@@ -103,12 +130,10 @@ export const BUILD_PLAN: { name: string; want: number }[] = [
   { name: 'apple_orchard', want: 2 },
   { name: 'hunter', want: 4 },
   { name: 'hovel', want: 8 },
-  { name: 'quarry', want: 3 },
   { name: 'stockpile', want: 18 },
   { name: 'iron_mine', want: 2 },
   { name: 'fletcher', want: 2 },
   { name: 'armoury', want: 2 },
-  { name: 'wall', want: 44 },
 ];
 
 export const LORD = {
@@ -177,9 +202,9 @@ export const DIFFICULTY: Record<Difficulty, LordProfile> = {
     buildEvery: 12, economy: 1.2, headStart: 1,
   },
   heavy: {
-    label: 'Heavy', recruitEvery: 3.5, maxArmy: 48, garrison: 14,
-    waveMin: 8, waveMax: 26, tempoRampSeconds: 700, siegeAfter: 420,
-    buildEvery: 9, economy: 1.7, headStart: 2,
+    label: 'Heavy', recruitEvery: 3, maxArmy: 60, garrison: 14,
+    waveMin: 10, waveMax: 32, tempoRampSeconds: 600, siegeAfter: 360,
+    buildEvery: 8, economy: 1.9, headStart: 2.5,
   },
 };
 
@@ -215,6 +240,11 @@ export class Lord {
   private waveClock = 0;
   private growthDebt = 0;
   private manClock = 0;
+  private pressClock = 0;
+  /** Seconds since his last column set out, for the gate to know. */
+  private sinceWave = Infinity;
+  /** Where the last column was sent, so the siege can be pressed. */
+  private siegeOn: { x: number; z: number } | null = null;
   /** Which plan step he is saving up for, and for how long. */
   private blockedOn: string | null = null;
   private blockedFor = 0;
@@ -428,7 +458,10 @@ export class Lord {
 
     let skipping = 0;
     for (const step of BUILD_PLAN) {
-      if (this.count(step.name) >= step.want) continue;
+      const done = step.name === 'wall'
+        ? this.world.ringOpen() === 0
+        : this.count(step.name) >= step.want;
+      if (done) continue;
       const def = BUILDINGS[step.name];
       if (!def) continue;
 
@@ -553,40 +586,95 @@ export class Lord {
       }
     }
 
+    this.sinceWave += dt;
+    this.keepGate();
+    this.press(dt);
+
     this.waveClock += dt;
     if (this.waveClock < LORD.waveCooldown) return;
     const ready = this.mustering;
     if (ready.length < this.waveSize) return;
-    const target = this.world.target();
-    if (!target) return;
+    this.march(ready, 1.2);
+  }
 
+  /**
+   * Send a column at the enemy keep -- or, when the keep is walled in, at
+   * the foot of the wall.
+   *
+   * A sealed castle used to be a safe one: the route to the keep failed, so
+   * `send` refused every man and the column never left. The player who shut
+   * his gate was never attacked again. Now the column goes to the reachable
+   * ground nearest the keep and holds there: his engines batter whatever
+   * stone is in reach, his archers shoot the wall, and `press` walks the
+   * column in the moment a way through opens.
+   */
+  private march(ready: Soldier[], spread: number): number {
+    const target = this.world.target();
+    if (!target) return 0;
+    // His own gate first: a column cannot set out through a dropped
+    // portcullis, and with it down the "nearest reachable ground" would be
+    // the inside of his own wall.
+    this.world.setGate(false);
+    this.sinceWave = 0;
+    const siege = this.world.siegePoint(target);
+    const goal = siege ?? target;
     let sent = 0;
     ready.forEach((s, i) => {
-      const ring = 1.2 + 0.5 * Math.floor(i / 8);
+      const ring = spread + 0.5 * Math.floor(i / 8);
       const a = (i % 8) / 8 * Math.PI * 2;
-      if (!this.army.send(s, target.x + Math.cos(a) * ring, target.z + Math.sin(a) * ring)) return;
+      if (!this.army.send(s, goal.x + Math.cos(a) * ring, goal.z + Math.sin(a) * ring)) return;
       this.sentIds.add(s.id);
       sent++;
     });
-    if (!sent) return;
+    if (!sent) return 0;
     this.waveClock = 0;
+    this.sinceWave = 0;
     this.wavesSent++;
-    this.world.notify(`The enemy lord marches on you — ${sent} strong!`);
+    this.siegeOn = siege ? target : null;
+    this.world.notify(siege
+      ? `The enemy lord lays siege to your walls — ${sent} strong!`
+      : `The enemy lord marches on you — ${sent} strong!`);
+    return sent;
+  }
+
+  /**
+   * Press a siege: every few seconds, any man of the column standing idle at
+   * the wall is sent on to the keep if there is now a way to it. The way is
+   * what his ram is for, and this is what makes the breach matter.
+   */
+  private press(dt: number): void {
+    this.pressClock += dt;
+    if (this.pressClock < 6) return;
+    this.pressClock = 0;
+    if (!this.siegeOn) return;
+    const target = this.world.target();
+    if (!target) { this.siegeOn = null; return; }
+    if (this.world.siegePoint(target)) return;   // still sealed: hold the line
+    let i = 0;
+    for (const s of this.troops) {
+      if (!this.sentIds.has(s.id) || s.moving || s.target !== null) continue;
+      if (Math.hypot(s.x - target.x, s.z - target.z) < 4) continue;
+      const a = (i++ % 8) / 8 * Math.PI * 2;
+      this.army.send(s, target.x + Math.cos(a) * 1.4, target.z + Math.sin(a) * 1.4);
+    }
+    this.siegeOn = null;
+  }
+
+  /**
+   * Shut the gate with an enemy at it, open it otherwise.
+   *
+   * Not while a column of his own is on its way out -- the gate stays open
+   * for a while after a march so the men actually leave -- and never merely
+   * because the player's men are on the map: a gate that is always shut
+   * starves his own farms outside the wall.
+   */
+  private keepGate(): void {
+    const shut = this.world.gateThreatened() && this.sinceWave > 20;
+    this.world.setGate(shut);
   }
 
   attackNow(): number {
-    const ready = this.mustering;
-    const target = this.world.target();
-    if (!ready.length || !target) return 0;
-    let sent = 0;
-    ready.forEach((s, i) => {
-      const a = (i % 8) / 8 * Math.PI * 2;
-      if (!this.army.send(s, target.x + Math.cos(a) * 1.4, target.z + Math.sin(a) * 1.4)) return;
-      this.sentIds.add(s.id);
-      sent++;
-    });
-    if (sent) { this.waveClock = 0; this.wavesSent++; }
-    return sent;
+    return this.march(this.mustering, 1.4);
   }
 
   status(): Record<string, number | string> {

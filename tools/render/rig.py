@@ -316,11 +316,26 @@ def turn_object(obj, quarters: int, footprint) -> None:
     """
     if not quarters:
         return
-    cx, cy = footprint[0] / 2.0, footprint[1] / 2.0
-    m = (Matrix.Translation((cx, cy, 0.0))
+    # The pivot is the footprint's middle in WORLD space, taken into the
+    # mesh's own frame. A joined building's origin is wherever its first part
+    # was -- (0.2, 1.85) for the wheat farm, the corner of its cottage -- and
+    # rotating the data about a LOCAL (cx, cy) swung the whole model round a
+    # point a tile and a half from where it should have turned, off its plot
+    # and into the neighbour's. The hovel's origin is 0.2 from its corner, so
+    # the first turnable buildings were only a fifth of a tile out and
+    # nobody saw it; the farms were a full tile out and it showed at once.
+    bpy.context.view_layer.update()
+    pivot = obj.matrix_world.inverted() @ Vector((footprint[0] / 2.0,
+                                                  footprint[1] / 2.0, 0.0))
+    m = (Matrix.Translation(pivot)
          @ Matrix.Rotation(math.pi / 2 * quarters, 4, 'Z')
-         @ Matrix.Translation((-cx, -cy, 0.0)))
+         @ Matrix.Translation(-pivot))
     obj.data.transform(m)
+    # The object's bound_box is cached and does not follow a transform of the
+    # mesh data until the depsgraph has run. Framing read the stale box, which
+    # is the UNTURNED building's, so anything that moved was cropped.
+    obj.data.update()
+    bpy.context.view_layer.update()
 
 
 # ---------------------------------------------------------------------------

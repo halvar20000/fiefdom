@@ -222,6 +222,10 @@ TURNABLE = (
     "hovel", "garden", "well", "pond", "statue", "dancing_bear", "market",
     "woodcutter", "bakery", "poleturner", "fletcher", "blacksmith", "armourer",
     "stairs", "perimeter_turret",
+    # The second batch: the farms and the outlying trades. About as far as
+    # the atlas goes -- see TURNABLE in defs.ts for the arithmetic.
+    "wheat_farm", "hops_farm", "apple_orchard", "dairy_farm", "pig_farm",
+    "hunter", "fishery", "iron_mine", "tanner",
 )
 
 #: Quarter turns a turnable building has art for.

@@ -23,6 +23,28 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.65.0',
+    date: '2026-09-18',
+    headline: 'A rival who shuts his gate, and a farmer in his field.',
+    sections: [
+      {
+        title: 'Changed',
+        items: [
+          'The rival lords close their castles. The wall used to be a seven-tile ring that was never finished \u2014 measured at thirty minutes, 26 of 56 tiles walled, no gate and no tower, with his own hovels and bakery sitting on the line and his town sprawling past it. The line is now laid out when he is seated and kept clear: the houses, stores, barracks and workshops go inside it, the farms, quarries, mines and woodcutters go outside, and the wall step of his plan runs until no tile of the ring is open. The gate takes exactly its own two tiles (the clearance either side of it was a hole nothing ever closed), the corners are walled first and rebuilt as towers when the stone is there, a third quarry goes in before the wall does, and trees on the line are felled. Measured: closed, four towers and a gate, at thirty-five minutes on Normal.',
+          'He drops his portcullis when your soldiers come near his gate, and raises it when they go \u2014 never while a column of his own is on its way out.',
+          'He lays siege to a sealed castle. A keep walled in with no gate was never attacked again: the route failed and the column never left. Now it marches to the foot of your wall, on the face nearest his own gate, and holds there \u2014 his rams batter what they can reach, his archers shoot the wall \u2014 and the moment a way through opens the column goes in. The message says which it is: he marches on you, or he lays siege to your walls.',
+          'Heavy is heavier: a larger army, bigger waves sooner, engines earlier, and a harder-worked economy to pay for it.',
+          'Every trade has its own motion. A peasant could dig, swing a pick, swing an axe or cast a line, and every other job was drawn with the least wrong of those \u2014 so the miller and the dairy hand both stood beside their buildings digging. Now the wheat farmer hoes, the orchard hand and the hop picker reach into the branches, the dairy hand milks, the pig farmer scatters feed, the hunter uses a knife on what he has stalked instead of an axe, the slaughterhouse dresses a carcass, and the fletcher, the tanner and the armourer work with a mallet at the bench. The blacksmith keeps the big hammer. Seven new animations, from the same 0 A.D. motion set as the woodcutter\u2019s swing (CC BY-SA 3.0, see docs/THIRD-PARTY.md), and the four older ones re-rendered at full size with them.',
+          'The miller, the baker and the brewer go indoors. Their whole job is inside four walls and nothing mimed at the door was better than nothing: the hand walks in with the sack and comes out with the flour. The mill\u2019s sails are its animation.',
+          'Farmhands work the farm, not the lawn beside it. The wheat farmer stands in his furrows, the orchard hand between the trees, the dairy hand at the cow, the pig farmer by the trough \u2014 inside the footprint. The house is still solid; the field is open ground, walked over by the hand and by anyone else cutting across, as Stronghold\u2019s fields are. Nothing can be built on it. A rival\u2019s farmhands stand in the same places.',
+          'Ten more buildings turn: the five farms, the hunter, the fishery, the iron mine and the tanner \u2014 twenty-four in all. That is about as far as the one texture every sprite shares will stretch; the brewery alone would be another hundred and fifty rows of it.',
+          'A turned building stands on its plot. The renderer spun the model about its own origin rather than the middle of its footprint, and the origin of a joined model is wherever its first piece was \u2014 a fifth of a tile off for a hovel, which nobody saw, and a tile and a half off for a farmstead, which put the field on the neighbour\u2019s land. Every turned frame is re-rendered about the right point.',
+          'Which buildings turn is now said. A \u21bb on the build-menu button and a line in its tooltip mark the ones that do, the ghost under the cursor says \u201c, . to turn\u201d while one is in hand, and pressing the key on one that does not turn now points you at the ones that do. The key had been there since 1.59.0 and read as broken, because the first building most people tried it on was one of the fifty that did not turn.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.64.0',
     date: '2026-09-12',
     headline: 'Fire takes timber.',
