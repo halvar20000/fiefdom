@@ -89,7 +89,7 @@ yet, so one message carries weight.
   Version (bottom of the main menu), what you did, what happened.
 * **Want something?** Say so in
   [Discussions → Ideas](https://github.com/halvar20000/fiefdom/discussions/categories/ideas),
-  or 👍 an idea already there — the pinned **roadmap** thread lists what is
+  or 👍 an idea already there — the [**roadmap** thread](https://github.com/halvar20000/fiefdom/discussions/1) lists what is
   being considered, and the votes decide the order.
 * **A question, a castle to show off, a custom map?** Discussions has a place
   for each.
