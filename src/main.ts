@@ -31,13 +31,14 @@ import { showPause } from './ui/pause';
 import { showGameOver } from './ui/gameover';
 import type { MapDef } from './game/maps';
 import { MAP_W, MAP_H } from './game/maps';
-import type { LordSetup } from './ui/lords';
+import type { LordSetup, Seat } from './ui/lords';
 import {
   SAVE_VERSION, AUTOSAVE_INTERVAL, takeBootIntent, readSlot, writeAutosave, playTime,
   type SaveGame,
 } from './game/save';
 import { hydrate } from './game/backend';
 import { BANNERS } from './game/banners';
+import { lordName } from './game/names';
 import { MatchRuntime } from './net/match';
 import { packBuilding, packSoldier, unpackSoldier, buildingName,
          F_RAISED, F_ABLAZE, F_UNDUG, F_TURN_SHIFT, F_TURN_MASK } from './net/wire';
@@ -1810,9 +1811,17 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
    */
   (function raiseCastles(): void {
     // The placement screen is authoritative when there is one: it says both how
-    // many rivals there are and where each sits. `chosen.lords` survives only
-    // as the default that screen opens with, and for a save being restored.
-    const seats = setup?.rivals ?? null;
+    // many rivals there are and where each sits. A save is just as
+    // authoritative: it carries every rival that was in the game and where
+    // his keep stood, and reading `chosen.lords` instead -- the map's default
+    // -- silently dropped every rival past that number on load, so a game
+    // begun against three lords came back against one. `chosen.lords`
+    // survives only as the default the placement screen opens with.
+    const seats: (Seat | undefined)[] | null = setup?.rivals
+      ?? (restore ? restore.factions.map(sf => {
+            const k = sf.buildings.find(b => b.n === 'keep');
+            return k ? { x: k.x + 1, z: k.z + 1 } : undefined;
+          }) : null);
     const want = seats ? Math.min(seats.length, FACTION_COLOURS.length)
                        : Math.min(chosen.lords, FACTION_COLOURS.length);
     if (want < 1) { console.log('[lords] no opposition on this map'); return; }
@@ -1822,10 +1831,14 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     ];
     const placedKeeps: { x: number; z: number }[] = [];
 
+    // Each rival gets a name of his own -- "Aldric the Red" -- drawn fresh
+    // for this game and kept with the save. In a match the names come off the
+    // wire instead, so every client calls him the same thing.
+    const taken = new Set<string>();
     for (let i = 0; i < want; i++) {
       const colour = FACTION_COLOURS[i];
       const f: Faction = {
-        id: i + 1, name: mpNames[i] ?? colour.name,
+        id: i + 1, name: mpNames[i] ?? lordName(Math.random, colour.name, taken),
         unitTint: colour.unit, stoneTint: colour.stone,
         buildings: [], keep: null, ring: [], ringR: 0, gate: null, towers: [],
         reserved: new Set<number>(),
@@ -2941,8 +2954,8 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     // Everyone else needs to hear that one of mine has fallen, or their copy of
     // it stands for the rest of the match.
     if (!f.net && mp) mp.declareDead(f.gside);
-    // A rival's name starts lower case -- "the Red Lord" -- and this is the
-    // start of a sentence.
+    // `why` opens a sentence. A name opens it now -- "Aldric the Red's keep
+    // has fallen." -- but a reason handed in from elsewhere may not.
     const line = why.charAt(0).toUpperCase() + why.slice(1);
     const left = livingFoes().length;
     if (left) {
@@ -5389,7 +5402,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       // -- the pause menu hides the slots -- and this keeps `snapshot()` from
       // throwing if anything else ever asks for one.
       factions: factions.filter(f => f.lord).map(f => ({
-        id: f.id,
+        id: f.id, name: f.name,
         buildings: f.buildings.map(b => ({
           n: b.name, x: b.x, z: b.z, staff: b.staff, hp: b.hp, held: {},
         })),
@@ -5493,6 +5506,9 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       }
       const ek = f.buildings.find(b => b.name === 'keep');
       if (ek) f.keep = { x: ek.x + 1, z: ek.z + 1 };
+      // His name, if the save is new enough to carry one. An older save's
+      // rival keeps the one he was just given, which is as good as any.
+      if (sf.name) f.name = sf.name;
       f.defeated = sf.defeated;
       if (!f.lord) continue;
       f.lord.defeated = sf.defeated;
@@ -5726,6 +5742,25 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
   // With the keeps final -- placed fresh or restored from a save -- make sure a
   // land route joins every one of them, carving a ford across any dividing river.
   ensureKeepsConnected();
+
+  // Say who is out there, and where. The names are new each game, and the
+  // first time a player hears "Aldric the Red" should not be when his army
+  // is at the gate. A restored game already had this said; a match names
+  // its players in the lobby.
+  if (!restore && !mp && factions.length) {
+    const me = state.buildings.find(b => b.name === 'keep');
+    const whereabouts = (f: Faction): string => {
+      if (!f.keep || !me) return f.name;
+      const dx = f.keep.x - me.x, dz = f.keep.z - me.z;
+      const ns = Math.abs(dz) > Math.abs(dx) * 0.4 ? (dz < 0 ? 'north' : 'south') : '';
+      const ew = Math.abs(dx) > Math.abs(dz) * 0.4 ? (dx < 0 ? 'west' : 'east') : '';
+      return `${f.name} to the ${ns && ew ? `${ns}-${ew}` : ns || ew}`;
+    };
+    const list = factions.map(whereabouts);
+    const said = list.length === 1 ? list[0]
+      : `${list.slice(0, -1).join(', ')} and ${list[list.length - 1]}`;
+    state.notify(`Your rival${factions.length === 1 ? '' : 's'}: ${said}.`);
+  }
 
   // Debug handle: lets the sim be inspected and driven from the console
   // without threading test hooks through the game code.

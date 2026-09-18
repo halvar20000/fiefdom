@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { Terrain } from '../engine/terrain';
 import { IsoCamera } from '../engine/camera';
+import { mapName } from '../game/names';
 import { loadTileArray } from '../engine/assets';
 import { reportStaleAssets, missingTiles } from '../engine/freshness';
 import { GROUND_TYPES } from '../game/worldgen';
@@ -58,6 +59,7 @@ const CSS = `
   border: 1px solid rgba(196,162,96,.28); }
 #ed .seg { display: flex; gap: 3px; }
 #ed .seg button { flex: 1; text-align: center; padding: 4px 0; font-size: 10px; }
+#ed #act .seg button.dice { flex: none; width: 28px; margin: 0; font-size: 13px; line-height: 1; }
 `;
 
 /** Swatches are indicative, not the real texture — just enough to tell them apart. */
@@ -139,7 +141,9 @@ async function run(
 
   let tool: Tool = { kind: 'paint', ground: 0 };
   let size = 5;
-  let name = existing?.name ?? 'My map';
+  // A new map is named before anyone has thought what to call it, and the
+  // button beside the field draws another -- see names.ts.
+  let name = existing?.name ?? mapName(Math.random);
   let lords = existing?.lords ?? 1;
   let trees = existing?.trees ?? 1;
   let start: { x: number; z: number } | null = existing?.start ?? null;
@@ -228,10 +232,17 @@ async function run(
 
   const act = el('div', root, 'panel', 'act');
   el('div', act, 'lbl').textContent = 'Map name';
+  const nameRow = el('div', act, 'seg');
   const nameIn = document.createElement('input');
   nameIn.value = name;
   nameIn.oninput = () => { name = nameIn.value; };
-  act.appendChild(nameIn);
+  nameRow.appendChild(nameIn);
+  const another = document.createElement('button');
+  another.className = 'dice';
+  another.textContent = '\u21bb';
+  another.title = 'Another name';
+  another.onclick = () => { name = mapName(Math.random); nameIn.value = name; };
+  nameRow.appendChild(another);
 
   el('div', act, 'lbl').textContent = 'Rival lords';
   const lSeg = el('div', act, 'seg');
@@ -577,7 +588,7 @@ async function run(
     const audit = start || seated.length
       ? { warnings: auditKeeps(terrain, ground, [start, ...keeps]) }
       : auditMap(terrain, ground);
-    const m = encodeMap(name.trim() || 'Untitled', W, H,
+    const m = encodeMap(name.trim() || mapName(Math.random), W, H,
                         terrain.corners, ground, lords, trees, existing?.id,
                         start, seated);
     const err = saveMap(m);

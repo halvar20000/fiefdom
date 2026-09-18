@@ -23,6 +23,26 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.68.0',
+    date: '2026-09-18',
+    headline: 'Lords with names, and a map that names itself.',
+    sections: [
+      {
+        title: 'Added',
+        items: [
+          'Rival lords have names. Where there was \u201cthe Red Lord\u201d there is now Aldric the Red, or Rashid the Blue \u2014 a given name put together from a first element and a second, in either of the two traditions the setting has, drawn fresh for every game and kept with the save. The colour stays in the name, since it is how you tell his men from another\u2019s across the map. A new game opens by saying who is out there and where: \u201cYour rivals: Aldric the Red to the north-east and Rashid the Blue to the south.\u201d In a match the AI lords are named from the match itself, so every player calls them the same thing.',
+          'A new map in the editor is named before you have thought what to call it \u2014 The Bitter Ford, Reed and Gravel, The Downs of Jackals \u2014 in the same register as the maps the game ships with, and the \u21bb beside the field draws another. A map saved with the name cleared gets one too, rather than \u201cUntitled\u201d.',
+        ],
+      },
+      {
+        title: 'Fixed',
+        items: [
+          'A game begun against more rivals than the map\u2019s default came back from a save against the default number \u2014 three lords in, one lord out \u2014 because loading seated rivals from the map\u2019s count rather than the save\u2019s. A save now seats every rival it carries, at the keep he had.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.67.0',
     date: '2026-09-18',
     headline: 'The game saves itself, and never turns an old save away.',

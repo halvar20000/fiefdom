@@ -77,6 +77,8 @@ export interface SavedAnimal {
 /** A rival lord: his castle and his economy. */
 export interface SavedFaction {
   id: number;
+  /** "Aldric the Red". Absent on older saves, which get a fresh one. */
+  name?: string;
   buildings: SavedBuilding[];
   defeated: boolean;
   gold: number; stock: Record<string, number>;

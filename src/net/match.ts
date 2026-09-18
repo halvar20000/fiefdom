@@ -34,6 +34,8 @@ import { RATE } from './protocol';
 import type { Net } from './socket';
 import type { MapDef } from '../game/maps';
 import type { Difficulty } from '../game/lord';
+import { bannerOf } from '../game/banners';
+import { lordName, seededRng, hashString } from '../game/names';
 
 /**
  * Teams for the AI lords, well clear of the 1..8 a human can pick.
@@ -199,8 +201,14 @@ export class MatchRuntime {
   }
 
   nameOfGlobal(g: number): string {
-    return this.players.find(x => x.slot === g)?.username
-      ?? `AI lord ${g - this.humanCount + 1}`;
+    const human = this.players.find(x => x.slot === g)?.username;
+    if (human) return human;
+    // An AI lord is named from the match id and his side, so every client
+    // draws the same name without it ever crossing the wire. His banner is
+    // the one main.ts gives his position in `rivalSides`, which for an AI
+    // lord is `g - 1` on every client: the other humans fill the first
+    // `humanCount - 1` places and the AI lords follow in side order.
+    return lordName(seededRng(hashString(this.id) ^ Math.imul(g, 0x9e3779b1)), bannerOf(g - 1).name);
   }
 
   /** Everyone on my side, me included. For the "your ally is under attack" case. */
