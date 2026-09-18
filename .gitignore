@@ -17,3 +17,7 @@ tools/render/_tmp/
 # reference. Firefly Studios' copyright -- not ours to redistribute, and 57 MB
 # of material nobody cloning this needs.
 reference/
+
+# Saves and accounts of a `docker compose up` run from the repository root.
+/data/
+tests/.build/

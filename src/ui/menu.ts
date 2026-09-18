@@ -2,6 +2,7 @@ import { MAPS, ratings, type MapDef } from '../game/maps';
 import { listSlots, listAutosaves, setBootIntent, playTime, savedWhen, isAutosave } from '../game/save';
 import { listMaps, deleteMap, defOf, type CustomMap } from '../game/custom';
 import { versionButton, VERSION_CSS } from './whatsnew';
+import { bugReportLink } from './bugreport';
 import { currentUser, isSignedIn, store } from '../game/backend';
 import { logout, multiplayerAvailable } from '../net/session';
 import { type Difficulty } from '../game/lord';
@@ -351,6 +352,7 @@ export function showMenu(): Promise<MenuChoice> {
     const ver = document.createElement('div');
     ver.className = 'ver';
     ver.appendChild(versionButton());
+    ver.appendChild(bugReportLink(() => ({ mode: 'Menu' })));
     root.appendChild(ver);
 
     // Who is signed in. An account is only needed to play against other

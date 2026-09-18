@@ -36,6 +36,15 @@ docker run -d --name fiefdom -p 8080:80 --restart unless-stopped \
   ghcr.io/halvar20000/fiefdom:latest
 ```
 
+Or with Compose -- the repository carries a
+[`docker-compose.yml`](../docker-compose.yml) that does exactly the above,
+with saves in `./data` beside it:
+
+```bash
+curl -O https://raw.githubusercontent.com/halvar20000/fiefdom/main/docker-compose.yml
+docker compose up -d
+```
+
 ## Where saved games live
 
 **On the server, in `/data`** — map that to a host folder (the template

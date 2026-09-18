@@ -1,0 +1,21 @@
+# Fiefdom -- the whole game in one container.
+#
+#   docker compose up -d
+#
+# Then open http://<host>:8080. Saved games, custom maps and player accounts
+# live in ./data (mapped to /data in the container); back that folder up and
+# nothing else. Change the left-hand port to taste. Pin the tag to a release
+# (ghcr.io/halvar20000/fiefdom:1.70.0) if you would rather updates were
+# deliberate; :latest follows every release.
+#
+# The image is built for amd64 and arm64. There are no environment variables
+# to set: no database, no API keys, no outbound calls.
+services:
+  fiefdom:
+    image: ghcr.io/halvar20000/fiefdom:latest
+    container_name: fiefdom
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      - ./data:/data

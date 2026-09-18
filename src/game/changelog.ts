@@ -23,6 +23,21 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.70.0',
+    date: '2026-09-18',
+    headline: 'A bug report that arrives filled in, and tests that run.',
+    sections: [
+      {
+        title: 'Added',
+        items: [
+          '\u201cReport a bug\u201d at the bottom of the main menu and the pause menu opens a GitHub issue with the version, build, mode, browser, hosting, map, play time, renderer and screen already filled in \u2014 nothing personal, and the six lines nobody thinks to include. You write what happened.',
+          'A docker-compose.yml in the repository: docker compose up -d, saves in ./data beside it.',
+          'npm test. Fifteen tests over the save format and its upgrade ladder, the autosave ring, the seasons, the name tables, the pathfinder and the match\u2019s view of who is who \u2014 Node\u2019s own runner over esbuild, so no test framework joins the dependencies. And tools/e2e/smoke.mjs, which boots the built game in a headless Chromium, runs ten minutes of it and fails on any error; docs/TESTING.md says how.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.69.0',
     date: '2026-09-18',
     headline: 'The land has seasons, and the frame has a clock.',

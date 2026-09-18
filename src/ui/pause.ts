@@ -3,6 +3,7 @@ import {
   savedWhen, AUTOSAVE_INTERVAL, type SaveGame,
 } from '../game/save';
 import { versionButton, VERSION_CSS } from './whatsnew';
+import { bugReportLink, type ReportContext } from './bugreport';
 
 const CSS = `
 #pause {
@@ -47,6 +48,8 @@ ${VERSION_CSS}
 export interface PauseHooks {
   /** Build a snapshot of the running game. */
   snapshot(): SaveGame;
+  /** What a bug report opened from here should say about the game. */
+  report(): ReportContext;
   onResume(): void;
   /**
    * This is a multiplayer match.
@@ -106,6 +109,7 @@ export function showPause(hooks: PauseHooks): void {
   const ver = document.createElement('div');
   ver.className = 'ver';
   ver.appendChild(versionButton());
+  ver.appendChild(bugReportLink(hooks.report));
 
   const msg = document.createElement('div');
 

@@ -62,6 +62,12 @@ body:
       label: Does it happen every time?
       description: If you can reproduce it, say how. If it is random, say roughly how often.
   - type: textarea
+    id: context
+    attributes:
+      label: From the game
+      description: Filled in automatically when the report is opened from the game's menu (build, map, play time, renderer, screen). Leave it as it is; nothing personal is in it.
+      render: text
+  - type: textarea
     id: logs
     attributes:
       label: Browser console output

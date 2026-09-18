@@ -1,13 +1,14 @@
 {
   "name": "fiefdom",
   "private": true,
-  "version": "1.69.0",
+  "version": "1.70.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "assets": "node tools/pack/pack.mjs"
+    "assets": "node tools/pack/pack.mjs",
+    "test": "node tests/run.mjs"
   },
   "dependencies": {
     "three": "^0.169.0"

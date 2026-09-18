@@ -41,6 +41,7 @@ import { BANNERS } from './game/banners';
 import { lordName } from './game/names';
 import { Profiler, ProfileOverlay } from './engine/profile';
 import { Fortunes } from './game/fortune';
+import { rendererString } from './ui/bugreport';
 import { MatchRuntime } from './net/match';
 import { packBuilding, packSoldier, unpackSoldier, buildingName,
          F_RAISED, F_ABLAZE, F_UNDUG, F_TURN_SHIFT, F_TURN_MASK } from './net/wire';
@@ -5707,6 +5708,11 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     if (!mp) paused = true;
     showPause({
       snapshot,
+      report: () => ({
+        mode: mp ? (mp.host ? 'Multiplayer (host)' : 'Multiplayer (joined)') : 'Single-player',
+        map: chosen.name, elapsed: state.elapsed,
+        renderer: rendererString(renderer.getContext()),
+      }),
       match: !!mp,
       onResume: () => { paused = false; last = performance.now(); },
     });

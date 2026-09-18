@@ -37,6 +37,9 @@ docker run -d --name fiefdom -p 8080:80 \
   ghcr.io/halvar20000/fiefdom:latest
 ```
 
+or `docker compose up -d` with the [`docker-compose.yml`](docker-compose.yml)
+in this repository.
+
 The container is a small dependency-free Node server (`docker/server.mjs`)
 serving `dist/`: the simulation, the pathfinding, the AI lord and the rendering
 all happen in the visitor's browser, so the server sits near zero CPU. Its one
@@ -85,8 +88,10 @@ x86-only image fails at install time with a message nobody can act on.
 The game is shaped by the people who play it, and there are not many of them
 yet, so one message carries weight.
 
-* **Something broken?** [Open a bug report](https://github.com/halvar20000/fiefdom/issues/new?template=bug_report.yml).
-  Version (bottom of the main menu), what you did, what happened.
+* **Something broken?** *Report a bug* at the bottom of the main menu or the
+  pause menu opens [a bug report](https://github.com/halvar20000/fiefdom/issues/new?template=bug_report.yml)
+  with the version, build, map, browser and renderer already filled in. Add
+  what you did and what happened.
 * **Want something?** Say so in
   [Discussions → Ideas](https://github.com/halvar20000/fiefdom/discussions/categories/ideas),
   or 👍 an idea already there — the [**roadmap** thread](https://github.com/halvar20000/fiefdom/discussions/1) lists what is
