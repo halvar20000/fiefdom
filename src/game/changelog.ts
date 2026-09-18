@@ -23,6 +23,19 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.66.0',
+    date: '2026-09-18',
+    headline: 'A keep that gets its meadow.',
+    sections: [
+      {
+        title: 'Added',
+        items: [
+          'The map editor sees that every keep has farmland and rock in reach, and lays it if not. A farm is a level 3x3 of green within twenty-two tiles of the keep, and a painted map could pass the old whole-map check and still seat you in a desert with nowhere to grow a loaf. Now the audit is per keep \u2014 room for so many farms, flat rock to quarry or not \u2014 and a keep that is short gets a levelled meadow and a rock outcrop on the nearest dry ground, when it is set down, after a picture is imported, and from a Room to farm button. The editor says what it laid, and it is ordinary ground to paint over.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.65.1',
     date: '2026-09-18',
     headline: 'A map of your own making starts again.',

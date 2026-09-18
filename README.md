@@ -2158,6 +2158,30 @@ Verified against a synthetic 200x200 of known colours: 10,000 sand, 9,200 grass,
 9,200 rock and 11,600 marsh, with a deliberate water stripe landing in the marsh
 count exactly as intended.
 
+### Room to farm (1.66.0)
+
+A farm is a level 3x3 of grass or lush ground within 22 tiles of the keep, and
+nothing else will do. The editor's audit used to count green ground over the
+whole map, so a map could be a third meadow and still seat your keep in a desert
+with nowhere to grow a loaf — which is what "Rache" did. The audit is now
+per keep once one is placed: it packs disjoint flat 3x3 sites greedily within
+reach and reports room for so many farms, and whether there is flat rock to
+quarry.
+
+Where a keep is short, the editor **lays the ground itself**: a 12x12 meadow of
+grass, levelled to whatever height most of its corners already were, and a 6x6
+rock outcrop, on the cheapest dry patch six to twenty-two tiles out — cost being
+the tiles and corners it has to change, so a half-painted meadow is finished
+before a fresh one is dug, and water and marsh are never taken. It runs when a
+keep is set down, after an image import, and from a **Room to farm** button;
+the warn box says what was laid, and it is ordinary ground to paint over.
+Sixteen sites for eight farms wanted, because the scatter puts trees on a tenth
+of any grass and the starting hovels land on level ground near the keep.
+
+Measured on a bare-desert map with the keep at the centre, "Some" vegetation:
+six wheat farms and a quarry went down on the laid ground with the starting
+stock of wood.
+
 Still not in this version: hand-placing individual trees, for which there is a
 density setting instead.
 

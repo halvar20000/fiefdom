@@ -6,7 +6,7 @@ import { reportStaleAssets, missingTiles } from '../engine/freshness';
 import { GROUND_TYPES } from '../game/worldgen';
 import {
   encodeMap, saveMap, hashVariant, auditMap, decodeArrays, KEEP_COLOURS,
-  groundFromImage, type CustomMap,
+  groundFromImage, ensureRoom, auditKeeps, type CustomMap,
 } from '../game/custom';
 
 /**
@@ -201,6 +201,12 @@ async function run(
     syncMarkers(); syncTools();
   };
   tools.appendChild(clearKeeps);
+  const roomBtn = document.createElement('button');
+  roomBtn.textContent = 'Room to farm';
+  roomBtn.title = 'Lay a meadow and an outcrop beside any keep that has none in reach';
+  roomBtn.style.cssText = 'width:100%;text-align:center;margin-top:4px';
+  roomBtn.onclick = () => { warnBox.innerHTML = fixRoom() || 'Every keep has room to farm and quarry.'; };
+  tools.appendChild(roomBtn);
 
   el('div', tools, 'lbl').textContent = 'Brush';
   const sSeg = el('div', tools, 'seg');
@@ -217,7 +223,8 @@ async function run(
     + 'drag to paint &nbsp; right-drag also pans<br>'
     + 'wheel zooms &nbsp; R / E rotate<br>'
     + '<b>[ ]</b> brush size &nbsp; <b>1-7</b> ground<br>'
-    + 'pick a keep, then click where it goes';
+    + 'pick a keep, then click where it goes<br>'
+    + 'a keep without farmland in reach gets a meadow';
 
   const act = el('div', root, 'panel', 'act');
   el('div', act, 'lbl').textContent = 'Map name';
@@ -276,9 +283,10 @@ async function run(
       repaintAll(terrain, ground, W, H, tiles.layerOf);
       dirty = true;
       updateStat();
-      warnBox.textContent =
+      warnBox.innerHTML =
         `Read ${img.naturalWidth}x${img.naturalHeight} into the ground. `
-        + 'Paint over anything it got wrong.';
+        + 'Paint over anything it got wrong.'
+        + (fixRoom() ? '<br>' + fixRoom.last : '');
     } catch (e) {
       warnBox.textContent = e instanceof Error ? e.message : 'could not read that image';
     } finally {
@@ -356,7 +364,8 @@ async function run(
   function updateStat() {
     const counts = new Array(GROUND_TYPES.length).fill(0);
     for (let i = 0; i < ground.length; i++) counts[ground[i]]++;
-    const pct = (n: number) => Math.round((n / ground.length) * 100);
+    // A single meadow is 81 tiles of 40,000: present, and not "0%".
+    const pct = (n: number) => { const r = Math.round((n / ground.length) * 100); return r === 0 && n > 0 ? '<1' : String(r); };
     stat.textContent = BRUSHES
       .map((b, i) => `${b.label} ${pct(counts[i])}%`)
       .filter((_, i) => counts[i] > 0)
@@ -384,6 +393,10 @@ async function run(
         lords = Math.max(lords, keeps.filter(Boolean).length);
       }
       syncMarkers(); syncTools();
+      // A keep set down in the desert gets its meadow at once, and says so:
+      // the author can paint it away, but cannot be left to find out in play.
+      const note = fixRoom(tool.who);
+      if (note) warnBox.innerHTML = note;
       return;
     }
     if (tool.kind === 'paint') {
@@ -425,6 +438,40 @@ async function run(
       }
     }
   }
+
+  /**
+   * See that the seated keeps have farmland and rock in reach, laying it if not.
+   *
+   * `who` limits it to one keep, for the moment it is set down; otherwise every
+   * seated keep is checked, which is what the button and an import do. Returns
+   * what was laid as a line for the warn box, or '' when nothing needed doing.
+   */
+  const fixRoom = Object.assign((who?: number): string => {
+    const spots: ({ x: number; z: number } | null)[] = [start, ...keeps];
+    const lines: string[] = [];
+    let changed = false;
+    spots.forEach((p, i) => {
+      if (!p || (who !== undefined && i !== who)) return;
+      const others = spots.filter((o, j) => o && j !== i) as { x: number; z: number }[];
+      const { laid, failed } = ensureRoom(terrain, ground, p, others);
+      const whose = i === 0 ? 'your keep' : `the ${KEEP_COLOURS[i].name}\u2019s keep`;
+      if (laid.length) {
+        changed = true;
+        lines.push(`Laid ${laid.join(' and ')} beside ${whose}.`);
+      }
+      if (failed.length) {
+        lines.push(`No dry ground for ${failed.join(' or ')} beside ${whose}.`);
+      }
+    });
+    if (changed) {
+      repaintAll(terrain, ground, W, H, tiles.layerOf);
+      dirty = true;
+      syncMarkers();
+      updateStat();
+    }
+    fixRoom.last = lines.join('<br>');
+    return fixRoom.last;
+  }, { last: '' });
 
   /**
    * Stamp from the last tile to this one.
@@ -523,8 +570,13 @@ async function run(
   window.addEventListener('keydown', onKey);
 
   saveBtn.onclick = () => {
-    const audit = auditMap(terrain, ground);
     const seated = keeps.filter(Boolean) as { x: number; z: number }[];
+    // With keeps on the map the question is what each can reach, not what the
+    // map has somewhere; without them the game sites the keep where the
+    // farmland is, so the whole-map count is the right one.
+    const audit = start || seated.length
+      ? { warnings: auditKeeps(terrain, ground, [start, ...keeps]) }
+      : auditMap(terrain, ground);
     const m = encodeMap(name.trim() || 'Untitled', W, H,
                         terrain.corners, ground, lords, trees, existing?.id,
                         start, seated);

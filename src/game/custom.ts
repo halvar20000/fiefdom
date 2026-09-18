@@ -1,5 +1,5 @@
 import type { Terrain } from '../engine/terrain';
-import { GROUND_TYPES, type GroundType, isBuildable } from './worldgen';
+import { GROUND_TYPES, type GroundType, isBuildable, type HeightField } from './worldgen';
 import type { GeneratedMap } from './worldgen';
 import type { MapDef } from './maps';
 import { store } from './backend';
@@ -342,4 +342,190 @@ export function auditMap(
   if (rock < 12) warnings.push('Almost no flat rock — no quarry or iron mine can be built.');
   if (buildable < 400) warnings.push('Very little level ground to build on.');
   return { ok: warnings.length === 0, warnings };
+}
+
+// --- room to farm -----------------------------------------------------------
+
+/** How far from the keep ordinary buildings may go. Mirrors R_KEEP in main.ts. */
+export const KEEP_REACH = 22;
+/** Farm sites a keep wants in reach: the five farms and room to spare. */
+export const FARMS_WANTED = 8;
+/** Quarry sites: a quarry, an iron mine and one more. */
+export const QUARRIES_WANTED = 3;
+
+/** A keep's flat 3x3 sites in reach, by what could stand on them. */
+export interface Room { green: number; rock: number }
+
+/**
+ * Disjoint, flat 3x3 sites within reach of a keep, counted by ground.
+ *
+ * A farm is 3x3, needs green under all nine tiles, and must be level -- so this
+ * is what "room for a farm" actually is, as against the whole-map count that
+ * auditMap keeps for a map with no keeps on it yet. Packed greedily, row by
+ * row, each site taking its nine tiles out of play, so a 9x9 meadow reads as
+ * nine farms wherever it lies -- not as forty-nine overlapping places to put
+ * one, nor as the six that a fixed grid happens to line up with. Trees are not
+ * in it: they are scattered at game time and the density knob can change them,
+ * which is what the spare sites in FARMS_WANTED are for.
+ */
+export function roomAround(
+  terrain: HeightField, groundType: Uint8Array,
+  keep: { x: number; z: number }, reach = KEEP_REACH,
+): Room {
+  const GREEN = new Set([GROUND_TYPES.indexOf('grass'), GROUND_TYPES.indexOf('grass_dark')]);
+  const ROCK = GROUND_TYPES.indexOf('rock');
+  const { width, height } = terrain;
+  const used = new Set<number>();
+  const room: Room = { green: 0, rock: 0 };
+  for (let z = Math.max(0, keep.z - reach); z + 3 <= Math.min(height, keep.z + reach + 1); z++) {
+    for (let x = Math.max(0, keep.x - reach); x + 3 <= Math.min(width, keep.x + reach + 1); x++) {
+      // The keep and its yard: the game lays the keep and the stores there.
+      if (Math.abs(x + 1 - keep.x) < 5 && Math.abs(z + 1 - keep.z) < 5) continue;
+      // All nine tiles inside the border, not just the middle one.
+      if (Math.hypot(x + 1 - keep.x, z + 1 - keep.z) > reach - 1.5) continue;
+      let green = 0, rock = 0, free = true;
+      for (let dz = 0; dz < 3 && free; dz++) {
+        for (let dx = 0; dx < 3; dx++) {
+          const t = (z + dz) * width + x + dx;
+          if (used.has(t)) { free = false; break; }
+          const g = groundType[t];
+          if (GREEN.has(g)) green++;
+          else if (g === ROCK) rock++;
+        }
+      }
+      if (!free || (green < 9 && rock < 9)) continue;
+      if (!isBuildable(terrain, x, z, 3, 3)) continue;
+      if (green === 9) room.green++; else room.rock++;
+      for (let dz = 0; dz < 3; dz++) for (let dx = 0; dx < 3; dx++) used.add((z + dz) * width + x + dx);
+    }
+  }
+  return room;
+}
+
+/**
+ * See that a keep has ground to farm and rock to quarry within reach, laying
+ * it if not.
+ *
+ * A painted map can seat a keep in the middle of a desert, and a picture read
+ * in as ground routinely comes out as scrub where the artist meant grass. Either
+ * way the game opens on a settlement that can never grow a loaf, which reads as
+ * broken. So where a keep is short, the nearest dry patch is turned into a
+ * meadow -- grass, levelled -- and, if it is short of that too, a rock outcrop.
+ * Placed in the ring seven to twenty tiles out: clear of the keep's own yard,
+ * inside the border. The patch that costs the least is chosen, cost being the
+ * tiles and corners it has to change, so an existing half-meadow is finished
+ * before a new one is dug, and a nearer patch beats a farther one of the same
+ * price. Water and marsh are never taken: those the painter chose.
+ *
+ * Returns what was laid, for the editor to say so; the author can paint over
+ * any of it.
+ */
+export function ensureRoom(
+  terrain: Terrain, groundType: Uint8Array,
+  keep: { x: number; z: number }, others: { x: number; z: number }[],
+  reach = KEEP_REACH,
+): { laid: string[]; failed: string[] } {
+  const { width, height } = terrain;
+  const WATER = GROUND_TYPES.indexOf('water');
+  const MARSH = GROUND_TYPES.indexOf('marsh');
+  const GREEN = new Set([GROUND_TYPES.indexOf('grass'), GROUND_TYPES.indexOf('grass_dark')]);
+  const taken = new Set<number>();
+  const laid: string[] = [];
+  const failed: string[] = [];
+
+  const wants: { label: string; fits: Set<number>; paint: number; sizes: number[]; need: () => number }[] = [
+    { label: 'a meadow', fits: GREEN, paint: GROUND_TYPES.indexOf('grass'),
+      // Sixteen sites for eight farms: the scatter puts trees on a tenth of
+      // any grass, and the game's own starting hovels land on level ground
+      // near the keep, which is exactly what this is.
+      sizes: [12, 9, 6], need: () => FARMS_WANTED - roomAround(terrain, groundType, keep, reach).green },
+    { label: 'a rock outcrop', fits: new Set([GROUND_TYPES.indexOf('rock')]),
+      paint: GROUND_TYPES.indexOf('rock'),
+      sizes: [6], need: () => QUARRIES_WANTED - roomAround(terrain, groundType, keep, reach).rock },
+  ];
+
+  for (const want of wants) {
+    if (want.need() <= 0) continue;
+    type Patch = { x: number; z: number; size: number; level: number; cost: number };
+    let best: Patch | null = null;
+    const offer = (p: Patch) => { if (!best || p.cost < best.cost) best = p; };
+    for (const size of want.sizes) {
+      for (let z = keep.z - reach; z + size <= keep.z + reach; z++) {
+        for (let x = keep.x - reach; x + size <= keep.x + reach; x++) {
+          if (x < 0 || z < 0 || x + size > width || z + size > height) continue;
+          const mx = x + size / 2, mz = z + size / 2;
+          const d = Math.hypot(mx - keep.x, mz - keep.z);
+          // Six out clears the keep and its stores; the far edge stays at
+          // the border, so at most a corner of the patch pokes past it.
+          if (d < 6 + size / 2 || d + size / 2 > reach) continue;
+          if (others.some(o => Math.hypot(mx - o.x, mz - o.z) < 8 + size / 2)) continue;
+
+          let tiles = 0, ok = true;
+          for (let dz = 0; dz < size && ok; dz++) {
+            for (let dx = 0; dx < size; dx++) {
+              const t = (z + dz) * width + x + dx;
+              const g = groundType[t];
+              if (g === WATER || g === MARSH || taken.has(t)) { ok = false; break; }
+              if (!want.fits.has(g)) tiles++;
+            }
+          }
+          if (!ok) continue;
+
+          // Level the patch to whatever height most of its corners already
+          // are, which is the least earth to move.
+          const count = new Map<number, number>();
+          for (let dz = 0; dz <= size; dz++) {
+            for (let dx = 0; dx <= size; dx++) {
+              const h = terrain.cornerHeight(x + dx, z + dz);
+              count.set(h, (count.get(h) ?? 0) + 1);
+            }
+          }
+          let level = 0, most = -1;
+          for (const [h, n] of count) if (n > most) { most = n; level = h; }
+          const corners = (size + 1) * (size + 1) - most;
+
+          offer({ x, z, size, level, cost: tiles + corners + d * 0.5 });
+        }
+      }
+      if (best) break;
+    }
+    // Read through a second name: TypeScript does not see the assignment made
+    // inside `offer`, and would hold `best` to be null from here on.
+    const patch = best as Patch | null;
+    if (!patch) { failed.push(want.label); continue; }
+
+    for (let dz = 0; dz <= patch.size; dz++) {
+      for (let dx = 0; dx <= patch.size; dx++) terrain.setCorner(patch.x + dx, patch.z + dz, patch.level);
+    }
+    for (let dz = 0; dz < patch.size; dz++) {
+      for (let dx = 0; dx < patch.size; dx++) {
+        const t = (patch.z + dz) * width + patch.x + dx;
+        groundType[t] = want.paint;
+        taken.add(t);
+      }
+    }
+    laid.push(want.label);
+  }
+  return { laid, failed };
+}
+
+/**
+ * The per-keep audit, for a map that has keeps on it.
+ *
+ * Says which keep is short of what, as the whole-map count in auditMap cannot:
+ * a map can be a third meadow and still have every keep in the desert.
+ */
+export function auditKeeps(
+  terrain: HeightField, groundType: Uint8Array,
+  spots: ({ x: number; z: number } | null)[],
+): string[] {
+  const warnings: string[] = [];
+  spots.forEach((p, i) => {
+    if (!p) return;
+    const whose = i === 0 ? 'Your keep' : `The ${KEEP_COLOURS[i].name}\u2019s keep`;
+    const room = roomAround(terrain, groundType, p);
+    if (room.green < 3) warnings.push(`${whose} has room for ${room.green === 0 ? 'no farm' : `only ${room.green} farm${room.green > 1 ? 's' : ''}`}.`);
+    if (room.rock < 1) warnings.push(`${whose} has no flat rock to quarry.`);
+  });
+  return warnings;
 }
