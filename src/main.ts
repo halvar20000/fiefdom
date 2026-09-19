@@ -6100,6 +6100,31 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
   // can tell "nobody is doing anything" from "the line has dropped".
   const matchChat = mp ? showMatchChat(mp) : null;
 
+  // Everything the first frame would otherwise stall on -- a hundred-odd
+  // material textures to upload, the shaders to compile -- is done here,
+  // behind the loading text, in the order the text says.
+  if (models) {
+    loading.textContent = 'warming up the graphics…';
+    await new Promise(r => setTimeout(r, 0));   // let the text paint
+    const textures = new Set<THREE.Texture>();
+    for (const m of models.materials.values()) {
+      const sm = m as THREE.MeshStandardMaterial;
+      if (sm.map) textures.add(sm.map);
+      if (sm.normalMap) textures.add(sm.normalMap);
+    }
+    if (ground) { textures.add(ground.colour); textures.add(ground.normal); }
+    let n = 0;
+    for (const t of textures) {
+      renderer.initTexture(t);
+      if (++n % 24 === 0) {
+        loading.textContent = `warming up the graphics… ${Math.round(100 * n / textures.size)}%`;
+        await new Promise(r => setTimeout(r, 0));
+      }
+    }
+    drawScene();                     // places everything, so compile sees it
+    await renderer.compileAsync(scene, iso.camera);
+  }
+
   loading.classList.add('done');
   frame();
 }

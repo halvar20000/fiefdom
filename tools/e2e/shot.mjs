@@ -49,9 +49,9 @@ await c.send('Page.navigate', { url }, s);
 if (!await waitFor(`!!document.querySelector('#menu button')`, 120)) { console.error('menu never came up'); process.exit(1); }
 await ev(`[...document.querySelectorAll('button')].find(b => /CHOOSE LORDS/.test(b.textContent)).click()`);
 await sleep(1500);
-await ev(`[...document.querySelectorAll('button')].find(b => /BEGIN/.test(b.textContent))?.click()`);
-if (!await waitFor(`!!window.__game`, 240)) { console.error('game never came up:', await ev(`document.getElementById('loading')?.textContent`)); process.exit(1); }
-log('game up');
+await ev(`window.__t0 = performance.now(); [...document.querySelectorAll('button')].find(b => /BEGIN/.test(b.textContent))?.click()`);
+if (!await waitFor(`!!window.__game && document.getElementById('loading')?.classList.contains('done')`, 240)) { console.error('game never came up:', await ev(`document.getElementById('loading')?.textContent`)); process.exit(1); }
+log('game up', await ev(`((performance.now() - window.__t0) / 1000).toFixed(1)`), 's from Begin to map');
 await sleep(2000);
 
 // The same little town every run, so two renderers can be compared.

@@ -131,14 +131,14 @@ export interface GroundArrays {
  */
 export async function loadGroundArrays(base: string): Promise<GroundArrays> {
   const index = await fetch(`${base}/ground.json${V}`).then(r => r.json()) as
-    { types: string[]; span: number; px: number };
-  const { types, span, px } = index;
+    { types: string[]; span: number; px: number; pxNormal?: number };
+  const { types, span } = index;
   const canvas = document.createElement('canvas');
-  canvas.width = px; canvas.height = px;
   const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
 
   const means: [number, number, number][] = [];
-  const build = async (suffix: string, srgb: boolean) => {
+  const build = async (suffix: string, srgb: boolean, px: number) => {
+    canvas.width = px; canvas.height = px;
     const data = new Uint8Array(px * px * 4 * types.length);
     for (let t = 0; t < types.length; t++) {
       const img = await loadImage(`${base}/${types[t]}_${suffix}.webp${V}`);
@@ -163,7 +163,8 @@ export async function loadGroundArrays(base: string): Promise<GroundArrays> {
     tex.needsUpdate = true;
     return tex;
   };
-  const [colour, normal] = await Promise.all([build('col', true), build('nrm', false)]);
+  const colour = await build('col', true, index.px);
+  const normal = await build('nrm', false, index.pxNormal ?? index.px);
   return { colour, normal, types, span, means };
 }
 

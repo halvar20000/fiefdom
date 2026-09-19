@@ -52,8 +52,11 @@ import piles
 #: dense.
 TILE_SPAN = 4
 #: Texels for a patterned material (brick, plank, thatch) and for a plain
-#: one (cloth, iron, leaves: noise only, no pattern to keep sharp).
-RES_PATTERN = 1024
+#: one (cloth, iron, leaves: noise only, no pattern to keep sharp). 512 over
+#: four tiles is 128 texels a tile, more than the sprites had at full zoom;
+#: 1024 looked no sharper on screen and cost the browser half a gigabyte
+#: of texture uploads before the first frame.
+RES_PATTERN = 512
 RES_PLAIN = 256
 
 

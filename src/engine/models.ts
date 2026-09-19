@@ -63,7 +63,7 @@ export class ModelLibrary {
       fetch(`${base}/models.json`).then(r => r.json()) as Promise<ModelManifest>,
       fetch(`${base}/materials.json`).then(r => r.json()) as Promise<Record<string, MaterialSpec>>,
     ]);
-    lib.buildMaterials(base, specs, anisotropy);
+    const textures = lib.buildMaterials(base, specs, anisotropy);
 
     const names = Object.keys(manifest);
     const loader = new GLTFLoader();
@@ -85,14 +85,19 @@ export class ModelLibrary {
         onProgress?.(done, names.length);
       }
     };
-    await Promise.all(Array.from({ length: 6 }, worker));
+    await Promise.all([...Array.from({ length: 6 }, worker), ...textures]);
     return lib;
   }
 
-  private buildMaterials(base: string, specs: Record<string, MaterialSpec>, anisotropy: number): void {
+  /** Builds the materials; returns the texture loads to wait on. */
+  private buildMaterials(base: string, specs: Record<string, MaterialSpec>, anisotropy: number): Promise<unknown>[] {
     const tl = new THREE.TextureLoader();
+    const pending: Promise<unknown>[] = [];
     const tile = (path: string, span: number, srgb: boolean) => {
-      const t = tl.load(`${base}/${path}`);
+      let done: () => void = () => {};
+      pending.push(new Promise<void>(resolve => { done = resolve; }));
+      // settled either way: a tile that fails to load is a plain material
+      const t = tl.load(`${base}/${path}`, () => done(), undefined, () => done());
       t.wrapS = t.wrapT = THREE.RepeatWrapping;
       t.repeat.set(1 / span, 1 / span);
       t.anisotropy = anisotropy;
@@ -118,6 +123,7 @@ export class ModelLibrary {
       m.name = spec.name;
       this.materials.set(key, m);
     }
+    return pending;
   }
 
   private adopt(name: string, gltf: GLTF, footprint: [number, number]): void {

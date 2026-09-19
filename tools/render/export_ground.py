@@ -28,7 +28,11 @@ import rig
 import render_ground as RG
 import export_glb as EG
 
+#: Colour at 1024 (256 texels a tile: the old tiles had 192), the normal
+#: map at half that -- its detail is noise nobody resolves, and the two
+#: arrays together were 75 MB of upload at 1024.
 RES = 1024
+RES_NRM = 512
 
 
 def main():
@@ -43,9 +47,15 @@ def main():
     for name, make in RG.TYPES.items():
         mat = make()
         EG.bake_material_tile(mat, name, out, res=RES)
+        # the normal map is re-saved at half size
+        nrm = bpy.data.images.load(os.path.join(out, f"{name}_nrm.webp"))
+        nrm.colorspace_settings.name = 'Non-Color'
+        nrm.scale(RES_NRM, RES_NRM)
+        EG.save_webp(nrm, os.path.join(out, f"{name}_nrm.webp"), 92)
+        bpy.data.images.remove(nrm)
         types.append(name)
     with open(os.path.join(out, "ground.json"), "w") as fh:
-        json.dump({"types": types, "span": EG.TILE_SPAN, "px": RES}, fh, indent=1)
+        json.dump({"types": types, "span": EG.TILE_SPAN, "px": RES, "pxNormal": RES_NRM}, fh, indent=1)
     print(f"DONE {len(types)} ground types -> {out}", flush=True)
 
 
