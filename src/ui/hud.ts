@@ -1911,6 +1911,13 @@ export class Hud {
         ? `<div class="row"><span>Armoury</span><b style="color:${armouryColour}">` +
           `${s.armouryUsed} / ${s.armouryCapacity}</b></div>`
         : '') +
+      // The storehouses' shelf, shared by every kind: what the three stores
+      // above could not hold. Only once there is one, like the armoury.
+      (s.shelfCapacity
+        ? `<div class="row" title="Storehouse shelf — takes any good the stores above are full of">` +
+          `<span>Storehouses</span><b style="color:${fill(s.shelfUsed, s.shelfCapacity)}">` +
+          `${s.shelfUsed} / ${s.shelfCapacity}</b></div>`
+        : '') +
       `<div class="row hist" data-res="popularity" title="Popularity — click for history">` +
         `<span>Popularity</span><b>${pct}</b></div>` +
       `<div class="bar"><i style="width:${pct}%;background:${colour}"></i></div>` +

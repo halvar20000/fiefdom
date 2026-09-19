@@ -135,7 +135,11 @@ export class StoreLayout {
     return false;
   }
 
-  /** Units of `res` that still fit: its own part-filled squares plus empty ones. */
+  /**
+   * Units of `res` that still fit: its own part-filled squares plus empty
+   * ones. Negative when more is held than the squares take -- that much is
+   * on a storehouse shelf, see `overflow`.
+   */
   spaceFor(res: Resource, tiles: YardTile[],
            stock: Record<Resource, number>): number {
     this.sync(tiles, stock);
@@ -146,6 +150,28 @@ export class StoreLayout {
       else if (a === undefined) free++;
     }
     return (mine + free) * this.tileCapacity - Math.max(0, stock[res]);
+  }
+
+  /**
+   * Units of every good together that the squares do not hold.
+   *
+   * Per good, not used-against-capacity: two squares, one of wood and one
+   * of stone, are "half empty" by the totals and still have nowhere for a
+   * pig. What is over is on the storehouses' shelf, and that is what this
+   * is for.
+   */
+  overflow(tiles: YardTile[], stock: Record<Resource, number>): number {
+    this.sync(tiles, stock);
+    const squares = new Map<Resource, number>();
+    for (const t of tiles) {
+      const a = this.assigned.get(t.id);
+      if (a !== undefined) squares.set(a, (squares.get(a) ?? 0) + 1);
+    }
+    let over = 0;
+    for (const r of this.goods) {
+      over += Math.max(0, Math.max(0, stock[r]) - (squares.get(r) ?? 0) * this.tileCapacity);
+    }
+    return over;
   }
 
   private writeKeys(): void {

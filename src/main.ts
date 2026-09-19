@@ -18,7 +18,7 @@ import { PathGrid } from './game/pathfind';
 import { Herd, HUNT_RADIUS } from './game/wildlife';
 import { Army, PLAYER, SWING_TIME, DEATH_TIME } from './game/army';
 import { Lord, type Difficulty } from './game/lord';
-import { WorkerPool, totalHeld, type WorkerWorld } from './game/workers';
+import { WorkerPool, type WorkerWorld } from './game/workers';
 import { EnemyWorkers } from './game/enemyworkers';
 import { Placement, type PlacementWorld } from './game/placement';
 import { Hud } from './ui/hud';
@@ -69,7 +69,6 @@ import {
   OIL_POT_TRIGGER_RADIUS, OIL_POT_BLAST_RADIUS, OIL_POT_DAMAGE,
   REPAIR_RADIUS, REPAIR_PER_SECOND, UNDERMINE_RADIUS, UNDERMINE_PER_SECOND,
   SPEED_LEVELS, RESOURCE_LABELS, productionOf, goodName, HAUL_RANGE,
-  DEPOT_SERVE_RANGE,
   type Resource, type Store, type BuildingDef,
 } from './game/defs';
 
@@ -1178,38 +1177,20 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     return { x: tx + (dx / len) * off, z: tz + (dz / len) * off };
   }
 
+  /**
+   * The nearest place the town's stock of this kind can be dropped or
+   * collected: one of its own squares, or a storehouse, which takes and
+   * gives out anything. One pool of goods, several doors to it.
+   */
   function nearestStoreAt(kind: Store, x: number, z: number): PlacedBuilding | null {
     let best: PlacedBuilding | null = null;
     let bestD = Infinity;
     for (const b of state.buildings) {
-      if (b.def.storeFor !== kind) continue;
+      if (b.def.storeFor !== kind && !b.def.storeAll) continue;
       const d = (b.x - x) ** 2 + (b.z - z) ** 2;
       if (d < bestD) { bestD = d; best = b; }
     }
     return best;
-  }
-
-  /**
-   * Is this shed a shorter walk for that workshop's inputs than the yard is?
-   *
-   * The ONE test, asked by both halves of the arrangement: what a shed decides
-   * to keep on its shelves, and what a workshop is allowed to take off them.
-   * If the two could disagree -- if a shed stocked flour for a bakery that
-   * then walked past it to the stockpile anyway -- the sacks would sit on the
-   * shelf out of the town's stock and out of everyone's reach, which is a leak
-   * and not a feature.
-   *
-   * Measured between origins on both sides for the same reason.
-   */
-  function shedServes(shed: PlacedBuilding, b: PlacedBuilding): boolean {
-    const d = (shed.x - b.x) ** 2 + (shed.z - b.z) ** 2;
-    if (d > DEPOT_SERVE_RANGE ** 2) return false;
-    // Every input in the game is a yard good, which is why the fetch leg is
-    // hardcoded to the stockpile. The day one is not, this and that change
-    // together.
-    const store = nearestStoreAt('stockpile', b.x, b.z);
-    if (!store) return true;
-    return d < (store.x - b.x) ** 2 + (store.z - b.z) ** 2;
   }
 
   // The land's luck -- see fortune.ts. Drawn from the trades the player
@@ -1224,88 +1205,6 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     fortune: o => fortunes.factor(o),
     groundSpeed,
     nearestStore: nearestStoreAt,
-
-    /**
-     * The nearest place a load can be dropped: a real store square, or a
-     * storehouse if one is closer and has room.
-     *
-     * A FULL storehouse is skipped rather than preferred-and-refused, so a shed
-     * whose carrier has fallen behind quietly stops attracting deliveries
-     * instead of becoming a place loads go to be lost.
-     */
-    nearestDrop(kind, x, z) {
-      let best = this.nearestStore(kind, x, z);
-      let bestD = best ? (best.x - x) ** 2 + (best.z - z) ** 2 : Infinity;
-      // Nothing goes to a storehouse unless the real store exists: otherwise a
-      // shed becomes a way to "store" goods the town can never actually reach.
-      if (!best) return null;
-      for (const b of state.buildings) {
-        const cap = b.def.relay;
-        if (!cap) continue;
-        // A shed with no carrier is a shed nothing ever leaves. A producer
-        // that unloads there is putting its goods somewhere the town cannot
-        // reach them, so until it is staffed the load goes to the yard.
-        if (b.staff <= 0) continue;
-        if (totalHeld(b) >= cap) continue;
-        const d = (b.x - x) ** 2 + (b.z - z) ** 2;
-        if (d < bestD) { bestD = d; best = b; }
-      }
-      return best;
-    },
-    /**
-     * What the staffed workshops around a storehouse consume.
-     *
-     * Measured between origins, like the ox tether's range, and only from
-     * buildings with a MAN in them: an unstaffed workshop eats nothing, and a
-     * shed hoarding sacks for a mill nobody works is holding them out of the
-     * town's stock for no one.
-     *
-     * Relays are skipped, so two sheds standing near each other cannot decide
-     * to stock one another.
-     */
-    relayDemand(b) {
-      const out = new Set<Resource>();
-      for (const other of state.buildings) {
-        if (other.def.relay || other.staff <= 0) continue;
-        const prod = productionOf(other.def, other.alt);
-        if (!prod?.inputs) continue;
-        if (!shedServes(b, other)) continue;
-        for (const r of Object.keys(prod.inputs)) out.add(r as Resource);
-      }
-      return out;
-    },
-
-    /**
-     * A storehouse that can supply a whole cycle without a walk to the yard.
-     *
-     * All of the inputs or none: a worker carries one load home and there is
-     * no state for a trip that collects half a cycle here and half there.
-     *
-     * And only if the shed is genuinely nearer than the stockpile the worker
-     * would otherwise walk to. Without that test a shed built beside the yard
-     * would pull every workshop in the settlement into a detour, and a shed
-     * would stop being a way to shorten a long walk and start being a tax on a
-     * short one.
-     */
-    inputSource(b, inputs, x, z, anywhere = false) {
-      let best: PlacedBuilding | null = null;
-      let bestD = Infinity;
-      for (const shed of state.buildings) {
-        if (!shed.def.relay) continue;
-        // Only a shed that is serving THIS workshop: the same test that
-        // decides what the shed keeps decides who may draw on it. Unless the
-        // yard is dry and the caller will take a shed from anywhere.
-        if (!anywhere && !shedServes(shed, b)) continue;
-        let has = true;
-        for (const [r, n] of Object.entries(inputs)) {
-          if ((shed.held[r as Resource] ?? 0) < (n ?? 0)) { has = false; break; }
-        }
-        if (!has) continue;
-        const d = (shed.x - x) ** 2 + (shed.z - z) ** 2;
-        if (d < bestD) { bestD = d; best = shed; }
-      }
-      return best;
-    },
 
     isWalkable(x, z) {
       return !paths.isBlocked(Math.floor(x), Math.floor(z));
@@ -5183,17 +5082,10 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       // their stone has got to needs to read.
       const what = (rows: [string, number | undefined][]) =>
         rows.map(([r, n]) => `${n} ${r}`).join(', ');
-      if (def.relay && held.length) {
-        // A shed's pile now has two halves that look identical and mean
-        // opposite things: goods on their way IN to the store, and inputs kept
-        // OUT here for the workshops around it. Saying which is which is the
-        // difference between "why is there wheat in my storehouse" and reading
-        // the building at a glance.
-        const demand = workerWorld.relayDemand(mine);
-        const out = held.filter(([r]) => !demand.has(r as Resource));
-        const keep = held.filter(([r]) => demand.has(r as Resource));
-        if (out.length) bits.push(`${what(out)} to go out`);
-        if (keep.length) bits.push(`${what(keep)} for the workings`);
+      if (def.storeAll) {
+        // One shelf for all the storehouses together, so the useful number
+        // is the town's, as for the armoury.
+        bits.push(`shelf ${state.shelfUsed} / ${state.shelfCapacity} — takes and gives out any good`);
       } else if ((def.needsHauler || def.hauler) && held.length) {
         bits.push(def.needsHauler ? `${what(held)} waiting to be hauled` : what(held));
       }
@@ -5616,6 +5508,10 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     // top of them. Measured 4 workers going in and 8 coming out.
     workers.workers.length = 0;
 
+    // Men a saved building had that its definition no longer employs -- the
+    // storehouse carrier, whose job went when the shed became a store. They
+    // go back on the idle roll below, since the saved `idle` left them out.
+    let freed = 0;
     for (const sb of sv.buildings) {
       const def = BUILDINGS[sb.n];
       if (!def) continue;
@@ -5625,7 +5521,8 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       // `idle` count ALREADY excludes these men, so calling assignWorkers here
       // deducted them a second time and every load quietly lost peasants --
       // measured 25 idle going in, 21 coming out.
-      b.staff = sb.staff;
+      b.staff = Math.min(sb.staff, def.workers);
+      freed += sb.staff - b.staff;
       b.hp = sb.hp;
       b.held = { ...sb.held } as typeof b.held;
       markArea(sb.x, sb.z, w, d);
@@ -5788,8 +5685,20 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     for (const [r, n] of Object.entries(sv.stock)) {
       (state.stock as Record<string, number>)[r] = n;
     }
+    // A storehouse used to keep its own pile, out of the town's stock, for a
+    // carrier to walk in. It is a store now, and its pile is simply stock:
+    // folded in here, over the capacity if need be, so a save from that
+    // time loses nothing -- an overfull yard sorts itself out as goods are
+    // used, a vanished pig does not.
+    for (const b of state.buildings) {
+      if (!b.def.storeAll) continue;
+      for (const [r, n] of Object.entries(b.held)) {
+        if (n) (state.stock as Record<string, number>)[r] += n;
+      }
+      b.held = {};
+    }
     state.population = sv.population;
-    state.idle = sv.idle;
+    state.idle = sv.idle + freed;
     // Whoever was out with a spade or a bucket in the old game is not in this
     // one; the save counted them back in at the fire.
     town.jobs.length = 0;

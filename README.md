@@ -1962,88 +1962,38 @@ movement, and left the badge reading 3.
 
 ## The storehouse
 
-A distant workings is slow for one reason: the producer walks its own load
-home. A **Storehouse** (2x2, 15 wood, one worker) breaks that. Producers
-deliver to whichever is nearer, the real store or a storehouse, and the
-storehouse's own carrier takes the load on in batches of twelve.
+A **Storehouse** (2x2, 15 wood, nobody to staff it) is a store. Not a
+drop-off with a carrier: a store, in the sense Anno's warehouses are stores.
+Whatever is unloaded there is the town's stock the moment it lands, exactly as
+at the yard, and whatever the town holds can be collected there. A pig farm
+beside one storehouse and a slaughterhouse beside another are each three
+tiles from their store, and nobody carries anything between the two. One pool
+of goods, several doors to it.
 
-It does not remove the walking. It **parallelises** it — one man does the long
-haul while the workings keeps producing, instead of the workings stopping for
-every trip.
+It used to be a relay. Producers delivered to whichever was nearer, the yard
+or the shed, and the shed's own carrier walked the loads on in batches, and
+fetched back the inputs of the workshops around it. That parallelised the
+walking — one man did the long haul while the workings kept producing — and
+it was measured to work. It also put a shelf of goods outside the town's
+stock, with one man as the only way on or off it, and every way that man
+could fail became a way for the goods to vanish: a dead carrier, a full yard
+he kept bringing his load back from, a workshop a tile too far to be "served".
+"Slaughterhouse is waiting for materials" with six pigs in the storehouse was
+that design working as written. The relay is gone; the shed holds nothing of
+its own.
 
-Measured on the same fishery, 74 tiles from its granary, over 600 seconds:
+**Capacity.** Each storehouse adds a **shelf of 48** to the town, shared by
+every kind: goods, food and weapons overflow onto it once their own store is
+full, so a town can even open with a storehouse and no granary. The HUD shows
+the shelf as a **Storehouses** row once there is one. `roomFor` in `state.ts`
+is a good's own room plus the shelf's; what is on the shelf is the sum of
+every store's overflow, counted per good — two yard squares holding wood and
+stone are "half empty" by the totals and still have nowhere for a pig, and
+that pig is on the shelf.
 
-| | Fish delivered |
-|---|---|
-| Fishery alone | **10** |
-| Fishery + storehouse | **58** |
-
-### It walks both ways
-
-That fixed a distant **producer** and did nothing at all for a distant
-**consumer**. A workshop fetches its inputs from a real store — `nearestStore`,
-which cannot see a shed — so a mill out by the wheat still walked to the
-stockpile for every sack it ground, and a bakery out by the mill walked there
-for every sack it baked. The shed stood between them holding the flour and was
-allowed to help with exactly one leg of four.
-
-The carrier now walks in both directions. It looks at the staffed workshops
-within `DEPOT_SERVE_RANGE` and keeps `DEPOT_INPUT_STOCK` of whatever they eat
-on the shelf; those workshops take their inputs off the shelf instead of
-walking to the yard for each one.
-
-A mill and a bakery with one shed between them, wheat kept in stock, bread
-counted as it reaches the granary, over 600 seconds. Walking pace varies from
-worker to worker, so these are the mean of nine runs:
-
-| Tiles from the yard | No shed | Shed, before | Shed, now |
-|---|---|---|---|
-| 4 | 125 | 137 | **166** |
-| 10 | 71 | 96 | **161** |
-| 20 | 38 | 56 | **128** |
-| 30 | 26 | 38 | **104** |
-| 45 | 16 | 22 | **77** |
-
-The chain closes on itself out there: the mill drops its flour in the shed, the
-bakery takes it straight back out, and only the bread makes the journey home.
-Nothing decides that — it falls out of the shed holding what the workings
-around it consume.
-
-Some deliberate choices in it:
-
-- **Capacity is all goods together**, not per kind. It is a shed, not a set of
-  bins, and a per-kind allowance would let one full good hide that the shed is
-  otherwise empty.
-- **A full storehouse stops attracting deliveries** rather than accepting and
-  refusing them, so a shed whose carrier has fallen behind quietly drops out of
-  the routing instead of becoming a place loads go to be lost.
-- **The carrier does not wait for a full load.** A shed beside a lone
-  woodcutter would otherwise sit on four logs forever, which looks exactly like
-  a bug.
-- **A load the store has no room for goes back in the shed.** The carrier is
-  the one part of the chain that can turn round and bring it home; a producer
-  standing on a full yard cannot.
-- **Nothing routes to a storehouse unless the real store exists.** Otherwise a
-  shed becomes a way to "store" goods the town can never reach.
-- **One test decides both what a shed stocks and who may draw on it**
-  (`shedServes`). If the two could disagree — a shed keeping flour for a bakery
-  that then walks past it to the stockpile anyway — the sacks would sit on the
-  shelf out of the town's stock and out of everyone's reach. That is a leak,
-  not a feature.
-- **A shed keeps a few cycles' worth, not a shed full.** The point is to take
-  the walk off the workshop's critical path, not to abolish distance: forty
-  sacks on the shelf would make a mill out in the fields exactly as good as one
-  built on the yard, and the yard is what the whole layout is arranged around.
-- **A good the workings eat is never carried out.** Otherwise a shed serving a
-  mill would fetch wheat from the stockpile and immediately walk it back again.
-- **An empty shelf comes before a full one.** A workshop with nothing to work
-  on is stopped; a load waiting in the shed is only late.
-- **The tooltip says which half is which** — "4 bread to go out · 8 wheat for
-  the workings" — because the two look identical on the ground and mean
-  opposite things.
-
-With no storehouse on the map the routing is byte-for-byte the old behaviour:
-the loop that considers relays has nothing to iterate.
+**Loading an old save.** A shed's pile is folded into the stock, over the
+capacity if need be, so nothing is lost; its carrier goes back on the idle
+roll.
 
 ## Fish, and the fisherman's hut
 

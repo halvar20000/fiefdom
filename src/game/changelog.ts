@@ -23,6 +23,21 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.76.0',
+    date: '2026-09-19',
+    headline: 'The storehouse is a store.',
+    sections: [
+      {
+        title: 'Changed',
+        items: [
+          'The storehouse no longer has a carrier, a pile of its own, or a range it serves. It is a store, the way a warehouse in Anno is a store: whatever is unloaded there is in the town\u2019s stock at once, and whatever the town holds can be collected there. A pig farm by one storehouse and a slaughterhouse by another are each a few tiles from their store, and nobody walks anything between the two. Producers deliver to whichever is nearest \u2014 yard square, granary bay, armoury or storehouse \u2014 and workshops fetch from the nearest the same way; the ox does too.',
+          'Each storehouse adds a shelf of 48 to the town, shared by every kind: goods, food and weapons overflow onto it once their own store is full. A new Storehouses row in the panel shows the shelf once there is one. A storehouse needs nobody to staff it.',
+          'Loading a save from before: whatever the shed was holding goes straight into the stock, and its carrier goes back to being idle.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.75.2',
     date: '2026-09-19',
     headline: 'The pigs in the storehouse are pigs.',

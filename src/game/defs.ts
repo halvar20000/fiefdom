@@ -134,48 +134,23 @@ export const WATER_REACH = 3;
 export const DEMOLISH_REFUND = 0.5;
 
 /**
- * The storehouse.
+ * The storehouse: a shelf of this many goods, of any kind together.
  *
- * Capacity is all goods together, not per kind: it is a shed, not a set of
- * bins, and a per-kind allowance would let one full good hide the fact that
- * the shed is otherwise empty.
+ * It is a STORE, not a relay. Whatever is dropped there is the town's stock
+ * the moment it lands, exactly as at the yard, and whatever the town holds
+ * can be collected there -- a pig farm by one storehouse and a slaughterhouse
+ * by another are three tiles from their store apiece, and nobody carries
+ * anything between the two. (The way Anno's warehouses work; the way a
+ * carrier shuttling loads between a shed and the yard never quite did. That
+ * carrier was the whole design once, and the one man doing the walking for
+ * a whole workings was its bottleneck, its single point of failure, and a
+ * shelf of goods the rest of the town could not see.)
  *
- * The carrier moves a bigger load than a producer does, which is the entire
- * point -- one long walk replaces several, so a distant workings keeps
- * producing while a single man does the hauling.
+ * The number is shared across every kind because it is a shed and not a set
+ * of bins: goods, food and weapons alike overflow onto it once their own
+ * store is full, so a town can even begin with a storehouse and no granary.
  */
 export const DEPOT_CAPACITY = 48;
-export const DEPOT_BATCH = 12;
-
-/**
- * How far a storehouse reaches to serve the workshops around it, measured
- * between origins like the ox tether's range.
- *
- * The shed only ever held finished loads waiting to go IN, which answered a
- * distant producer and left a distant CONSUMER with nothing: a mill out by the
- * wheat still walked to the stockpile for every sack, because a workshop
- * fetches from a real store and cannot see a shed. Within this range the shed
- * keeps the inputs those workshops eat, and the carrier makes the long walk
- * instead of the miller.
- *
- * Shorter than the ox's fourteen on purpose. The tether is a licence a quarry
- * must own and wants some slack; this is a shed serving the workings it stands
- * in, and a range that reached across a settlement would quietly make every
- * workshop equidistant from everything.
- */
-export const DEPOT_SERVE_RANGE = 12;
-
-/**
- * Units of ONE input a storehouse keeps on hand for the workshops it serves.
- *
- * Deliberately a few cycles' worth and not a full shed. The point is to take
- * the walk off the workshop's critical path, not to abolish distance: a shed
- * that stocked forty sacks would make a mill out in the fields exactly as good
- * as one built on the yard, and the yard is what the whole layout is arranged
- * around. Eight is enough that the miller is never stood waiting on a carrier
- * mid-walk, and little enough that losing the shed costs a minute, not an hour.
- */
-export const DEPOT_INPUT_STOCK = 8;
 
 /**
  * How far an ox tether reaches for a quarry, measured between origins.
@@ -313,10 +288,10 @@ export interface BuildingDef {
   /** A fear building: lowers popularity, raises tax yield. See the gallows. */
   fear?: { popularity: number; taxMultiplier: number };
   /**
-   * Marks a relay: a local drop-off that forwards to the real store.
-   * The number is how many goods it can hold at once, all kinds together.
+   * A store for anything: this many goods of every kind together, on top
+   * of what the real stores hold. See DEPOT_CAPACITY.
    */
-  relay?: number;
+  storeAll?: number;
   /**
    * The tool stays in hand after placing one.
    *
@@ -884,11 +859,12 @@ export const BUILDINGS: Record<string, BuildingDef> = {
   },
   depot: {
     name: 'depot', label: 'Storehouse', category: 'industry',
-    footprint: [2, 2], cost: { wood: 15 }, workers: 1, terrain: 'any',
-    relay: DEPOT_CAPACITY,
-    description: 'A drop-off out at the workings, and a shelf for what they '
-               + 'use. Producers unload here; its carrier takes the load on, '
-               + 'and fetches back the inputs the workshops around it eat.',
+    footprint: [2, 2], cost: { wood: 15 }, workers: 0, terrain: 'any',
+    storeAll: DEPOT_CAPACITY,
+    description: 'A store out at the workings. Anything unloaded here is in '
+               + 'the town\u2019s stock at once, and anything the town holds '
+               + 'can be collected here \u2014 no carrier, no walk to the yard. '
+               + 'Adds a shelf of 48 goods of any kind.',
   },
   fishery: {
     name: 'fishery', label: "Fisherman's Hut", category: 'farm',

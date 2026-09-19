@@ -1,7 +1,6 @@
 import { siteOf, type GameState, type PlacedBuilding } from './state';
 import {
-  storeOf, STORE_LABELS, DEPOT_BATCH, DEPOT_CAPACITY, DEPOT_INPUT_STOCK,
-  HAUL_YARD, productionOf,
+  storeOf, STORE_LABELS, HAUL_YARD, productionOf,
   type Resource, type Store,
 } from './defs';
 import type { PathNode } from './pathfind';
@@ -63,21 +62,6 @@ export interface Worker {
    * `claim` to avoid.
    */
   haulFrom: PlacedBuilding | null;
-  /**
-   * The good a storehouse carrier is walking to the store to COLLECT.
-   *
-   * A third field rather than setting `carrying` early, because `carrying` is
-   * what the animation reads: a carrier setting off empty to fetch flour would
-   * otherwise be drawn hauling a sack the whole way out.
-   */
-  restock: Resource | null;
-}
-
-/** Everything a relay is holding, all kinds together. */
-export function totalHeld(b: PlacedBuilding): number {
-  let n = 0;
-  for (const v of Object.values(b.held)) n += v ?? 0;
-  return n;
 }
 
 export interface WorkerWorld {
@@ -104,32 +88,6 @@ export interface WorkerWorld {
    */
   haulSource(b: PlacedBuilding, resource: Resource, range: number):
     PlacedBuilding | null;
-  /**
-   * Where a load of this good should be taken from here: the real store, or a
-   * storehouse if one is nearer and has room.
-   */
-  nearestDrop(kind: Store, x: number, z: number): PlacedBuilding | null;
-  /**
-   * A storehouse near this workshop that is already holding everything one
-   * cycle needs, or null.
-   *
-   * Only if it is NEARER than the store the worker would otherwise walk to:
-   * a shed built beside the stockpile is not a reason to take a detour.
-   * With `anywhere`, any shed holding the cycle, nearest first -- for when
-   * the stockpile has none, and the choice is a longer walk or no work.
-   */
-  inputSource(
-    b: PlacedBuilding, inputs: Partial<Record<Resource, number>>,
-    x: number, z: number, anywhere?: boolean,
-  ): PlacedBuilding | null;
-  /**
-   * What the staffed workshops around this storehouse eat.
-   *
-   * The shed has no setting to choose what it stocks: it looks at the workings
-   * it stands in and holds what they consume. A shed with no workshop near it
-   * is what it always was -- a drop-off, and nothing else.
-   */
-  relayDemand(b: PlacedBuilding): Set<Resource>;
   /** A production cycle finished -- consume whatever was being worked. */
   harvest(b: PlacedBuilding, w: Worker): void;
   /** Route around buildings. Null means no route exists. */
@@ -197,7 +155,6 @@ export class WorkerPool {
           building: b, state: 'idle', timer: 0.5 + Math.random(),
           tx: c.x, tz: c.z, carrying: null, carryAmount: 0, slot: have,
           claim: null, prey: null, path: [], dropAt: null, haulFrom: null,
-          restock: null,
         });
         have++;
       }
@@ -278,10 +235,6 @@ export class WorkerPool {
     for (const w of this.workers) {
       const b = w.building;
       if (!b) { w.state = 'idle'; continue; }
-      if (b.def.relay) {
-        this.updateRelay(w, b, dt);
-        continue;
-      }
       if (b.def.stocks && !b.def.produces) {
         this.updateStocker(w, b, b.def.stocks, dt);
         continue;
@@ -337,21 +290,9 @@ export class WorkerPool {
             const missing = Object.entries(prod.inputs).find(
               ([r, n]) => (b.held[r as Resource] ?? 0) < (n ?? 0));
             if (missing) {
-              // A storehouse standing in the workings can supply the cycle
-              // itself, which is the other half of what the shed is for: it
-              // took the walk off a distant PRODUCER from the day it was
-              // built, and left a distant consumer -- a mill out by the wheat,
-              // a bakery out by the mill -- walking to the yard for every
-              // load. Checked before the store because it is only ever
-              // returned when it is the shorter journey.
-              const shed = this.world.inputSource(b, prod.inputs, w.x, w.z);
-              if (shed) {
-                w.haulFrom = shed;
-                const c = this.world.approach(shed, w.x, w.z);
-                this.goTo(w, c.x, c.z, 'toFetch');
-                break;
-              }
-              w.haulFrom = null;
+              // The nearest place the town's stock can be collected: a yard
+              // square or a storehouse, whichever is closer. Every input in
+              // the game is a yard good, which is why this is the stockpile.
               const store = this.world.nearestStore('stockpile', w.x, w.z);
               if (!store) {
                 w.timer = 3;
@@ -366,20 +307,6 @@ export class WorkerPool {
               const short = Object.entries(prod.inputs).find(
                 ([r, n]) => this.state.stock[r as Resource] < (n ?? 0));
               if (short) {
-                // The yard has none, but a shed somewhere may: the pigs a
-                // farm dropped at a storehouse whose carrier is dead, or
-                // that the carrier keeps bringing back because the yard is
-                // full of stone. Those pigs are the town's, and a longer
-                // walk beats a slaughterhouse "waiting for materials" while
-                // six of them stand in a shed across the field -- which is
-                // what it did.
-                const far = this.world.inputSource(b, prod.inputs, w.x, w.z, true);
-                if (far) {
-                  w.haulFrom = far;
-                  const c = this.world.approach(far, w.x, w.z);
-                  this.goTo(w, c.x, c.z, 'toFetch');
-                  break;
-                }
                 w.timer = 2.5;
                 this.state.notify(`${b.def.label} is waiting for materials`, 'warn',
                                   siteOf(b));
@@ -403,29 +330,14 @@ export class WorkerPool {
         case 'toFetch': {
           if (!this.arrive(w, dt)) break;
 
-          // Which shed this trip was for, if any -- read once and cleared, so
-          // the next cycle starts by asking again rather than inheriting a
-          // shed that has since been emptied by the workshop next door.
-          const shed = w.haulFrom;
-          w.haulFrom = null;
-
-          let took = true;
-          for (const [r, n] of Object.entries(prod.inputs ?? {})) {
-            const res = r as Resource;
-            const have = shed ? (shed.held[res] ?? 0) : this.state.stock[res];
-            if (have < (n ?? 0)) { took = false; break; }
-          }
+          // Re-read the stock on arrival: the walk takes seconds, and another
+          // workshop may have taken the last of it meanwhile.
+          const took = Object.entries(prod.inputs ?? {}).every(
+            ([r, n]) => this.state.stock[r as Resource] >= (n ?? 0));
           if (took) {
             for (const [r, n] of Object.entries(prod.inputs ?? {})) {
               const res = r as Resource;
-              // A shed's pile is deliberately NOT in the town's stock -- that
-              // is what stops a relay from being a second, invisible store --
-              // so goods taken from one are subtracted from the shed and the
-              // town's books are left alone. They were written off the moment
-              // the carrier drew them out of the yard, which is the honest
-              // point to record it: that is when the stockpile emptied.
-              if (shed) shed.held[res] = (shed.held[res] ?? 0) - (n ?? 0);
-              else this.state.consume(res, n ?? 0);
+              this.state.consume(res, n ?? 0);
               b.held[res] = (b.held[res] ?? 0) + (n ?? 0);
             }
           } else {
@@ -487,7 +399,7 @@ export class WorkerPool {
           }
 
           const kind = storeOf(prod.output);
-          const store = this.world.nearestDrop(kind, w.x, w.z);
+          const store = this.world.nearestStore(kind, w.x, w.z);
           if (!store) {
             this.state.notify(
               kind === 'granary' ? 'You need a granary to store food'
@@ -507,22 +419,12 @@ export class WorkerPool {
         case 'toStore': {
           if (!this.arrive(w, dt)) break;
           if (w.carrying) {
-            const relay = w.dropAt?.def.relay;
-            if (relay) {
-              // Into the shed's own pile, not the town's stock. It only
-              // counts as stored once the carrier has walked it in.
-              const t = w.dropAt!;
-              const room = relay - totalHeld(t);
-              const put = Math.min(w.carryAmount, room);
-              if (put > 0) t.held[w.carrying] = (t.held[w.carrying] ?? 0) + put;
-            } else {
-              this.state.deposit(w.carrying, w.carryAmount);
-            }
-            // The hide off the same pig. Only on a real store drop, never into
-            // a relay shed, and only for the load this cycle actually made --
-            // clamped to the room there is, so it cannot outrun a full yard.
+            this.state.deposit(w.carrying, w.carryAmount);
+            // The hide off the same pig, only for the load this cycle actually
+            // made -- clamped to the room there is, so it cannot outrun a
+            // full yard.
             const bp = productionOf(b.def, b.alt)?.byproduct;
-            if (bp && !w.dropAt?.def.relay) {
+            if (bp) {
               const put = Math.min(bp.amount, this.state.roomFor(bp.output));
               if (put > 0) this.state.deposit(bp.output, put);
             }
@@ -607,170 +509,6 @@ export class WorkerPool {
   }
 
   /**
-   * The good this shed should go and fetch, or null.
-   *
-   * `below` is the depth that counts as short: 1 asks whether a shelf is
-   * actually EMPTY, DEPOT_INPUT_STOCK whether it is merely low. The same walk
-   * either way -- what differs is how urgent it is, and the caller decides
-   * that by which question it asks first.
-   */
-  private restockNeed(
-    b: PlacedBuilding, demand: Set<Resource>, below: number,
-  ): Resource | null {
-    if (totalHeld(b) >= DEPOT_CAPACITY) return null;
-    for (const r of demand) {
-      if ((b.held[r] ?? 0) >= below) continue;
-      // Nothing to fetch, and nowhere to fetch it from. A shed cannot invent
-      // wheat the town has not grown.
-      if (this.state.stock[r] <= 0) continue;
-      if (!this.world.nearestStore(storeOf(r), b.x, b.z)) continue;
-      return r;
-    }
-    return null;
-  }
-
-  /** Send the carrier off to the store for a load of one input. */
-  private goRestock(w: Worker, b: PlacedBuilding, r: Resource): void {
-    const store = this.world.nearestStore(storeOf(r), b.x, b.z);
-    if (!store) { w.timer = 2; return; }
-    w.restock = r;
-    const c = this.world.approach(store, w.x, w.z);
-    this.goTo(w, c.x, c.z, 'toFetch');
-  }
-
-  /**
-   * The storehouse carrier.
-   *
-   * It walks in both directions. OUTBOUND it takes the largest single kind the
-   * shed is holding to the real store -- one good per journey, because a man
-   * carries one thing, and because mixing kinds would mean deciding what to do
-   * when the stockpile has room for the stone but not the wood. INBOUND it
-   * fetches what the workshops around the shed eat, so a mill or a bakery out
-   * at the workings takes its sacks from next door instead of walking to the
-   * yard for each one.
-   *
-   * The two are kept apart by `relayDemand`: a good the workings around here
-   * consume is never carried OUT, or a shed serving a mill would fetch wheat
-   * from the stockpile and immediately walk it back again.
-   *
-   * It does NOT wait for a full load. A shed by a lone woodcutter would then
-   * sit on four logs forever, which looks exactly like a bug.
-   */
-  private updateRelay(w: Worker, b: PlacedBuilding, dt: number): void {
-    switch (w.state) {
-      case 'idle': {
-        w.timer -= dt;
-        if (w.timer > 0) return;
-
-        const demand = this.world.relayDemand(b);
-
-        // An empty shelf comes before a full one. A workshop with nothing to
-        // work on is stopped, and a load waiting here is only late: fetching
-        // first costs a delivery one trip, and skipping it costs a mill the
-        // whole round trip it was built beside this shed to avoid.
-        const dry = this.restockNeed(b, demand, 1);
-        if (dry) { this.goRestock(w, b, dry); return; }
-
-        let best: Resource | null = null, most = 0;
-        for (const [r, n] of Object.entries(b.held)) {
-          // Held FOR the workings, not waiting to leave them.
-          if (demand.has(r as Resource)) continue;
-          // Nor carried to a store that has no room: the load would only
-          // come straight back, and while it is on his shoulders it is
-          // neither on the shelf for a workshop to fetch nor in the yard.
-          // Six pigs went round and round like that between a full
-          // stockpile and a shed while the slaughterhouse next to it stood
-          // "waiting for materials".
-          if (this.state.roomFor(r as Resource) <= 0) continue;
-          if ((n ?? 0) > most) { most = n ?? 0; best = r as Resource; }
-        }
-        if (!best || most <= 0) {
-          // Nothing to take out: top the shelves up to depth rather than
-          // stand at the post, so the next dry spell never happens.
-          const top = this.restockNeed(b, demand, DEPOT_INPUT_STOCK);
-          if (top) { this.goRestock(w, b, top); return; }
-          w.timer = 2;
-          return;
-        }
-
-        const kind = storeOf(best);
-        const store = this.world.nearestStore(kind, w.x, w.z);
-        if (!store) {
-          w.timer = 4;
-          this.state.notify(
-            `The storehouse has no ${kind} to deliver to`, 'warn', siteOf(b));
-          return;
-        }
-        const take = Math.min(DEPOT_BATCH, most);
-        b.held[best] = most - take;
-        w.carrying = best;
-        w.carryAmount = take;
-
-        const c = this.world.approach(store, w.x, w.z);
-        this.goTo(w, c.x, c.z, 'toStore');
-        return;
-      }
-
-      case 'toFetch': {
-        if (!this.arrive(w, dt)) return;
-
-        const r = w.restock;
-        w.restock = null;
-        if (r) {
-          // Re-read the stock on arrival. The walk takes seconds, and a
-          // workshop nearer the yard may have taken the last of it while the
-          // carrier was on his way -- in which case he goes home empty rather
-          // than conjuring a load.
-          const want = DEPOT_INPUT_STOCK - (b.held[r] ?? 0);
-          const room = DEPOT_CAPACITY - totalHeld(b);
-          const n = Math.min(DEPOT_BATCH, want, room, this.state.stock[r]);
-          if (n > 0) {
-            this.state.consume(r, n);
-            w.carrying = r;
-            w.carryAmount = n;
-          }
-        }
-        const back = this.world.approach(b, w.x, w.z);
-        this.goTo(w, back.x, back.z, 'returning');
-        return;
-      }
-
-      case 'toStore': {
-        if (!this.arrive(w, dt)) return;
-        if (w.carrying) {
-          // Anything the store had no room for goes back in the shed rather
-          // than being spilled: the carrier is the one part of the chain that
-          // can simply turn round and bring it home.
-          const put = this.state.deposit(w.carrying, w.carryAmount);
-          if (!put) b.held[w.carrying] = (b.held[w.carrying] ?? 0) + w.carryAmount;
-          w.carrying = null;
-          w.carryAmount = 0;
-        }
-        const home = this.world.approach(b, w.x, w.z);
-        this.goTo(w, home.x, home.z, 'returning');
-        return;
-      }
-
-      case 'returning': {
-        if (!this.arrive(w, dt)) return;
-        // A load coming back IN: inputs fetched for the workings around here.
-        if (w.carrying) {
-          b.held[w.carrying] = (b.held[w.carrying] ?? 0) + w.carryAmount;
-          w.carrying = null;
-          w.carryAmount = 0;
-        }
-        w.state = 'idle';
-        w.timer = 0.4;
-        return;
-      }
-
-      default:
-        w.state = 'idle';
-        w.timer = 0.4;
-    }
-  }
-
-  /**
    * The ox tether.
    *
    * It produces nothing. It walks to a quarry that has stone stacked in its
@@ -803,7 +541,7 @@ export class WorkerPool {
         // A load left over from a full stockpile goes out again first.
         const left = b.held[hauler.resource] ?? 0;
         if (left > 0) {
-          const store = this.world.nearestDrop(kind, w.x, w.z);
+          const store = this.world.nearestStore(kind, w.x, w.z);
           if (!store) { w.timer = 4; return; }
           b.held[hauler.resource] = 0;
           w.carrying = hauler.resource;
@@ -840,7 +578,7 @@ export class WorkerPool {
         w.carrying = hauler.resource;
         w.carryAmount = take;
 
-        const store = this.world.nearestDrop(kind, w.x, w.z);
+        const store = this.world.nearestStore(kind, w.x, w.z);
         if (!store) {
           // Nowhere to take it: bring the load home rather than stand in the
           // quarry holding it, and let the tether's yard keep it.
@@ -860,26 +598,17 @@ export class WorkerPool {
       case 'toStore': {
         if (!this.arrive(w, dt)) return;
         if (w.carrying) {
-          const relay = w.dropAt?.def.relay;
-          if (relay) {
-            const t = w.dropAt!;
-            const room = relay - totalHeld(t);
-            const put = Math.min(w.carryAmount, room);
-            if (put > 0) t.held[w.carrying] = (t.held[w.carrying] ?? 0) + put;
+          // Only what fits. `deposit` spills the remainder of a part load,
+          // which is the right answer for a man with an armful and the
+          // wrong one for a sledge: the ox can simply take the rest back.
+          const put = Math.min(w.carryAmount, this.state.roomFor(w.carrying));
+          if (put > 0) {
+            this.state.deposit(w.carrying, put);
             w.carryAmount -= put;
           } else {
-            // Only what fits. `deposit` spills the remainder of a part load,
-            // which is the right answer for a man with an armful and the
-            // wrong one for a sledge: the ox can simply take the rest back.
-            const put = Math.min(w.carryAmount, this.state.roomFor(w.carrying));
-            if (put > 0) {
-              this.state.deposit(w.carrying, put);
-              w.carryAmount -= put;
-            } else {
-              this.state.notify(
-                `${STORE_LABELS[kind]} is full — the ox is standing loaded`, 'warn',
-                siteOf(b));
-            }
+            this.state.notify(
+              `${STORE_LABELS[kind]} is full — the ox is standing loaded`, 'warn',
+              siteOf(b));
           }
           if (w.carryAmount > 0) {
             b.held[w.carrying] = (b.held[w.carrying] ?? 0) + w.carryAmount;

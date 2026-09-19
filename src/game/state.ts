@@ -273,8 +273,9 @@ export class GameState {
     return FOOD_RESOURCES.filter(f => this.stock[f] > 0).length;
   }
 
+  /** Somewhere this kind can be kept: its own store, or a storehouse. */
   hasStore(kind: Store): boolean {
-    return this.buildings.some(b => b.def.storeFor === kind);
+    return this.buildings.some(b => b.def.storeFor === kind || b.def.storeAll);
   }
 
   /** Every square of a store, in placement order. */
@@ -324,11 +325,29 @@ export class GameState {
     return WEAPON_RESOURCES.reduce((n, r) => n + Math.max(0, this.stock[r]), 0);
   }
 
-  /** How much more of a good its store will take. */
+  /**
+   * The storehouses' shelf: room for any good whose own store is full.
+   *
+   * Shared across kinds -- see DEPOT_CAPACITY -- so what is on it is the sum
+   * of every store's overflow, and the room left is one number for all.
+   */
+  get shelfCapacity(): number {
+    return this.buildings.reduce((n, b) => n + (b.def.storeAll ?? 0), 0);
+  }
+
+  get shelfUsed(): number {
+    return this.stockpile.overflow(this.stockpileTiles, this.stock)
+      + this.granary.overflow(this.granaryTiles, this.stock)
+      + Math.max(0, this.armouryUsed - this.armouryCapacity);
+  }
+
+  /** How much more of a good its store will take, shelf included. */
   roomFor(resource: Resource): number {
     const kind = storeOf(resource);
-    if (kind === 'armoury') return Math.max(0, this.armouryCapacity - this.armouryUsed);
-    return this.layoutFor(kind).spaceFor(resource, this.storeTiles(kind), this.stock);
+    const own = kind === 'armoury'
+      ? this.armouryCapacity - this.armouryUsed
+      : this.layoutFor(kind).spaceFor(resource, this.storeTiles(kind), this.stock);
+    return Math.max(0, own) + Math.max(0, this.shelfCapacity - this.shelfUsed);
   }
 
   /** How many people the inns could serve if ale holds out. */
