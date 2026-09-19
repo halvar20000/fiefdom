@@ -6,7 +6,10 @@ material listed here.
 ## 0 A.D. animations — adopted
 
 `public/assets/sprites/0ad/` holds sprites rendered from Fiefdom's own peasant
-mesh driven by animations from [0 A.D.](https://play0ad.com) by Wildfire Games.
+mesh driven by animations from [0 A.D.](https://play0ad.com) by Wildfire Games,
+and `public/assets/units/0ad/` holds the same motion as bone matrices for the
+3D renderer (`<body>.anim.bin`, one file per body; see `docs/RENDER-3D.md`).
+Both directories carry the same `LICENSE.txt`.
 The clips used are `gather_wood`, `carry_wood_m`, `hele_gather_fish`,
 `death_a`, `farming`, `gather_fruit_m`, `gather_berries`, `seeding`,
 `slaughter`, `gather_meat` and `build`, reaching the game as the `chop`,

@@ -1,0 +1,20 @@
+{
+ "bodies": [
+  "arabian_swordsman",
+  "archer",
+  "assassin",
+  "crossbowman",
+  "engineer",
+  "fire_thrower",
+  "ladderman",
+  "lord",
+  "maceman",
+  "peasant",
+  "pikeman",
+  "slave",
+  "slinger",
+  "spearman",
+  "swordsman",
+  "tunneler"
+ ]
+}

@@ -4,6 +4,7 @@ import { Terrain } from './engine/terrain';
 import { SpriteBatch } from './engine/sprites';
 import { ModelLibrary, ModelBatch } from './engine/models';
 import { Lighting } from './engine/lighting';
+import { UnitLibrary, UnitBatch } from './engine/units';
 import { loadTileArray, buildCombinedAtlas, type CombinedAtlas } from './engine/assets';
 import { Audio } from './engine/audio';
 import { Projectiles } from './engine/projectiles';
@@ -198,13 +199,14 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
   // scenery while the two coexist. Units are sprites either way for now.
   const use3d = flags.get('r3d') !== '0';
 
-  const [tiles, atlas, models] = await Promise.all([
+  const [tiles, atlas, models, units] = await Promise.all([
     loadTileArray('/assets/tiles'),
     buildCombinedAtlas('/assets/sprites'),
     use3d ? ModelLibrary.load('/assets/models', renderer.capabilities.getMaxAnisotropy(), (done, total) => {
       loading.textContent = `loading models ${done}/${total}…`;
     }) : Promise.resolve(null),
-  ]) as [Awaited<ReturnType<typeof loadTileArray>>, CombinedAtlas, ModelLibrary | null];
+    use3d ? UnitLibrary.load('/assets/units') : Promise.resolve(null),
+  ]) as [Awaited<ReturnType<typeof loadTileArray>>, CombinedAtlas, ModelLibrary | null, UnitLibrary | null];
   if (models?.missing.length) {
     console.warn(`[models] ${models.missing.length} without a .glb: ${models.missing.join(', ')}`);
   }
@@ -296,6 +298,10 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
   if (models) {
     scene.add(lighting!.group, staticModels!.group, restlessModels!.group, ghostModels!.group);
   }
+  // The people, as animated meshes. Bodies the library lacks -- animals,
+  // siege engines -- keep their sprites.
+  const unitBatch = units && lighting ? new UnitBatch(units, lighting) : null;
+  if (unitBatch) scene.add(unitBatch.group);
 
   // --- occupancy ----------------------------------------------------------
   // Two grids, kept in step. `occupied` decides where you may BUILD;
@@ -5247,9 +5253,28 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     // Gather the moving figures, sort them, then merge into the pre-sorted
     // scenery so the entire scene emits as one back-to-front stream.
     const figures: DrawItem[] = [];
+    if (unitBatch) unitBatch.clear();
+    /**
+     * A human as a mesh. False when the body or the clip has no animation,
+     * which is the cue to draw the sprite instead. The frame is picked as
+     * it was for sprites: floor(phase * fps) mod count, per clip.
+     */
+    const addUnit = (body: string, clip: string, phase: number,
+                     x: number, y: number, z: number, heading: number,
+                     tint?: [number, number, number]): boolean => {
+      if (!unitBatch) return false;
+      const c = unitBatch.clip(body, clip) ?? unitBatch.clip(body, 'idle');
+      if (!c) return false;
+      const f = Math.floor(phase * c.fps) % c.count;
+      unitBatch.add(body, c.start + f, x, y, z, heading, tint);
+      return true;
+    };
     const addFigure = (x: number, z: number, heading: number,
                        clip: string, phase: number,
                        facingOffset = DIRECTION_OFFSET) => {
+      // the peasant body; anything with another rest facing is another rig
+      if (facingOffset === DIRECTION_OFFSET
+          && addUnit('peasant', clip, phase, x, terrain.heightAt(x, z), z, heading)) return;
       const dir = (unitDirectionIndexAz(heading, az) + facingOffset) & 7;
       const n = clipFrames(clip);
       const f = Math.floor(phase * clipFps(clip)) % n;
@@ -5272,8 +5297,10 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     // glance says whose men are working which castle.
     for (const w of enemyWorkers.workers) {
       if (enemyWorkers.hidden(w)) continue;
-      const dir = (unitDirectionIndexAz(w.heading, az) + DIRECTION_OFFSET) & 7;
       const clip = enemyWorkers.clipFor(w);
+      if (addUnit('peasant', clip, w.phase, w.x, terrain.heightAt(w.x, w.z), w.z, w.heading,
+                  factionOf(w.side)?.unitTint ?? [1.5, 0.62, 0.55])) continue;
+      const dir = (unitDirectionIndexAz(w.heading, az) + DIRECTION_OFFSET) & 7;
       const n = clipFrames(clip);
       const f = Math.floor(w.phase * clipFps(clip)) % n;
       const key = atlas.frames[`${clip}_${dir}_${f}`] ? `${clip}_${dir}_${f}` : `idle_${dir}_0`;
@@ -5286,6 +5313,66 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       });
     }
     for (const sd of army.soldiers) {
+      // A posted man stands on the walkway, not in the masonry. The extra bias
+      // puts him after the wall in the same depth slot, so he is drawn on it
+      // rather than behind it.
+      const post = sd.garrison;
+      const postName = post ? buildingNameAt(post.x, post.z) : '';
+      const lift = post ? (GARRISON_HEIGHT[postName] ?? 0) : 0;
+      // A wall on broken ground is founded at the bottom of its tile, so its
+      // walkway is there too. Without this the man on it stands at the tile's
+      // MEAN height and floats half a step above the stone he is meant to be
+      // standing on -- the same half step the wall itself was moved down by.
+      const postDrop = post
+        ? terrain.heightAt(post.x, post.z) - footing(postName, post.x, post.z) : 0;
+      // The strike lunge. A close-fighter or a battering ram thrusts toward what
+      // it is hitting on the moment of the blow and eases back -- so the blow
+      // visibly lands instead of falling short across a gap, and the ram meets
+      // the wall. Ranged men (archers, catapults) and posted men do not lunge:
+      // they loose from where they stand. Heading already points at the target
+      // while a blow is in the air, so it needs no target lookup here.
+      let dx = sd.x, dz = sd.z;
+      if (sd.hp > 0 && sd.swing > 0 && !post && sd.def.range < 3.0) {
+        const l = (sd.def.siege ? 0.5 : 0.32) * (sd.swing / SWING_TIME);
+        dx += Math.cos(sd.heading) * l;
+        dz += Math.sin(sd.heading) * l;
+      }
+      const y = terrain.heightAt(dx, dz) + lift - postDrop;
+      // Enemies are the same three bodies under a red cast rather than three
+      // more palettes: 288 more sprites to say "not yours" is a poor trade,
+      // and side reads faster from colour than from costume anyway.
+      // Selection wins; otherwise a held man wears a cool steel cast so you
+      // can see at a glance which of your troops are standing their ground.
+      const tint: [number, number, number] | undefined =
+        sd.side !== PLAYER ? (factionOf(sd.side)?.unitTint ?? [1.5, 0.62, 0.55])
+        : sd.selected ? [1.45, 1.45, 1.15]
+        : sd.hold ? [0.82, 0.9, 1.15] : undefined;
+
+      // The mesh, for a body the library has. Dying plays the death clip
+      // once, front to back, by the time left; a four-legged body holds its
+      // idle (see the sprite branch below for why).
+      if (unitBatch && unitBatch.has(sd.type)) {
+        let row: number | null = null;
+        if (sd.hp <= 0) {
+          const dc = sd.def.fourLegged ? null : unitBatch.clip(sd.type, 'death');
+          if (dc) {
+            const prog = 1 - Math.max(0, sd.dying) / DEATH_SECONDS;
+            row = dc.start + Math.min(dc.count - 1, Math.floor(prog * dc.count));
+          } else {
+            const ic = unitBatch.clip(sd.type, 'idle');
+            if (ic) row = ic.start;
+          }
+        } else {
+          const act = sd.swing > 0 ? 'attack' : sd.moving ? 'walk' : 'idle';
+          const c = unitBatch.clip(sd.type, act) ?? unitBatch.clip(sd.type, 'idle');
+          if (c) row = c.start + Math.floor(sd.phase * c.fps) % c.count;
+        }
+        if (row !== null) {
+          unitBatch.add(sd.type, row, dx, y, dz, sd.heading, tint);
+          continue;
+        }
+      }
+
       const dir = (unitDirectionIndexAz(sd.heading, az) + DIRECTION_OFFSET) & 7;
       let key: string;
       if (sd.hp <= 0) {
@@ -5314,42 +5401,11 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
                 : `idle_${dir}_0`;
       }
       if (!atlas.frames[key]) continue;
-      // A posted man stands on the walkway, not in the masonry. The extra bias
-      // puts him after the wall in the same depth slot, so he is drawn on it
-      // rather than behind it.
-      const post = sd.garrison;
-      const postName = post ? buildingNameAt(post.x, post.z) : '';
-      const lift = post ? (GARRISON_HEIGHT[postName] ?? 0) : 0;
-      // A wall on broken ground is founded at the bottom of its tile, so its
-      // walkway is there too. Without this the man on it stands at the tile's
-      // MEAN height and floats half a step above the stone he is meant to be
-      // standing on -- the same half step the wall itself was moved down by.
-      const postDrop = post
-        ? terrain.heightAt(post.x, post.z) - footing(postName, post.x, post.z) : 0;
-      // The strike lunge. A close-fighter or a battering ram thrusts toward what
-      // it is hitting on the moment of the blow and eases back -- so the blow
-      // visibly lands instead of falling short across a gap, and the ram meets
-      // the wall. Ranged men (archers, catapults) and posted men do not lunge:
-      // they loose from where they stand. Heading already points at the target
-      // while a blow is in the air, so it needs no target lookup here.
-      let dx = sd.x, dz = sd.z;
-      if (sd.hp > 0 && sd.swing > 0 && !post && sd.def.range < 3.0) {
-        const l = (sd.def.siege ? 0.5 : 0.32) * (sd.swing / SWING_TIME);
-        dx += Math.cos(sd.heading) * l;
-        dz += Math.sin(sd.heading) * l;
-      }
       figures.push({
-        key, x: dx, z: dz, y: terrain.heightAt(dx, dz) + lift - postDrop,
+        key, x: dx, z: dz, y,
         bias: footprintDepthBiasAz(1, 1, az) + (post ? 0.6 : 0),
         depth: depthKeyAz(dx, dz, az),
-        // Enemies are the same three bodies under a red cast rather than three
-        // more palettes: 288 more sprites to say "not yours" is a poor trade,
-        // and side reads faster from colour than from costume anyway.
-        // Selection wins; otherwise a held man wears a cool steel cast so you
-        // can see at a glance which of your troops are standing their ground.
-        tint: sd.side !== PLAYER ? (factionOf(sd.side)?.unitTint ?? [1.5, 0.62, 0.55])
-            : sd.selected ? [1.45, 1.45, 1.15]
-            : sd.hold ? [0.82, 0.9, 1.15] : undefined,
+        tint,
       });
     }
 
@@ -5488,6 +5544,8 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     if (lighting) {
       lighting.update(iso.target, iso.viewWidth, iso.viewHeight, iso.pixelsPerUnit);
       terrain.setShadow(lighting.sun);
+      sprites.setShadow(lighting.sun);
+      if (unitBatch) { unitBatch.setShadow(lighting.sun); unitBatch.flush(); }
     }
     renderer.render(scene, iso.camera);
     hud.update();

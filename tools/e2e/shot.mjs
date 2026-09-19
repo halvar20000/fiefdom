@@ -86,6 +86,20 @@ await shot('free_az20');
 await ev(`window.__game.iso.rotateByDeg(-120); window.__game.iso.settle()`);
 await shot('free_az260');
 await ev(`window.__game.iso.rotateByDeg(145); window.__game.iso.settle()`);
+// a raid, so there are soldiers to look at: let them march a while, then
+// look at wherever they are
+await ev(`window.__game.spawnRaid(12); window.__game.stepSim(75)`);
+log('raiders', await ev(`(() => { const g = window.__game; const s = g.army.soldiers.filter(x => x.side !== 0);
+  if (!s.length) return 'none';
+  // the biggest cluster: the raider with most others within six tiles
+  let best = s[0], bn = -1;
+  for (const a of s) { const n = s.filter(b => Math.hypot(a.x - b.x, a.z - b.z) < 6).length; if (n > bn) { bn = n; best = a; } }
+  g.iso.target.set(best.x, g.terrain.heightAt(best.x, best.z), best.z); g.iso.zoomBy(3); g.iso.settle();
+  return s.length + ' soldiers, ' + bn + ' near ' + best.type + ' at ' + best.x.toFixed(1) + ',' + best.z.toFixed(1)
+    + ' types ' + [...new Set(s.map(x => x.type))].join('/'); })()`));
+await shot('raid');
+await ev(`window.__game.iso.rotateByDeg(90); window.__game.iso.settle()`);
+await shot('raid_b');
 // the ghost: a wall run in hand, hovering over the keep's doorstep
 await ev(`window.__game.iso.rotateBy(2); window.__game.iso.zoomBy(-1)`);
 await ev(`(() => { const g = window.__game; const k = g.state.buildings.find(b => b.name === 'keep');
