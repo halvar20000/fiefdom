@@ -27,8 +27,8 @@ transfers, and that the look is the models and the light, not the engine).
 
 `tools/render/export_glb.py` runs the same builders the sprite renderers use
 (`buildings.py`, `props.py`, `piles.py`) and writes one `.glb` per model to
-`public/assets/models/`, textures embedded as WebP, plus `models.json` with
-the footprints. `tools/render/export_models.sh` does all of them, one Blender
+`public/assets/models/` (geometry only), `models.json` with the footprints,
+and the material tiles under `mat/` with `materials.json`. `tools/render/export_models.sh` does all of them, one Blender
 process each with retries — this headless Blender build segfaults in Cycles
 bake now and then.
 
