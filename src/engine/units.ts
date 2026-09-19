@@ -64,13 +64,25 @@ export class UnitLibrary {
 
   private static async loadBody(base: string, name: string): Promise<UnitBody> {
     const meta = await fetch(`${base}/${name}.json`).then(r => r.json()) as BodyMeta;
+    // The Mixamo motion is generated locally and never committed (see
+    // docs/THIRD-PARTY.md), so a public clone may not have it. Then its
+    // clips are simply absent from the table and the draw loop falls back
+    // to the sprites for them; the 0 A.D. clips still play.
+    const optional = (url: string) => fetch(url).then(r => r.ok ? r.arrayBuffer() : new ArrayBuffer(0));
     const [mesh, mixamo, zeroad] = await Promise.all([
       fetch(`${base}/${name}.bin`).then(r => r.arrayBuffer()),
-      fetch(`${base}/${name}.anim.bin`).then(r => r.arrayBuffer()),
-      meta.frames['0ad'] > 0
-        ? fetch(`${base}/0ad/${name}.anim.bin`).then(r => r.arrayBuffer())
-        : Promise.resolve(new ArrayBuffer(0)),
+      meta.frames.mixamo > 0 ? optional(`${base}/${name}.anim.bin`) : Promise.resolve(new ArrayBuffer(0)),
+      meta.frames['0ad'] > 0 ? optional(`${base}/0ad/${name}.anim.bin`) : Promise.resolve(new ArrayBuffer(0)),
     ]);
+    const width0 = meta.bones * 3 * 4 * 4;    // bytes per frame
+    const haveMixamo = mixamo.byteLength === meta.frames.mixamo * width0;
+    const have0ad = zeroad.byteLength === meta.frames['0ad'] * width0;
+    // Without the Mixamo half a body has no idle or walk, and a man who is a
+    // mesh while chopping and a sprite while walking is worse than a sprite.
+    // So the whole body steps aside for its sprites.
+    if (!haveMixamo) throw new Error('no Mixamo motion on this build; drawn as sprites');
+    const framesMixamo = meta.frames.mixamo;
+    const frames0ad = have0ad ? meta.frames['0ad'] : 0;
 
     // --- mesh: positions, normals, colours, bone, indices, back to back
     const V = meta.verts;
@@ -94,10 +106,10 @@ export class UnitLibrary {
 
     // --- animation: the two sources appended, 0 A.D. after Mixamo
     const width = meta.bones * 3;
-    const rows = meta.frames.mixamo + meta.frames['0ad'];
+    const rows = Math.max(1, framesMixamo + frames0ad);
     const data = new Float32Array(width * rows * 4);
-    data.set(new Float32Array(mixamo), 0);
-    data.set(new Float32Array(zeroad), meta.frames.mixamo * width * 4);
+    if (haveMixamo) data.set(new Float32Array(mixamo), 0);
+    if (have0ad) data.set(new Float32Array(zeroad), framesMixamo * width * 4);
     const anim = new THREE.DataTexture(data, width, rows, THREE.RGBAFormat, THREE.FloatType);
     anim.magFilter = THREE.NearestFilter;
     anim.minFilter = THREE.NearestFilter;
@@ -106,8 +118,9 @@ export class UnitLibrary {
 
     const clips: Record<string, UnitClip> = {};
     for (const [clip, c] of Object.entries(meta.clips)) {
+      if (c.source === 'mixamo' ? !haveMixamo : !have0ad) continue;
       clips[clip] = {
-        start: c.source === '0ad' ? c.start + meta.frames.mixamo : c.start,
+        start: c.source === '0ad' ? c.start + framesMixamo : c.start,
         count: c.count, fps: c.fps,
       };
     }

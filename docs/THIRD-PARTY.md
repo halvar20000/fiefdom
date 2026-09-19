@@ -50,3 +50,24 @@ Adopting any of it would mean:
 
 This is a summary of their licence file and Creative Commons' published
 compatibility position, not legal advice.
+
+## Mixamo animations — used, never handed on
+
+The unit bodies are animated with clips from [Mixamo](https://www.mixamo.com)
+(Adobe): `Idle`, `Walking`, `Digging`, `Heavy Weapon Swing`, `Baseball
+Strike`, `Standing Draw Arrow`, and the Y Bot skeleton they ride on. Adobe's
+terms allow the animations to be used and incorporated in a project, and do
+not allow the animation data itself to be passed on as an asset. The line
+drawn here:
+
+- The FBX files never enter the repository (`assets/source/**/*.fbx` is
+  ignored); the sprites rendered from them do, as renders of our own mesh.
+- The 3D renderer's bone-matrix files, `public/assets/units/<body>.anim.bin`,
+  are the motion in a form close to the clips themselves, so they follow the
+  FBX files: generated locally by `tools/render/export_units.sh` and ignored
+  by git. A build made where they exist carries them into the game, which
+  is use in a project; a clone without them draws those units as sprites.
+- The 0 A.D. motion sits apart in `public/assets/units/0ad/`, committed
+  under its own licence as above.
+
+This is a reading of Adobe's published terms, not legal advice.

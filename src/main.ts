@@ -5267,6 +5267,8 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
                      x: number, y: number, z: number, heading: number,
                      tint?: [number, number, number]): boolean => {
       if (!unitBatch) return false;
+      // No clip, no mesh: a body frozen in its rest pose is worse than the
+      // sprite the game already has for it.
       const c = unitBatch.clip(body, clip) ?? unitBatch.clip(body, 'idle');
       if (!c) return false;
       const f = Math.floor(phase * c.fps) % c.count;
