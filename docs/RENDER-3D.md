@@ -10,13 +10,13 @@ transfers, and that the look is the models and the light, not the engine).
 
 ## Milestones
 
-1. **Static world as meshes** — buildings, walls, trees, yards, ghosts as
-   `InstancedMesh`; `DirectionalLight` with a shadow map that the terrain and
-   the buildings receive. Camera unchanged (four rotations, four zooms);
-   units unchanged (sprites). *This is where the branch is.*
-2. **Free camera** — continuous rotation and zoom. Unit sprites pick their
-   facing from heading minus azimuth already, so they survive it; the HUD,
-   minimap, touch and editor need their rotation assumptions loosened.
+1. **Static world as meshes** — done. Buildings, walls, trees, yards and
+   ghosts as `InstancedMesh`; a `DirectionalLight` with a shadow map that the
+   terrain, the buildings and the unit sprites receive.
+2. **Free camera** — done. Continuous azimuth and zoom, gliding between the
+   old resting places; middle-drag / Alt-drag / two-finger twist to turn,
+   wheel and pinch to zoom. Sprite lookups still use the nearest quadrant.
+   *This is where the branch is.*
 3. **Look tuning** against the sprite screenshots — shadow softness, bounce,
    bake resolution or procedural shader materials for the big buildings,
    ground tiles re-rendered as plain albedo.
@@ -32,15 +32,17 @@ the footprints. `tools/render/export_models.sh` does all of them, one Blender
 process each with retries — this headless Blender build segfaults in Cycles
 bake now and then.
 
-What glTF cannot carry is the procedural node materials, so each model gets
-a smart-projected UV layer and two bakes: base colour, and the shading normal
-in **object** space (tangent-space bakes crash this Blender when a mesh has
-two UV layers; object space needs no tangents and three.js reads it natively
-as `ObjectSpaceNormalMap`). The exporter swizzles the bake to Y-up; the
-engine rotates it by the instance matrix (`engine/models.ts`).
+What glTF cannot carry is the procedural node materials, so each distinct
+material is baked ONCE, on a flat 4×4-tile plane, into a tileable colour
+texture and a tangent-space normal map; the models keep the world-scale
+cube-projected UVs their patterns were built on and the engine repeats the
+tile across them (`engine/models.ts`). Per-model bakes were tried first and
+blurred the bricks away: 1024² over every face of a 3×3 keep is one texel
+of mortar.
 
-Bake sizes: 1024² for anything 2×2 and up, 256² for a 1×1 prop or pile.
-The whole set is ~35 MB against the 74 MB of sprites it replaces.
+Tiles are 1024² for a patterned material (brick, plank, thatch) and 256²
+for a plain one (cloth, iron, leaves). The whole set — 146 models and ~120
+material tiles — is 24 MB against the 74 MB of sprites it replaces.
 
 ## Conventions the engine relies on
 
@@ -54,6 +56,11 @@ The whole set is ~35 MB against the 74 MB of sprites it replaces.
   terrain slopes, and now the meshes and their shadow map.
 - Tints are per-instance colours multiplying the albedo, the same numbers the
   sprite batch used.
+- The renderer outputs **linear**. The sprite and terrain shaders are raw and
+  never encoded to sRGB, so the game's look has always been the art through a
+  gamma curve (a keep sprite authored as pale sandstone shows as deep gold);
+  three's lit materials are told to do the same so meshes match their own
+  sprites. Undoing this properly means re-tuning the whole game's brightness.
 
 ## Licence note
 

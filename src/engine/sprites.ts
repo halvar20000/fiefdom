@@ -105,6 +105,13 @@ export class SpriteBatch {
       uniforms: {
         uAtlas: { value: texture },
         uEpsilon: { value: 0.12 },
+        // The sun's shadow map, once the 3D world is up (see setShadow). A
+        // sprite carries its own baked sunlight, so a peasant standing in the
+        // shadow of a wall is darkened here to what the ground under him is.
+        uShadowMap: { value: null },
+        uShadowMatrix: { value: new THREE.Matrix4() },
+        uShadowOn: { value: 0 },
+        uShadowFloor: { value: 0.3 },
       },
       transparent: true,
       depthTest: true,
@@ -120,15 +127,21 @@ export class SpriteBatch {
         in float iBias;
         in float iPage;
 
+        uniform mat4 modelMatrix;
         uniform mat4 modelViewMatrix;
         uniform mat4 projectionMatrix;
         uniform float uEpsilon;
+        uniform mat4 uShadowMatrix;
 
         out vec2 vUv;
         out vec3 vTint;
         flat out float vPage;
+        flat out vec4 vShadowCoord;
 
         void main() {
+          // one shadow sample per sprite, at the feet, lifted a little so a
+          // figure on flat ground is not shadowed by that ground
+          vShadowCoord = uShadowMatrix * (modelMatrix * vec4(iPos + vec3(0.0, 0.15, 0.0), 1.0));
           vec4 anchorView = modelViewMatrix * vec4(iPos, 1.0);
           // Offset purely within the view plane -> depth stays the anchor's depth.
           anchorView.x += mix(iRect.x, iRect.z, position.x);
@@ -151,16 +164,31 @@ export class SpriteBatch {
         in vec2 vUv;
         in vec3 vTint;
         flat in float vPage;
+        flat in vec4 vShadowCoord;
         precision highp sampler2DArray;
         uniform sampler2DArray uAtlas;
+        uniform sampler2D uShadowMap;
+        uniform float uShadowOn;
+        uniform float uShadowFloor;
         out vec4 fragColor;
+
+        #include <packing>
+
+        float sunlight() {
+          if (uShadowOn < 0.5) return 1.0;
+          vec3 sc = vShadowCoord.xyz / vShadowCoord.w;
+          if (sc.x < 0.0 || sc.x > 1.0 || sc.y < 0.0 || sc.y > 1.0 || sc.z > 1.0) return 1.0;
+          float depth = unpackRGBAToDepth(texture(uShadowMap, sc.xy));
+          return sc.z - 0.0015 <= depth ? 1.0 : 0.0;
+        }
 
         void main() {
           vec4 texel = texture(uAtlas, vec3(vUv, vPage));
           // Only drop what is genuinely empty. Anything above that keeps its
           // alpha so shadows stay translucent.
           if (texel.a < 0.02) discard;
-          fragColor = vec4(texel.rgb * vTint, texel.a);
+          float sun = mix(uShadowFloor, 1.0, sunlight());
+          fragColor = vec4(texel.rgb * vTint * sun, texel.a);
         }
       `,
     });
@@ -171,6 +199,16 @@ export class SpriteBatch {
   }
 
   clear(): void { this.count = 0; }
+
+  /** Receive the sun's shadow map; null leaves the sprites as baked. */
+  setShadow(light: THREE.DirectionalLight | null): void {
+    const u = this.material.uniforms;
+    const map = light?.shadow.map;
+    if (!light || !map) { u.uShadowOn.value = 0; return; }
+    u.uShadowMap.value = map.texture;
+    u.uShadowMatrix.value.copy(light.shadow.matrix);
+    u.uShadowOn.value = 1;
+  }
 
   /**
    * Queue one sprite. `worldPos` is the ground point the sprite stands on.
