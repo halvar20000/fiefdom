@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 import { HEIGHT_STEP, SUN_DIRECTION } from './iso';
+import type { GroundArrays } from './assets';
+import type { Lighting } from './lighting';
 
 export interface TerrainOptions {
   width: number;
@@ -145,6 +147,19 @@ export class Terrain {
         uShadowSize: { value: 1 },
         uShadowOn: { value: 0 },
         uShadowFloor: { value: 0.3 },
+        // The 3D ground: unlit colour and normal tiles, lit here with the
+        // scene's own lights (see setGround). Off, the baked tiles draw.
+        uGround: { value: null },
+        uGroundNrm: { value: null },
+        uGroundOn: { value: 0 },
+        uGroundSpan: { value: 4 },
+        uVariants: { value: 4 },
+        uSunColor: { value: new THREE.Vector3() },
+        uSkyColor: { value: new THREE.Vector3() },
+        uGroundColor: { value: new THREE.Vector3() },
+        uBounceDir: { value: new THREE.Vector3(0, 1, 0) },
+        uBounceColor: { value: new THREE.Vector3() },
+        uTypeGain: { value: Array.from({ length: 16 }, () => new THREE.Vector3(1, 1, 1)) },
       },
       vertexShader: /* glsl */`
         precision highp float;
@@ -166,6 +181,7 @@ export class Terrain {
         out vec2 vTile;
         out vec3 vNormal;
         out vec4 vShadowCoord;
+        out vec3 vWorld;
 
         void main() {
           vUv = uv;
@@ -174,6 +190,7 @@ export class Terrain {
           vTile = aTile;
           vNormal = normal;
           vec4 world = modelMatrix * vec4(position, 1.0);
+          vWorld = world.xyz;
           vShadowCoord = uShadowMatrix * world;
           gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
         }
@@ -188,6 +205,19 @@ export class Terrain {
         in vec2 vTile;
         in vec3 vNormal;
         in vec4 vShadowCoord;
+        in vec3 vWorld;
+
+        uniform sampler2DArray uGround;
+        uniform sampler2DArray uGroundNrm;
+        uniform float uGroundOn;
+        uniform float uGroundSpan;
+        uniform float uVariants;
+        uniform vec3 uSunColor;
+        uniform vec3 uSkyColor;
+        uniform vec3 uGroundColor;
+        uniform vec3 uBounceDir;
+        uniform vec3 uBounceColor;
+        uniform vec3 uTypeGain[16];
 
         uniform sampler2DArray uTiles;
         uniform vec3 uSun;
@@ -223,18 +253,40 @@ export class Terrain {
         }
 
         void main() {
-          vec3 texel = texture(uTiles, vec3(vUv, vLayer)).rgb;
+          vec3 colour;
+          if (uGroundOn > 0.5) {
+            // The 3D ground. A tile samples its own patch of the 4x4-tile
+            // texture by world position, so a block is seamless; the bump
+            // is a tangent-space normal map on the face normal, tangent
+            // along +x and bitangent along -z as the bake plane had them.
+            float type = floor(vLayer / uVariants + 0.001);
+            vec2 guv = vec2(vWorld.x, -vWorld.z) / uGroundSpan;
+            vec3 albedo = texture(uGround, vec3(guv, type)).rgb * vTint * uTypeGain[int(type)];
+            vec3 nts = texture(uGroundNrm, vec3(guv, type)).xyz * 2.0 - 1.0;
+            vec3 N = normalize(vNormal);
+            vec3 T = normalize(vec3(1.0, 0.0, 0.0) - N * N.x);
+            vec3 B = cross(N, T);
+            vec3 n = normalize(T * nts.x + B * nts.y + N * nts.z);
+            // the same three lights, weighted as the buildings' material
+            // weights them
+            vec3 light = uSunColor * max(dot(n, uSun), 0.0) * sunlight()
+                       + mix(uGroundColor, uSkyColor, n.y * 0.5 + 0.5)
+                       + uBounceColor * max(dot(n, uBounceDir), 0.0);
+            colour = albedo * light / 3.14159265;
+          } else {
+            vec3 texel = texture(uTiles, vec3(vUv, vLayer)).rgb;
 
-          // Slope shading only. Flat ground evaluates to exactly 1.0 so it
-          // matches the sun already baked into the tile render -- and the
-          // baked sun is then taken away again wherever a building stands
-          // between the ground and it.
-          vec3 n = normalize(vNormal);
-          float lit = max(dot(n, uSun), 0.0);
-          float sun = mix(uShadowFloor, 1.0, sunlight());
-          float shade = (uAmbient + (1.0 - uAmbient) * (lit / uFlatDot)) * sun;
+            // Slope shading only. Flat ground evaluates to exactly 1.0 so it
+            // matches the sun already baked into the tile render -- and the
+            // baked sun is then taken away again wherever a building stands
+            // between the ground and it.
+            vec3 n = normalize(vNormal);
+            float lit = max(dot(n, uSun), 0.0);
+            float sun = mix(uShadowFloor, 1.0, sunlight());
+            float shade = (uAmbient + (1.0 - uAmbient) * (lit / uFlatDot)) * sun;
 
-          vec3 colour = texel * vTint * clamp(shade, 0.0, 1.6);
+            colour = texel * vTint * clamp(shade, 0.0, 1.6);
+          }
 
           // In build mode, wash legal ground green and mute everything else, so
           // the eye finds the buildable strip instead of hunting tile by tile.
@@ -331,6 +383,50 @@ export class Terrain {
     this.geometry.getAttribute('normal').needsUpdate = true;
     layers.needsUpdate = true;
     this.geometry.computeBoundingSphere();
+  }
+
+  /**
+   * Switch to the lit ground: unlit colour and normal tiles, and the lights
+   * to shade them with -- the scene's, so the ground and the buildings on
+   * it agree about where the sun is and how bright.
+   */
+  setGround(ground: GroundArrays, lighting: Lighting, variants: number,
+            oldMean: (type: string) => [number, number, number]): void {
+    const u = this.material.uniforms;
+    u.uGround.value = ground.colour;
+    u.uGroundNrm.value = ground.normal;
+    u.uGroundSpan.value = ground.span;
+    u.uVariants.value = variants;
+    const scaled = (l: THREE.Light) => new THREE.Vector3(l.color.r, l.color.g, l.color.b).multiplyScalar(l.intensity);
+    u.uSunColor.value = scaled(lighting.sun);
+    u.uSkyColor.value = scaled(lighting.sky);
+    const g = lighting.sky.groundColor;
+    u.uGroundColor.value = new THREE.Vector3(g.r, g.g, g.b).multiplyScalar(lighting.sky.intensity);
+    u.uBounceColor.value = scaled(lighting.bounce);
+    u.uBounceDir.value = lighting.bounce.position.clone().normalize();
+
+    // Calibrate each ground type to the tile it replaces. Cycles lit these
+    // materials through a bump the size of a grass tuft, which takes half
+    // the light off a lawn in a way no filtered normal map can repeat; so
+    // the gain that makes flat, sunlit, unshadowed ground average exactly
+    // what the old tile averaged is measured here, per type and channel.
+    const up = new THREE.Vector3(0, 1, 0);
+    const sun = new THREE.Vector3(...SUN_DIRECTION).normalize();
+    const flat = new THREE.Vector3()
+      .addScaledVector(u.uSunColor.value, Math.max(0, up.dot(sun)))
+      .add(u.uSkyColor.value)
+      .addScaledVector(u.uBounceColor.value, Math.max(0, up.dot(u.uBounceDir.value)))
+      .multiplyScalar(1 / Math.PI);
+    const gains = u.uTypeGain.value as THREE.Vector3[];
+    ground.types.forEach((type, i) => {
+      const want = oldMean(type);
+      const have = ground.means[i];
+      gains[i].set(
+        want[0] / Math.max(1e-4, have[0] * flat.x),
+        want[1] / Math.max(1e-4, have[1] * flat.y),
+        want[2] / Math.max(1e-4, have[2] * flat.z));
+    });
+    u.uGroundOn.value = 1;
   }
 
   /**

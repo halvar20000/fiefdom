@@ -5,7 +5,7 @@ import { SpriteBatch } from './engine/sprites';
 import { ModelLibrary, ModelBatch } from './engine/models';
 import { Lighting } from './engine/lighting';
 import { UnitLibrary, UnitBatch } from './engine/units';
-import { loadTileArray, buildCombinedAtlas, type CombinedAtlas } from './engine/assets';
+import { loadTileArray, loadGroundArrays, buildCombinedAtlas, type CombinedAtlas } from './engine/assets';
 import { Audio } from './engine/audio';
 import { Projectiles } from './engine/projectiles';
 import { reportStaleAssets, missingTiles, missingSprites } from './engine/freshness';
@@ -199,14 +199,16 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
   // scenery while the two coexist. Units are sprites either way for now.
   const use3d = flags.get('r3d') !== '0';
 
-  const [tiles, atlas, models, units] = await Promise.all([
+  const [tiles, atlas, models, units, ground] = await Promise.all([
     loadTileArray('/assets/tiles'),
     buildCombinedAtlas('/assets/sprites'),
     use3d ? ModelLibrary.load('/assets/models', renderer.capabilities.getMaxAnisotropy(), (done, total) => {
       loading.textContent = `loading models ${done}/${total}…`;
     }) : Promise.resolve(null),
     use3d ? UnitLibrary.load('/assets/units') : Promise.resolve(null),
-  ]) as [Awaited<ReturnType<typeof loadTileArray>>, CombinedAtlas, ModelLibrary | null, UnitLibrary | null];
+    use3d ? loadGroundArrays('/assets/ground') : Promise.resolve(null),
+  ]) as [Awaited<ReturnType<typeof loadTileArray>>, CombinedAtlas, ModelLibrary | null, UnitLibrary | null,
+        Awaited<ReturnType<typeof loadGroundArrays>> | null];
   if (models?.missing.length) {
     console.warn(`[models] ${models.missing.length} without a .glb: ${models.missing.join(', ')}`);
   }
@@ -302,6 +304,8 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
   // siege engines -- keep their sprites.
   const unitBatch = units && lighting ? new UnitBatch(units, lighting) : null;
   if (unitBatch) scene.add(unitBatch.group);
+  // And the ground lit by the same sun, from unlit tiles.
+  if (ground && lighting) terrain.setGround(ground, lighting, tiles.index.variants, tiles.meanOf);
 
   // --- occupancy ----------------------------------------------------------
   // Two grids, kept in step. `occupied` decides where you may BUILD;

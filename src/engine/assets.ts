@@ -22,6 +22,17 @@ const V = (() => {
 
 import type { Atlas, Frame } from './sprites';
 
+/** Mean linear RGB of an sRGB RGBA byte image (or one layer of an array). */
+export function meanLinear(px: Uint8Array | Uint8ClampedArray, offset = 0, count = px.length / 4): [number, number, number] {
+  const lin = (v: number) => { const c = v / 255; return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
+  let r = 0, g = 0, b = 0;
+  for (let i = 0; i < count; i++) {
+    const o = offset + i * 4;
+    r += lin(px[o]); g += lin(px[o + 1]); b += lin(px[o + 2]);
+  }
+  return [r / count, g / count, b / count];
+}
+
 export function loadImage(url: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -49,6 +60,8 @@ export async function loadTileArray(base: string): Promise<{
   texture: THREE.DataArrayTexture;
   index: TileIndex;
   layerOf: (type: string, variant: number) => number;
+  /** Mean linear colour of each type's tiles, all variants together. */
+  meanOf: (type: string) => [number, number, number];
 }> {
   const index: TileIndex = await fetch(`${base}/tiles.json${V}`).then(r => r.json());
   const { tilePx, variants, types } = index;
@@ -86,8 +99,72 @@ export async function loadTileArray(base: string): Promise<{
     const t = types.indexOf(type);
     return t < 0 ? 0 : t * variants + (variant % variants);
   };
+  const means = new Map<string, [number, number, number]>();
+  const meanOf = (type: string) => {
+    let m = means.get(type);
+    if (!m) {
+      const t = Math.max(0, types.indexOf(type));
+      m = meanLinear(data, t * variants * tilePx * tilePx * 4, variants * tilePx * tilePx);
+      means.set(type, m);
+    }
+    return m;
+  };
 
-  return { texture, index, layerOf };
+  return { texture, index, layerOf, meanOf };
+}
+
+export interface GroundArrays {
+  colour: THREE.DataArrayTexture;
+  normal: THREE.DataArrayTexture;
+  types: string[];
+  /** Map tiles one texture spans; a tile samples its own 1/span patch. */
+  span: number;
+  /** Mean linear colour of each type's albedo tile. */
+  means: [number, number, number][];
+}
+
+/**
+ * The ground for the 3D terrain: per type, an unlit colour tile and a normal
+ * map, each spanning a 4x4 block of map tiles (tools/render/export_ground.py).
+ * Two texture arrays, one layer per type; the shader lights them itself with
+ * the same sun the buildings get.
+ */
+export async function loadGroundArrays(base: string): Promise<GroundArrays> {
+  const index = await fetch(`${base}/ground.json${V}`).then(r => r.json()) as
+    { types: string[]; span: number; px: number };
+  const { types, span, px } = index;
+  const canvas = document.createElement('canvas');
+  canvas.width = px; canvas.height = px;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
+
+  const means: [number, number, number][] = [];
+  const build = async (suffix: string, srgb: boolean) => {
+    const data = new Uint8Array(px * px * 4 * types.length);
+    for (let t = 0; t < types.length; t++) {
+      const img = await loadImage(`${base}/${types[t]}_${suffix}.webp${V}`);
+      ctx.drawImage(img, 0, 0, px, px);
+      const src = ctx.getImageData(0, 0, px, px).data;
+      const offset = t * px * px * 4;
+      for (let y = 0; y < px; y++) {
+        const row = (px - 1 - y) * px * 4;
+        data.set(src.subarray(row, row + px * 4), offset + y * px * 4);
+      }
+      if (srgb) means[t] = meanLinear(src);
+    }
+    const tex = new THREE.DataArrayTexture(data, px, px, types.length);
+    tex.format = THREE.RGBAFormat;
+    tex.type = THREE.UnsignedByteType;
+    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+    tex.magFilter = THREE.LinearFilter;
+    tex.minFilter = THREE.LinearMipmapLinearFilter;
+    tex.generateMipmaps = true;
+    tex.anisotropy = 8;
+    tex.colorSpace = srgb ? THREE.SRGBColorSpace : THREE.NoColorSpace;
+    tex.needsUpdate = true;
+    return tex;
+  };
+  const [colour, normal] = await Promise.all([build('col', true), build('nrm', false)]);
+  return { colour, normal, types, span, means };
 }
 
 interface SpriteMetaEntry {

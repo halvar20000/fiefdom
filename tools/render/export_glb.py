@@ -169,14 +169,14 @@ def save_webp(img, path, quality):
     img.save_render(path)
 
 
-def bake_material_tile(mat, key, mat_dir):
+def bake_material_tile(mat, key, mat_dir, res=None):
     """
     Bake `mat` on a TILE_SPAN x TILE_SPAN plane into mat/<key>_col.webp and
     mat/<key>_nrm.webp. The plane is added to the current scene next to the
     model and removed again; only the selection is baked.
     """
-    patterned = is_patterned(mat)
-    res = RES_PATTERN if patterned else RES_PLAIN
+    if res is None:
+        res = RES_PATTERN if is_patterned(mat) else RES_PLAIN
 
     deselect_all()
     bpy.ops.mesh.primitive_plane_add(size=TILE_SPAN, location=(0.0, 0.0, 50.0))
