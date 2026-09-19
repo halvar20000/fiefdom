@@ -23,6 +23,19 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.75.1',
+    date: '2026-09-19',
+    headline: 'One stranded peasant no longer stops every building.',
+    sections: [
+      {
+        title: 'Fixed',
+        items: [
+          '\u201cThat would strand one of your people outside\u201d on every building, for the rest of the game. The check that keeps a wall from shutting someone in asked whether every person could reach the keep AFTER the building went down \u2014 and never whether they could before. So once one person was already cut off, by a tree grown back across the only gap, a moat, the far bank of a river, or simply standing inside a building with no open tile beside it, that one person vetoed every placement from then on, and the message named nobody you could find. The check now compares before and after: a building is refused only for what it would change. The same held for a workplace already cut off from the keep, and is fixed the same way. Someone standing on the site itself is moved off it when the building lands, as before, and no longer counts as walled in by it.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.75.0',
     date: '2026-09-19',
     headline: 'Iron ore is its own ground.',

@@ -420,38 +420,81 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     // and cannot shut anything in.
     const box = solidBox(BUILDINGS[name], turn);
     x += box.x; z += box.z; w = box.w; d = box.d;
+
+    const ref = state.buildings.find(b => b.name === 'keep') ?? state.buildings[0];
+    if (!ref) return null;
+    const [rw, rd] = ref.def.footprint;
+    const keepRegion = (): number => {
+      for (let rz = ref.z - 1; rz <= ref.z + rd; rz++) {
+        for (let rx = ref.x - 1; rx <= ref.x + rw; rx++) {
+          const r = paths.regionAt(rx, rz);
+          if (r >= 0) return r;
+        }
+      }
+      return -1;
+    };
+    /**
+     * Can someone standing here get to `region`? The tile itself, or -- as
+     * `paths.find` allows, since workers stand inside their own buildings --
+     * a step out of it onto any neighbour.
+     */
+    const canReach = (tx: number, tz: number, region: number): boolean => {
+      for (let dz = -1; dz <= 1; dz++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          if (paths.regionAt(tx + dx, tz + dz) === region) return true;
+        }
+      }
+      return false;
+    };
+    const inFootprint = (tx: number, tz: number) =>
+      tx >= x && tz >= z && tx < x + w && tz < z + d;
+
+    // What is reachable NOW, before the trial. The refusal is for what the
+    // building would CHANGE: a building or a man that is already cut off --
+    // a tree grown back across the one gap, a man on the far bank of the
+    // river -- must not veto every placement from then on. That is exactly
+    // what it did: one stranded peasant and the game refused every building
+    // for the rest of the evening, with a message about a man nobody could
+    // find. Labels are per computation, so the keep's region is read again
+    // after the fill rather than compared across it.
+    const regionNow = keepRegion();
+    const reachedNow = new Set<number>();
+    if (regionNow >= 0) {
+      state.buildings.forEach((b, i) => {
+        if (!mustBeReached(b.def)) return;
+        const [bw, bd] = b.def.footprint;
+        if (hasAccess(b.x, b.z, bw, bd, regionNow)) reachedNow.add(i);
+      });
+    }
+    const stoodNow = workers.workers.map(wk => regionNow >= 0
+      && canReach(Math.floor(wk.x), Math.floor(wk.z), regionNow));
+
     const before: boolean[] = [];
     for (let dz = 0; dz < d; dz++)
       for (let dx = 0; dx < w; dx++) before.push(paths.isBlocked(x + dx, z + dz));
     paths.fill(x, z, w, d, true);
     try {
-      const ref = state.buildings.find(b => b.name === 'keep') ?? state.buildings[0];
-      if (!ref) return null;
-      const [rw, rd] = ref.def.footprint;
-      let region = -1;
-      for (let rz = ref.z - 1; rz <= ref.z + rd && region < 0; rz++) {
-        for (let rx = ref.x - 1; rx <= ref.x + rw && region < 0; rx++) {
-          const r = paths.regionAt(rx, rz);
-          if (r >= 0) region = r;
-        }
-      }
+      const region = keepRegion();
       if (region < 0) return 'That would block the way';
 
       const def = BUILDINGS[name];
       if (def && mustBeReached(def) && !hasAccess(x, z, w, d, region)) {
         return `Nobody could reach that ${def.label.toLowerCase()}`;
       }
-      for (const b of state.buildings) {
-        if (!mustBeReached(b.def)) continue;
+      for (const [i, b] of state.buildings.entries()) {
+        if (!reachedNow.has(i)) continue;
         const [bw, bd] = b.def.footprint;
         if (!hasAccess(b.x, b.z, bw, bd, region)) {
           return `That would shut your ${b.def.label.toLowerCase()} off from the keep`;
         }
       }
-      for (const wk of workers.workers) {
-        if (paths.regionAt(Math.floor(wk.x), Math.floor(wk.z)) !== region) {
-          return 'That would strand one of your people outside';
-        }
+      for (const [i, wk] of workers.workers.entries()) {
+        if (!stoodNow[i]) continue;
+        const tx = Math.floor(wk.x), tz = Math.floor(wk.z);
+        // A man on the site itself is moved off it when the building lands
+        // (rescueStuckWorkers), so he is not walled in by it.
+        if (inFootprint(tx, tz)) continue;
+        if (!canReach(tx, tz, region)) return 'That would strand one of your people outside';
       }
       return null;
     } finally {
