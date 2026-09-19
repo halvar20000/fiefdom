@@ -6,9 +6,16 @@ import { store } from './backend';
  * Saved games.
  *
  * Stored through `store` (see backend.ts): on the server when the container
- * provides one, mirrored to and falling back on localStorage otherwise. The
- * three slots keep their `fiefdom.save.<n>` keys either way, and the autosave
- * ring sits beside them as `fiefdom.save.auto<n>`.
+ * provides one, mirrored to and falling back on localStorage otherwise. A
+ * manual save is `fiefdom.save.<n>` either way, and the autosave ring sits
+ * beside them as `fiefdom.save.auto<n>`.
+ *
+ * There is no fixed number of manual slots. A slot is any numbered key that
+ * exists, and a new save takes the lowest number not in use -- the store is
+ * a key/value file on a server or in a browser, and neither cares whether
+ * there are three saves or thirty. The limit of three was a hangover from
+ * when the pause menu drew a fixed grid; it was the one thing about saving
+ * that a player ever ran into.
  *
  * A save is a DIFF against a freshly generated world, not a dump of one. The
  * terrain, the ground types and even the scatter of trees are all deterministic
@@ -20,7 +27,6 @@ import { store } from './backend';
  */
 
 export const SAVE_VERSION = 4;
-export const SLOTS = 3;
 
 /**
  * The autosave ring: this many slots, written round-robin every
@@ -35,7 +41,7 @@ export const SLOTS = 3;
 export const AUTOSAVES = 3;
 export const AUTOSAVE_INTERVAL = 5 * 60;
 
-/** A manual slot is 1..SLOTS; an autosave is 'auto1'..'autoN'. */
+/** A manual slot is a number from 1; an autosave is 'auto1'..'autoN'. */
 export type SlotId = number | `auto${number}`;
 
 export const isAutosave = (slot: SlotId): boolean => typeof slot === 'string';
@@ -43,6 +49,7 @@ export const isAutosave = (slot: SlotId): boolean => typeof slot === 'string';
 // Both kinds share the `fiefdom.save.` prefix, which is what backend.ts uses
 // to tell game data (kept on the server) from browser prefs (not).
 const KEY = (slot: SlotId) => `fiefdom.save.${slot}`;
+const MANUAL_KEY = /^fiefdom\.save\.(\d+)$/;
 const BOOT = 'fiefdom.boot';
 
 export interface SavedBuilding {
@@ -215,8 +222,27 @@ export function readSlot(slot: SlotId): SlotInfo {
   }
 }
 
+/** Every manual save present, in slot order. Unreadable ones are included
+ *  (with their error) so the menu can offer to delete them. */
 export function listSlots(): SlotInfo[] {
-  return Array.from({ length: SLOTS }, (_, i) => readSlot(i + 1));
+  return slotNumbers().map(readSlot);
+}
+
+/** The lowest slot number not in use: where the next new save goes. */
+export function freeSlot(): number {
+  const used = new Set(slotNumbers());
+  let n = 1;
+  while (used.has(n)) n++;
+  return n;
+}
+
+function slotNumbers(): number[] {
+  const out: number[] = [];
+  for (const k of store.keys()) {
+    const m = MANUAL_KEY.exec(k);
+    if (m) out.push(Number(m[1]));
+  }
+  return out.sort((a, b) => a - b);
 }
 
 /** The ring, newest first, empty slots left out. */

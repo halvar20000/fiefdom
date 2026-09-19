@@ -23,6 +23,19 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.74.0',
+    date: '2026-09-19',
+    headline: 'As many saved games as you like.',
+    sections: [
+      {
+        title: 'Changed',
+        items: [
+          'The pause menu no longer stops at three saves. It lists every save you have, each with Overwrite, Load and Delete, and ends with a row for the next one: Save there and it takes the lowest free number. The three-slot grid was a leftover from the first pause menu, and it was the one thing about saving anyone ever ran into. The autosave ring is unchanged, and the menu scrolls once the list outgrows the screen.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.73.0',
     date: '2026-09-18',
     headline: 'Room in the atlas for the clips that were cut.',

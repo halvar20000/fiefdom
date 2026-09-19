@@ -1,5 +1,5 @@
 import {
-  listSlots, listAutosaves, writeSlot, clearSlot, setBootIntent, playTime,
+  listSlots, listAutosaves, writeSlot, clearSlot, freeSlot, setBootIntent, playTime,
   savedWhen, AUTOSAVE_INTERVAL, type SaveGame,
 } from '../game/save';
 import { versionButton, VERSION_CSS } from './whatsnew';
@@ -12,7 +12,8 @@ const CSS = `
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: #ecdfc2;
 }
 #pause .box {
-  width: min(460px, 92vw); background: rgba(24,19,12,.97);
+  width: min(460px, 92vw); max-height: 92vh; overflow-y: auto;
+  background: rgba(24,19,12,.97);
   border: 1px solid rgba(196,162,96,.34); border-radius: 7px;
   box-shadow: 0 12px 40px rgba(0,0,0,.6); padding: 20px 22px 18px;
 }
@@ -37,7 +38,7 @@ const CSS = `
 }
 #pause .slot .who { line-height: 1.45; }
 #pause .slot .when { font-size: 9.5px; opacity: .55; }
-#pause .slot.empty .who { opacity: .4; font-style: italic; }
+#pause .slot.empty .who { opacity: .55; font-style: italic; }
 #pause .slot button { flex: none; padding: 5px 11px; font-size: 10.5px; }
 #pause .msg { font-size: 11px; margin-top: 12px; min-height: 15px; color: #8fbf6a; }
 #pause .msg.bad { color: #e2794f; }
@@ -147,9 +148,12 @@ export function showPause(hooks: PauseHooks): void {
 
   const render = () => {
     slotsWrap.textContent = '';
+    // Every save that exists, then one row for the next. There is no fixed
+    // number of slots: a new save takes the lowest free number, so the list
+    // is as long as the player has made it.
     for (const info of listSlots()) {
       const row = document.createElement('div');
-      row.className = 'slot' + (info.save ? '' : ' empty');
+      row.className = 'slot';
 
       const who = document.createElement('div');
       who.className = 'who';
@@ -158,12 +162,12 @@ export function showPause(hooks: PauseHooks): void {
           ` — ${playTime(info.save.elapsed)}` +
           `<div class="when">${savedWhen(info.save.savedAt)}</div>`;
       } else {
-        who.textContent = `${info.slot}. ${info.error ?? 'empty'}`;
+        who.textContent = `${info.slot}. ${info.error ?? 'unreadable'}`;
       }
       row.appendChild(who);
 
       const saveBtn = document.createElement('button');
-      saveBtn.textContent = info.save ? 'Overwrite' : 'Save';
+      saveBtn.textContent = 'Overwrite';
       saveBtn.onclick = () => {
         const err = writeSlot(info.slot, hooks.snapshot());
         if (err) say(`Could not save: ${err}`, true);
@@ -182,23 +186,38 @@ export function showPause(hooks: PauseHooks): void {
 
       // A delete that needs a second click, because a mis-click here is the
       // one action in this menu that destroys something.
-      if (info.save) {
-        const del = document.createElement('button');
-        del.className = 'danger';
-        del.textContent = 'Delete';
-        let armed = false;
-        del.onclick = () => {
-          if (!armed) { armed = true; del.textContent = 'Sure?'; return; }
-          clearSlot(info.slot);
-          say(`Slot ${info.slot} deleted.`);
-          render();
-        };
-        row.appendChild(del);
-        row.style.gridTemplateColumns = '1fr auto auto auto';
-      }
+      const del = document.createElement('button');
+      del.className = 'danger';
+      del.textContent = 'Delete';
+      let armed = false;
+      del.onclick = () => {
+        if (!armed) { armed = true; del.textContent = 'Sure?'; return; }
+        clearSlot(info.slot);
+        say(`Slot ${info.slot} deleted.`);
+        render();
+      };
+      row.appendChild(del);
+      row.style.gridTemplateColumns = '1fr auto auto auto';
 
       slotsWrap.appendChild(row);
     }
+
+    const next = freeSlot();
+    const fresh = document.createElement('div');
+    fresh.className = 'slot empty';
+    fresh.style.gridTemplateColumns = '1fr auto';
+    const who = document.createElement('div');
+    who.className = 'who';
+    who.textContent = `${next}. new save`;
+    const saveBtn = document.createElement('button');
+    saveBtn.textContent = 'Save';
+    saveBtn.onclick = () => {
+      const err = writeSlot(next, hooks.snapshot());
+      if (err) say(`Could not save: ${err}`, true);
+      else { say(`Saved to slot ${next}.`); render(); }
+    };
+    fresh.append(who, saveBtn);
+    slotsWrap.appendChild(fresh);
 
     // The autosave ring, newest first. Load only: these are the game's own
     // copies, and a button to save over one would only ever be pressed by

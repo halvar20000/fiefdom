@@ -2,8 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import './_dom';
 import {
-  upgrade, readSlot, writeSlot, writeAutosave, listAutosaves, listSlots, isAutosave,
-  SAVE_VERSION, AUTOSAVES,
+  upgrade, readSlot, writeSlot, writeAutosave, listAutosaves, listSlots, freeSlot,
+  clearSlot, isAutosave, SAVE_VERSION, AUTOSAVES,
 } from '../src/game/save';
 
 /** A save as build 1.x of 21 Aug 2026 wrote it: one enemy, sides by name. */
@@ -79,4 +79,29 @@ test('the autosave ring fills, then wraps over the oldest', () => {
   assert.equal(listSlots().filter(i => i.save).length, 1);
   assert.equal(isAutosave('auto1'), true);
   assert.equal(isAutosave(1), false);
+});
+
+test('manual slots are open-ended: a new save takes the lowest free number', () => {
+  localStorage.clear();
+  assert.deepEqual(listSlots(), []);
+  assert.equal(freeSlot(), 1);
+  for (let n = 1; n <= 7; n++) writeSlot(freeSlot(), v4(n, `s${n}`) as never);
+  assert.deepEqual(listSlots().map(i => i.slot), [1, 2, 3, 4, 5, 6, 7]);
+  assert.equal(freeSlot(), 8);
+  // A gap is filled before the list grows; the order stays numeric, not
+  // insertion or lexicographic (10 after 9, not after 1).
+  clearSlot(3);
+  assert.equal(freeSlot(), 3);
+  writeSlot(freeSlot(), v4(30, 'gap') as never);
+  writeSlot(10, v4(100, 'ten') as never);
+  assert.deepEqual(listSlots().map(i => i.slot), [1, 2, 3, 4, 5, 6, 7, 10]);
+  assert.equal(readSlot(3).save?.map.name, 'gap');
+  assert.equal(freeSlot(), 8);
+  // Autosaves and unrelated keys are not slots; an unreadable slot still
+  // lists, with its error, so it can be deleted from the menu.
+  writeAutosave(v4(1, 'auto') as never);
+  localStorage.setItem('fiefdom.maps', '[]');
+  localStorage.setItem('fiefdom.save.11', '{not json');
+  assert.deepEqual(listSlots().map(i => i.slot), [1, 2, 3, 4, 5, 6, 7, 10, 11]);
+  assert.equal(listSlots().at(-1)?.error, 'unreadable');
 });

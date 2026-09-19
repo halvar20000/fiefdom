@@ -137,4 +137,16 @@ export const store = {
     try { localStorage.removeItem(key); } catch { /* mirror is best-effort */ }
     if (serverUp) { cache.delete(key); void drop(key); }
   },
+  /** Every key present, for callers that list rather than look up (the saves). */
+  keys(): string[] {
+    if (serverUp) return [...cache.keys()];
+    try {
+      const out: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k) out.push(k);
+      }
+      return out;
+    } catch { return []; }
+  },
 };

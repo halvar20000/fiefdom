@@ -226,8 +226,9 @@ so a stockpile grown under it drew at its old height.
 
 ## Saving, loading and the pause menu
 
-**Esc** pauses and opens the in-game menu: resume, save or load one of three
-slots, delete a slot, or quit to the title screen. With a building in hand Esc
+**Esc** pauses and opens the in-game menu: resume, save to a new slot or over
+an old one, load or delete a save, or quit to the title screen. There is no
+fixed number of slots — a new save takes the lowest free number. With a building in hand Esc
 cancels the building instead — it means "back out of what I am doing", and
 that is the building before it is the game.
 

@@ -48,7 +48,7 @@ docker compose up -d
 ## Where saved games live
 
 **On the server, in `/data`** — map that to a host folder (the template
-defaults it to `/mnt/user/appdata/fiefdom`) and your three save slots and every
+defaults it to `/mnt/user/appdata/fiefdom`) and your saved games and every
 custom map are stored there, under `users/`: one file for the shared profile,
 and one per registered player.
 
