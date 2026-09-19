@@ -23,6 +23,19 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.75.2',
+    date: '2026-09-19',
+    headline: 'The pigs in the storehouse are pigs.',
+    sections: [
+      {
+        title: 'Fixed',
+        items: [
+          '\u201cSlaughterhouse is waiting for materials\u201d with six pigs sitting in a storehouse. A workshop only ever drew on a shed that was nearer to it than the stockpile; anything a farm had dropped at a shed farther off was out of its reach, and the shed\u2019s carrier was the one who could move it. When he could not \u2014 the shed unstaffed, or the stockpile full so that every load he took came straight back \u2014 the pigs stayed where they were and the slaughterhouse stood idle beside a full shelf. Now a workshop whose input the stockpile has none of takes it from any storehouse that holds it, a longer walk being better than no work; a farm no longer unloads at a shed with no carrier; and a carrier leaves a load on the shelf rather than carry it to a store that has no room for it.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.75.1',
     date: '2026-09-19',
     headline: 'One stranded peasant no longer stops every building.',

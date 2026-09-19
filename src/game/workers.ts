@@ -115,10 +115,12 @@ export interface WorkerWorld {
    *
    * Only if it is NEARER than the store the worker would otherwise walk to:
    * a shed built beside the stockpile is not a reason to take a detour.
+   * With `anywhere`, any shed holding the cycle, nearest first -- for when
+   * the stockpile has none, and the choice is a longer walk or no work.
    */
   inputSource(
     b: PlacedBuilding, inputs: Partial<Record<Resource, number>>,
-    x: number, z: number,
+    x: number, z: number, anywhere?: boolean,
   ): PlacedBuilding | null;
   /**
    * What the staffed workshops around this storehouse eat.
@@ -364,6 +366,20 @@ export class WorkerPool {
               const short = Object.entries(prod.inputs).find(
                 ([r, n]) => this.state.stock[r as Resource] < (n ?? 0));
               if (short) {
+                // The yard has none, but a shed somewhere may: the pigs a
+                // farm dropped at a storehouse whose carrier is dead, or
+                // that the carrier keeps bringing back because the yard is
+                // full of stone. Those pigs are the town's, and a longer
+                // walk beats a slaughterhouse "waiting for materials" while
+                // six of them stand in a shed across the field -- which is
+                // what it did.
+                const far = this.world.inputSource(b, prod.inputs, w.x, w.z, true);
+                if (far) {
+                  w.haulFrom = far;
+                  const c = this.world.approach(far, w.x, w.z);
+                  this.goTo(w, c.x, c.z, 'toFetch');
+                  break;
+                }
                 w.timer = 2.5;
                 this.state.notify(`${b.def.label} is waiting for materials`, 'warn',
                                   siteOf(b));
@@ -659,6 +675,13 @@ export class WorkerPool {
         for (const [r, n] of Object.entries(b.held)) {
           // Held FOR the workings, not waiting to leave them.
           if (demand.has(r as Resource)) continue;
+          // Nor carried to a store that has no room: the load would only
+          // come straight back, and while it is on his shoulders it is
+          // neither on the shelf for a workshop to fetch nor in the yard.
+          // Six pigs went round and round like that between a full
+          // stockpile and a shed while the slaughterhouse next to it stood
+          // "waiting for materials".
+          if (this.state.roomFor(r as Resource) <= 0) continue;
           if ((n ?? 0) > most) { most = n ?? 0; best = r as Resource; }
         }
         if (!best || most <= 0) {

@@ -1242,6 +1242,10 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       for (const b of state.buildings) {
         const cap = b.def.relay;
         if (!cap) continue;
+        // A shed with no carrier is a shed nothing ever leaves. A producer
+        // that unloads there is putting its goods somewhere the town cannot
+        // reach them, so until it is staffed the load goes to the yard.
+        if (b.staff <= 0) continue;
         if (totalHeld(b) >= cap) continue;
         const d = (b.x - x) ** 2 + (b.z - z) ** 2;
         if (d < bestD) { bestD = d; best = b; }
@@ -1283,14 +1287,15 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
      * would stop being a way to shorten a long walk and start being a tax on a
      * short one.
      */
-    inputSource(b, inputs, x, z) {
+    inputSource(b, inputs, x, z, anywhere = false) {
       let best: PlacedBuilding | null = null;
       let bestD = Infinity;
       for (const shed of state.buildings) {
         if (!shed.def.relay) continue;
         // Only a shed that is serving THIS workshop: the same test that
-        // decides what the shed keeps decides who may draw on it.
-        if (!shedServes(shed, b)) continue;
+        // decides what the shed keeps decides who may draw on it. Unless the
+        // yard is dry and the caller will take a shed from anywhere.
+        if (!anywhere && !shedServes(shed, b)) continue;
         let has = true;
         for (const [r, n] of Object.entries(inputs)) {
           if ((shed.held[r as Resource] ?? 0) < (n ?? 0)) { has = false; break; }
