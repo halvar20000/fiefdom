@@ -1,0 +1,102 @@
+{
+ "verts": 988,
+ "indices": 5364,
+ "bones": 65,
+ "frames": {
+  "mixamo": 68,
+  "0ad": 228
+ },
+ "clips": {
+  "idle": {
+   "source": "mixamo",
+   "start": 0,
+   "count": 12,
+   "fps": 30.0
+  },
+  "walk": {
+   "source": "mixamo",
+   "start": 12,
+   "count": 24,
+   "fps": 30.0
+  },
+  "dig": {
+   "source": "mixamo",
+   "start": 36,
+   "count": 16,
+   "fps": 26.666666666666668
+  },
+  "mine": {
+   "source": "mixamo",
+   "start": 52,
+   "count": 16,
+   "fps": 26.666666666666668
+  },
+  "chop": {
+   "source": "0ad",
+   "start": 0,
+   "count": 16,
+   "fps": 26.666666666666668
+  },
+  "carry": {
+   "source": "0ad",
+   "start": 16,
+   "count": 24,
+   "fps": 30.0
+  },
+  "fish": {
+   "source": "0ad",
+   "start": 40,
+   "count": 20,
+   "fps": 25.0
+  },
+  "death": {
+   "source": "0ad",
+   "start": 60,
+   "count": 16,
+   "fps": 26.666666666666668
+  },
+  "farm": {
+   "source": "0ad",
+   "start": 76,
+   "count": 24,
+   "fps": 20.0
+  },
+  "pick": {
+   "source": "0ad",
+   "start": 100,
+   "count": 32,
+   "fps": 16.0
+  },
+  "milk": {
+   "source": "0ad",
+   "start": 132,
+   "count": 20,
+   "fps": 16.666666666666668
+  },
+  "feed": {
+   "source": "0ad",
+   "start": 152,
+   "count": 20,
+   "fps": 20.0
+  },
+  "slaughter": {
+   "source": "0ad",
+   "start": 172,
+   "count": 16,
+   "fps": 20.0
+  },
+  "butcher": {
+   "source": "0ad",
+   "start": 188,
+   "count": 24,
+   "fps": 15.0
+  },
+  "craft": {
+   "source": "0ad",
+   "start": 212,
+   "count": 16,
+   "fps": 26.666666666666668
+  }
+ },
+ "height": 0.52
+}

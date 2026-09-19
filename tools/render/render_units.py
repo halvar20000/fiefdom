@@ -560,4 +560,6 @@ def main():
     print(f"DONE {len(metas)} unit sprites in {time.time() - t0:.1f}s", flush=True)
 
 
-main()
+# Guarded so export_units.py can import the clip tables without rendering.
+if __name__ == "__main__":
+    main()

@@ -268,4 +268,6 @@ def main():
           flush=True)
 
 
-main()
+# Guarded so export_units.py can import the clip tables without rendering.
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,15 @@
+{
+ "types": [
+  "sand",
+  "scrub",
+  "grass",
+  "grass_dark",
+  "rock",
+  "cliff",
+  "marsh",
+  "water",
+  "iron"
+ ],
+ "span": 4,
+ "px": 1024
+}

@@ -126,4 +126,6 @@ def main():
     print(f"DONE tiles in {time.time() - t0:.1f}s -> {out_dir}", flush=True)
 
 
-main()
+# Guarded so export_ground.py can import TYPES without rendering.
+if __name__ == "__main__":
+    main()

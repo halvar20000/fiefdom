@@ -6,7 +6,10 @@ material listed here.
 ## 0 A.D. animations — adopted
 
 `public/assets/sprites/0ad/` holds sprites rendered from Fiefdom's own peasant
-mesh driven by animations from [0 A.D.](https://play0ad.com) by Wildfire Games.
+mesh driven by animations from [0 A.D.](https://play0ad.com) by Wildfire Games,
+and `public/assets/units/0ad/` holds the same motion as bone matrices for the
+3D renderer (`<body>.anim.bin`, one file per body; see `docs/RENDER-3D.md`).
+Both directories carry the same `LICENSE.txt`.
 The clips used are `gather_wood`, `carry_wood_m`, `hele_gather_fish`,
 `death_a`, `farming`, `gather_fruit_m`, `gather_berries`, `seeding`,
 `slaughter`, `gather_meat` and `build`, reaching the game as the `chop`,
@@ -47,3 +50,24 @@ Adopting any of it would mean:
 
 This is a summary of their licence file and Creative Commons' published
 compatibility position, not legal advice.
+
+## Mixamo animations — used, never handed on
+
+The unit bodies are animated with clips from [Mixamo](https://www.mixamo.com)
+(Adobe): `Idle`, `Walking`, `Digging`, `Heavy Weapon Swing`, `Baseball
+Strike`, `Standing Draw Arrow`, and the Y Bot skeleton they ride on. Adobe's
+terms allow the animations to be used and incorporated in a project, and do
+not allow the animation data itself to be passed on as an asset. The line
+drawn here:
+
+- The FBX files never enter the repository (`assets/source/**/*.fbx` is
+  ignored); the sprites rendered from them do, as renders of our own mesh.
+- The 3D renderer's bone-matrix files, `public/assets/units/<body>.anim.bin`,
+  are the motion in a form close to the clips themselves, so they follow the
+  FBX files: generated locally by `tools/render/export_units.sh` and ignored
+  by git. A build made where they exist carries them into the game, which
+  is use in a project; a clone without them draws those units as sprites.
+- The 0 A.D. motion sits apart in `public/assets/units/0ad/`, committed
+  under its own licence as above.
+
+This is a reading of Adobe's published terms, not legal advice.

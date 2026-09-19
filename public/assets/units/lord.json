@@ -1,0 +1,36 @@
+{
+ "verts": 1650,
+ "indices": 8952,
+ "bones": 65,
+ "frames": {
+  "mixamo": 52,
+  "0ad": 16
+ },
+ "clips": {
+  "idle": {
+   "source": "mixamo",
+   "start": 0,
+   "count": 12,
+   "fps": 30.0
+  },
+  "walk": {
+   "source": "mixamo",
+   "start": 12,
+   "count": 24,
+   "fps": 30.0
+  },
+  "attack": {
+   "source": "mixamo",
+   "start": 36,
+   "count": 16,
+   "fps": 26.666666666666668
+  },
+  "death": {
+   "source": "0ad",
+   "start": 0,
+   "count": 16,
+   "fps": 26.666666666666668
+  }
+ },
+ "height": 0.52
+}

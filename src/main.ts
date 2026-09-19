@@ -2,7 +2,10 @@ import * as THREE from 'three';
 import { IsoCamera } from './engine/camera';
 import { Terrain } from './engine/terrain';
 import { SpriteBatch } from './engine/sprites';
-import { loadTileArray, buildCombinedAtlas, type CombinedAtlas } from './engine/assets';
+import { ModelLibrary, ModelBatch } from './engine/models';
+import { Lighting } from './engine/lighting';
+import { UnitLibrary, UnitBatch } from './engine/units';
+import { loadTileArray, loadGroundArrays, buildCombinedAtlas, type CombinedAtlas } from './engine/assets';
 import { Audio } from './engine/audio';
 import { Projectiles } from './engine/projectiles';
 import { reportStaleAssets, missingTiles, missingSprites } from './engine/freshness';
@@ -10,8 +13,8 @@ import {
   generateMap, findSite, isBuildable, findStartSite, GROUND_TYPES, GROUND_COLOURS,
 } from './game/worldgen';
 import {
-  TILE_PX_W, HEIGHT_STEP, unitDirectionIndex, footprintDepthBias, depthKey,
-  spriteAnchor, cameraDirection,
+  TILE_PX_W, HEIGHT_STEP, unitDirectionIndexAz, footprintDepthBiasAz, depthKeyAz,
+  spriteAnchor, cameraDirectionAz,
 } from './engine/iso';
 import { GameState, siteOf, type PlacedBuilding } from './game/state';
 import { PathGrid } from './game/pathfind';
@@ -191,10 +194,38 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
   const iso = new IsoCamera();
   const flags = new URLSearchParams(location.search);
 
-  const [tiles, atlas] = await Promise.all([
+  // The 3D world: buildings, trees and yards as real meshes under a real
+  // sun (see engine/models.ts). `?r3d=0` is the way back to the sprite
+  // scenery while the two coexist. Units are sprites either way for now.
+  const use3d = flags.get('r3d') !== '0';
+
+  const [tiles, atlas, models, units, ground] = await Promise.all([
     loadTileArray('/assets/tiles'),
     buildCombinedAtlas('/assets/sprites'),
-  ]) as [Awaited<ReturnType<typeof loadTileArray>>, CombinedAtlas];
+    use3d ? ModelLibrary.load('/assets/models', renderer.capabilities.getMaxAnisotropy(), (done, total) => {
+      loading.textContent = `loading models ${done}/${total}…`;
+    }) : Promise.resolve(null),
+    use3d ? UnitLibrary.load('/assets/units') : Promise.resolve(null),
+    use3d ? loadGroundArrays('/assets/ground') : Promise.resolve(null),
+  ]) as [Awaited<ReturnType<typeof loadTileArray>>, CombinedAtlas, ModelLibrary | null, UnitLibrary | null,
+        Awaited<ReturnType<typeof loadGroundArrays>> | null];
+  if (models?.missing.length) {
+    console.warn(`[models] ${models.missing.length} without a .glb: ${models.missing.join(', ')}`);
+  }
+  if (models) {
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    // The game's look is the art seen through a gamma curve: the sprite and
+    // terrain shaders are raw, so they sample their sRGB textures (decoded
+    // to linear by the GPU) and write that straight to the canvas with no
+    // encoding back. A keep sprite authored as pale sandstone (217,188,140)
+    // is displayed as the deep gold (179,131,68) everyone knows as
+    // Fiefdom. Three's lit materials DO encode on output, so left alone the
+    // meshes came out pale next to their own sprites. Declaring the output
+    // linear switches that encoding off and puts both through the same
+    // curve. Undoing this properly means brightening the whole game.
+    renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
+  }
 
   // Say so loudly if the manifests predate the code. Both failure modes are
   // silent: an unknown ground type falls back to sand, and a sprite with no
@@ -258,6 +289,23 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
   scene.add(ghostBatch.mesh);
   const projectiles = new Projectiles();
   scene.add(projectiles.mesh);
+
+  // The mesh scenery, in three batches by how often they change: the
+  // static world on build and fell, the restless few every frame, the ghost
+  // while placing. Null on the sprite path.
+  const lighting = models ? new Lighting(isPhoneUi() ? 1024 : 2048) : null;
+  const staticModels = models ? new ModelBatch(models) : null;
+  const restlessModels = models ? new ModelBatch(models) : null;
+  const ghostModels = models ? new ModelBatch(models, { shadows: false, ghost: true }) : null;
+  if (models) {
+    scene.add(lighting!.group, staticModels!.group, restlessModels!.group, ghostModels!.group);
+  }
+  // The people, as animated meshes. Bodies the library lacks -- animals,
+  // siege engines -- keep their sprites.
+  const unitBatch = units && lighting ? new UnitBatch(units, lighting) : null;
+  if (unitBatch) scene.add(unitBatch.group);
+  // And the ground lit by the same sun, from unlit tiles.
+  if (ground && lighting) terrain.setGround(ground, lighting, tiles.index.variants, tiles.meanOf);
 
   // --- occupancy ----------------------------------------------------------
   // Two grids, kept in step. `occupied` decides where you may BUILD;
@@ -3481,21 +3529,29 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     return h * HEIGHT_STEP;
   }
 
+  /** The four sprite rotations as azimuths, for the sprite scenery's sort. */
+  const ROT_AZ = [45, 135, 225, 315].map(d => (d * Math.PI) / 180);
+
   function rebuildStatic() {
     const rot = iso.rotation;
     const items: DrawItem[] = [];
     restless.length = 0;
+    if (staticModels) staticModels.clear();
 
     const push = (name: string, x: number, z: number, w: number, d: number,
                   tint?: [number, number, number], turn = 0) => {
+      if (staticModels) {
+        staticModels.add(modelName(name), x, footing(name, x, z), z, turn, tint);
+        return;
+      }
       const key = spriteKey(name, rot, turn);
       if (!key) return;
       const [ax, az] = spriteAnchor(x, z, d);
       items.push({
         key, x: ax, z: az, y: footing(name, x, z),
-        bias: footprintDepthBias(w, d, rot),
+        bias: footprintDepthBiasAz(w, d, ROT_AZ[rot]),
         // sort by the footprint centre, not by whichever corner is anchored
-        depth: depthKey(x + w / 2, z + d / 2, rot),
+        depth: depthKeyAz(x + w / 2, z + d / 2, ROT_AZ[rot]),
         tint,
       });
     };
@@ -3552,9 +3608,21 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     }
     items.sort((a, b) => a.depth - b.depth);
     staticSorted = items;
+    if (staticModels) staticModels.flush();
     builtRotation = rot;
     staticDirty = false;
     rebuildFirePosts();       // building near the fire reshapes the ring
+  }
+
+  /**
+   * The model a name draws. A painted store square has a model of its own
+   * under the square's name (stockpile_deck, pile_wood_2 ...), which is what
+   * rebuildStatic already passes; everything else is the building itself.
+   */
+  function modelName(name: string): string {
+    const def = BUILDINGS[name];
+    const square = def ? storeSquare(def) : null;
+    return square ?? name;
   }
 
   // --- input --------------------------------------------------------------
@@ -3647,6 +3715,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
   const MAX_FLAGS = 12;
 
   let dragging = false, dragMoved = false, lastX = 0, lastY = 0;
+  let turning = false;
   let mouseX = 0, mouseY = 0;
 
   // Edge scrolling needs the pointer wherever it is, not only over the canvas:
@@ -3675,6 +3744,14 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     // button's pointerup ran the selection code, found no soldier under the
     // cursor, cleared the selection, and by the time contextmenu arrived there
     // was nothing left to order anywhere.
+    // The middle button, or Alt with the left, turns the camera: the world is
+    // real geometry now and can be looked at from any side.
+    if (e.button === 1 || (e.button === 0 && e.altKey)) {
+      e.preventDefault();
+      turning = true; lastX = e.clientX; lastY = e.clientY;
+      canvas.setPointerCapture(e.pointerId);
+      return;
+    }
     if (e.button !== 0) return;
     dragging = true; dragMoved = false; lastX = e.clientX; lastY = e.clientY;
     canvas.setPointerCapture(e.pointerId);
@@ -3701,6 +3778,11 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     }
   });
   canvas.addEventListener('pointerup', e => {
+    if (turning) {
+      turning = false;
+      if (canvas.hasPointerCapture(e.pointerId)) canvas.releasePointerCapture(e.pointerId);
+      return;
+    }
     if (e.button !== 0) return;      // see pointerdown
     if (canvas.hasPointerCapture(e.pointerId)) canvas.releasePointerCapture(e.pointerId);
     dragging = false;
@@ -3824,6 +3906,11 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
 
   canvas.addEventListener('pointermove', e => {
     mouseX = e.clientX; mouseY = e.clientY;
+    if (turning) {
+      iso.rotateByDeg(-(e.clientX - lastX) * 0.3);
+      lastX = e.clientX; lastY = e.clientY;
+      return;
+    }
     if (boxing) {
       selBox.style.left = `${Math.min(boxX, e.clientX)}px`;
       selBox.style.top = `${Math.min(boxY, e.clientY)}px`;
@@ -3845,12 +3932,15 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
   // the ghost to a tile the player pressed on minutes ago and every later click
   // lays a line back to it.
   canvas.addEventListener('pointercancel', () => {
-    dragging = false; boxing = false;
+    dragging = false; boxing = false; turning = false;
     selBox.style.display = 'none';
     placement.dragFrom = null;
   });
   canvas.addEventListener('wheel', e => {
-    e.preventDefault(); iso.zoomBy(e.deltaY > 0 ? -1 : 1);
+    e.preventDefault();
+    // A notch is about 100 on a mouse and a trickle on a trackpad; either way
+    // the zoom glides by the amount rolled rather than stepping a level.
+    iso.zoomByFactor(Math.pow(1.0025, -e.deltaY));
   }, { passive: false });
   /**
    * Take every soldier of the kind nearest a screen point. The "select all my
@@ -3977,7 +4067,11 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     }, phone);
     hud.onDrawerChange = (name) => pad.syncDrawer(name);
     touchCommand = () => pad.mode() === 'command';
-    attachPinch(canvas, { zoom: (d) => iso.zoomBy(d) });
+    attachPinch(canvas, {
+      zoom: (d) => iso.zoomBy(d),
+      zoomBy: (f) => iso.zoomByFactor(f),
+      rotate: (deg) => iso.rotateByDeg(deg),
+    });
   }
 
   const keys = new Set<string>();
@@ -4766,6 +4860,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       return;
     }
     prof.frame();
+    iso.update(dt);
 
     const pan = 420 * dt;
     if (keys.has('arrowleft') || keys.has('a')) iso.panByPixels(-pan, 0);
@@ -5023,7 +5118,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     // Keeps last and larger, so they are never buried under their own castle.
     if (keep) miniDots.push({ x: keep.x, z: keep.z, c: '#ffffff', big: true });
 
-    hud.drawMinimap(iso.rotation, view, miniDots);
+    hud.drawMinimap(iso.turns, view, miniDots);
   }
 
   /**
@@ -5154,15 +5249,39 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
    */
   function drawScene(): void {
     const rot = iso.rotation;
-    if (rot !== builtRotation || staticDirty) rebuildStatic();
+    // Sprite scenery was rendered per rotation and must be re-picked when it
+    // changes; meshes turn with the camera for free.
+    if ((rot !== builtRotation && !staticModels) || staticDirty) rebuildStatic();
+    const az = iso.azimuth;
 
     // Gather the moving figures, sort them, then merge into the pre-sorted
     // scenery so the entire scene emits as one back-to-front stream.
     const figures: DrawItem[] = [];
+    if (unitBatch) unitBatch.clear();
+    /**
+     * A human as a mesh. False when the body or the clip has no animation,
+     * which is the cue to draw the sprite instead. The frame is picked as
+     * it was for sprites: floor(phase * fps) mod count, per clip.
+     */
+    const addUnit = (body: string, clip: string, phase: number,
+                     x: number, y: number, z: number, heading: number,
+                     tint?: [number, number, number]): boolean => {
+      if (!unitBatch) return false;
+      // No clip, no mesh: a body frozen in its rest pose is worse than the
+      // sprite the game already has for it.
+      const c = unitBatch.clip(body, clip) ?? unitBatch.clip(body, 'idle');
+      if (!c) return false;
+      const f = Math.floor(phase * c.fps) % c.count;
+      unitBatch.add(body, c.start + f, x, y, z, heading, tint);
+      return true;
+    };
     const addFigure = (x: number, z: number, heading: number,
                        clip: string, phase: number,
                        facingOffset = DIRECTION_OFFSET) => {
-      const dir = (unitDirectionIndex(heading, rot) + facingOffset) & 7;
+      // the peasant body; anything with another rest facing is another rig
+      if (facingOffset === DIRECTION_OFFSET
+          && addUnit('peasant', clip, phase, x, terrain.heightAt(x, z), z, heading)) return;
+      const dir = (unitDirectionIndexAz(heading, az) + facingOffset) & 7;
       const n = clipFrames(clip);
       const f = Math.floor(phase * clipFps(clip)) % n;
       const key = atlas.frames[`${clip}_${dir}_${f}`]
@@ -5171,8 +5290,8 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       // units are modelled centred on their origin, so no anchor shift
       figures.push({
         key, x, z, y: terrain.heightAt(x, z),
-        bias: footprintDepthBias(1, 1, rot),
-        depth: depthKey(x, z, rot),
+        bias: footprintDepthBiasAz(1, 1, az),
+        depth: depthKeyAz(x, z, az),
       });
     };
 
@@ -5184,21 +5303,83 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     // glance says whose men are working which castle.
     for (const w of enemyWorkers.workers) {
       if (enemyWorkers.hidden(w)) continue;
-      const dir = (unitDirectionIndex(w.heading, rot) + DIRECTION_OFFSET) & 7;
       const clip = enemyWorkers.clipFor(w);
+      if (addUnit('peasant', clip, w.phase, w.x, terrain.heightAt(w.x, w.z), w.z, w.heading,
+                  factionOf(w.side)?.unitTint ?? [1.5, 0.62, 0.55])) continue;
+      const dir = (unitDirectionIndexAz(w.heading, az) + DIRECTION_OFFSET) & 7;
       const n = clipFrames(clip);
       const f = Math.floor(w.phase * clipFps(clip)) % n;
       const key = atlas.frames[`${clip}_${dir}_${f}`] ? `${clip}_${dir}_${f}` : `idle_${dir}_0`;
       if (!atlas.frames[key]) continue;
       figures.push({
         key, x: w.x, z: w.z, y: terrain.heightAt(w.x, w.z),
-        bias: footprintDepthBias(1, 1, rot),
-        depth: depthKey(w.x, w.z, rot),
+        bias: footprintDepthBiasAz(1, 1, az),
+        depth: depthKeyAz(w.x, w.z, az),
         tint: factionOf(w.side)?.unitTint ?? [1.5, 0.62, 0.55],
       });
     }
     for (const sd of army.soldiers) {
-      const dir = (unitDirectionIndex(sd.heading, rot) + DIRECTION_OFFSET) & 7;
+      // A posted man stands on the walkway, not in the masonry. The extra bias
+      // puts him after the wall in the same depth slot, so he is drawn on it
+      // rather than behind it.
+      const post = sd.garrison;
+      const postName = post ? buildingNameAt(post.x, post.z) : '';
+      const lift = post ? (GARRISON_HEIGHT[postName] ?? 0) : 0;
+      // A wall on broken ground is founded at the bottom of its tile, so its
+      // walkway is there too. Without this the man on it stands at the tile's
+      // MEAN height and floats half a step above the stone he is meant to be
+      // standing on -- the same half step the wall itself was moved down by.
+      const postDrop = post
+        ? terrain.heightAt(post.x, post.z) - footing(postName, post.x, post.z) : 0;
+      // The strike lunge. A close-fighter or a battering ram thrusts toward what
+      // it is hitting on the moment of the blow and eases back -- so the blow
+      // visibly lands instead of falling short across a gap, and the ram meets
+      // the wall. Ranged men (archers, catapults) and posted men do not lunge:
+      // they loose from where they stand. Heading already points at the target
+      // while a blow is in the air, so it needs no target lookup here.
+      let dx = sd.x, dz = sd.z;
+      if (sd.hp > 0 && sd.swing > 0 && !post && sd.def.range < 3.0) {
+        const l = (sd.def.siege ? 0.5 : 0.32) * (sd.swing / SWING_TIME);
+        dx += Math.cos(sd.heading) * l;
+        dz += Math.sin(sd.heading) * l;
+      }
+      const y = terrain.heightAt(dx, dz) + lift - postDrop;
+      // Enemies are the same three bodies under a red cast rather than three
+      // more palettes: 288 more sprites to say "not yours" is a poor trade,
+      // and side reads faster from colour than from costume anyway.
+      // Selection wins; otherwise a held man wears a cool steel cast so you
+      // can see at a glance which of your troops are standing their ground.
+      const tint: [number, number, number] | undefined =
+        sd.side !== PLAYER ? (factionOf(sd.side)?.unitTint ?? [1.5, 0.62, 0.55])
+        : sd.selected ? [1.45, 1.45, 1.15]
+        : sd.hold ? [0.82, 0.9, 1.15] : undefined;
+
+      // The mesh, for a body the library has. Dying plays the death clip
+      // once, front to back, by the time left; a four-legged body holds its
+      // idle (see the sprite branch below for why).
+      if (unitBatch && unitBatch.has(sd.type)) {
+        let row: number | null = null;
+        if (sd.hp <= 0) {
+          const dc = sd.def.fourLegged ? null : unitBatch.clip(sd.type, 'death');
+          if (dc) {
+            const prog = 1 - Math.max(0, sd.dying) / DEATH_SECONDS;
+            row = dc.start + Math.min(dc.count - 1, Math.floor(prog * dc.count));
+          } else {
+            const ic = unitBatch.clip(sd.type, 'idle');
+            if (ic) row = ic.start;
+          }
+        } else {
+          const act = sd.swing > 0 ? 'attack' : sd.moving ? 'walk' : 'idle';
+          const c = unitBatch.clip(sd.type, act) ?? unitBatch.clip(sd.type, 'idle');
+          if (c) row = c.start + Math.floor(sd.phase * c.fps) % c.count;
+        }
+        if (row !== null) {
+          unitBatch.add(sd.type, row, dx, y, dz, sd.heading, tint);
+          continue;
+        }
+      }
+
+      const dir = (unitDirectionIndexAz(sd.heading, az) + DIRECTION_OFFSET) & 7;
       let key: string;
       if (sd.hp <= 0) {
         // Dying: play the shared death clip once, front to back, mapping the
@@ -5226,42 +5407,11 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
                 : `idle_${dir}_0`;
       }
       if (!atlas.frames[key]) continue;
-      // A posted man stands on the walkway, not in the masonry. The extra bias
-      // puts him after the wall in the same depth slot, so he is drawn on it
-      // rather than behind it.
-      const post = sd.garrison;
-      const postName = post ? buildingNameAt(post.x, post.z) : '';
-      const lift = post ? (GARRISON_HEIGHT[postName] ?? 0) : 0;
-      // A wall on broken ground is founded at the bottom of its tile, so its
-      // walkway is there too. Without this the man on it stands at the tile's
-      // MEAN height and floats half a step above the stone he is meant to be
-      // standing on -- the same half step the wall itself was moved down by.
-      const postDrop = post
-        ? terrain.heightAt(post.x, post.z) - footing(postName, post.x, post.z) : 0;
-      // The strike lunge. A close-fighter or a battering ram thrusts toward what
-      // it is hitting on the moment of the blow and eases back -- so the blow
-      // visibly lands instead of falling short across a gap, and the ram meets
-      // the wall. Ranged men (archers, catapults) and posted men do not lunge:
-      // they loose from where they stand. Heading already points at the target
-      // while a blow is in the air, so it needs no target lookup here.
-      let dx = sd.x, dz = sd.z;
-      if (sd.hp > 0 && sd.swing > 0 && !post && sd.def.range < 3.0) {
-        const l = (sd.def.siege ? 0.5 : 0.32) * (sd.swing / SWING_TIME);
-        dx += Math.cos(sd.heading) * l;
-        dz += Math.sin(sd.heading) * l;
-      }
       figures.push({
-        key, x: dx, z: dz, y: terrain.heightAt(dx, dz) + lift - postDrop,
-        bias: footprintDepthBias(1, 1, rot) + (post ? 0.6 : 0),
-        depth: depthKey(dx, dz, rot),
-        // Enemies are the same three bodies under a red cast rather than three
-        // more palettes: 288 more sprites to say "not yours" is a poor trade,
-        // and side reads faster from colour than from costume anyway.
-        // Selection wins; otherwise a held man wears a cool steel cast so you
-        // can see at a glance which of your troops are standing their ground.
-        tint: sd.side !== PLAYER ? (factionOf(sd.side)?.unitTint ?? [1.5, 0.62, 0.55])
-            : sd.selected ? [1.45, 1.45, 1.15]
-            : sd.hold ? [0.82, 0.9, 1.15] : undefined,
+        key, x: dx, z: dz, y,
+        bias: footprintDepthBiasAz(1, 1, az) + (post ? 0.6 : 0),
+        depth: depthKeyAz(dx, dz, az),
+        tint,
       });
     }
 
@@ -5275,8 +5425,8 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       const [fx, fz] = spriteAnchor(f.x, f.z, 1);
       figures.push({
         key, x: fx, z: fz, y: terrain.heightAt(f.x, f.z),
-        bias: footprintDepthBias(1, 1, rot),
-        depth: depthKey(f.x + 0.5, f.z + 0.5, rot),
+        bias: footprintDepthBiasAz(1, 1, az),
+        depth: depthKeyAz(f.x + 0.5, f.z + 0.5, az),
       });
     }
     // A burning building wears a flame on every tile it covers, drawn a
@@ -5293,11 +5443,11 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
           const [fx, fz] = spriteAnchor(x, z, 1);
           figures.push({
             key, x: fx, z: fz, y: terrain.heightAt(x, z) + 0.35,
-            bias: footprintDepthBias(1, 1, rot),
+            bias: footprintDepthBiasAz(1, 1, az),
             // A hair nearer than the building's own centre, so on the tile
             // the building is sorted by, the flame is painted over it rather
             // than under it by the luck of a tie.
-            depth: depthKey(x + 0.5, z + 0.5, rot) + 0.01,
+            depth: depthKeyAz(x + 0.5, z + 0.5, az) + 0.01,
           });
         }
       }
@@ -5314,15 +5464,20 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     // Turning sails and filling yards. Everything about where these land is
     // the static list's -- see Restless -- and only which frame is picked
     // belongs to this frame.
+    if (restlessModels) restlessModels.clear();
     for (const r of restless) {
       const { x, z } = r.b;
+      if (restlessModels) {
+        restlessModels.add(restlessSprite(r), x, terrain.heightAt(x, z), z, 0, r.tint);
+        continue;
+      }
       const key = spriteKey(restlessSprite(r), rot);
       if (!key) continue;
       const [rx, rz] = spriteAnchor(x, z, r.d);
       figures.push({
         key, x: rx, z: rz, y: terrain.heightAt(x, z),
-        bias: footprintDepthBias(r.w, r.d, rot),
-        depth: depthKey(x + r.w / 2, z + r.d / 2, rot),
+        bias: footprintDepthBiasAz(r.w, r.d, az),
+        depth: depthKeyAz(x + r.w / 2, z + r.d / 2, az),
         tint: r.tint,
       });
     }
@@ -5356,9 +5511,18 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     }
     sprites.flush();
 
+    if (restlessModels) restlessModels.flush();
+
     // ghost building, tinted green or red, floated in front of everything
     ghostBatch.clear();
-    if (placement.selected && placement.hover) {
+    if (ghostModels) ghostModels.clear();
+    if (ghostModels && placement.selected && placement.hover) {
+      const name = modelName(placement.selected);
+      runPlan.tiles.forEach((t, i) => {
+        ghostModels.add(name, t.x, footing(placement.selected!, t.x, t.z), t.z,
+          placement.facing, runPlan.legal[i] ? [0.55, 1.20, 0.55] : [1.30, 0.45, 0.40]);
+      });
+    } else if (placement.selected && placement.hover) {
       // A painted store has no building sprite of its own -- it is a square, so
       // the ghost is the empty square. SPRITE_STANDIN already says as much.
       const key = spriteKey(placement.selected, rot, placement.facing);
@@ -5373,15 +5537,22 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
           const [gx, gz] = spriteAnchor(t.x, t.z, d);
           ghostBatch.add(frame, atlas.size, ppuOf(frame),
             gx, footing(placement.selected!, t.x, t.z), gz,
-            footprintDepthBias(w, d, rot) + 6,
+            footprintDepthBiasAz(w, d, az) + 6,
             runPlan.legal[i] ? [0.55, 1.20, 0.55] : [1.30, 0.45, 0.40]);
         });
       }
     }
     ghostBatch.flush();
-    { const [vx, vy, vz] = cameraDirection(iso.rotation); projectiles.setView(vx, vy, vz); }
+    if (ghostModels) ghostModels.flush();
+    { const [vx, vy, vz] = cameraDirectionAz(az); projectiles.setView(vx, vy, vz); }
     projectiles.render();
 
+    if (lighting) {
+      lighting.update(iso.target, iso.viewWidth, iso.viewHeight, iso.pixelsPerUnit);
+      terrain.setShadow(lighting.sun);
+      sprites.setShadow(lighting.sun);
+      if (unitBatch) { unitBatch.setShadow(lighting.sun); unitBatch.flush(); }
+    }
     renderer.render(scene, iso.camera);
     hud.update();
   }

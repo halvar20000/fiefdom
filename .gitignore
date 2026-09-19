@@ -3,6 +3,14 @@ dist/
 .DS_Store
 assets/source/**/*.fbx
 assets/source/**/*.zip
+
+# Mixamo motion for the 3D units, generated locally by
+# tools/render/export_units.sh from the FBX files above. Adobe's terms
+# allow the motion in a project, not as data handed on -- so it is never
+# committed, the same way the FBX files are not. A clone without it draws
+# the units as sprites. The 0 A.D. motion under units/0ad/ is CC BY-SA
+# and IS committed, with its licence.
+public/assets/units/*.anim.bin
 tools/render/_tmp/
 __pycache__/
 

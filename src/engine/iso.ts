@@ -85,9 +85,19 @@ export const UNIT_DIRECTIONS = 8;
  * `DIRECTION_OFFSET` and `GAZELLE_DIRECTION_OFFSET` in main.ts.
  */
 export function unitDirectionIndex(headingRad: number, rotation: RotationIndex): number {
+  return unitDirectionIndexAz(headingRad, (ROTATIONS[rotation] * Math.PI) / 180);
+}
+
+/**
+ * The same for a camera at any azimuth. A quarter turn of camera is two of
+ * the eight slots, so the camera's share is (azimuth - 45) / 45 slots,
+ * rounded together with the heading so the two never disagree by a slot.
+ */
+export function unitDirectionIndexAz(headingRad: number, azimuthRad: number): number {
   const step = (Math.PI * 2) / UNIT_DIRECTIONS;
-  const raw = Math.round(headingRad / step);
-  return (((-raw - rotation * 2) % UNIT_DIRECTIONS) + UNIT_DIRECTIONS) % UNIT_DIRECTIONS;
+  const camSlots = (azimuthRad - AZIMUTH) / step;
+  const raw = Math.round(-headingRad / step - camSlots);
+  return ((raw % UNIT_DIRECTIONS) + UNIT_DIRECTIONS) % UNIT_DIRECTIONS;
 }
 
 /**
@@ -100,9 +110,13 @@ export function unitDirectionIndex(headingRad: number, rotation: RotationIndex):
  *     engine: ( sin az * cos el,  sin el,  cos az * cos el )
  */
 export function cameraDirection(rotation: RotationIndex): [number, number, number] {
-  const az = (ROTATIONS[rotation] * Math.PI) / 180;
+  return cameraDirectionAz((ROTATIONS[rotation] * Math.PI) / 180);
+}
+
+/** Direction from the map to a camera at any azimuth. */
+export function cameraDirectionAz(azimuthRad: number): [number, number, number] {
   const cosEl = Math.cos(ELEVATION);
-  return [Math.sin(az) * cosEl, Math.sin(ELEVATION), Math.cos(az) * cosEl];
+  return [Math.sin(azimuthRad) * cosEl, Math.sin(ELEVATION), Math.cos(azimuthRad) * cosEl];
 }
 
 /**
@@ -133,7 +147,11 @@ export const SUN_DIRECTION: [number, number, number] = (() => {
  * separates cleanly per axis.
  */
 export function footprintDepthBias(w: number, d: number, rotation: RotationIndex): number {
-  const az = (ROTATIONS[rotation] * Math.PI) / 180;
+  return footprintDepthBiasAz(w, d, (ROTATIONS[rotation] * Math.PI) / 180);
+}
+
+/** The same at any azimuth. */
+export function footprintDepthBiasAz(w: number, d: number, az: number): number {
   const cosEl = Math.cos(ELEVATION);
   const cx = Math.sin(az) * cosEl;
   const cz = Math.cos(az) * cosEl;
@@ -182,4 +200,9 @@ export function depthKey(x: number, z: number, rotation: RotationIndex): number 
     case 2: return -x - z;   // azimuth 225
     default: return z - x;   // azimuth 315
   }
+}
+
+/** The same at any azimuth: distance along the view direction, unscaled. */
+export function depthKeyAz(x: number, z: number, azimuthRad: number): number {
+  return x * Math.sin(azimuthRad) + z * Math.cos(azimuthRad);
 }
