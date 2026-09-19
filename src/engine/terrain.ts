@@ -139,6 +139,12 @@ export class Terrain {
         uAmbient: { value: 0.34 },
         uOverlay: { value: this.overlayTex },
         uOverlayOn: { value: 0 },
+        // The sun's shadow map (see setShadow). Off until the 3D world is up.
+        uShadowMap: { value: null },
+        uShadowMatrix: { value: new THREE.Matrix4() },
+        uShadowSize: { value: 1 },
+        uShadowOn: { value: 0 },
+        uShadowFloor: { value: 0.3 },
       },
       vertexShader: /* glsl */`
         precision highp float;
@@ -149,14 +155,17 @@ export class Terrain {
         in float aTint;
         in vec2 aTile;
 
+        uniform mat4 modelMatrix;
         uniform mat4 modelViewMatrix;
         uniform mat4 projectionMatrix;
+        uniform mat4 uShadowMatrix;
 
         out vec2 vUv;
         out float vLayer;
         out float vTint;
         out vec2 vTile;
         out vec3 vNormal;
+        out vec4 vShadowCoord;
 
         void main() {
           vUv = uv;
@@ -164,6 +173,8 @@ export class Terrain {
           vTint = aTint;
           vTile = aTile;
           vNormal = normal;
+          vec4 world = modelMatrix * vec4(position, 1.0);
+          vShadowCoord = uShadowMatrix * world;
           gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
         }
       `,
@@ -176,6 +187,7 @@ export class Terrain {
         in float vTint;
         in vec2 vTile;
         in vec3 vNormal;
+        in vec4 vShadowCoord;
 
         uniform sampler2DArray uTiles;
         uniform vec3 uSun;
@@ -183,17 +195,44 @@ export class Terrain {
         uniform float uAmbient;
         uniform sampler2D uOverlay;
         uniform float uOverlayOn;
+        uniform sampler2D uShadowMap;
+        uniform float uShadowSize;
+        uniform float uShadowOn;
+        uniform float uShadowFloor;
 
         out vec4 fragColor;
+
+        #include <packing>
+
+        // How much of the sun reaches this point, 0..1, from the sun's depth
+        // map. A 3x3 tap: the buildings get three.js's own soft filter, and
+        // the ground under them should not look sharper than they do.
+        float sunlight() {
+          if (uShadowOn < 0.5) return 1.0;
+          vec3 sc = vShadowCoord.xyz / vShadowCoord.w;
+          if (sc.x < 0.0 || sc.x > 1.0 || sc.y < 0.0 || sc.y > 1.0 || sc.z > 1.0) return 1.0;
+          float texel = 1.0 / uShadowSize;
+          float lit = 0.0;
+          for (int dy = -1; dy <= 1; dy++) {
+            for (int dx = -1; dx <= 1; dx++) {
+              float depth = unpackRGBAToDepth(texture(uShadowMap, sc.xy + vec2(dx, dy) * texel));
+              lit += sc.z - 0.0012 <= depth ? 1.0 : 0.0;
+            }
+          }
+          return lit / 9.0;
+        }
 
         void main() {
           vec3 texel = texture(uTiles, vec3(vUv, vLayer)).rgb;
 
           // Slope shading only. Flat ground evaluates to exactly 1.0 so it
-          // matches the sun already baked into the tile render.
+          // matches the sun already baked into the tile render -- and the
+          // baked sun is then taken away again wherever a building stands
+          // between the ground and it.
           vec3 n = normalize(vNormal);
           float lit = max(dot(n, uSun), 0.0);
-          float shade = (uAmbient + (1.0 - uAmbient) * (lit / uFlatDot));
+          float sun = mix(uShadowFloor, 1.0, sunlight());
+          float shade = (uAmbient + (1.0 - uAmbient) * (lit / uFlatDot)) * sun;
 
           vec3 colour = texel * vTint * clamp(shade, 0.0, 1.6);
 
@@ -292,6 +331,21 @@ export class Terrain {
     this.geometry.getAttribute('normal').needsUpdate = true;
     layers.needsUpdate = true;
     this.geometry.computeBoundingSphere();
+  }
+
+  /**
+   * Receive the sun's shadow map. Call once a frame after the light has been
+   * updated; the map is only allocated by the renderer's first shadow pass,
+   * so a null is expected on the first call and simply leaves shadows off.
+   */
+  setShadow(light: THREE.DirectionalLight | null): void {
+    const u = this.material.uniforms;
+    const map = light?.shadow.map;
+    if (!light || !map) { u.uShadowOn.value = 0; return; }
+    u.uShadowMap.value = map.texture;
+    u.uShadowMatrix.value.copy(light.shadow.matrix);
+    u.uShadowSize.value = light.shadow.mapSize.x;
+    u.uShadowOn.value = 1;
   }
 
   /**

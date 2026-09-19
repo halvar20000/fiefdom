@@ -1,0 +1,878 @@
+{
+ "apple_orchard": {
+  "footprint": [
+   3,
+   3
+  ]
+ },
+ "armourer": {
+  "footprint": [
+   2,
+   2
+  ]
+ },
+ "armoury": {
+  "footprint": [
+   3,
+   3
+  ]
+ },
+ "bakery": {
+  "footprint": [
+   2,
+   2
+  ]
+ },
+ "barracks": {
+  "footprint": [
+   3,
+   3
+  ]
+ },
+ "bin_apples_1": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "bin_apples_2": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "bin_apples_3": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "bin_bread_1": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "bin_bread_2": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "bin_bread_3": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "bin_cheese_1": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "bin_cheese_2": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "bin_cheese_3": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "bin_fish_1": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "bin_fish_2": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "bin_fish_3": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "bin_meat_1": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "bin_meat_2": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "bin_meat_3": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "blacksmith": {
+  "footprint": [
+   2,
+   2
+  ]
+ },
+ "brewery": {
+  "footprint": [
+   3,
+   3
+  ]
+ },
+ "burning_stake": {
+  "footprint": [
+   2,
+   2
+  ]
+ },
+ "bush": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "campfire": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "cathedral": {
+  "footprint": [
+   3,
+   3
+  ]
+ },
+ "chapel": {
+  "footprint": [
+   2,
+   2
+  ]
+ },
+ "church": {
+  "footprint": [
+   2,
+   2
+  ]
+ },
+ "dairy_farm": {
+  "footprint": [
+   3,
+   3
+  ]
+ },
+ "dancing_bear": {
+  "footprint": [
+   2,
+   2
+  ]
+ },
+ "dead_tree": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "depot": {
+  "footprint": [
+   2,
+   2
+  ]
+ },
+ "dog_cage": {
+  "footprint": [
+   2,
+   2
+  ]
+ },
+ "drawbridge": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "drawbridge_raised": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "dungeon": {
+  "footprint": [
+   3,
+   3
+  ]
+ },
+ "dunking_stool": {
+  "footprint": [
+   2,
+   2
+  ]
+ },
+ "engineers_guild": {
+  "footprint": [
+   2,
+   2
+  ]
+ },
+ "fishery": {
+  "footprint": [
+   2,
+   2
+  ]
+ },
+ "fletcher": {
+  "footprint": [
+   2,
+   2
+  ]
+ },
+ "gallows": {
+  "footprint": [
+   2,
+   2
+  ]
+ },
+ "garden": {
+  "footprint": [
+   2,
+   2
+  ]
+ },
+ "gatehouse": {
+  "footprint": [
+   2,
+   2
+  ]
+ },
+ "gatehouse_shut": {
+  "footprint": [
+   2,
+   2
+  ]
+ },
+ "gibbet": {
+  "footprint": [
+   2,
+   2
+  ]
+ },
+ "granary_bin": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "hops_farm": {
+  "footprint": [
+   3,
+   3
+  ]
+ },
+ "hovel": {
+  "footprint": [
+   2,
+   2
+  ]
+ },
+ "hunter": {
+  "footprint": [
+   2,
+   2
+  ]
+ },
+ "inn": {
+  "footprint": [
+   3,
+   3
+  ]
+ },
+ "iron_mine": {
+  "footprint": [
+   3,
+   3
+  ]
+ },
+ "keep": {
+  "footprint": [
+   3,
+   3
+  ]
+ },
+ "killing_pit": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "lookout_tower": {
+  "footprint": [
+   2,
+   2
+  ]
+ },
+ "market": {
+  "footprint": [
+   3,
+   3
+  ]
+ },
+ "maypole": {
+  "footprint": [
+   2,
+   2
+  ]
+ },
+ "mercenary_post": {
+  "footprint": [
+   2,
+   2
+  ]
+ },
+ "mill": {
+  "footprint": [
+   3,
+   3
+  ]
+ },
+ "mill_turn_1": {
+  "footprint": [
+   3,
+   3
+  ]
+ },
+ "mill_turn_2": {
+  "footprint": [
+   3,
+   3
+  ]
+ },
+ "mill_turn_3": {
+  "footprint": [
+   3,
+   3
+  ]
+ },
+ "mill_turn_4": {
+  "footprint": [
+   3,
+   3
+  ]
+ },
+ "mill_turn_5": {
+  "footprint": [
+   3,
+   3
+  ]
+ },
+ "moat": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "moat_undug": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "oak": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "oil_pot": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "oil_smelter": {
+  "footprint": [
+   2,
+   2
+  ]
+ },
+ "olive_tree": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "ox_tether": {
+  "footprint": [
+   2,
+   2
+  ]
+ },
+ "palm": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "perimeter_turret": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "pharmacy": {
+  "footprint": [
+   2,
+   2
+  ]
+ },
+ "pig_farm": {
+  "footprint": [
+   3,
+   3
+  ]
+ },
+ "pile_ale_1": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "pile_ale_2": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "pile_ale_3": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "pile_flour_1": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "pile_flour_2": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "pile_flour_3": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "pile_hides_1": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "pile_hides_2": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "pile_hides_3": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "pile_hops_1": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "pile_hops_2": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "pile_hops_3": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "pile_iron_1": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "pile_iron_2": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "pile_iron_3": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "pile_oil_1": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "pile_oil_2": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "pile_oil_3": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "pile_pigs_1": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "pile_pigs_2": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "pile_pigs_3": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "pile_pitch_1": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "pile_pitch_2": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "pile_pitch_3": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "pile_stone_1": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "pile_stone_2": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "pile_stone_3": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "pile_wheat_1": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "pile_wheat_2": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "pile_wheat_3": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "pile_wood_1": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "pile_wood_2": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "pile_wood_3": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "pitch_ditch": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "pitch_fire_1": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "pitch_fire_2": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "pitch_fire_3": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "pitch_rig": {
+  "footprint": [
+   2,
+   2
+  ]
+ },
+ "poleturner": {
+  "footprint": [
+   2,
+   2
+  ]
+ },
+ "pond": {
+  "footprint": [
+   2,
+   2
+  ]
+ },
+ "quarry": {
+  "footprint": [
+   3,
+   3
+  ]
+ },
+ "quarry_load_1": {
+  "footprint": [
+   3,
+   3
+  ]
+ },
+ "quarry_load_10": {
+  "footprint": [
+   3,
+   3
+  ]
+ },
+ "quarry_load_11": {
+  "footprint": [
+   3,
+   3
+  ]
+ },
+ "quarry_load_12": {
+  "footprint": [
+   3,
+   3
+  ]
+ },
+ "quarry_load_2": {
+  "footprint": [
+   3,
+   3
+  ]
+ },
+ "quarry_load_3": {
+  "footprint": [
+   3,
+   3
+  ]
+ },
+ "quarry_load_4": {
+  "footprint": [
+   3,
+   3
+  ]
+ },
+ "quarry_load_5": {
+  "footprint": [
+   3,
+   3
+  ]
+ },
+ "quarry_load_6": {
+  "footprint": [
+   3,
+   3
+  ]
+ },
+ "quarry_load_7": {
+  "footprint": [
+   3,
+   3
+  ]
+ },
+ "quarry_load_8": {
+  "footprint": [
+   3,
+   3
+  ]
+ },
+ "quarry_load_9": {
+  "footprint": [
+   3,
+   3
+  ]
+ },
+ "rock": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "round_tower": {
+  "footprint": [
+   3,
+   3
+  ]
+ },
+ "shrine": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "siege_camp": {
+  "footprint": [
+   3,
+   3
+  ]
+ },
+ "slaughterhouse": {
+  "footprint": [
+   2,
+   2
+  ]
+ },
+ "stables": {
+  "footprint": [
+   3,
+   3
+  ]
+ },
+ "stairs": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "statue": {
+  "footprint": [
+   2,
+   2
+  ]
+ },
+ "stockpile_deck": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "stocks": {
+  "footprint": [
+   2,
+   2
+  ]
+ },
+ "stretching_rack": {
+  "footprint": [
+   2,
+   2
+  ]
+ },
+ "tanner": {
+  "footprint": [
+   2,
+   2
+  ]
+ },
+ "tower": {
+  "footprint": [
+   2,
+   2
+  ]
+ },
+ "tunnelers_guild": {
+  "footprint": [
+   2,
+   2
+  ]
+ },
+ "wall": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "water_pot": {
+  "footprint": [
+   1,
+   1
+  ]
+ },
+ "well": {
+  "footprint": [
+   2,
+   2
+  ]
+ },
+ "wheat_farm": {
+  "footprint": [
+   3,
+   3
+  ]
+ },
+ "woodcutter": {
+  "footprint": [
+   2,
+   2
+  ]
+ }
+}

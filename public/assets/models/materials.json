@@ -1,0 +1,912 @@
+{
+ "m01023d624b": {
+  "name": "GroundGrass",
+  "roughness": 0.95,
+  "col": "mat/m01023d624b_col.webp",
+  "nrm": "mat/m01023d624b_nrm.webp",
+  "span": 4
+ },
+ "m02ff64b83d": {
+  "name": "Twine",
+  "roughness": 0.86,
+  "col": "mat/m02ff64b83d_col.webp",
+  "nrm": "mat/m02ff64b83d_nrm.webp",
+  "span": 4
+ },
+ "m05e6592102": {
+  "name": "BarracksBanner",
+  "roughness": 0.86,
+  "col": "mat/m05e6592102_col.webp",
+  "nrm": "mat/m05e6592102_nrm.webp",
+  "span": 4
+ },
+ "m08780eb4de": {
+  "name": "KeepHoardRoof",
+  "roughness": 0.93,
+  "col": "mat/m08780eb4de_col.webp",
+  "nrm": "mat/m08780eb4de_nrm.webp",
+  "span": 4
+ },
+ "m0b345053b0": {
+  "name": "StHoof",
+  "roughness": 0.86,
+  "col": "mat/m0b345053b0_col.webp",
+  "nrm": "mat/m0b345053b0_nrm.webp",
+  "span": 4
+ },
+ "m0ccbec4817": {
+  "name": "Plaster.001",
+  "roughness": 0.9,
+  "col": "mat/m0ccbec4817_col.webp",
+  "nrm": "mat/m0ccbec4817_nrm.webp",
+  "span": 4
+ },
+ "m10f95051da": {
+  "name": "Thatch",
+  "roughness": 0.97,
+  "col": "mat/m10f95051da_col.webp",
+  "nrm": "mat/m10f95051da_nrm.webp",
+  "span": 4
+ },
+ "m1236f83d2a": {
+  "name": "PoleturnerWall",
+  "roughness": 0.9,
+  "col": "mat/m1236f83d2a_col.webp",
+  "nrm": "mat/m1236f83d2a_nrm.webp",
+  "span": 4
+ },
+ "m159b5fb369": {
+  "name": "BowString",
+  "roughness": 0.86,
+  "col": "mat/m159b5fb369_col.webp",
+  "nrm": "mat/m159b5fb369_nrm.webp",
+  "span": 4
+ },
+ "m15d319f2ea": {
+  "name": "Iron",
+  "roughness": 0.52,
+  "col": "mat/m15d319f2ea_col.webp",
+  "nrm": "mat/m15d319f2ea_nrm.webp",
+  "span": 4
+ },
+ "m186bec4004": {
+  "name": "Cloth",
+  "roughness": 0.86,
+  "col": "mat/m186bec4004_col.webp",
+  "nrm": "mat/m186bec4004_nrm.webp",
+  "span": 4
+ },
+ "m1acbd4f0bc": {
+  "name": "FishBack",
+  "roughness": 0.86,
+  "col": "mat/m1acbd4f0bc_col.webp",
+  "nrm": "mat/m1acbd4f0bc_nrm.webp",
+  "span": 4
+ },
+ "m1b080f0eda": {
+  "name": "Bloom0",
+  "roughness": 0.86,
+  "col": "mat/m1b080f0eda_col.webp",
+  "nrm": "mat/m1b080f0eda_nrm.webp",
+  "span": 4
+ },
+ "m1de60e4854": {
+  "name": "Crust",
+  "roughness": 0.86,
+  "col": "mat/m1de60e4854_col.webp",
+  "nrm": "mat/m1de60e4854_nrm.webp",
+  "span": 4
+ },
+ "m1e7f1956fe": {
+  "name": "CowHide",
+  "roughness": 0.9,
+  "col": "mat/m1e7f1956fe_col.webp",
+  "nrm": "mat/m1e7f1956fe_nrm.webp",
+  "span": 4
+ },
+ "m215bf2a900": {
+  "name": "PitchFlameLow",
+  "roughness": 0.85,
+  "emissive": [
+   1.0,
+   0.30000001192092896,
+   0.05000000074505806
+  ],
+  "emissiveStrength": 3.200000047683716
+ },
+ "m2349b55a7d": {
+  "name": "HunterHorn",
+  "roughness": 0.86,
+  "col": "mat/m2349b55a7d_col.webp",
+  "nrm": "mat/m2349b55a7d_nrm.webp",
+  "span": 4
+ },
+ "m2506bd92bb": {
+  "name": "Plaster",
+  "roughness": 0.9,
+  "col": "mat/m2506bd92bb_col.webp",
+  "nrm": "mat/m2506bd92bb_nrm.webp",
+  "span": 4
+ },
+ "m257b5e7675": {
+  "name": "TanLiquor",
+  "roughness": 0.86,
+  "col": "mat/m257b5e7675_col.webp",
+  "nrm": "mat/m257b5e7675_nrm.webp",
+  "span": 4
+ },
+ "m355701e9e7": {
+  "name": "PigHide",
+  "roughness": 0.9,
+  "col": "mat/m355701e9e7_col.webp",
+  "nrm": "mat/m355701e9e7_nrm.webp",
+  "span": 4
+ },
+ "m35cfb37990": {
+  "name": "Ribbon1",
+  "roughness": 0.86,
+  "col": "mat/m35cfb37990_col.webp",
+  "nrm": "mat/m35cfb37990_nrm.webp",
+  "span": 4
+ },
+ "m35e25f9653": {
+  "name": "RoughStone",
+  "roughness": 0.92,
+  "col": "mat/m35e25f9653_col.webp",
+  "nrm": "mat/m35e25f9653_nrm.webp",
+  "span": 4
+ },
+ "m3605b60be2": {
+  "name": "OsEmber",
+  "roughness": 0.86,
+  "col": "mat/m3605b60be2_col.webp",
+  "nrm": "mat/m3605b60be2_nrm.webp",
+  "span": 4
+ },
+ "m3b47e25d9a": {
+  "name": "AwningStripe",
+  "roughness": 0.86,
+  "col": "mat/m3b47e25d9a_col.webp",
+  "nrm": "mat/m3b47e25d9a_nrm.webp",
+  "span": 4
+ },
+ "m3c57c66f19": {
+  "name": "MoatBed",
+  "roughness": 0.86,
+  "col": "mat/m3c57c66f19_col.webp",
+  "nrm": "mat/m3c57c66f19_nrm.webp",
+  "span": 4
+ },
+ "m3cc96d7370": {
+  "name": "InnSign",
+  "roughness": 0.86,
+  "col": "mat/m3cc96d7370_col.webp",
+  "nrm": "mat/m3cc96d7370_nrm.webp",
+  "span": 4
+ },
+ "m3e4531774f": {
+  "name": "PitchFlameHot",
+  "roughness": 0.85,
+  "emissive": [
+   1.0,
+   0.6800000071525574,
+   0.25999999046325684
+  ],
+  "emissiveStrength": 6.0
+ },
+ "m3ec7807db4": {
+  "name": "BearFur",
+  "roughness": 0.86,
+  "col": "mat/m3ec7807db4_col.webp",
+  "nrm": "mat/m3ec7807db4_nrm.webp",
+  "span": 4
+ },
+ "m3ed2727ff2": {
+  "name": "PondDuck",
+  "roughness": 0.86,
+  "col": "mat/m3ed2727ff2_col.webp",
+  "nrm": "mat/m3ed2727ff2_nrm.webp",
+  "span": 4
+ },
+ "m40836f26ba": {
+  "name": "PitEarth",
+  "roughness": 0.86,
+  "col": "mat/m40836f26ba_col.webp",
+  "nrm": "mat/m40836f26ba_nrm.webp",
+  "span": 4
+ },
+ "m409e6242d2": {
+  "name": "CastleStone",
+  "roughness": 0.84,
+  "col": "mat/m409e6242d2_col.webp",
+  "nrm": "mat/m409e6242d2_nrm.webp",
+  "span": 4
+ },
+ "m42f0bf5345": {
+  "name": "PharmaPot",
+  "roughness": 0.9,
+  "col": "mat/m42f0bf5345_col.webp",
+  "nrm": "mat/m42f0bf5345_nrm.webp",
+  "span": 4
+ },
+ "m435a15e05a": {
+  "name": "OsVat",
+  "roughness": 0.86,
+  "col": "mat/m435a15e05a_col.webp",
+  "nrm": "mat/m435a15e05a_nrm.webp",
+  "span": 4
+ },
+ "m49860e3499": {
+  "name": "AleOak",
+  "roughness": 0.86,
+  "col": "mat/m49860e3499_col.webp",
+  "nrm": "mat/m49860e3499_nrm.webp",
+  "span": 4
+ },
+ "m4b2ee2431c": {
+  "name": "OsPitch",
+  "roughness": 0.86,
+  "col": "mat/m4b2ee2431c_col.webp",
+  "nrm": "mat/m4b2ee2431c_nrm.webp",
+  "span": 4
+ },
+ "m4d8607d877": {
+  "name": "TroughWater",
+  "roughness": 0.86,
+  "col": "mat/m4d8607d877_col.webp",
+  "nrm": "mat/m4d8607d877_nrm.webp",
+  "span": 4
+ },
+ "m505aa0b529": {
+  "name": "FletcherWall",
+  "roughness": 0.9,
+  "col": "mat/m505aa0b529_col.webp",
+  "nrm": "mat/m505aa0b529_nrm.webp",
+  "span": 4
+ },
+ "m5146788e1d": {
+  "name": "CageBone",
+  "roughness": 0.9,
+  "col": "mat/m5146788e1d_col.webp",
+  "nrm": "mat/m5146788e1d_nrm.webp",
+  "span": 4
+ },
+ "m51c5a0f6a1": {
+  "name": "MpRug",
+  "roughness": 0.86,
+  "col": "mat/m51c5a0f6a1_col.webp",
+  "nrm": "mat/m51c5a0f6a1_nrm.webp",
+  "span": 4
+ },
+ "m52c8753a62": {
+  "name": "TgSpoil",
+  "roughness": 0.86,
+  "col": "mat/m52c8753a62_col.webp",
+  "nrm": "mat/m52c8753a62_nrm.webp",
+  "span": 4
+ },
+ "m53040f08a0": {
+  "name": "FlourSack",
+  "roughness": 0.86,
+  "col": "mat/m53040f08a0_col.webp",
+  "nrm": "mat/m53040f08a0_nrm.webp",
+  "span": 4
+ },
+ "m56e2832137": {
+  "name": "Plaster",
+  "roughness": 0.9,
+  "col": "mat/m56e2832137_col.webp",
+  "nrm": "mat/m56e2832137_nrm.webp",
+  "span": 4
+ },
+ "m5b7fbeb247": {
+  "name": "Wicker",
+  "roughness": 0.86,
+  "col": "mat/m5b7fbeb247_col.webp",
+  "nrm": "mat/m5b7fbeb247_nrm.webp",
+  "span": 4
+ },
+ "m5da5e33905": {
+  "name": "PitchPot",
+  "roughness": 0.9,
+  "col": "mat/m5da5e33905_col.webp",
+  "nrm": "mat/m5da5e33905_nrm.webp",
+  "span": 4
+ },
+ "m625431ba41": {
+  "name": "Furrow",
+  "roughness": 0.9,
+  "col": "mat/m625431ba41_col.webp",
+  "nrm": "mat/m625431ba41_nrm.webp",
+  "span": 4
+ },
+ "m65abd532af": {
+  "name": "Meat",
+  "roughness": 0.86,
+  "col": "mat/m65abd532af_col.webp",
+  "nrm": "mat/m65abd532af_nrm.webp",
+  "span": 4
+ },
+ "m663dbd07ff": {
+  "name": "Ash",
+  "roughness": 0.95,
+  "col": "mat/m663dbd07ff_col.webp",
+  "nrm": "mat/m663dbd07ff_nrm.webp",
+  "span": 4
+ },
+ "m6dcdf0f0cd": {
+  "name": "PondReed",
+  "roughness": 0.86,
+  "col": "mat/m6dcdf0f0cd_col.webp",
+  "nrm": "mat/m6dcdf0f0cd_nrm.webp",
+  "span": 4
+ },
+ "m6fef6ad377": {
+  "name": "Bloom2",
+  "roughness": 0.86,
+  "col": "mat/m6fef6ad377_col.webp",
+  "nrm": "mat/m6fef6ad377_nrm.webp",
+  "span": 4
+ },
+ "m710414918b": {
+  "name": "TgDark",
+  "roughness": 0.86,
+  "col": "mat/m710414918b_col.webp",
+  "nrm": "mat/m710414918b_nrm.webp",
+  "span": 4
+ },
+ "m71ca8bac32": {
+  "name": "PileBark",
+  "roughness": 0.9,
+  "col": "mat/m71ca8bac32_col.webp",
+  "nrm": "mat/m71ca8bac32_nrm.webp",
+  "span": 4
+ },
+ "m71f4b8c2b2": {
+  "name": "OilEmber",
+  "roughness": 0.86,
+  "col": "mat/m71f4b8c2b2_col.webp",
+  "nrm": "mat/m71f4b8c2b2_nrm.webp",
+  "span": 4
+ },
+ "m739e8cc65d": {
+  "name": "BearDrum",
+  "roughness": 0.86,
+  "col": "mat/m739e8cc65d_col.webp",
+  "nrm": "mat/m739e8cc65d_nrm.webp",
+  "span": 4
+ },
+ "m74e392b4d1": {
+  "name": "Flesh",
+  "roughness": 0.86,
+  "col": "mat/m74e392b4d1_col.webp",
+  "nrm": "mat/m74e392b4d1_nrm.webp",
+  "span": 4
+ },
+ "m7cac02ed95": {
+  "name": "OilJar",
+  "roughness": 0.62,
+  "col": "mat/m7cac02ed95_col.webp",
+  "nrm": "mat/m7cac02ed95_nrm.webp",
+  "span": 4
+ },
+ "m82768d5f3f": {
+  "name": "PileHideA",
+  "roughness": 0.86,
+  "col": "mat/m82768d5f3f_col.webp",
+  "nrm": "mat/m82768d5f3f_nrm.webp",
+  "span": 4
+ },
+ "m85eb43b5d0": {
+  "name": "Plaster",
+  "roughness": 0.9,
+  "col": "mat/m85eb43b5d0_col.webp",
+  "nrm": "mat/m85eb43b5d0_nrm.webp",
+  "span": 4
+ },
+ "m868d1b356d": {
+  "name": "ShrineLamp",
+  "roughness": 0.86,
+  "col": "mat/m868d1b356d_col.webp",
+  "nrm": "mat/m868d1b356d_nrm.webp",
+  "span": 4
+ },
+ "m87430265cc": {
+  "name": "EgPanel",
+  "roughness": 0.9,
+  "col": "mat/m87430265cc_col.webp",
+  "nrm": "mat/m87430265cc_nrm.webp",
+  "span": 4
+ },
+ "m8753e9f1ad": {
+  "name": "KeepDeck",
+  "roughness": 0.9,
+  "col": "mat/m8753e9f1ad_col.webp",
+  "nrm": "mat/m8753e9f1ad_nrm.webp",
+  "span": 4
+ },
+ "m89d94b0b61": {
+  "name": "SmithWall",
+  "roughness": 0.9,
+  "col": "mat/m89d94b0b61_col.webp",
+  "nrm": "mat/m89d94b0b61_nrm.webp",
+  "span": 4
+ },
+ "m8a37609c69": {
+  "name": "TurnedEarth",
+  "roughness": 0.97,
+  "col": "mat/m8a37609c69_col.webp",
+  "nrm": "mat/m8a37609c69_nrm.webp",
+  "span": 4
+ },
+ "m8dfac034cf": {
+  "name": "EgRope",
+  "roughness": 0.86,
+  "col": "mat/m8dfac034cf_col.webp",
+  "nrm": "mat/m8dfac034cf_nrm.webp",
+  "span": 4
+ },
+ "m8e20097d1d": {
+  "name": "Ribbon0",
+  "roughness": 0.86,
+  "col": "mat/m8e20097d1d_col.webp",
+  "nrm": "mat/m8e20097d1d_nrm.webp",
+  "span": 4
+ },
+ "m92fa33b5df": {
+  "name": "FlameLow",
+  "roughness": 0.85,
+  "emissive": [
+   1.0,
+   0.41999998688697815,
+   0.10000000149011612
+  ],
+  "emissiveStrength": 9.0
+ },
+ "m97b2163fe5": {
+  "name": "StHorse",
+  "roughness": 0.86,
+  "col": "mat/m97b2163fe5_col.webp",
+  "nrm": "mat/m97b2163fe5_nrm.webp",
+  "span": 4
+ },
+ "m983e226829": {
+  "name": "DitchTar",
+  "roughness": 0.18,
+  "col": "mat/m983e226829_col.webp",
+  "nrm": "mat/m983e226829_nrm.webp",
+  "span": 4
+ },
+ "m998a4b4b8a": {
+  "name": "StHorseDark",
+  "roughness": 0.86,
+  "col": "mat/m998a4b4b8a_col.webp",
+  "nrm": "mat/m998a4b4b8a_nrm.webp",
+  "span": 4
+ },
+ "m9a522a5ded": {
+  "name": "MpAsh",
+  "roughness": 0.86,
+  "col": "mat/m9a522a5ded_col.webp",
+  "nrm": "mat/m9a522a5ded_nrm.webp",
+  "span": 4
+ },
+ "m9bce9545f7": {
+  "name": "Ribbon2",
+  "roughness": 0.86,
+  "col": "mat/m9bce9545f7_col.webp",
+  "nrm": "mat/m9bce9545f7_nrm.webp",
+  "span": 4
+ },
+ "m9ccff57386": {
+  "name": "StWater",
+  "roughness": 0.86,
+  "col": "mat/m9ccff57386_col.webp",
+  "nrm": "mat/m9ccff57386_nrm.webp",
+  "span": 4
+ },
+ "ma23cdb55be": {
+  "name": "Apple",
+  "roughness": 0.86,
+  "col": "mat/ma23cdb55be_col.webp",
+  "nrm": "mat/ma23cdb55be_nrm.webp",
+  "span": 4
+ },
+ "ma2f1c4927a": {
+  "name": "Copper",
+  "roughness": 0.42,
+  "col": "mat/ma2f1c4927a_col.webp",
+  "nrm": "mat/ma2f1c4927a_nrm.webp",
+  "span": 4
+ },
+ "ma3a3d9936e": {
+  "name": "GardenLeaf",
+  "roughness": 0.86,
+  "col": "mat/ma3a3d9936e_col.webp",
+  "nrm": "mat/ma3a3d9936e_nrm.webp",
+  "span": 4
+ },
+ "ma3afa846fb": {
+  "name": "OakLeaf",
+  "roughness": 0.8,
+  "col": "mat/ma3afa846fb_col.webp",
+  "nrm": "mat/ma3afa846fb_nrm.webp",
+  "span": 4
+ },
+ "maca054d713": {
+  "name": "Bloom1",
+  "roughness": 0.86,
+  "col": "mat/maca054d713_col.webp",
+  "nrm": "mat/maca054d713_nrm.webp",
+  "span": 4
+ },
+ "macbb61e2c0": {
+  "name": "ScrubLeaf",
+  "roughness": 0.88,
+  "col": "mat/macbb61e2c0_col.webp",
+  "nrm": "mat/macbb61e2c0_nrm.webp",
+  "span": 4
+ },
+ "mae200c6d0a": {
+  "name": "StakeChar",
+  "roughness": 0.86,
+  "col": "mat/mae200c6d0a_col.webp",
+  "nrm": "mat/mae200c6d0a_nrm.webp",
+  "span": 4
+ },
+ "maff2bc2a24": {
+  "name": "MpCanvas",
+  "roughness": 0.86,
+  "col": "mat/maff2bc2a24_col.webp",
+  "nrm": "mat/maff2bc2a24_nrm.webp",
+  "span": 4
+ },
+ "mb1340cbba1": {
+  "name": "PileHideC",
+  "roughness": 0.86,
+  "col": "mat/mb1340cbba1_col.webp",
+  "nrm": "mat/mb1340cbba1_nrm.webp",
+  "span": 4
+ },
+ "mb175bd116f": {
+  "name": "Rind",
+  "roughness": 0.86,
+  "col": "mat/mb175bd116f_col.webp",
+  "nrm": "mat/mb175bd116f_nrm.webp",
+  "span": 4
+ },
+ "mb287a1c09d": {
+  "name": "PileCutStone",
+  "roughness": 0.88,
+  "col": "mat/mb287a1c09d_col.webp",
+  "nrm": "mat/mb287a1c09d_nrm.webp",
+  "span": 4
+ },
+ "mb2d5d7c19f": {
+  "name": "Tar",
+  "roughness": 0.28,
+  "col": "mat/mb2d5d7c19f_col.webp",
+  "nrm": "mat/mb2d5d7c19f_nrm.webp",
+  "span": 4
+ },
+ "mb6502e46ec": {
+  "name": "QuarryRope",
+  "roughness": 0.86,
+  "col": "mat/mb6502e46ec_col.webp",
+  "nrm": "mat/mb6502e46ec_nrm.webp",
+  "span": 4
+ },
+ "mb744784843": {
+  "name": "PharmaLeaf",
+  "roughness": 0.86,
+  "col": "mat/mb744784843_col.webp",
+  "nrm": "mat/mb744784843_nrm.webp",
+  "span": 4
+ },
+ "mb819845ae3": {
+  "name": "MpStripe",
+  "roughness": 0.86,
+  "col": "mat/mb819845ae3_col.webp",
+  "nrm": "mat/mb819845ae3_nrm.webp",
+  "span": 4
+ },
+ "mbbd3bba37e": {
+  "name": "StretchedHide",
+  "roughness": 0.86,
+  "col": "mat/mbbd3bba37e_col.webp",
+  "nrm": "mat/mbbd3bba37e_nrm.webp",
+  "span": 4
+ },
+ "mbec2341006": {
+  "name": "FishNet",
+  "roughness": 0.86,
+  "col": "mat/mbec2341006_col.webp",
+  "nrm": "mat/mbec2341006_nrm.webp",
+  "span": 4
+ },
+ "mbf0c94d42a": {
+  "name": "Bloom3",
+  "roughness": 0.86,
+  "col": "mat/mbf0c94d42a_col.webp",
+  "nrm": "mat/mbf0c94d42a_nrm.webp",
+  "span": 4
+ },
+ "mc494bf3b71": {
+  "name": "HopLeaf",
+  "roughness": 0.86,
+  "col": "mat/mc494bf3b71_col.webp",
+  "nrm": "mat/mc494bf3b71_nrm.webp",
+  "span": 4
+ },
+ "mc6bc570d2e": {
+  "name": "OilSurface",
+  "roughness": 0.86,
+  "col": "mat/mc6bc570d2e_col.webp",
+  "nrm": "mat/mc6bc570d2e_nrm.webp",
+  "span": 4
+ },
+ "mc6e7d17eed": {
+  "name": "CathPale",
+  "roughness": 0.9,
+  "col": "mat/mc6e7d17eed_col.webp",
+  "nrm": "mat/mc6e7d17eed_nrm.webp",
+  "span": 4
+ },
+ "mc8a22bb5a5": {
+  "name": "Wheat",
+  "roughness": 0.9,
+  "col": "mat/mc8a22bb5a5_col.webp",
+  "nrm": "mat/mc8a22bb5a5_nrm.webp",
+  "span": 4
+ },
+ "mce2064ac83": {
+  "name": "FlameHigh",
+  "roughness": 0.85,
+  "emissive": [
+   1.0,
+   0.7799999713897705,
+   0.3199999928474426
+  ],
+  "emissiveStrength": 14.0
+ },
+ "mcebcbe52fd": {
+  "name": "Bark",
+  "roughness": 0.92,
+  "col": "mat/mcebcbe52fd_col.webp",
+  "nrm": "mat/mcebcbe52fd_nrm.webp",
+  "span": 4
+ },
+ "mceeece84bf": {
+  "name": "AppleSkin",
+  "roughness": 0.86,
+  "col": "mat/mceeece84bf_col.webp",
+  "nrm": "mat/mceeece84bf_nrm.webp",
+  "span": 4
+ },
+ "md158ee1885": {
+  "name": "Timber.001",
+  "roughness": 0.8,
+  "col": "mat/md158ee1885_col.webp",
+  "nrm": "mat/md158ee1885_nrm.webp",
+  "span": 4
+ },
+ "md1e21553ec": {
+  "name": "ArmourerWall",
+  "roughness": 0.9,
+  "col": "mat/md1e21553ec_col.webp",
+  "nrm": "mat/md1e21553ec_nrm.webp",
+  "span": 4
+ },
+ "md2ef26fe8f": {
+  "name": "Plaster",
+  "roughness": 0.9,
+  "col": "mat/md2ef26fe8f_col.webp",
+  "nrm": "mat/md2ef26fe8f_nrm.webp",
+  "span": 4
+ },
+ "md495690fb2": {
+  "name": "Awning",
+  "roughness": 0.86,
+  "col": "mat/md495690fb2_col.webp",
+  "nrm": "mat/md495690fb2_nrm.webp",
+  "span": 4
+ },
+ "md6092a559e": {
+  "name": "CathFinial",
+  "roughness": 0.86,
+  "col": "mat/md6092a559e_col.webp",
+  "nrm": "mat/md6092a559e_nrm.webp",
+  "span": 4
+ },
+ "md66516d672": {
+  "name": "SmithCoals",
+  "roughness": 0.85,
+  "emissive": [
+   1.0,
+   0.41999998688697815,
+   0.10000000149011612
+  ],
+  "emissiveStrength": 6.0
+ },
+ "mda0f1b29f4": {
+  "name": "WellWater",
+  "roughness": 0.5,
+  "col": "mat/mda0f1b29f4_col.webp",
+  "nrm": "mat/mda0f1b29f4_nrm.webp",
+  "span": 4
+ },
+ "mdb28a30002": {
+  "name": "Plaster",
+  "roughness": 0.9,
+  "col": "mat/mdb28a30002_col.webp",
+  "nrm": "mat/mdb28a30002_nrm.webp",
+  "span": 4
+ },
+ "mdc506a72f6": {
+  "name": "Plaster",
+  "roughness": 0.9,
+  "col": "mat/mdc506a72f6_col.webp",
+  "nrm": "mat/mdc506a72f6_nrm.webp",
+  "span": 4
+ },
+ "mdd12384b3b": {
+  "name": "StatueMarble",
+  "roughness": 0.9,
+  "col": "mat/mdd12384b3b_col.webp",
+  "nrm": "mat/mdd12384b3b_nrm.webp",
+  "span": 4
+ },
+ "mdf3594ed84": {
+  "name": "FishScale",
+  "roughness": 0.86,
+  "col": "mat/mdf3594ed84_col.webp",
+  "nrm": "mat/mdf3594ed84_nrm.webp",
+  "span": 4
+ },
+ "mdf81f0ad3e": {
+  "name": "Ribbon3",
+  "roughness": 0.86,
+  "col": "mat/mdf81f0ad3e_col.webp",
+  "nrm": "mat/mdf81f0ad3e_nrm.webp",
+  "span": 4
+ },
+ "me111e33886": {
+  "name": "PileHideB",
+  "roughness": 0.86,
+  "col": "mat/me111e33886_col.webp",
+  "nrm": "mat/me111e33886_nrm.webp",
+  "span": 4
+ },
+ "me14ff6207b": {
+  "name": "Plaster",
+  "roughness": 0.9,
+  "col": "mat/me14ff6207b_col.webp",
+  "nrm": "mat/me14ff6207b_nrm.webp",
+  "span": 4
+ },
+ "me180a7fea5": {
+  "name": "OilIron",
+  "roughness": 0.86,
+  "col": "mat/me180a7fea5_col.webp",
+  "nrm": "mat/me180a7fea5_nrm.webp",
+  "span": 4
+ },
+ "me20b51386f": {
+  "name": "LogEnd",
+  "roughness": 0.86,
+  "col": "mat/me20b51386f_col.webp",
+  "nrm": "mat/me20b51386f_nrm.webp",
+  "span": 4
+ },
+ "me2ba2ce3b5": {
+  "name": "Plaster",
+  "roughness": 0.9,
+  "col": "mat/me2ba2ce3b5_col.webp",
+  "nrm": "mat/me2ba2ce3b5_nrm.webp",
+  "span": 4
+ },
+ "me2f1d0d237": {
+  "name": "PharmaLeaf2",
+  "roughness": 0.86,
+  "col": "mat/me2f1d0d237_col.webp",
+  "nrm": "mat/me2f1d0d237_nrm.webp",
+  "span": 4
+ },
+ "me51948a92e": {
+  "name": "PitchFlameMid",
+  "roughness": 0.85,
+  "emissive": [
+   1.0,
+   0.47999998927116394,
+   0.10000000149011612
+  ],
+  "emissiveStrength": 4.599999904632568
+ },
+ "me910ddc168": {
+  "name": "Mud",
+  "roughness": 0.9,
+  "col": "mat/me910ddc168_col.webp",
+  "nrm": "mat/me910ddc168_nrm.webp",
+  "span": 4
+ },
+ "mea392af004": {
+  "name": "OxHide",
+  "roughness": 0.9,
+  "col": "mat/mea392af004_col.webp",
+  "nrm": "mat/mea392af004_nrm.webp",
+  "span": 4
+ },
+ "mee01085904": {
+  "name": "TanPaleHide",
+  "roughness": 0.86,
+  "col": "mat/mee01085904_col.webp",
+  "nrm": "mat/mee01085904_nrm.webp",
+  "span": 4
+ },
+ "mee4acb0557": {
+  "name": "DepotSack",
+  "roughness": 0.86,
+  "col": "mat/mee4acb0557_col.webp",
+  "nrm": "mat/mee4acb0557_nrm.webp",
+  "span": 4
+ },
+ "mf094e991af": {
+  "name": "PigHide",
+  "roughness": 0.86,
+  "col": "mat/mf094e991af_col.webp",
+  "nrm": "mat/mf094e991af_nrm.webp",
+  "span": 4
+ },
+ "mf1e09af8c6": {
+  "name": "PharmaCanvas",
+  "roughness": 0.86,
+  "col": "mat/mf1e09af8c6_col.webp",
+  "nrm": "mat/mf1e09af8c6_nrm.webp",
+  "span": 4
+ },
+ "mf36ad00b88": {
+  "name": "ArmourerCoals",
+  "roughness": 0.85,
+  "emissive": [
+   1.0,
+   0.44999998807907104,
+   0.11999999731779099
+  ],
+  "emissiveStrength": 5.0
+ },
+ "mf6e4b96b66": {
+  "name": "Frond",
+  "roughness": 0.82,
+  "col": "mat/mf6e4b96b66_col.webp",
+  "nrm": "mat/mf6e4b96b66_nrm.webp",
+  "span": 4
+ },
+ "mf9ce8f04a7": {
+  "name": "Sail",
+  "roughness": 0.86,
+  "col": "mat/mf9ce8f04a7_col.webp",
+  "nrm": "mat/mf9ce8f04a7_nrm.webp",
+  "span": 4
+ },
+ "mfa5351c5dd": {
+  "name": "Plaster",
+  "roughness": 0.9,
+  "col": "mat/mfa5351c5dd_col.webp",
+  "nrm": "mat/mfa5351c5dd_nrm.webp",
+  "span": 4
+ },
+ "mfc704c2622": {
+  "name": "PileGrain",
+  "roughness": 0.86,
+  "col": "mat/mfc704c2622_col.webp",
+  "nrm": "mat/mfc704c2622_nrm.webp",
+  "span": 4
+ },
+ "mfdd0be1132": {
+  "name": "Timber",
+  "roughness": 0.8,
+  "col": "mat/mfdd0be1132_col.webp",
+  "nrm": "mat/mfdd0be1132_nrm.webp",
+  "span": 4
+ }
+}

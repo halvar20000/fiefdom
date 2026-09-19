@@ -40,6 +40,9 @@ export class IsoCamera {
     return PIXELS_PER_WORLD_UNIT * ZOOM_LEVELS[this.zoomIndex];
   }
 
+  get viewWidth(): number { return this.viewW; }
+  get viewHeight(): number { return this.viewH; }
+
   setViewport(width: number, height: number): void {
     this.viewW = Math.max(1, width);
     this.viewH = Math.max(1, height);

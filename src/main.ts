@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import { IsoCamera } from './engine/camera';
 import { Terrain } from './engine/terrain';
 import { SpriteBatch } from './engine/sprites';
+import { ModelLibrary, ModelBatch } from './engine/models';
+import { Lighting } from './engine/lighting';
 import { loadTileArray, buildCombinedAtlas, type CombinedAtlas } from './engine/assets';
 import { Audio } from './engine/audio';
 import { Projectiles } from './engine/projectiles';
@@ -191,10 +193,35 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
   const iso = new IsoCamera();
   const flags = new URLSearchParams(location.search);
 
-  const [tiles, atlas] = await Promise.all([
+  // The 3D world: buildings, trees and yards as real meshes under a real
+  // sun (see engine/models.ts). `?r3d=0` is the way back to the sprite
+  // scenery while the two coexist. Units are sprites either way for now.
+  const use3d = flags.get('r3d') !== '0';
+
+  const [tiles, atlas, models] = await Promise.all([
     loadTileArray('/assets/tiles'),
     buildCombinedAtlas('/assets/sprites'),
-  ]) as [Awaited<ReturnType<typeof loadTileArray>>, CombinedAtlas];
+    use3d ? ModelLibrary.load('/assets/models', renderer.capabilities.getMaxAnisotropy(), (done, total) => {
+      loading.textContent = `loading models ${done}/${total}…`;
+    }) : Promise.resolve(null),
+  ]) as [Awaited<ReturnType<typeof loadTileArray>>, CombinedAtlas, ModelLibrary | null];
+  if (models?.missing.length) {
+    console.warn(`[models] ${models.missing.length} without a .glb: ${models.missing.join(', ')}`);
+  }
+  if (models) {
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    // The game's look is the art seen through a gamma curve: the sprite and
+    // terrain shaders are raw, so they sample their sRGB textures (decoded
+    // to linear by the GPU) and write that straight to the canvas with no
+    // encoding back. A keep sprite authored as pale sandstone (217,188,140)
+    // is displayed as the deep gold (179,131,68) everyone knows as
+    // Fiefdom. Three's lit materials DO encode on output, so left alone the
+    // meshes came out pale next to their own sprites. Declaring the output
+    // linear switches that encoding off and puts both through the same
+    // curve. Undoing this properly means brightening the whole game.
+    renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
+  }
 
   // Say so loudly if the manifests predate the code. Both failure modes are
   // silent: an unknown ground type falls back to sand, and a sprite with no
@@ -258,6 +285,17 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
   scene.add(ghostBatch.mesh);
   const projectiles = new Projectiles();
   scene.add(projectiles.mesh);
+
+  // The mesh scenery, in three batches by how often they change: the
+  // static world on build and fell, the restless few every frame, the ghost
+  // while placing. Null on the sprite path.
+  const lighting = models ? new Lighting() : null;
+  const staticModels = models ? new ModelBatch(models) : null;
+  const restlessModels = models ? new ModelBatch(models) : null;
+  const ghostModels = models ? new ModelBatch(models, { shadows: false, ghost: true }) : null;
+  if (models) {
+    scene.add(lighting!.group, staticModels!.group, restlessModels!.group, ghostModels!.group);
+  }
 
   // --- occupancy ----------------------------------------------------------
   // Two grids, kept in step. `occupied` decides where you may BUILD;
@@ -3485,9 +3523,14 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     const rot = iso.rotation;
     const items: DrawItem[] = [];
     restless.length = 0;
+    if (staticModels) staticModels.clear();
 
     const push = (name: string, x: number, z: number, w: number, d: number,
                   tint?: [number, number, number], turn = 0) => {
+      if (staticModels) {
+        staticModels.add(modelName(name), x, footing(name, x, z), z, turn, tint);
+        return;
+      }
       const key = spriteKey(name, rot, turn);
       if (!key) return;
       const [ax, az] = spriteAnchor(x, z, d);
@@ -3552,9 +3595,21 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     }
     items.sort((a, b) => a.depth - b.depth);
     staticSorted = items;
+    if (staticModels) staticModels.flush();
     builtRotation = rot;
     staticDirty = false;
     rebuildFirePosts();       // building near the fire reshapes the ring
+  }
+
+  /**
+   * The model a name draws. A painted store square has a model of its own
+   * under the square's name (stockpile_deck, pile_wood_2 ...), which is what
+   * rebuildStatic already passes; everything else is the building itself.
+   */
+  function modelName(name: string): string {
+    const def = BUILDINGS[name];
+    const square = def ? storeSquare(def) : null;
+    return square ?? name;
   }
 
   // --- input --------------------------------------------------------------
@@ -5314,8 +5369,13 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     // Turning sails and filling yards. Everything about where these land is
     // the static list's -- see Restless -- and only which frame is picked
     // belongs to this frame.
+    if (restlessModels) restlessModels.clear();
     for (const r of restless) {
       const { x, z } = r.b;
+      if (restlessModels) {
+        restlessModels.add(restlessSprite(r), x, terrain.heightAt(x, z), z, 0, r.tint);
+        continue;
+      }
       const key = spriteKey(restlessSprite(r), rot);
       if (!key) continue;
       const [rx, rz] = spriteAnchor(x, z, r.d);
@@ -5356,9 +5416,18 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     }
     sprites.flush();
 
+    if (restlessModels) restlessModels.flush();
+
     // ghost building, tinted green or red, floated in front of everything
     ghostBatch.clear();
-    if (placement.selected && placement.hover) {
+    if (ghostModels) ghostModels.clear();
+    if (ghostModels && placement.selected && placement.hover) {
+      const name = modelName(placement.selected);
+      runPlan.tiles.forEach((t, i) => {
+        ghostModels.add(name, t.x, footing(placement.selected!, t.x, t.z), t.z,
+          placement.facing, runPlan.legal[i] ? [0.55, 1.20, 0.55] : [1.30, 0.45, 0.40]);
+      });
+    } else if (placement.selected && placement.hover) {
       // A painted store has no building sprite of its own -- it is a square, so
       // the ghost is the empty square. SPRITE_STANDIN already says as much.
       const key = spriteKey(placement.selected, rot, placement.facing);
@@ -5379,9 +5448,14 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       }
     }
     ghostBatch.flush();
+    if (ghostModels) ghostModels.flush();
     { const [vx, vy, vz] = cameraDirection(iso.rotation); projectiles.setView(vx, vy, vz); }
     projectiles.render();
 
+    if (lighting) {
+      lighting.update(iso.target, iso.viewWidth, iso.viewHeight, iso.pixelsPerUnit);
+      terrain.setShadow(lighting.sun);
+    }
     renderer.render(scene, iso.camera);
     hud.update();
   }
