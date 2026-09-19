@@ -496,6 +496,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
   const GRASS = GROUND_TYPES.indexOf('grass');
   const DARK = GROUND_TYPES.indexOf('grass_dark');
   const ROCK = GROUND_TYPES.indexOf('rock');
+  const IRON = GROUND_TYPES.indexOf('iron');
   const TREES = new Set(['palm', 'olive_tree', 'oak', 'dead_tree']);
 
   /**
@@ -872,6 +873,10 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       else if (r < 0.014) name = 'rock';
     } else if (g === ROCK) {
       if (r < 0.12) name = 'rock';
+    } else if (g === IRON) {
+      // Sparser than the rock around it: a seam is somewhere to put a mine,
+      // and a boulder on every twelfth tile would keep blocking the 3x3.
+      if (r < 0.05) name = 'rock';
     }
     if (name) {
       decorations.push({ name, x: t.x, z: t.z, alive: true, regrowAt: 0, claimedBy: null });
@@ -1607,6 +1612,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
         const g = GROUND_TYPES[groundType[(z + dz) * MAP_W + (x + dx)]];
         const ok = need === 'green' ? (g === 'grass' || g === 'grass_dark')
                  : need === 'rock' ? g === 'rock'
+                 : need === 'iron' ? g === 'iron'
                  : (g === 'sand' || g === 'scrub');
         if (!ok) return false;
       }
@@ -2225,6 +2231,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       return ((seed >>> 8) & 0xffffff) / 0x1000000;
     };
     const ROCK = GROUND_TYPES.indexOf('rock');
+    const IRON = GROUND_TYPES.indexOf('iron');
     const centres: { x: number; z: number }[] = [];
     const WANT = 15;
 
@@ -2232,7 +2239,8 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       const x = 6 + Math.floor(rnd() * (MAP_W - 12));
       const z = 6 + Math.floor(rnd() * (MAP_H - 12));
       if (paths.isBlocked(x, z)) continue;
-      if (groundType[z * MAP_W + x] === ROCK) continue;
+      const g = groundType[z * MAP_W + x];
+      if (g === ROCK || g === IRON) continue;
       if (Math.hypot(x - kx, z - kz) < 16) continue;
       if (centres.some(c => Math.hypot(c.x - x, c.z - z) < 12)) continue;
       centres.push({ x, z });

@@ -2,6 +2,8 @@
 Render ground tile textures, top-down, through the same lighting rig.
 
     blender -b -P tools/render/render_ground.py -- --out public/assets/tiles
+    blender -b -P tools/render/render_ground.py -- --only iron   (one type; the
+                                                index still lists them all)
 
 Why top-down and why bake the sun in:
 the terrain is a real 3D mesh, so its texture must be a plan view. Because the
@@ -43,6 +45,10 @@ TYPES = {
     "cliff":      lambda: M.ground_cliff(),
     "marsh":      lambda: M.ground_marsh(),
     "water":      lambda: M.ground_water(),
+    # Appended, like GROUND_TYPES: the index is written in this order and the
+    # game maps type names to layers through it, so order is only cosmetic
+    # here -- but keeping the two lists alike is one less thing to think about.
+    "iron":       lambda: M.ground_iron(),
 }
 
 
@@ -78,16 +84,19 @@ def main():
     argv = rig.argv_after_dashes()
     out_dir = os.path.join(os.getcwd(), "public", "assets", "tiles")
     samples = 64
+    only = None
     i = 0
     while i < len(argv):
         if argv[i] == "--out": out_dir = argv[i + 1]; i += 2
         elif argv[i] == "--samples": samples = int(argv[i + 1]); i += 2
+        elif argv[i] == "--only": only = argv[i + 1].split(","); i += 2
         else: i += 1
 
     index = {"tilePx": TILE_PX, "variants": VARIANTS, "types": list(TYPES.keys())}
     t0 = time.time()
 
     for ti, (tname, make_mat) in enumerate(TYPES.items()):
+        if only and tname not in only: continue
         for v in range(VARIANTS):
             rig.reset_scene()
             rig.setup_world()

@@ -110,7 +110,7 @@ export type WorkClip =
   | 'chop' | 'mine' | 'dig' | 'fish'
   | 'farm' | 'pick' | 'milk' | 'feed' | 'slaughter' | 'butcher' | 'craft';
 
-export type TerrainNeed = 'any' | 'green' | 'rock' | 'sand' | 'marsh';
+export type TerrainNeed = 'any' | 'green' | 'rock' | 'iron' | 'sand' | 'marsh';
 
 /**
  * How close water must be for a building that works it.
@@ -811,9 +811,10 @@ export const BUILDINGS: Record<string, BuildingDef> = {
   },
   iron_mine: {
     name: 'iron_mine', label: 'Iron Mine', category: 'industry',
-    footprint: [3, 3], cost: { wood: 20 }, workers: 2, terrain: 'rock',
+    footprint: [3, 3], cost: { wood: 20 }, workers: 2, terrain: 'iron',
     produces: { output: 'iron', amount: 1, seconds: 16, to: 'stockpile' },
-    description: 'Digs iron ore. Must be built on rock.',
+    description: 'Digs iron ore. Must be built on an iron seam: the rust-red '
+               + 'ground that runs through some of the rock.',
     workClip: 'mine',
   },
   pitch_rig: {

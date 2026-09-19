@@ -71,6 +71,7 @@ const BRUSHES: { g: string; label: string; swatch: string; key: string }[] = [
   { g: 'rock', label: 'Rock', swatch: '#8e8b83', key: '5' },
   { g: 'marsh', label: 'Pitch marsh', swatch: '#4a4438', key: '6' },
   { g: 'water', label: 'Water', swatch: '#5e7d92', key: '7' },
+  { g: 'iron', label: 'Iron ore', swatch: '#8b563a', key: '8' },
 ];
 
 const SIZES = [1, 3, 5, 9, 15];
@@ -209,7 +210,7 @@ async function run(
   roomBtn.textContent = 'Room to farm';
   roomBtn.title = 'Lay a meadow and an outcrop beside any keep that has none in reach';
   roomBtn.style.cssText = 'width:100%;text-align:center;margin-top:4px';
-  roomBtn.onclick = () => { warnBox.innerHTML = fixRoom() || 'Every keep has room to farm and quarry.'; };
+  roomBtn.onclick = () => { warnBox.innerHTML = fixRoom() || 'Every keep has room to farm, quarry and mine.'; };
   tools.appendChild(roomBtn);
 
   el('div', tools, 'lbl').textContent = 'Brush';
@@ -451,7 +452,7 @@ async function run(
   }
 
   /**
-   * See that the seated keeps have farmland and rock in reach, laying it if not.
+   * See that the seated keeps have farmland, rock and ore in reach, laying it if not.
    *
    * `who` limits it to one keep, for the moment it is set down; otherwise every
    * seated keep is checked, which is what the button and an import do. Returns

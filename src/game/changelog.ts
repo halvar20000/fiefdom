@@ -23,6 +23,20 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.75.0',
+    date: '2026-09-19',
+    headline: 'Iron ore is its own ground.',
+    sections: [
+      {
+        title: 'Changed',
+        items: [
+          'Iron ore is a ground of its own now, as it is in Crusader: rust-red seams laid through the rock, and the iron mine goes on a seam and nowhere else. It used to take any flat rock, the same rock as the quarry, so a map never asked where the iron was. Every map lays some thirty seams of twenty to forty tiles, at least a dozen tiles apart; the start site is chosen with one in the keep\u2019s reach, as it already is for green land and rock, and the keep is never set down on top of one. The quarry still goes on rock. Saved games are untouched: a mine already standing on rock stays where it is.',
+          'The map editor has an Iron ore brush (key 8). \u201cRoom to farm\u201d lays a seam beside a keep that has none, and the audit says which keep is short of ore.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.74.0',
     date: '2026-09-19',
     headline: 'As many saved games as you like.',

@@ -36,7 +36,7 @@ function makeNoise(seed: number) {
  * saved, because a painted map stores the index and not the name.
  */
 export const GROUND_TYPES =
-  ['sand', 'scrub', 'grass', 'grass_dark', 'rock', 'marsh', 'water'] as const;
+  ['sand', 'scrub', 'grass', 'grass_dark', 'rock', 'marsh', 'water', 'iron'] as const;
 export type GroundType = typeof GROUND_TYPES[number];
 
 /**
@@ -55,6 +55,7 @@ export const GROUND_COLOURS: [number, number, number][] = [
   [142, 139, 131],  // rock
   [74, 68, 56],     // marsh
   [74, 124, 150],   // water
+  [139, 86, 58],    // iron ore
 ];
 
 export interface GeneratedMap {
@@ -205,6 +206,7 @@ export function shapeTerrain(
       // mutually exclusive, so neither building could ever be placed.
       const outcrop = noise(x + 3100, z + 1700, 3, 0.05);
 
+
       // Pitch marsh: boggy ground where tar seeps to the surface.
       //
       // Seeded INSIDE the fertile belt on purpose. Putting it out in the dead
@@ -281,7 +283,89 @@ export function shapeTerrain(
     }
   }
 
+  laySeams(width, height, cornerHeight, groundType, seed);
+
   return { width, height, corners, groundType, variant: variants, cliff, flatTiles };
+}
+
+/**
+ * Iron ore, as Crusader has it: its own ground, in seams, and the mine goes
+ * on the seam.
+ *
+ * Laid as deposits rather than as another band of the ground noise. A noise
+ * threshold was tried first and made speckle: ore only exists where the rock
+ * is, rock is itself a noise threshold, and the intersection of two noise
+ * edges is a fringe of single tiles with no level 3x3 in it anywhere -- the
+ * one thing a seam has to have, since that is a mine. So instead the pass
+ * picks centres on level rock, well apart, and paints a rounded patch of
+ * ore around each, held to rock at the centre's own level, which is what
+ * keeps every seam a place a mine can actually stand. Carved out of rock
+ * that would have been there anyway, so a map's stone does not change.
+ *
+ * Deterministic from the seed, like everything else here, so a save can
+ * still recompute its map.
+ */
+function laySeams(
+  width: number, height: number, cornerHeight: (x: number, z: number) => number,
+  groundType: Uint8Array, seed: number,
+): void {
+  const ROCK = GROUND_TYPES.indexOf('rock');
+  const IRON = GROUND_TYPES.indexOf('iron');
+  const hash = (x: number, z: number) => {
+    let h = x * 374761393 + z * 668265263 + seed * 2147483647;
+    h = (h ^ (h >>> 13)) * 1274126177;
+    return ((h ^ (h >>> 16)) >>> 0) / 4294967295;
+  };
+  /** The level of a flat tile, or -1 for a slope. */
+  const levelAt = (x: number, z: number): number => {
+    if (x < 0 || z < 0 || x >= width || z >= height) return -1;
+    const c0 = cornerHeight(x, z), c1 = cornerHeight(x + 1, z);
+    const c2 = cornerHeight(x + 1, z + 1), c3 = cornerHeight(x, z + 1);
+    return c0 === c1 && c1 === c2 && c2 === c3 ? c0 : -1;
+  };
+  const levelRock = (x: number, z: number, level: number) =>
+    levelAt(x, z) === level && groundType[z * width + x] === ROCK;
+
+  // Candidates: the centre of a level 3x3 of rock -- one mine's footing, the
+  // least a seam can be worth. Visited in hashed order, so which ones win is
+  // a property of the seed and not of the scan direction.
+  const candidates: { x: number; z: number; r: number }[] = [];
+  for (let z = 2; z < height - 2; z++) {
+    for (let x = 2; x < width - 2; x++) {
+      const level = levelAt(x, z);
+      if (level < 0 || groundType[z * width + x] !== ROCK) continue;
+      let ok = true;
+      for (let dz = -1; dz <= 1 && ok; dz++) {
+        for (let dx = -1; dx <= 1; dx++) if (!levelRock(x + dx, z + dz, level)) { ok = false; break; }
+      }
+      if (ok) candidates.push({ x, z, r: hash(x, z) });
+    }
+  }
+  candidates.sort((a, b) => a.r - b.r);
+
+  // About one seam per 1200 tiles -- some thirty on the 200x200 maps -- each
+  // at least twelve tiles from the next, so they read as deposits dotted
+  // over the rock and not as one red hill. Enough that a start with green
+  // and rock in reach nearly always has one; findStartSite asks for it.
+  const want = Math.round((width * height) / 1200);
+  const seams: { x: number; z: number }[] = [];
+  for (const c of candidates) {
+    if (seams.length >= want) break;
+    if (seams.some(s => Math.hypot(s.x - c.x, s.z - c.z) < 12)) continue;
+    seams.push(c);
+    const level = levelAt(c.x, c.z);
+    // Radius two and a half to three and a half, edge roughened per tile:
+    // twenty to forty tiles of ore, room for one mine and usually two.
+    const radius = 2.5 + hash(c.x + 7, c.z + 3);
+    for (let dz = -4; dz <= 4; dz++) {
+      for (let dx = -4; dx <= 4; dx++) {
+        const x = c.x + dx, z = c.z + dz;
+        const edge = radius + (hash(x + 11, z + 5) - 0.5) * 1.2;
+        if (dx * dx + dz * dz > edge * edge) continue;
+        if (levelRock(x, z, level)) groundType[z * width + x] = IRON;
+      }
+    }
+  }
 }
 
 /**
@@ -367,6 +451,7 @@ export function findStartSite(
   const GRASS = GROUND_TYPES.indexOf('grass');
   const DARK = GROUND_TYPES.indexOf('grass_dark');
   const ROCK = GROUND_TYPES.indexOf('rock');
+  const IRON = GROUND_TYPES.indexOf('iron');
   const WATER = GROUND_TYPES.indexOf('water');
 
   let best = { x: Math.floor(width / 2), z: Math.floor(height / 2) };
@@ -377,8 +462,10 @@ export function findStartSite(
   for (let z = margin; z < height - margin; z += step) {
     for (let x = margin; x < width - margin; x += step) {
       if (!isBuildable(terrain, x - 1, z - 1, 5, 5)) continue;
+      // Not on the ore: a keep on a seam is a mine nobody can build.
+      if (groundType[idx(x, z)] === IRON) continue;
 
-      let green = 0, rock = 0, flat = 0, water = 0;
+      let green = 0, rock = 0, iron = 0, flat = 0, water = 0;
       for (let dz = -radius; dz <= radius; dz += 2) {
         for (let dx = -radius; dx <= radius; dx += 2) {
           const tx = x + dx, tz = z + dz;
@@ -399,14 +486,21 @@ export function findStartSite(
           if (!buildable) continue;
           if (g === GRASS || g === DARK) green++;
           else if (g === ROCK) rock++;
+          // Ore only counts inside the keep's build reach (R_KEEP, 22, less
+          // a mine's own width): a seam at the edge of the sampled square
+          // is a seam the player can see and not mine.
+          else if (g === IRON && Math.hypot(dx, dz) <= 19) iron++;
         }
       }
       // A little water in reach is a fishery and a water pot, so it earns a
       // small bonus -- capped, because a shore is worth having and a swamp is
       // not.
+      // A seam in reach is wanted as firmly as green and rock: a start that
+      // has to trade for every bar of iron is a start with no armoury.
+      // Nine or more sampled ore tiles is a whole seam, not its fringe.
       const score = Math.min(green, 60) * 4 + Math.min(rock, 30) * 3 + flat
-        + Math.min(water, 25) * 2
-        - (green < 8 ? 900 : 0) - (rock < 4 ? 900 : 0);
+        + Math.min(water, 25) * 2 + Math.min(iron, 12) * 3
+        - (green < 8 ? 900 : 0) - (rock < 4 ? 900 : 0) - (iron < 5 ? 600 : 0);
       if (score > bestScore) { bestScore = score; best = { x, z }; }
     }
   }

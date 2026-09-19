@@ -355,9 +355,9 @@ export function lordScreen(
     hint.className = 'hint';
     hint.textContent = plan
       ? 'Click a player, then click the map to move their keep. '
-        + 'Green and rock near a keep is what makes a start playable.'
+        + 'Green, rock and iron ore near a keep is what makes a start playable.'
       : 'Click a lord, then click the map to move his keep. '
-        + 'Green and rock near a keep is what makes a start playable.';
+        + 'Green, rock and iron ore near a keep is what makes a start playable.';
     side.appendChild(hint);
     side.appendChild(warn);
 

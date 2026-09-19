@@ -294,7 +294,9 @@ export function applyCustomMap(
       const variant = hashVariant(x, z);
       terrain.layer[t] = layerOf(slope >= 2 ? 'cliff' : type, variant);
       groundType[t] = g;
-      if (flat && type !== 'rock' && type !== 'marsh' && type !== 'water') flatTiles.push({ x, z });
+      if (flat && type !== 'rock' && type !== 'iron' && type !== 'marsh' && type !== 'water') {
+        flatTiles.push({ x, z });
+      }
     }
   }
 
@@ -322,9 +324,10 @@ export function auditMap(
   const GRASS = GROUND_TYPES.indexOf('grass');
   const DARK = GROUND_TYPES.indexOf('grass_dark');
   const ROCK = GROUND_TYPES.indexOf('rock');
+  const IRON = GROUND_TYPES.indexOf('iron');
   const WATER = GROUND_TYPES.indexOf('water');
   const MARSH = GROUND_TYPES.indexOf('marsh');
-  let green = 0, rock = 0, buildable = 0;
+  let green = 0, rock = 0, iron = 0, buildable = 0;
 
   for (let z = 0; z < terrain.height; z += 2) {
     for (let x = 0; x < terrain.width; x += 2) {
@@ -334,12 +337,14 @@ export function auditMap(
       buildable++;
       if (g === GRASS || g === DARK) green++;
       else if (g === ROCK) rock++;
+      else if (g === IRON) iron++;
     }
   }
 
   const warnings: string[] = [];
   if (green < 40) warnings.push('Almost no farmland — nothing can grow food here.');
-  if (rock < 12) warnings.push('Almost no flat rock — no quarry or iron mine can be built.');
+  if (rock < 12) warnings.push('Almost no flat rock — no quarry can be built.');
+  if (iron < 3) warnings.push('No iron ore — no iron mine can be built.');
   if (buildable < 400) warnings.push('Very little level ground to build on.');
   return { ok: warnings.length === 0, warnings };
 }
@@ -350,11 +355,13 @@ export function auditMap(
 export const KEEP_REACH = 22;
 /** Farm sites a keep wants in reach: the five farms and room to spare. */
 export const FARMS_WANTED = 8;
-/** Quarry sites: a quarry, an iron mine and one more. */
+/** Quarry sites: two quarries and one more. */
 export const QUARRIES_WANTED = 3;
+/** Iron mine sites: one seam is a mine; the second is for a second mine. */
+export const MINES_WANTED = 2;
 
 /** A keep's flat 3x3 sites in reach, by what could stand on them. */
-export interface Room { green: number; rock: number }
+export interface Room { green: number; rock: number; iron: number }
 
 /**
  * Disjoint, flat 3x3 sites within reach of a keep, counted by ground.
@@ -374,16 +381,17 @@ export function roomAround(
 ): Room {
   const GREEN = new Set([GROUND_TYPES.indexOf('grass'), GROUND_TYPES.indexOf('grass_dark')]);
   const ROCK = GROUND_TYPES.indexOf('rock');
+  const IRON = GROUND_TYPES.indexOf('iron');
   const { width, height } = terrain;
   const used = new Set<number>();
-  const room: Room = { green: 0, rock: 0 };
+  const room: Room = { green: 0, rock: 0, iron: 0 };
   for (let z = Math.max(0, keep.z - reach); z + 3 <= Math.min(height, keep.z + reach + 1); z++) {
     for (let x = Math.max(0, keep.x - reach); x + 3 <= Math.min(width, keep.x + reach + 1); x++) {
       // The keep and its yard: the game lays the keep and the stores there.
       if (Math.abs(x + 1 - keep.x) < 5 && Math.abs(z + 1 - keep.z) < 5) continue;
       // All nine tiles inside the border, not just the middle one.
       if (Math.hypot(x + 1 - keep.x, z + 1 - keep.z) > reach - 1.5) continue;
-      let green = 0, rock = 0, free = true;
+      let green = 0, rock = 0, iron = 0, free = true;
       for (let dz = 0; dz < 3 && free; dz++) {
         for (let dx = 0; dx < 3; dx++) {
           const t = (z + dz) * width + x + dx;
@@ -391,11 +399,12 @@ export function roomAround(
           const g = groundType[t];
           if (GREEN.has(g)) green++;
           else if (g === ROCK) rock++;
+          else if (g === IRON) iron++;
         }
       }
-      if (!free || (green < 9 && rock < 9)) continue;
+      if (!free || (green < 9 && rock < 9 && iron < 9)) continue;
       if (!isBuildable(terrain, x, z, 3, 3)) continue;
-      if (green === 9) room.green++; else room.rock++;
+      if (green === 9) room.green++; else if (iron === 9) room.iron++; else room.rock++;
       for (let dz = 0; dz < 3; dz++) for (let dx = 0; dx < 3; dx++) used.add((z + dz) * width + x + dx);
     }
   }
@@ -442,6 +451,12 @@ export function ensureRoom(
     { label: 'a rock outcrop', fits: new Set([GROUND_TYPES.indexOf('rock')]),
       paint: GROUND_TYPES.indexOf('rock'),
       sizes: [6], need: () => QUARRIES_WANTED - roomAround(terrain, groundType, keep, reach).rock },
+    // A seam is small: a mine is 3x3 and two of them side by side is 6x3,
+    // but a 6x6 of ore beside every keep would be more iron than the map's
+    // own generator ever lays.
+    { label: 'an iron seam', fits: new Set([GROUND_TYPES.indexOf('iron')]),
+      paint: GROUND_TYPES.indexOf('iron'),
+      sizes: [4], need: () => MINES_WANTED - roomAround(terrain, groundType, keep, reach).iron },
   ];
 
   for (const want of wants) {
@@ -526,6 +541,7 @@ export function auditKeeps(
     const room = roomAround(terrain, groundType, p);
     if (room.green < 3) warnings.push(`${whose} has room for ${room.green === 0 ? 'no farm' : `only ${room.green} farm${room.green > 1 ? 's' : ''}`}.`);
     if (room.rock < 1) warnings.push(`${whose} has no flat rock to quarry.`);
+    if (room.iron < 1) warnings.push(`${whose} has no iron ore to mine.`);
   });
   return warnings;
 }

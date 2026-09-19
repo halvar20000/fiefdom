@@ -2751,6 +2751,40 @@ was not a longer trap, it was a hotter one. Each man now burns once per tick
 however many fires he stands in, so a longer line buys a bigger AREA to deny,
 which is the trade that should be on offer.
 
+## Iron ore: a seam, not any rock
+
+An eighth ground type, and the one Crusader players will have missed. The
+iron mine used to go on any flat rock, the same rock the quarry goes on, so
+"where is the iron" was never a question the map asked. Now it is: ore is its
+own rust-red ground, laid in seams, and the mine goes on the seam and nowhere
+else. The quarry keeps its rock.
+
+Seams are laid as deposits, not as another band of the ground noise. A noise
+threshold was tried first and made speckle — ore only exists where rock is,
+rock is itself a noise threshold, and the meeting of two noise edges is a
+fringe of single tiles with no level 3×3 in it anywhere, which is the one
+thing a seam must have, since that is a mine. So `laySeams` in `worldgen.ts`
+picks centres on level rock, hashed from the seed and at least twelve tiles
+apart, and paints a rounded patch of twenty to forty tiles around each, held
+to rock at the centre's own level. Some thirty seams on a 200×200 map, about
+850 tiles of ore against many thousands of rock. It is carved out of rock
+that would have been there anyway, so a map's stone does not change.
+
+`findStartSite` wants a seam within the keep's reach as firmly as it wants
+green and rock — a start that has to trade for every bar of iron is a start
+with no armoury — and will not put the keep on one. Every built-in map has a
+mine site in reach of its start; `tests/worldgen.test.ts` checks that. A
+painted map has an **Iron ore** brush (key 8), the "Room to farm" button lays
+a seam beside a keep that has none, and the audit says which keep is short.
+The rival lords take the same rule as the player: a lord with no seam in
+reach skips his mine, as he already skipped a quarry with no rock.
+
+The tile is the plateau stone with rust in it — the same rubble as the rock
+tile, so a seam sits in an outcrop as a stain and not as a different
+material, with veins picked by a distorted noise and dark nuggets of ore in
+the veins. Rendered through `render_ground.py --only iron`; the minimap and
+the menu preview show it in the same red.
+
 ## Wildlife and the hunter
 
 Gazelle graze the open land in fifteen herds of three to six, seeded

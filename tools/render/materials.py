@@ -603,6 +603,81 @@ def ground_cliff(name="GroundCliff"):
     return mat
 
 
+def ground_iron(name="GroundIron"):
+    """
+    An iron seam: the plateau stone with rust in it.
+
+    Crusader's ore is its own ground, a rust-red rubble that reads at a glance
+    as "mine goes here", and this is that. The same voronoi rubble as the
+    rock tile underneath, so a seam sits in an outcrop as a stain and not as
+    a different material; over it a broad, distorted noise picks the veins,
+    which multiply the stone up towards orange-red, and a fine voronoi drops
+    dark nuggets of ore into the veins. The tint is strong on purpose: the
+    tile has to be told from grey rock at the zoomed-out distance a player
+    is scanning for somewhere to put a mine, and the same red is what the
+    minimap shows for it.
+    """
+    mat, nt, bsdf = _new(name)
+    pos = _pos(nt, 1.0)
+
+    vor = nt.nodes.new("ShaderNodeTexVoronoi")
+    nt.links.new(pos, vor.inputs["Vector"])
+    _set(vor, "Scale", 8.0)
+    vor.feature = 'F1'
+    stone = _ramp(nt, [
+        (0.02, (0.15, 0.12, 0.10, 1.0)),
+        (0.30, (0.30, 0.24, 0.19, 1.0)),
+        (0.72, (0.42, 0.34, 0.27, 1.0)),
+        (1.00, (0.50, 0.41, 0.32, 1.0)),
+    ], vor.outputs["Distance"])
+
+    # The veins: a band in the middle of a distorted noise, so they wander
+    # and branch instead of blotching. Outside the band the tint is 1, so
+    # the stone shows through as itself.
+    veins = _noise(nt, pos, scale=5.0, detail=5.0, roughness=0.6, distortion=1.4)
+    vein_tint = _ramp(nt, [
+        (0.40, (1.00, 1.00, 1.00, 1.0)),
+        (0.47, (1.02, 0.78, 0.64, 1.0)),
+        (0.53, (1.08, 0.52, 0.36, 1.0)),
+        (0.59, (1.02, 0.78, 0.64, 1.0)),
+        (0.66, (1.00, 1.00, 1.00, 1.0)),
+    ], veins.outputs["Fac"])
+
+    # Ore nuggets: small dark cells, only where the vein is.
+    nug = nt.nodes.new("ShaderNodeTexVoronoi")
+    nt.links.new(pos, nug.inputs["Vector"])
+    _set(nug, "Scale", 40.0)
+    nug.feature = 'F1'
+    nug_tint = _ramp(nt, [
+        (0.00, (0.42, 0.30, 0.27, 1.0)),
+        (0.20, (0.42, 0.30, 0.27, 1.0)),
+        (0.32, (1.00, 1.00, 1.00, 1.0)),
+    ], nug.outputs["Distance"])
+    # ...gated by the vein band: 1 (no nuggets) outside it.
+    gate = _ramp(nt, [
+        (0.44, (1.00, 1.00, 1.00, 1.0)),
+        (0.49, (0.00, 0.00, 0.00, 1.0)),
+        (0.57, (0.00, 0.00, 0.00, 1.0)),
+        (0.62, (1.00, 1.00, 1.00, 1.0)),
+    ], veins.outputs["Fac"])
+    # nuggets = max(nug_tint, gate): where gate is 1 the nugget is hidden.
+    mx = nt.nodes.new("ShaderNodeVectorMath")
+    mx.operation = 'MAXIMUM'
+    nt.links.new(nug_tint.outputs["Color"], mx.inputs[0])
+    nt.links.new(gate.outputs["Color"], mx.inputs[1])
+
+    tone = _mulcol(nt, stone.outputs["Color"], vein_tint.outputs["Color"])
+    tone = _mulcol(nt, tone, mx.outputs["Vector"])
+    nt.links.new(tone, bsdf.inputs["Base Color"])
+    _set(bsdf, "Roughness", 0.9)
+
+    grit = _noise(nt, pos, scale=80.0, detail=6.0)
+    h = _add(nt, _mul(nt, vor.outputs["Distance"], 1.0), _mul(nt, grit.outputs["Fac"], 0.3))
+    h = _add(nt, h, _mul(nt, nug.outputs["Distance"], 0.4))
+    _bump(nt, bsdf, h, strength=1.0, distance=0.05)
+    return mat
+
+
 def ground_marsh(name="GroundMarsh"):
     """
     Pitch marsh: wet, grey-green bog with tar seeping through it.

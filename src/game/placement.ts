@@ -24,8 +24,8 @@ export interface PlacementCheck {
 }
 
 const TERRAIN_LABEL: Record<TerrainNeed, string> = {
-  any: '', green: 'green land', rock: 'rock', sand: 'open ground',
-  marsh: 'a pitch marsh',
+  any: '', green: 'green land', rock: 'rock', iron: 'an iron seam',
+  sand: 'open ground', marsh: 'a pitch marsh',
 };
 
 function terrainAllows(need: TerrainNeed, ground: string): boolean {
@@ -42,6 +42,7 @@ function terrainAllows(need: TerrainNeed, ground: string): boolean {
     case 'any': return true;
     case 'green': return ground === 'grass' || ground === 'grass_dark';
     case 'rock': return ground === 'rock';
+    case 'iron': return ground === 'iron';
     case 'sand': return ground === 'sand' || ground === 'scrub';
   }
 }
