@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import {
-  ELEVATION, PIXELS_PER_WORLD_UNIT, ZOOM_LEVELS, ROTATIONS,
-  cameraDirection, type RotationIndex,
+  ELEVATION, PIXELS_PER_WORLD_UNIT, ZOOM_LEVELS, AZIMUTH_DEG,
+  cameraDirectionAz, type RotationIndex,
 } from './iso';
 
 /**
@@ -15,14 +15,31 @@ import {
 const CORNER_REACH = 0.7;
 
 /**
- * Stronghold's camera: orthographic, four fixed 90-degree rotations, a couple of
- * zoom steps, pan by dragging or shoving the pointer at a screen edge.
- * No free rotation -- the sprites only exist from four angles.
+ * Stronghold's camera, set free: orthographic at a fixed 30-degree elevation,
+ * but turning to any azimuth and zooming without steps, since the world it
+ * looks at is real geometry now.
+ *
+ * The four rotations and four zoom levels are still here as the resting
+ * places the keys step between, and `rotation` still answers with the
+ * nearest quadrant, because the unit sprites only exist from those four
+ * angles and everything that picks a sprite frame asks for it. What is drawn
+ * as a mesh uses the exact angle; what is drawn as a sprite gets the nearest
+ * of four, which at worst is 45 degrees off for a billboard the size of a
+ * thumb.
+ *
+ * Both angle and zoom glide: a key press sets a target and `update` moves
+ * toward it each frame, so R and E turn the world rather than cut to it.
  */
 export class IsoCamera {
   readonly camera: THREE.OrthographicCamera;
-  rotation: RotationIndex = 0;
-  zoomIndex = 0;
+
+  /** The exact azimuth in degrees; 45 is the classic view. */
+  azimuthDeg = AZIMUTH_DEG;
+  /** Zoom as a multiple of PIXELS_PER_WORLD_UNIT, continuous. */
+  zoom: number = ZOOM_LEVELS[0];
+
+  private targetAz = AZIMUTH_DEG;
+  private targetZoom: number = ZOOM_LEVELS[0];
 
   /** Point on the ground the view is centred on. */
   target = new THREE.Vector3(0, 0, 0);
@@ -36,12 +53,65 @@ export class IsoCamera {
     this.apply();
   }
 
+  /** The nearest of the four sprite rotations, for anything that picks a frame. */
+  get rotation(): RotationIndex {
+    const q = Math.round((this.azimuthDeg - AZIMUTH_DEG) / 90);
+    return (((q % 4) + 4) % 4) as RotationIndex;
+  }
+
+  /** Quarter turns from the classic view, fractional -- the minimap turns by it. */
+  get turns(): number {
+    return (this.azimuthDeg - AZIMUTH_DEG) / 90;
+  }
+
+  get azimuth(): number {
+    return (this.azimuthDeg * Math.PI) / 180;
+  }
+
+  /** The nearest of the stepped zoom levels. */
+  get zoomIndex(): number {
+    let best = 0;
+    for (let i = 1; i < ZOOM_LEVELS.length; i++) {
+      if (Math.abs(ZOOM_LEVELS[i] - this.targetZoom) < Math.abs(ZOOM_LEVELS[best] - this.targetZoom)) best = i;
+    }
+    return best;
+  }
+
   get pixelsPerUnit(): number {
-    return PIXELS_PER_WORLD_UNIT * ZOOM_LEVELS[this.zoomIndex];
+    return PIXELS_PER_WORLD_UNIT * this.zoom;
   }
 
   get viewWidth(): number { return this.viewW; }
   get viewHeight(): number { return this.viewH; }
+
+  /**
+   * Glide toward the targets. Called once a frame with the frame time; a
+   * frame of 0 (or none, ever) leaves the camera exactly where the last call
+   * put it, which is what headless tests rely on.
+   */
+  update(dt: number): void {
+    const k = 1 - Math.exp(-dt * 12);
+    let moved = false;
+    if (this.azimuthDeg !== this.targetAz) {
+      const d = this.targetAz - this.azimuthDeg;
+      this.azimuthDeg = Math.abs(d) < 0.01 ? this.targetAz : this.azimuthDeg + d * k;
+      moved = true;
+    }
+    if (this.zoom !== this.targetZoom) {
+      const d = this.targetZoom - this.zoom;
+      this.zoom = Math.abs(d) < 0.001 ? this.targetZoom : this.zoom + d * k;
+      moved = true;
+    }
+    if (moved) { this.clampTarget(); this.apply(); }
+  }
+
+  /** Jump to the targets without gliding -- a loaded save, a test. */
+  settle(): void {
+    this.azimuthDeg = this.targetAz;
+    this.zoom = this.targetZoom;
+    this.clampTarget();
+    this.apply();
+  }
 
   setViewport(width: number, height: number): void {
     this.viewW = Math.max(1, width);
@@ -56,18 +126,44 @@ export class IsoCamera {
     this.clampTarget();
   }
 
+  /** Turn by quarter turns, to the next resting angle. */
   rotateBy(steps: number): void {
-    this.rotation = (((this.rotation + steps) % 4) + 4) % 4 as RotationIndex;
-    // Rotating changes the view's footprint on the ground, so a target that
-    // was legal a moment ago may now hang the edge of the map into shot.
+    // from the nearest quadrant, so a half-dragged view snaps on as a key
+    // press would expect, not 90 degrees further than the eye reads it
+    const q = Math.round((this.targetAz - AZIMUTH_DEG) / 90);
+    this.targetAz = AZIMUTH_DEG + (q + steps) * 90;
+    this.normaliseAz();
+  }
+
+  /** Turn by any angle -- a drag, a two-finger twist. */
+  rotateByDeg(deg: number): void {
+    this.targetAz += deg;
+    this.azimuthDeg += deg;
+    this.normaliseAz();
     this.clampTarget();
     this.apply();
   }
 
+  private normaliseAz(): void {
+    // keep both in one lap of each other so the glide takes the short way
+    while (this.targetAz - this.azimuthDeg > 180) this.azimuthDeg += 360;
+    while (this.targetAz - this.azimuthDeg < -180) this.azimuthDeg -= 360;
+    if (this.targetAz > 720 || this.targetAz < -720) {
+      const lap = Math.floor(this.targetAz / 360) * 360;
+      this.targetAz -= lap; this.azimuthDeg -= lap;
+    }
+  }
+
+  /** Zoom by steps of the level table. */
   zoomBy(steps: number): void {
-    this.zoomIndex = Math.min(ZOOM_LEVELS.length - 1, Math.max(0, this.zoomIndex + steps));
-    this.clampTarget();
-    this.apply();
+    const i = Math.min(ZOOM_LEVELS.length - 1, Math.max(0, this.zoomIndex + steps));
+    this.targetZoom = ZOOM_LEVELS[i];
+  }
+
+  /** Zoom by a factor -- a wheel notch, a pinch -- within the table's range. */
+  zoomByFactor(f: number): void {
+    const lo = ZOOM_LEVELS[0], hi = ZOOM_LEVELS[ZOOM_LEVELS.length - 1];
+    this.targetZoom = Math.min(hi, Math.max(lo, this.targetZoom * f));
   }
 
   /**
@@ -77,7 +173,7 @@ export class IsoCamera {
    */
   panByPixels(dxPx: number, dyPx: number): void {
     const ppu = this.pixelsPerUnit;
-    const az = (ROTATIONS[this.rotation] * Math.PI) / 180;
+    const az = this.azimuth;
 
     // ground-plane basis of the current view
     const rightX = Math.cos(az), rightZ = -Math.sin(az);
@@ -146,7 +242,7 @@ export class IsoCamera {
     // How far the view reaches along its own two ground axes -- the directions
     // a drag actually moves it in, which is why the margin is measured here
     // rather than along the world axes.
-    const az = (ROTATIONS[this.rotation] * Math.PI) / 180;
+    const az = this.azimuth;
     const rightX = Math.cos(az), rightZ = -Math.sin(az);
     const upX = Math.sin(az), upZ = Math.cos(az);
     let reachRight = 0, reachUp = 0;
@@ -186,7 +282,7 @@ export class IsoCamera {
     cam.top = halfH; cam.bottom = -halfH;
     cam.near = 0.1; cam.far = 4000;
 
-    const [dx, dy, dz] = cameraDirection(this.rotation);
+    const [dx, dy, dz] = cameraDirectionAz(this.azimuth);
     const dist = 1200;
     cam.position.set(
       this.target.x + dx * dist,
@@ -220,7 +316,7 @@ export class IsoCamera {
       -1,
     );
     ndc.unproject(this.camera);
-    const dir = new THREE.Vector3(...cameraDirection(this.rotation)).negate();
+    const dir = new THREE.Vector3(...cameraDirectionAz(this.azimuth)).negate();
     const t = (height - ndc.y) / dir.y;
     return new THREE.Vector3(ndc.x + dir.x * t, height, ndc.z + dir.z * t);
   }

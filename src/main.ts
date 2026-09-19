@@ -12,8 +12,8 @@ import {
   generateMap, findSite, isBuildable, findStartSite, GROUND_TYPES, GROUND_COLOURS,
 } from './game/worldgen';
 import {
-  TILE_PX_W, HEIGHT_STEP, unitDirectionIndex, footprintDepthBias, depthKey,
-  spriteAnchor, cameraDirection,
+  TILE_PX_W, HEIGHT_STEP, unitDirectionIndexAz, footprintDepthBiasAz, depthKeyAz,
+  spriteAnchor, cameraDirectionAz,
 } from './engine/iso';
 import { GameState, siteOf, type PlacedBuilding } from './game/state';
 import { PathGrid } from './game/pathfind';
@@ -289,7 +289,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
   // The mesh scenery, in three batches by how often they change: the
   // static world on build and fell, the restless few every frame, the ghost
   // while placing. Null on the sprite path.
-  const lighting = models ? new Lighting() : null;
+  const lighting = models ? new Lighting(isPhoneUi() ? 1024 : 2048) : null;
   const staticModels = models ? new ModelBatch(models) : null;
   const restlessModels = models ? new ModelBatch(models) : null;
   const ghostModels = models ? new ModelBatch(models, { shadows: false, ghost: true }) : null;
@@ -3519,6 +3519,9 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     return h * HEIGHT_STEP;
   }
 
+  /** The four sprite rotations as azimuths, for the sprite scenery's sort. */
+  const ROT_AZ = [45, 135, 225, 315].map(d => (d * Math.PI) / 180);
+
   function rebuildStatic() {
     const rot = iso.rotation;
     const items: DrawItem[] = [];
@@ -3536,9 +3539,9 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       const [ax, az] = spriteAnchor(x, z, d);
       items.push({
         key, x: ax, z: az, y: footing(name, x, z),
-        bias: footprintDepthBias(w, d, rot),
+        bias: footprintDepthBiasAz(w, d, ROT_AZ[rot]),
         // sort by the footprint centre, not by whichever corner is anchored
-        depth: depthKey(x + w / 2, z + d / 2, rot),
+        depth: depthKeyAz(x + w / 2, z + d / 2, ROT_AZ[rot]),
         tint,
       });
     };
@@ -3702,6 +3705,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
   const MAX_FLAGS = 12;
 
   let dragging = false, dragMoved = false, lastX = 0, lastY = 0;
+  let turning = false;
   let mouseX = 0, mouseY = 0;
 
   // Edge scrolling needs the pointer wherever it is, not only over the canvas:
@@ -3730,6 +3734,14 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     // button's pointerup ran the selection code, found no soldier under the
     // cursor, cleared the selection, and by the time contextmenu arrived there
     // was nothing left to order anywhere.
+    // The middle button, or Alt with the left, turns the camera: the world is
+    // real geometry now and can be looked at from any side.
+    if (e.button === 1 || (e.button === 0 && e.altKey)) {
+      e.preventDefault();
+      turning = true; lastX = e.clientX; lastY = e.clientY;
+      canvas.setPointerCapture(e.pointerId);
+      return;
+    }
     if (e.button !== 0) return;
     dragging = true; dragMoved = false; lastX = e.clientX; lastY = e.clientY;
     canvas.setPointerCapture(e.pointerId);
@@ -3756,6 +3768,11 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     }
   });
   canvas.addEventListener('pointerup', e => {
+    if (turning) {
+      turning = false;
+      if (canvas.hasPointerCapture(e.pointerId)) canvas.releasePointerCapture(e.pointerId);
+      return;
+    }
     if (e.button !== 0) return;      // see pointerdown
     if (canvas.hasPointerCapture(e.pointerId)) canvas.releasePointerCapture(e.pointerId);
     dragging = false;
@@ -3879,6 +3896,11 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
 
   canvas.addEventListener('pointermove', e => {
     mouseX = e.clientX; mouseY = e.clientY;
+    if (turning) {
+      iso.rotateByDeg(-(e.clientX - lastX) * 0.3);
+      lastX = e.clientX; lastY = e.clientY;
+      return;
+    }
     if (boxing) {
       selBox.style.left = `${Math.min(boxX, e.clientX)}px`;
       selBox.style.top = `${Math.min(boxY, e.clientY)}px`;
@@ -3900,12 +3922,15 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
   // the ghost to a tile the player pressed on minutes ago and every later click
   // lays a line back to it.
   canvas.addEventListener('pointercancel', () => {
-    dragging = false; boxing = false;
+    dragging = false; boxing = false; turning = false;
     selBox.style.display = 'none';
     placement.dragFrom = null;
   });
   canvas.addEventListener('wheel', e => {
-    e.preventDefault(); iso.zoomBy(e.deltaY > 0 ? -1 : 1);
+    e.preventDefault();
+    // A notch is about 100 on a mouse and a trickle on a trackpad; either way
+    // the zoom glides by the amount rolled rather than stepping a level.
+    iso.zoomByFactor(Math.pow(1.0025, -e.deltaY));
   }, { passive: false });
   /**
    * Take every soldier of the kind nearest a screen point. The "select all my
@@ -4032,7 +4057,11 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     }, phone);
     hud.onDrawerChange = (name) => pad.syncDrawer(name);
     touchCommand = () => pad.mode() === 'command';
-    attachPinch(canvas, { zoom: (d) => iso.zoomBy(d) });
+    attachPinch(canvas, {
+      zoom: (d) => iso.zoomBy(d),
+      zoomBy: (f) => iso.zoomByFactor(f),
+      rotate: (deg) => iso.rotateByDeg(deg),
+    });
   }
 
   const keys = new Set<string>();
@@ -4821,6 +4850,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       return;
     }
     prof.frame();
+    iso.update(dt);
 
     const pan = 420 * dt;
     if (keys.has('arrowleft') || keys.has('a')) iso.panByPixels(-pan, 0);
@@ -5078,7 +5108,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     // Keeps last and larger, so they are never buried under their own castle.
     if (keep) miniDots.push({ x: keep.x, z: keep.z, c: '#ffffff', big: true });
 
-    hud.drawMinimap(iso.rotation, view, miniDots);
+    hud.drawMinimap(iso.turns, view, miniDots);
   }
 
   /**
@@ -5209,7 +5239,10 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
    */
   function drawScene(): void {
     const rot = iso.rotation;
-    if (rot !== builtRotation || staticDirty) rebuildStatic();
+    // Sprite scenery was rendered per rotation and must be re-picked when it
+    // changes; meshes turn with the camera for free.
+    if ((rot !== builtRotation && !staticModels) || staticDirty) rebuildStatic();
+    const az = iso.azimuth;
 
     // Gather the moving figures, sort them, then merge into the pre-sorted
     // scenery so the entire scene emits as one back-to-front stream.
@@ -5217,7 +5250,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     const addFigure = (x: number, z: number, heading: number,
                        clip: string, phase: number,
                        facingOffset = DIRECTION_OFFSET) => {
-      const dir = (unitDirectionIndex(heading, rot) + facingOffset) & 7;
+      const dir = (unitDirectionIndexAz(heading, az) + facingOffset) & 7;
       const n = clipFrames(clip);
       const f = Math.floor(phase * clipFps(clip)) % n;
       const key = atlas.frames[`${clip}_${dir}_${f}`]
@@ -5226,8 +5259,8 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       // units are modelled centred on their origin, so no anchor shift
       figures.push({
         key, x, z, y: terrain.heightAt(x, z),
-        bias: footprintDepthBias(1, 1, rot),
-        depth: depthKey(x, z, rot),
+        bias: footprintDepthBiasAz(1, 1, az),
+        depth: depthKeyAz(x, z, az),
       });
     };
 
@@ -5239,7 +5272,7 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
     // glance says whose men are working which castle.
     for (const w of enemyWorkers.workers) {
       if (enemyWorkers.hidden(w)) continue;
-      const dir = (unitDirectionIndex(w.heading, rot) + DIRECTION_OFFSET) & 7;
+      const dir = (unitDirectionIndexAz(w.heading, az) + DIRECTION_OFFSET) & 7;
       const clip = enemyWorkers.clipFor(w);
       const n = clipFrames(clip);
       const f = Math.floor(w.phase * clipFps(clip)) % n;
@@ -5247,13 +5280,13 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       if (!atlas.frames[key]) continue;
       figures.push({
         key, x: w.x, z: w.z, y: terrain.heightAt(w.x, w.z),
-        bias: footprintDepthBias(1, 1, rot),
-        depth: depthKey(w.x, w.z, rot),
+        bias: footprintDepthBiasAz(1, 1, az),
+        depth: depthKeyAz(w.x, w.z, az),
         tint: factionOf(w.side)?.unitTint ?? [1.5, 0.62, 0.55],
       });
     }
     for (const sd of army.soldiers) {
-      const dir = (unitDirectionIndex(sd.heading, rot) + DIRECTION_OFFSET) & 7;
+      const dir = (unitDirectionIndexAz(sd.heading, az) + DIRECTION_OFFSET) & 7;
       let key: string;
       if (sd.hp <= 0) {
         // Dying: play the shared death clip once, front to back, mapping the
@@ -5307,8 +5340,8 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       }
       figures.push({
         key, x: dx, z: dz, y: terrain.heightAt(dx, dz) + lift - postDrop,
-        bias: footprintDepthBias(1, 1, rot) + (post ? 0.6 : 0),
-        depth: depthKey(dx, dz, rot),
+        bias: footprintDepthBiasAz(1, 1, az) + (post ? 0.6 : 0),
+        depth: depthKeyAz(dx, dz, az),
         // Enemies are the same three bodies under a red cast rather than three
         // more palettes: 288 more sprites to say "not yours" is a poor trade,
         // and side reads faster from colour than from costume anyway.
@@ -5330,8 +5363,8 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       const [fx, fz] = spriteAnchor(f.x, f.z, 1);
       figures.push({
         key, x: fx, z: fz, y: terrain.heightAt(f.x, f.z),
-        bias: footprintDepthBias(1, 1, rot),
-        depth: depthKey(f.x + 0.5, f.z + 0.5, rot),
+        bias: footprintDepthBiasAz(1, 1, az),
+        depth: depthKeyAz(f.x + 0.5, f.z + 0.5, az),
       });
     }
     // A burning building wears a flame on every tile it covers, drawn a
@@ -5348,11 +5381,11 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
           const [fx, fz] = spriteAnchor(x, z, 1);
           figures.push({
             key, x: fx, z: fz, y: terrain.heightAt(x, z) + 0.35,
-            bias: footprintDepthBias(1, 1, rot),
+            bias: footprintDepthBiasAz(1, 1, az),
             // A hair nearer than the building's own centre, so on the tile
             // the building is sorted by, the flame is painted over it rather
             // than under it by the luck of a tie.
-            depth: depthKey(x + 0.5, z + 0.5, rot) + 0.01,
+            depth: depthKeyAz(x + 0.5, z + 0.5, az) + 0.01,
           });
         }
       }
@@ -5381,8 +5414,8 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
       const [rx, rz] = spriteAnchor(x, z, r.d);
       figures.push({
         key, x: rx, z: rz, y: terrain.heightAt(x, z),
-        bias: footprintDepthBias(r.w, r.d, rot),
-        depth: depthKey(x + r.w / 2, z + r.d / 2, rot),
+        bias: footprintDepthBiasAz(r.w, r.d, az),
+        depth: depthKeyAz(x + r.w / 2, z + r.d / 2, az),
         tint: r.tint,
       });
     }
@@ -5442,14 +5475,14 @@ async function main(chosen: MapDef, restore: SaveGame | null = null,
           const [gx, gz] = spriteAnchor(t.x, t.z, d);
           ghostBatch.add(frame, atlas.size, ppuOf(frame),
             gx, footing(placement.selected!, t.x, t.z), gz,
-            footprintDepthBias(w, d, rot) + 6,
+            footprintDepthBiasAz(w, d, az) + 6,
             runPlan.legal[i] ? [0.55, 1.20, 0.55] : [1.30, 0.45, 0.40]);
         });
       }
     }
     ghostBatch.flush();
     if (ghostModels) ghostModels.flush();
-    { const [vx, vy, vz] = cameraDirection(iso.rotation); projectiles.setView(vx, vy, vz); }
+    { const [vx, vy, vz] = cameraDirectionAz(az); projectiles.setView(vx, vy, vz); }
     projectiles.render();
 
     if (lighting) {

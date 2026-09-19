@@ -1490,7 +1490,8 @@ export class Hud {
       hd.querySelector('.tw')!.textContent = off ? 'show' : 'hide';
     };
     hint.innerHTML =
-      'R / E rotate &nbsp; wheel zoom &nbsp; drag pan<br>' +
+      'R / E rotate &nbsp; middle-drag or Alt-drag turn freely<br>' +
+      'wheel zoom &nbsp; drag pan<br>' +
       '<b>Space</b> pause &nbsp; <b>,</b> / <b>.</b> slower / faster<br>' +
       '<b>,</b> / <b>.</b> turn what you are placing<br>' +
       '<b>1-6</b> build menu &nbsp; <b>B</b> toggle it<br>' +

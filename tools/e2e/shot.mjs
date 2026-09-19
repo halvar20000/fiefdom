@@ -80,6 +80,12 @@ await ev(`window.__game.iso.zoomBy(2)`); await shot('z2_r0');
 await ev(`window.__game.iso.rotateBy(1)`); await shot('z2_r1');
 await ev(`window.__game.iso.rotateBy(1)`); await shot('z2_r2');
 await ev(`window.__game.iso.zoomBy(1)`); await shot('z3_r2');
+// free camera: between the sprite rotations, at an in-between zoom
+await ev(`window.__game.iso.rotateBy(-2); window.__game.iso.rotateByDeg(-25); window.__game.iso.zoomByFactor(0.8); window.__game.iso.settle()`);
+await shot('free_az20');
+await ev(`window.__game.iso.rotateByDeg(-120); window.__game.iso.settle()`);
+await shot('free_az260');
+await ev(`window.__game.iso.rotateByDeg(145); window.__game.iso.settle()`);
 // the ghost: a wall run in hand, hovering over the keep's doorstep
 await ev(`window.__game.iso.rotateBy(2); window.__game.iso.zoomBy(-1)`);
 await ev(`(() => { const g = window.__game; const k = g.state.buildings.find(b => b.name === 'keep');

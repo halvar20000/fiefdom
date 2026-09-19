@@ -174,6 +174,10 @@ export function makeTouchPad(hooks: PadHooks, phone = false): {
 
 export interface PinchHooks {
   zoom(dir: 1 | -1): void;
+  /** Continuous zoom by a factor; when present, replaces the stepped `zoom`. */
+  zoomBy?(factor: number): void;
+  /** Two-finger twist, in degrees. */
+  rotate?(deg: number): void;
 }
 
 /**
@@ -187,24 +191,40 @@ export interface PinchHooks {
 export function attachPinch(canvas: HTMLElement, hooks: PinchHooks): void {
   const active = new Map<number, { x: number; y: number }>();
   let baseDist = 0;
+  let lastAngle = 0;
 
   const dist = () => {
     const [a, b] = [...active.values()];
     return Math.hypot(a.x - b.x, a.y - b.y);
   };
+  const angle = () => {
+    const [a, b] = [...active.values()];
+    return Math.atan2(b.y - a.y, b.x - a.x) * 180 / Math.PI;
+  };
 
   canvas.addEventListener('pointerdown', e => {
     if (e.pointerType !== 'touch') return;
     active.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    if (active.size === 2) baseDist = dist();
+    if (active.size === 2) { baseDist = dist(); lastAngle = angle(); }
   });
   canvas.addEventListener('pointermove', e => {
     if (!active.has(e.pointerId)) return;
     active.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (active.size !== 2 || baseDist <= 0) return;
     const ratio = dist() / baseDist;
-    if (ratio > 1.25) { hooks.zoom(1); baseDist = dist(); }
+    if (hooks.zoomBy) {
+      // a free camera zooms by the pinch itself, no thresholds
+      hooks.zoomBy(ratio); baseDist = dist();
+    } else if (ratio > 1.25) { hooks.zoom(1); baseDist = dist(); }
     else if (ratio < 0.8) { hooks.zoom(-1); baseDist = dist(); }
+    if (hooks.rotate) {
+      // a twist of the two fingers turns the camera by the same angle
+      const a = angle();
+      let d = a - lastAngle;
+      if (d > 180) d -= 360; else if (d < -180) d += 360;
+      lastAngle = a;
+      if (Math.abs(d) > 0.05) hooks.rotate(d);
+    }
   });
   const drop = (e: PointerEvent) => { active.delete(e.pointerId); baseDist = 0; };
   canvas.addEventListener('pointerup', drop);
