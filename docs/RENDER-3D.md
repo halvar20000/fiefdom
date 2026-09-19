@@ -16,12 +16,28 @@ transfers, and that the look is the models and the light, not the engine).
 2. **Free camera** — done. Continuous azimuth and zoom, gliding between the
    old resting places; middle-drag / Alt-drag / two-finger twist to turn,
    wheel and pinch to zoom. Sprite lookups still use the nearest quadrant.
-   *This is where the branch is.*
-3. **Look tuning** against the sprite screenshots — shadow softness, bounce,
-   bake resolution or procedural shader materials for the big buildings,
-   ground tiles re-rendered as plain albedo.
-4. **Units as skinned meshes** — last, and optional; the hybrid is a fine
-   place to stop.
+3. **The ground lit by the same sun** — done. Ground materials baked as
+   unlit colour + normal tiles (`tools/render/export_ground.py`,
+   `public/assets/ground/`), lit in the terrain shader with the scene's
+   lights and calibrated per type at load to the old tiles' average.
+4. **The people as animated meshes** — done. See "Units" below. Gazelles
+   and siege engines are still sprites (other rigs).
+
+All four milestones are on the branch. What remains is taste: shadow
+softness, the shaded sides of buildings (a touch darker than Cycles'
+inter-reflection), and whatever real play turns up.
+
+## Units
+
+`tools/render/export_units.py` writes, per human body, a rest-pose mesh with
+one bone index per vertex (the bodies are rigidly bound) and an animation
+texture: every clip, every frame, every bone's skinning matrix as three
+RGBA32F texels. `engine/units.ts` draws each body as ONE instanced mesh
+whose vertex shader fetches the bone matrix for the instance's frame — an
+army is a draw call, no CPU skinning. Frames are picked as sprite frames
+were: floor(phase × fps) mod count. Mixamo clips and 0 A.D. clips are
+separate files (`<body>.anim.bin`, `0ad/<body>.anim.bin`) and appended into
+one texture at load; that split is the licence separation.
 
 ## How the meshes get here
 
@@ -64,7 +80,11 @@ material tiles — is 24 MB against the 74 MB of sprites it replaces.
 
 ## Licence note
 
-The exported buildings are the project's own models under AGPL. Nothing
-from Mixamo or 0 A.D. is in `public/assets/models/`; units are still
-sprites. When units move to skinned meshes, the Mixamo clips must not ship
-as animation curves in a public `.glb` — see the analysis, section 8.
+The exported buildings and ground are the project's own models under AGPL.
+`public/assets/units/0ad/` is 0 A.D. motion (CC BY-SA 3.0) with its own
+`LICENSE.txt`, like the sprites in `sprites/0ad/`. `public/assets/units/
+<body>.anim.bin` holds Mixamo motion as bone matrices — the same motion the
+Mixamo-derived sprites already carry, in a form closer to the clips than a
+render is. The analysis (section 8) called this a grey zone; before the
+branch goes public, decide whether that form is acceptable under Adobe's
+terms or whether those files should be generated at build time instead.

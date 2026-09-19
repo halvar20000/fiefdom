@@ -1117,12 +1117,24 @@ export class Hud {
     });
   }
 
-  /** Current camera rotation, needed by both the draw and the inverse. */
+  /** Current camera rotation in quarter turns, fractional now that the
+   *  camera turns freely; needed by both the draw and the inverse. */
   private miniRot = 0;
+
+  /**
+   * How much the turned map is shrunk to stay inside its square. A square
+   * turned 45 degrees is root two wider than itself; at the four resting
+   * angles this is exactly 1 and the minimap is what it always was.
+   */
+  private miniScale(): number {
+    const a = this.miniRot * Math.PI / 2;
+    return 1 / (Math.abs(Math.cos(a)) + Math.abs(Math.sin(a)));
+  }
 
   private miniToWorld(mx: number, my: number): [number, number] {
     const a = -this.miniRot * Math.PI / 2;
-    const u = mx / this.miniW - 0.5, v = my / this.miniH - 0.5;
+    const k = 1 / this.miniScale();
+    const u = (mx / this.miniW - 0.5) * k, v = (my / this.miniH - 0.5) * k;
     const ru = u * Math.cos(a) - v * Math.sin(a);
     const rv = u * Math.sin(a) + v * Math.cos(a);
     return [(ru + 0.5) * this.miniW, (rv + 0.5) * this.miniH];
@@ -1130,9 +1142,10 @@ export class Hud {
 
   private worldToMini(x: number, z: number): [number, number] {
     const a = this.miniRot * Math.PI / 2;
+    const k = this.miniScale();
     const u = x / this.miniW - 0.5, v = z / this.miniH - 0.5;
-    const ru = u * Math.cos(a) - v * Math.sin(a);
-    const rv = u * Math.sin(a) + v * Math.cos(a);
+    const ru = (u * Math.cos(a) - v * Math.sin(a)) * k;
+    const rv = (u * Math.sin(a) + v * Math.cos(a)) * k;
     return [(ru + 0.5) * this.miniW, (rv + 0.5) * this.miniH];
   }
 
@@ -1169,6 +1182,8 @@ export class Hud {
     ctx.save();
     ctx.translate(w / 2, h / 2);
     ctx.rotate(rotation * Math.PI / 2);
+    const k = this.miniScale();
+    ctx.scale(k, k);
     ctx.drawImage(this.miniGround, -w / 2, -h / 2);
     ctx.restore();
 
